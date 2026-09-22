@@ -110,9 +110,21 @@ create trigger stock_movements_apply
   after insert on stock_movements
   for each row execute function public.apply_stock_movement();
 
-create trigger stock_items_recompute
-  after update of quantity, min_threshold on stock_items
-  for each row execute function public.touch_updated_at();
+create or replace function public.stock_quantity_changed()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform public.recompute_stock_status(new.id);
+  return null;
+end;
+$$;
+
+create trigger stock_items_cascade
+  after update of quantity on stock_items
+  for each row execute function public.stock_quantity_changed();
 
 -- ---------------------------------------------------------------- loyalty
 
