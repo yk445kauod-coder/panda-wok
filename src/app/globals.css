@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+/*
+ * Panda Wok design tokens.
+ * Palette: warm rice paper, aged bamboo, ink, miso glaze, plum, jade.
+ * Deliberately avoids neon, generic purple gradients and glassmorphism.
+ */
+@theme {
+  --color-rice-50: #fdfbf5;
+  --color-rice-100: #f8f4e9;
+  --color-rice-200: #efe7d4;
+  --color-rice-300: #e2d5b8;
+  --color-rice-400: #cdb894;
+
+  --color-ink-700: #3a332c;
+  --color-ink-800: #292420;
+  --color-ink-900: #1b1815;
+  --color-ink-950: #121010;
+
+  --color-bamboo-300: #b9c39a;
+  --color-bamboo-500: #7d8f5c;
+  --color-bamboo-600: #63734a;
+  --color-bamboo-700: #4c5938;
+
+  --color-miso-300: #e8bf83;
+  --color-miso-500: #c8853c;
+  --color-miso-600: #a96a29;
+
+  --color-plum-600: #8f3a4c;
+  --color-plum-700: #732f3e;
+
+  --color-jade-500: #4a8b76;
+  --color-jade-600: #3a6f5e;
+
+  --color-chili-500: #c4472f;
+  --color-chili-600: #a2371f;
+
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), ui-serif, Georgia, serif;
+
+  --radius-washi: 0.875rem;
+
+  --shadow-washi:
+    0 1px 2px rgb(27 24 21 / 0.04), 0 8px 24px -12px rgb(27 24 21 / 0.14);
+  --shadow-washi-lg:
+    0 2px 4px rgb(27 24 21 / 0.05), 0 24px 48px -20px rgb(27 24 21 / 0.22);
+
+  --animate-rise: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-sway: sway 7s ease-in-out infinite;
+  --animate-leaf: leaf 14s linear infinite;
+  --animate-drift: drift 22s linear infinite;
+  --animate-pulse-soft: pulse-soft 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-plum-600) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-plum-600) 0%, transparent); }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-1.1deg); }
+  50% { transform: rotate(1.1deg); }
+}
+
+@keyframes leaf {
+  0% { transform: translate3d(0, -8%, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.5; }
+  90% { opacity: 0.35; }
+  100% { transform: translate3d(24px, 108vh, 0) rotate(320deg); opacity: 0; }
+}
+
+@keyframes drift {
+  0% { transform: translate3d(-4%, 0, 0); }
+  50% { transform: translate3d(4%, -2%, 0); }
+  100% { transform: translate3d(-4%, 0, 0); }
+}
+
+:root {
+  --background: var(--color-rice-100);
+  --foreground: var(--color-ink-900);
+}
+
+@layer base {
+  * {
+    border-color: color-mix(in oklab, var(--color-rice-400) 55%, transparent);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    /* Rice paper grain, drawn with gradients so it costs no extra request. */
+    background-image:
+      radial-gradient(
+        circle at 12% 8%,
+        color-mix(in oklab, var(--color-miso-300) 22%, transparent),
+        transparent 42%
+      ),
+      radial-gradient(
+        circle at 88% 4%,
+        color-mix(in oklab, var(--color-bamboo-300) 26%, transparent),
+        transparent 46%
+      );
+    background-attachment: fixed;
+    overscroll-behavior-y: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  p { text-wrap: pretty; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-miso-600);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-miso-300) 70%, transparent);
+  }
+
+  /* One-handed use: nothing important sits under the bottom safe area. */
+  .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+  .pt-safe { padding-top: max(env(safe-area-inset-top), 0px); }
+}
+
+@layer utilities {
+  .washi-panel {
+    background-color: color-mix(in oklab, white 78%, var(--color-rice-100));
+    border: 1px solid color-mix(in oklab, var(--color-rice-400) 60%, transparent);
+    border-radius: var(--radius-washi);
+    box-shadow: var(--shadow-washi);
+  }
+
+  .seigaiha {
+    background-image:
+      radial-gradient(
+        circle at 50% 100%,
+        transparent 34%,
+        color-mix(in oklab, var(--color-bamboo-500) 16%, transparent) 35%,
+        transparent 38%
+      ),
+      radial-gradient(
+        circle at 0% 100%,
+        transparent 34%,
+        color-mix(in oklab, var(--color-bamboo-500) 12%, transparent) 35%,
+        transparent 38%
+      ),
+      radial-gradient(
+        circle at 100% 100%,
+        transparent 34%,
+        color-mix(in oklab, var(--color-bamboo-500) 12%, transparent) 35%,
+        transparent 38%
+      );
+    background-size: 42px 21px;
+  }
+
+  .ink-rule {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--color-ink-700) 30%, transparent),
+      transparent
+    );
+  }
+
+  .text-shadow-ink {
+    text-shadow: 0 1px 0 rgb(0 0 0 / 0.25);
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+}
+
+/*
+ * Motion is decorative throughout. When a user asks for less, everything
+ * resolves to its final state rather than animating.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Animated decorative layers are hidden outright when motion is reduced. */
+@media (prefers-reduced-motion: reduce) {
+  [data-motion="decorative"] { display: none !important; }
+}
+
