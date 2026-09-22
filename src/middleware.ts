@@ -39,7 +39,41 @@ export async function middleware(request: NextRequest) {
     response.headers.set("Cache-Control", "no-store, max-age=0");
   }
 
+  applySecurityHeaders(response);
   return response;
+}
+
+/**
+ * Security headers for dynamic responses. `public/_headers` only covers static
+ * assets on Workers, so document responses are hardened here — otherwise the
+ * CSP and frame protections would silently apply to nothing but CSS and images.
+ */
+function applySecurityHeaders(response: NextResponse) {
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(self), payment=(self)",
+  );
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  // wss: is required for Supabase Realtime; img/connect allow Supabase Storage
+  // and the AI providers. Keep this list in sync with the app's outbound hosts.
+  response.headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "img-src 'self' data: blob: *.supabase.co https:",
+      "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
+      "font-src 'self' fonts.gstatic.com data:",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "connect-src 'self' https: wss:",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+    ].join("; "),
+  );
+  response.headers.set("Content-Language", "en, ar");
 }
 
 export const config = {
