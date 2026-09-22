@@ -24,6 +24,7 @@ export const metadata: Metadata = {
   description:
     "Panda Wok is a cloud kitchen in Alexandria, Egypt, cooking Asian-inspired wok, ramen and sushi to order.",
   applicationName: "Panda Wok",
+  manifest: "/manifest.webmanifest",
   formatDetection: { telephone: true, address: false, email: true },
 };
 

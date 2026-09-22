@@ -106,6 +106,14 @@ export function websiteSchema(params: { name: string; description: string }): Js
     description: params.description,
     publisher: { "@id": `${SITE_URL}/#organisation` },
     inLanguage: ["en", "ar"],
+    /**
+     * AEO: answer engines and voice assistants may read these sections aloud,
+     * so they are declared explicitly rather than left to heuristics.
+     */
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: ["h1", "#main", "[data-speakable]"],
+    },
     potentialAction: {
       "@type": "SearchAction",
       target: {

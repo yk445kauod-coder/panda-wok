@@ -182,18 +182,18 @@ export async function getMenuItemBySlug(slug: string): Promise<MenuItemDetail | 
 
 /** Slugs for the sitemap. Disabled categories are excluded. */
 export async function getMenuSlugs(): Promise<{
-  categories: { slug: string; updated_at: string }[];
-  items: { slug: string; updated_at: string }[];
+  categories: { id: string; slug: string; name_en: string; updated_at: string }[];
+  items: { slug: string; name_en: string; category_id: string; updated_at: string }[];
 }> {
   const supabase = createPublicSupabase();
   const [categories, items] = await Promise.all([
     supabase
       .from("categories")
-      .select("slug, updated_at")
+      .select("id, slug, name_en, updated_at")
       .eq("is_enabled", true),
     supabase
       .from("menu_items")
-      .select("slug, updated_at")
+      .select("slug, name_en, category_id, updated_at")
       .eq("is_archived", false),
   ]);
 

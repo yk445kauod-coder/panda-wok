@@ -7,7 +7,7 @@ import { PandaAssistant } from "@/components/panda/assistant";
 import { AssistantProvider } from "@/components/panda/assistant-context";
 import { AnalyticsBeacon } from "@/components/customer/analytics-beacon";
 import { buildMetadata } from "@/lib/seo/metadata";
-import { restaurantSchema, websiteSchema } from "@/lib/seo/schema";
+import { restaurantSchema, websiteSchema, organisationSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
 
 /**
@@ -48,6 +48,10 @@ export default async function SiteLayout({
     websiteSchema({
       name: brand.name,
       description: `${brand.tagline}. Asian cloud kitchen in ${brand.city}.`,
+    }),
+    organisationSchema({
+      name: brand.name,
+      social: settings.support.social,
     }),
     restaurantSchema({
       name: brand.name,

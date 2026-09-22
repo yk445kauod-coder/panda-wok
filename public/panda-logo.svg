@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Panda Wok">
+  <circle cx="256" cy="256" r="236" fill="#f8f4e9"/>
+  <circle cx="256" cy="256" r="228" fill="none" stroke="#c8853c" stroke-width="16"/>
+  <ellipse cx="256" cy="258" rx="200" ry="186" fill="#1b1815"/>
+  <circle cx="172" cy="200" r="44" fill="#1b1815"/>
+  <circle cx="340" cy="200" r="44" fill="#1b1815"/>
+  <circle cx="172" cy="208" r="16" fill="#f8f4e9"/>
+  <circle cx="340" cy="208" r="16" fill="#f8f4e9"/>
+  <ellipse cx="256" cy="298" rx="58" ry="52" fill="#f8f4e9"/>
+  <ellipse cx="256" cy="324" rx="44" ry="22" fill="#1b1815"/>
+  <circle cx="214" cy="380" r="24" fill="#f8f4e9"/>
+  <circle cx="298" cy="380" r="24" fill="#f8f4e9"/>
+  <path d="M232 406 Q256 384 280 406" stroke="#1b1815" stroke-width="8" fill="none" stroke-linecap="round"/>
+</svg>

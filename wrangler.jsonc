@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "panda-wok",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": [
+    // Node.js APIs are required by the Supabase SSR client and the App Router.
+    "nodejs_compat",
+    // Next.js fetches remote images / API URLs; keep fetch semantics strict.
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

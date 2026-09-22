@@ -12,6 +12,11 @@ npm-debug.log*
 /out/
 next-env.d.ts
 
+# cloudflare / opennext
+/.open-next/
+/.wrangler/
+cloudflare-env.d.ts
+
 # production
 /build
 /dist
