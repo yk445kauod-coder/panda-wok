@@ -61,18 +61,77 @@ export type AppError = {
   detail?: string;
 };
 
+/** Every code the database may raise, as a word so it can be matched in text. */
+const CODE_PATTERN = new RegExp(
+  `\\b(${(
+    [
+      "AUTH_REQUIRED",
+      "FORBIDDEN",
+      "EMPTY_CART",
+      "CART_TOO_LARGE",
+      "ITEM_UNAVAILABLE",
+      "ITEM_NOT_FOUND",
+      "MIN_ORDER_NOT_MET",
+      "ADDRESS_REQUIRED",
+      "ADDRESS_INVALID",
+      "ADDRESS_NOT_FOUND",
+      "QUANTITY_LIMIT_EXCEEDED",
+      "NO_LOYALTY_POINTS",
+      "IDEMPOTENCY_KEY_REQUIRED",
+      "ACCOUNT_BLOCKED",
+      "INVALID_TOTAL",
+      "VALIDATION",
+      "NOT_FOUND",
+      "OFFLINE",
+      "RATE_LIMITED",
+      "NOT_CONFIGURED",
+      "UNKNOWN",
+    ] as AppErrorCode[]
+  ).join("|")})\\b`,
+);
+
+/**
+ * Postgres SQLSTATE -> app code, for the raises that carry a bare message.
+ * `42501` is insufficient_privilege; `22023` is invalid_parameter_value. Both
+ * are raised with a code token in the message, so they are a last-resort hint
+ * when the message itself does not name one.
+ */
+const SQLSTATE_HINTS: Record<string, AppErrorCode> = {
+  "42501": "FORBIDDEN",
+  "22023": "VALIDATION",
+};
+
+/** Business codes raised with a human sentence instead of a token. */
+const PHRASE_HINTS: Array<[RegExp, AppErrorCode]> = [
+  [/not authorised to (send broadcasts|export|create backups)/i, "FORBIDDEN"],
+  [/a broadcast needs a (title|message)/i, "VALIDATION"],
+  [/unknown dataset/i, "VALIDATION"],
+];
+
+/** Reads `message` off anything error-shaped, including PostgREST errors. */
+function rawMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && "message" in error) {
+    const value = (error as { message?: unknown }).message;
+    if (typeof value === "string") return value;
+  }
+  return "";
+}
+
+/** Reads `code` (the SQLSTATE) off anything error-shaped. */
+function rawCode(error: unknown): string | undefined {
+  if (error && typeof error === "object" && "code" in error) {
+    const value = (error as { code?: unknown }).code;
+    if (typeof value === "string") return value;
+  }
+  return undefined;
+}
+
 export function toAppError(error: unknown): AppError {
-  const raw =
-    error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : "";
+  const raw = rawMessage(error);
 
-  const match = raw.match(
-    /\b(AUTH_REQUIRED|FORBIDDEN|EMPTY_CART|CART_TOO_LARGE|ITEM_UNAVAILABLE|ITEM_NOT_FOUND|MIN_ORDER_NOT_MET|ADDRESS_REQUIRED|ADDRESS_INVALID|ADDRESS_NOT_FOUND|QUANTITY_LIMIT_EXCEEDED|NO_LOYALTY_POINTS|IDEMPOTENCY_KEY_REQUIRED|ACCOUNT_BLOCKED|INVALID_TOTAL)\b/,
-  );
-
+  const match = raw.match(CODE_PATTERN);
   if (match) {
     const code = match[1] as AppErrorCode;
     // Postgres emits `ITEM_UNAVAILABLE:Dish name`; keep the name for context.
@@ -82,18 +141,21 @@ export function toAppError(error: unknown): AppError {
     return { code, message: MESSAGES[code], detail: detail || undefined };
   }
 
+  for (const [pattern, code] of PHRASE_HINTS) {
+    if (pattern.test(raw)) return { code, message: MESSAGES[code] };
+  }
+
   if (/fetch failed|network|Failed to fetch|ENOTFOUND|ETIMEDOUT/i.test(raw)) {
     return { code: "OFFLINE", message: MESSAGES.OFFLINE };
   }
 
+  // A SQLSTATE with no recognisable message is still better than UNKNOWN: a
+  // privilege failure is not a transient glitch the user should retry blindly.
+  const sqlstate = rawCode(error);
+  if (sqlstate && SQLSTATE_HINTS[sqlstate]) {
+    const code = SQLSTATE_HINTS[sqlstate];
+    return { code, message: MESSAGES[code] };
+  }
+
   return { code: "UNKNOWN", message: MESSAGES.UNKNOWN };
-}
-
-export function errorMessage(error: unknown): string {
-  return toAppError(error).message;
-}
-
-export function messageForCode(code: AppErrorCode, detail?: string) {
-  const base = MESSAGES[code];
-  return detail ? `${base} (${detail})` : base;
 }

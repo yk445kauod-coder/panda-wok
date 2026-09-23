@@ -160,20 +160,6 @@ export async function estimateSegment(
   return data ?? 0;
 }
 
-export async function segmentMemberIds(
-  segment: SegmentKey,
-  value = 30,
-  limit = 5000,
-): Promise<string[]> {
-  const admin = createAdminSupabase();
-  const { data, error } = await admin.rpc("crm_segment", {
-    p_segment: segment,
-    p_value: value,
-  });
-  if (error) throw new Error(`Failed to resolve segment: ${error.message}`);
-  return (data ?? []).slice(0, limit).map((row) => row.user_id);
-}
-
 export type SegmentBreakdown = {
   segment: SegmentKey;
   label: string;

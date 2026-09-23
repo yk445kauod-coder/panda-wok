@@ -13,25 +13,6 @@ export function Skeleton({ className }: { className?: string }) {
   );
 }
 
-export function SkeletonText({
-  lines = 3,
-  className,
-}: {
-  lines?: number;
-  className?: string;
-}) {
-  return (
-    <div className={cn("space-y-2", className)}>
-      {Array.from({ length: lines }, (_, index) => (
-        <Skeleton
-          key={index}
-          className={cn("h-3.5", index === lines - 1 ? "w-2/3" : "w-full")}
-        />
-      ))}
-    </div>
-  );
-}
-
 /**
  * Page-level loading shell. Wrapped in a live region so assistive tech is told
  * the page is still arriving rather than silently empty.

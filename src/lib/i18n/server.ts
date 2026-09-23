@@ -57,9 +57,4 @@ export async function getT(locale?: Locale) {
 
 export type T = ReturnType<typeof makeTranslator>;
 
-/** Dictionary for the resolved locale, for passing into client components. */
-export async function getDictionaryForClient(locale: Locale): Promise<Dictionary> {
-  return DICTIONARIES[locale];
-}
-
 export { DEFAULT_LOCALE };

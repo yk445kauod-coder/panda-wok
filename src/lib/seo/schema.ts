@@ -247,21 +247,3 @@ export function productSchema(item: {
   };
 }
 
-/**
- * FAQPage is only emitted for questions the operator genuinely answers on the
- * page. It is never generated as an SEO trick.
- */
-export function faqSchema(
-  items: { question: string; answer: string }[],
-): JsonLd | null {
-  if (items.length === 0) return null;
-  return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: items.map((item) => ({
-      "@type": "Question",
-      name: item.question,
-      acceptedAnswer: { "@type": "Answer", text: item.answer },
-    })),
-  };
-}

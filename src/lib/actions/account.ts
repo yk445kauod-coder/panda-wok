@@ -180,13 +180,3 @@ export async function updateProfileAction(
   revalidatePath("/account");
   return actionOk();
 }
-
-/** Records presence for the CRM "last activity" column. Best effort. */
-export async function touchLastSeenAction(): Promise<void> {
-  const session = await requireUser();
-  const supabase = await createServerSupabase();
-  await supabase
-    .from("profiles")
-    .update({ last_seen_at: new Date().toISOString() })
-    .eq("id", session.user.id);
-}

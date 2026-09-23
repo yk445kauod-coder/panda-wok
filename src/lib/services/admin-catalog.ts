@@ -112,28 +112,6 @@ export async function listStockMovements(stockItemId?: string, limit = 50) {
   return data ?? [];
 }
 
-/** Menu items that a stock movement could affect, for the linkage editor. */
-export async function listStockLinkOptions(): Promise<
-  { id: string; name_en: string; stock_item_id: string | null }[]
-> {
-  const supabase = await createServerSupabase();
-
-  const { data, error } = await supabase
-    .from("menu_item_stock")
-    .select("menu_item_id, stock_item_id, menu_items (id, name_en)")
-    .limit(500);
-
-  if (error) return [];
-
-  return (data ?? []).map((row) => ({
-    id: row.menu_item_id,
-    name_en:
-      (row as unknown as { menu_items?: { name_en: string } | null }).menu_items?.name_en ??
-      "Unnamed dish",
-    stock_item_id: row.stock_item_id,
-  }));
-}
-
 export async function listRewards(): Promise<
   Database["public"]["Tables"]["loyalty_rewards"]["Row"][]
 > {
