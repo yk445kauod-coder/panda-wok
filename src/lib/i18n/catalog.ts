@@ -1,5 +1,5 @@
 import type { Locale } from "@/lib/i18n/config";
-import type { Category, MenuItem } from "@/lib/services/catalog";
+import type { Category } from "@/lib/services/catalog";
 
 /**
  * Picks the right language out of the bilingual columns the catalogue already
@@ -22,15 +22,6 @@ export function localiseCategory<T extends Category>(category: T, locale: Locale
       ? category.description_ar
       : category.description_en ?? null;
   return { ...category, name, description };
-}
-
-export function localiseItem<T extends MenuItem>(item: T, locale: Locale) {
-  const name = locale === "ar" && item.name_ar?.trim() ? item.name_ar : item.name_en;
-  const description =
-    locale === "ar" && item.description_ar?.trim()
-      ? item.description_ar
-      : item.description_en ?? null;
-  return { ...item, name, description };
 }
 
 /** Localised name for a bilingual record without spreading it. */

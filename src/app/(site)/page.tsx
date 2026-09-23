@@ -18,7 +18,7 @@ import { DishCard } from "@/components/customer/dish-card";
 import { FeaturedDishStrip } from "@/components/customer/featured-strip";
 import { getLocale, getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/server";
-import { localiseCategory, localiseItem } from "@/lib/i18n/catalog";
+import { localiseCategory } from "@/lib/i18n/catalog";
 
 export const revalidate = 300;
 

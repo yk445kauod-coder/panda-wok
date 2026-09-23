@@ -24,8 +24,6 @@ import { formatPrice, randomId, humanise } from "@/lib/utils/format";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 import type { Address } from "@/lib/services/orders";
 import type { Locale } from "@/lib/i18n/config";
-import { ar } from "@/lib/i18n/dictionaries/ar";
-import { en } from "@/lib/i18n/dictionaries/en";
 
 type Fulfillment = "delivery" | "pickup";
 type PaymentMethod = "cash_on_delivery" | "card_on_delivery";
@@ -60,7 +58,6 @@ export function CheckoutFlow({
   locale?: Locale;
 }) {
   const t = useT();
-  const dict = locale === "ar" ? ar : en;
   const router = useRouter();
   const { lines, hydrated, subtotal, itemCount, clear } = useCart();
 

@@ -17,6 +17,15 @@
   "ai": {
     "binding": "AI"
   },
+  "vars": {
+    // Remote fallback for the AI binding, served by the dedicated
+    // panda-wok-ai-api worker. The app's `cloudflare` provider appends
+    // /ai/run/<model>, which that worker implements verbatim, so the binding
+    // stays primary and this only takes over if the binding is unavailable.
+    // The matching AI_CLOUDFLARE_API_KEY is a secret (the shared AI token).
+    "AI_CLOUDFLARE_BASE_URL": "https://panda-wok-ai-api.yk445kauod.workers.dev",
+    "AI_CLOUDFLARE_MODEL": "@cf/meta/llama-4-scout-17b-16e-instruct"
+  },
   "observability": {
     "enabled": true
   }
