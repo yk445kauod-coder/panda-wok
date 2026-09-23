@@ -201,3 +201,48 @@ The build log pasted after the session-3 push was **Cloudflare's own Git-connect
 - Verified the next run gets **past the build** (`Worker saved in .open-next/worker.js`).
 - **Still failing at the deploy step:** `CLOUDFLARE_API_TOKEN` is also unset as a repository secret. `wrangler pages deploy` aborts with "In a non-interactive environment, it's necessary to set a CLOUDFLARE_API_TOKEN environment variable".
 - **Action needed by an account owner** (no API token here has `secrets: write`; `gh secret set` returns 403): set the repository secret `CLOUDFLARE_API_TOKEN` (Workers/Pages edit) at https://github.com/yk445kauod-coder/panda-wok/settings/secrets/actions , and optionally `CLOUDFLARE_ACCOUNT_ID` as a repository variable.
+
+### CI failure - ROOT CAUSE FOUND AND FIXED (2026-09-23, session 4)
+
+The pasted log was **Cloudflare's Git-connected Pages CI** (bundled wrangler
+`3.114.17`). It failed inside `wrangler pages functions build` with 14
+`Could not resolve "<node builtin>"` errors (`async_hooks`, `fs`, `path`, `os`,
+`crypto`, `url`, `vm`, `util`, `buffer`, `stream`, `module`, `http`, `https`,
+`tty`) followed by `Top-level await is not available ... ("ES2017")`.
+
+Both are reproducible locally with `npx wrangler@3.114.17` (the CI's version),
+and each had a distinct cause:
+
+1. **The Pages bundler never saw `nodejs_compat`.** It does not read the
+   Workers-style `wrangler.jsonc` - it prints *"Found wrangler.json file ...
+   does not appear to be valid ... contains the `pages_build_output_dir`
+   property. Skipping file and continuing."* and then resolves the `_worker.js`
+   against defaults, so the 14 bare Node builtins are unresolvable. Fix: a
+   **`wrangler.toml`** with `pages_build_output_dir = ".pages"` plus
+   `compatibility_date` / `compatibility_flags = ["nodejs_compat", ...]`. This
+   removes all 14 errors. `wrangler.jsonc` stays the source of truth for the
+   Worker path; the two coexist (verified `wrangler deploy --dry-run` still
+   reads the JSONC: AI binding + vars + `.open-next/assets`).
+   (Putting `pages_build_output_dir` in the JSONC instead is **wrong**: wrangler
+   then treats the Worker config as a Pages project and `wrangler deploy` fails
+   with *"The name 'ASSETS' is reserved in Pages projects"*.)
+
+2. **`tsconfig.json` target `ES2017` rejected OpenNext's top-level `await`.**
+   The middleware bundle OpenNext emits uses top-level await; esbuild honours the
+   tsconfig `target`, which `ES2017` cannot represent. Fix: `target: "ES2022"`.
+   `next build` + `tsc --noEmit` stay green.
+
+Verified end to end: `npm run pages:build` then the exact CI command
+(`wrangler@3.114.17 pages deploy .pages`) completes with "Uploading Worker
+bundle / Deployment complete" (previously "Build failed with 14 errors / Failed
+building Pages Functions"). Production `https://panda-wok.pages.dev` was
+redeployed from `2689e43`; `/`, `/menu`, `/_next/static/*` and `/robots.txt` all
+return 200.
+
+**GitHub Actions `Deploy Pages` is still blocked by one missing secret.** Its
+build step is green; the deploy step needs a repository secret
+**`CLOUDFLARE_API_TOKEN`** (Workers/Pages edit). `gh secret set` returns 403 with
+the integration token available here, so an account owner must set it at
+https://github.com/yk445kauod-coder/panda-wok/settings/secrets/actions
+(optionally `CLOUDFLARE_ACCOUNT_ID` as a repo variable).
+

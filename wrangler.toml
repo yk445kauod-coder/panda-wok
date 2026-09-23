@@ -1,0 +1,15 @@
+name = "panda-wok"
+
+# Cloudflare Pages configuration.
+#
+# Cloudflare's Git-connected Pages CI bundles `_worker.js` with its own bundled
+# wrangler (3.x), and that bundler only reads a Pages `wrangler.toml` — the
+# Workers-style `wrangler.jsonc` is ignored with "does not appear to be valid"
+# and `nodejs_compat` is silently dropped. Without the flag the naive resolver
+# cannot see Node builtins (async_hooks/fs/path/crypto/...) inside the OpenNext
+# server, so every push failed with "Could not resolve ... built into node".
+# The JSONC file stays the source of truth for the Worker deploy path; these two
+# configs coexist (verified: `wrangler deploy --dry-run` still reads JSONC).
+pages_build_output_dir = ".pages"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
