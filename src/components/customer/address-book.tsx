@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, MapPin, Navigation, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { Badge, Button, Spinner } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useT } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import {
   deleteAddressAction,
   saveAddressAction,
@@ -24,6 +24,7 @@ type Mode = { kind: "closed" } | { kind: "new" } | { kind: "edit"; address: Addr
  */
 export function AddressBook({ addresses }: { addresses: Address[] }) {
   const t = useT();
+  const errorText = useErrorText();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>({ kind: "closed" });
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -87,7 +88,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
     const result = await saveAddressAction(formData);
 
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       if ("fields" in result && result.fields) setFields(result.fields);
       setSaving(false);
       return;
@@ -104,7 +105,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
     const result = await deleteAddressAction(addressId);
     setPendingId(null);
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       return;
     }
     router.refresh();
@@ -116,7 +117,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
     const result = await setDefaultAddressAction(addressId);
     setPendingId(null);
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       return;
     }
     router.refresh();

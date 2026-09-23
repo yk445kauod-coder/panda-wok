@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useT } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import { updateProfileAction } from "@/lib/actions/account";
 
 /** Profile editor. Field errors come back keyed by name from the Zod schema. */
@@ -19,6 +19,7 @@ export function ProfileForm({
   };
 }) {
   const t = useT();
+  const errorText = useErrorText();
   const router = useRouter();
   const [form, setForm] = useState(defaults);
   const [pending, setPending] = useState(false);
@@ -42,7 +43,7 @@ export function ProfileForm({
     const result = await updateProfileAction(formData);
 
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       if ("fields" in result && result.fields) setFields(result.fields);
       setPending(false);
       return;

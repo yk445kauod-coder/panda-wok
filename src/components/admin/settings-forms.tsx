@@ -8,6 +8,7 @@ import { toggleFeatureFlagAction, updateSettingsAction } from "@/lib/actions/adm
 import type { Json } from "@/lib/types/database";
 import { cn, humanise } from "@/lib/utils/format";
 
+import { useErrorText } from "@/components/i18n-provider";
 export type FeatureFlagRow = {
   key: string;
   label: string;
@@ -24,6 +25,7 @@ export type FeatureFlagRow = {
  */
 export function FeatureFlagToggle({ flag }: { flag: FeatureFlagRow }) {
   const router = useRouter();
+  const errorText = useErrorText();
   const [enabled, setEnabled] = useState(flag.is_enabled);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function FeatureFlagToggle({ flag }: { flag: FeatureFlagRow }) {
     try {
       const result = await toggleFeatureFlagAction(formData);
       if (!result.ok) {
-        setError(result.error.message);
+        setError(errorText(result.error));
         setEnabled(!next);
         setPending(false);
         return;

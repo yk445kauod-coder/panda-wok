@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { sendMessageAction, markConversationReadAction } from "@/lib/actions/communication";
 import { cn, formatTime } from "@/lib/utils/format";
 
+import { useErrorText } from "@/components/i18n-provider";
 export type ChatMessage = {
   id: string;
   body: string;
@@ -35,6 +36,7 @@ export function ConversationThread({
   disabledReason?: string;
 }) {
   const router = useRouter();
+  const errorText = useErrorText();
   const [body, setBody] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +97,7 @@ export function ConversationThread({
     const result = await sendMessageAction(formData);
 
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       setPending(false);
       return;
     }

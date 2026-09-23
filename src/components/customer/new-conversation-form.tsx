@@ -6,6 +6,7 @@ import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createConversationAction } from "@/lib/actions/communication";
 
+import { useErrorText } from "@/components/i18n-provider";
 /**
  * Starts a new conversation. The first message is required because an empty
  * thread gives staff nothing to act on.
@@ -16,6 +17,7 @@ export function NewConversationForm({
   orders?: { id: string; orderNumber: string }[];
 }) {
   const router = useRouter();
+  const errorText = useErrorText();
   const [subject, setSubject] = useState("");
   const [orderId, setOrderId] = useState("");
   const [message, setMessage] = useState("");
@@ -37,7 +39,7 @@ export function NewConversationForm({
     const result = await createConversationAction(formData);
 
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       if ("fields" in result && result.fields) setFields(result.fields);
       setPending(false);
       return;

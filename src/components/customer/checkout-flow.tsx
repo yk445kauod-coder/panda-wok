@@ -16,7 +16,7 @@ import {
 import { Badge, Button, Spinner } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCart } from "@/components/customer/cart-provider";
-import { useT } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import { trackEvent } from "@/components/customer/analytics-beacon";
 import { placeOrderAction } from "@/lib/actions/checkout";
 import { computeTotals, type CheckoutConfig } from "@/lib/services/checkout-math";
@@ -58,6 +58,7 @@ export function CheckoutFlow({
   locale?: Locale;
 }) {
   const t = useT();
+  const errorText = useErrorText();
   const router = useRouter();
   const { lines, hydrated, subtotal, itemCount, clear } = useCart();
 
@@ -573,7 +574,7 @@ export function CheckoutFlow({
         >
           <p className="flex items-center gap-2 text-sm font-medium text-chili-600">
             <AlertTriangle className="size-4" aria-hidden="true" />
-            {error.message}
+            {errorText(error)}
           </p>
           {error.detail ? (
             <p className="mt-1 text-xs text-ink-700/85">{error.detail}</p>

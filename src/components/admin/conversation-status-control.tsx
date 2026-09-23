@@ -6,6 +6,7 @@ import { setConversationStatusAction } from "@/lib/actions/admin";
 import { cn, humanise } from "@/lib/utils/format";
 import type { Database } from "@/lib/types/database";
 
+import { useErrorText } from "@/components/i18n-provider";
 type ConversationStatus = Database["public"]["Enums"]["conversation_status"];
 
 const STATUSES: ConversationStatus[] = ["open", "pending", "closed"];
@@ -30,6 +31,7 @@ export function ConversationStatusControl({
   compact?: boolean;
 }) {
   const router = useRouter();
+  const errorText = useErrorText();
   const [pending, setPending] = useState<ConversationStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +47,7 @@ export function ConversationStatusControl({
     const result = await setConversationStatusAction(formData);
 
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       setPending(null);
       return;
     }

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useT } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import { cancelOrderAction } from "@/lib/actions/checkout";
 
 /**
@@ -14,6 +14,7 @@ import { cancelOrderAction } from "@/lib/actions/checkout";
  */
 export function CancelOrderButton({ orderId }: { orderId: string }) {
   const t = useT();
+  const errorText = useErrorText();
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
@@ -24,7 +25,7 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
     setError(null);
     const result = await cancelOrderAction(orderId);
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       setPending(false);
       return;
     }

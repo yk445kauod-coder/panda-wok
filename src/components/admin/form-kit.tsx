@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/format";
 import type { FormActionResult } from "@/lib/actions/result";
 
+import { useErrorText } from "@/components/i18n-provider";
 /**
  * The admin mutation lifecycle in one place: submit, surface field errors,
  * surface a summary error, then refresh the server component. Every admin form
@@ -21,6 +22,7 @@ export function useAdminForm<T>(
   },
 ) {
   const router = useRouter();
+  const errorText = useErrorText();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -47,7 +49,7 @@ export function useAdminForm<T>(
     }
 
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       if ("fields" in result && result.fields) setFields(result.fields);
       setPending(false);
       return;
@@ -246,6 +248,7 @@ export function AdminButtonAction({
   payload?: unknown;
 }) {
   const router = useRouter();
+  const errorText = useErrorText();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -262,7 +265,7 @@ export function AdminButtonAction({
     try {
       const result = await action();
       if (!result.ok) {
-        setError(result.error.message);
+        setError(errorText(result.error));
         setPending(false);
         return;
       }

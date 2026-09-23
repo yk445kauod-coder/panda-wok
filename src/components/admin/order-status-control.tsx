@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { updateOrderStatusAction } from "@/lib/actions/admin";
+import { useErrorText } from "@/components/i18n-provider";
 import {
   ORDER_STATUS_LABELS,
   allowedTransitions,
@@ -24,6 +25,7 @@ export function OrderStatusControl({
   compact?: boolean;
 }) {
   const router = useRouter();
+  const errorText = useErrorText();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const [pending, setPending] = useState<OrderStatus | null>(null);
@@ -43,7 +45,7 @@ export function OrderStatusControl({
     const result = await updateOrderStatusAction(formData);
 
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       setPending(null);
       return;
     }

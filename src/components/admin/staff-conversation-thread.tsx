@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { sendMessageAction } from "@/lib/actions/communication";
 import { cn, formatDateTime, formatTime } from "@/lib/utils/format";
 
+import { useErrorText } from "@/components/i18n-provider";
 export type StaffChatMessage = {
   id: string;
   body: string;
@@ -38,6 +39,7 @@ export function StaffConversationThread({
   disabledReason?: string;
 }) {
   const router = useRouter();
+  const errorText = useErrorText();
   const [body, setBody] = useState("");
   const [internalNote, setInternalNote] = useState(false);
   const [pending, setPending] = useState(false);
@@ -93,7 +95,7 @@ export function StaffConversationThread({
     const result = await sendMessageAction(formData);
 
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       setPending(false);
       return;
     }

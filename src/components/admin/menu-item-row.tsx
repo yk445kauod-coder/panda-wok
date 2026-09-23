@@ -12,6 +12,7 @@ import { AdminButtonAction } from "@/components/admin/form-kit";
 import { Badge } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils/format";
 
+import { useErrorText } from "@/components/i18n-provider";
 type Row = {
   id: string;
   name_en: string;
@@ -33,6 +34,7 @@ type Row = {
  */
 export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: string | null }) {
   const router = useRouter();
+  const errorText = useErrorText();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +46,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
     setError(null);
     const result = await toggleMenuItemAction(item.id, field, value);
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       setBusy(null);
       return;
     }

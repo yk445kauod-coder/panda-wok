@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useT } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import { signInAction } from "@/lib/actions/auth";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 
@@ -16,6 +16,7 @@ import { toAppError, type AppError } from "@/lib/utils/errors";
 export function SignInForm({ next }: { next: string }) {
   const router = useRouter();
   const t = useT();
+  const errorText = useErrorText();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AppError | string | null>(null);
   const [email, setEmail] = useState("");
@@ -49,7 +50,11 @@ export function SignInForm({ next }: { next: string }) {
   }
 
   const message =
-    typeof error === "string" ? error : error ? error.message : null;
+    typeof error === "string"
+      ? error
+      : error
+        ? errorText(error)
+        : null;
 
   return (
     <form onSubmit={onSubmit} noValidate>

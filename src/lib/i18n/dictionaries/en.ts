@@ -716,6 +716,32 @@ export const en = {
     notFoundTitle: "Page not found",
     notFoundBody: "The page you were looking for does not exist or has moved.",
     forbiddenTitle: "Access denied",
+    codes: {
+      AUTH_REQUIRED: "Please sign in to continue.",
+      FORBIDDEN: "You do not have permission to do that.",
+      EMPTY_CART: "Your basket is empty.",
+      CART_TOO_LARGE: "That is too many lines for one order. Please split it.",
+      ITEM_UNAVAILABLE: "An item in your basket just became unavailable.",
+      ITEM_NOT_FOUND: "An item in your basket no longer exists on the menu.",
+      MIN_ORDER_NOT_MET: "Your basket is below the minimum order value.",
+      ADDRESS_REQUIRED: "Please choose a delivery address.",
+      ADDRESS_INVALID: "That delivery address is missing a street or building.",
+      ADDRESS_NOT_FOUND: "We could not find that delivery address.",
+      QUANTITY_LIMIT_EXCEEDED: "That quantity is above the per-item limit.",
+      NO_LOYALTY_POINTS: "You do not have enough points to redeem.",
+      IDEMPOTENCY_KEY_REQUIRED:
+        "Something went wrong submitting the order. Please retry.",
+      ACCOUNT_BLOCKED:
+        "This account cannot place orders. Please contact the kitchen.",
+      INVALID_TOTAL:
+        "The order total could not be calculated. Please review your basket and try again.",
+      VALIDATION: "Some of the details are not valid. Please check and try again.",
+      NOT_FOUND: "That record no longer exists.",
+      OFFLINE: "You appear to be offline. Your basket is saved on this device.",
+      RATE_LIMITED: "Too many attempts. Please wait a moment and try again.",
+      NOT_CONFIGURED: "This feature is not configured yet.",
+      UNKNOWN: "Something went wrong. Please try again.",
+    },
   },
 
   assistant: {

@@ -8,6 +8,7 @@ import { PandaMascot, type PandaState } from "@/components/panda/mascot";
 import { askAssistantAction } from "@/lib/actions/assistant";
 import { useAssistant } from "@/components/panda/assistant-context";
 import { cn } from "@/lib/utils/format";
+import { useErrorText } from "@/components/i18n-provider";
 
 type Turn = {
   role: "user" | "assistant";
@@ -44,6 +45,7 @@ export function PandaAssistant({
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
+  const errorText = useErrorText();
   const [error, setError] = useState<string | null>(null);
   const panelId = useId();
   const state: PandaState = open && activity === "idle" ? "watching" : activity;
@@ -100,7 +102,7 @@ export function PandaAssistant({
         const result = await askAssistantAction({ question: trimmed, history });
 
         if (!result.ok) {
-          setError(result.error.message);
+          setError(errorText(result.error));
           setActivity("surprised");
           schedule(() => setActivity("idle"), 2200);
           return;

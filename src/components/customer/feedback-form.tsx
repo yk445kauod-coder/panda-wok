@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/format";
-import { useT } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import { submitFeedbackAction } from "@/lib/actions/communication";
 
 const CATEGORY_KEYS = [
@@ -28,6 +28,7 @@ export function FeedbackForm({
   defaultOrderId?: string;
 }) {
   const t = useT();
+  const errorText = useErrorText();
   const router = useRouter();
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -56,7 +57,7 @@ export function FeedbackForm({
     const result = await submitFeedbackAction(formData);
 
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       if ("fields" in result && result.fields) setFields(result.fields);
       setSaving(false);
       return;

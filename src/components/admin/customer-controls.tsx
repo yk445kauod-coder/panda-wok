@@ -9,6 +9,7 @@ import { setUserBlockedAction, saveStaffAction, adjustLoyaltyPointsAction } from
 import { AdminForm, Field, Toggle } from "@/components/admin/form-kit";
 import type { StaffRole } from "@/lib/auth/rbac";
 
+import { useErrorText } from "@/components/i18n-provider";
 const ROLES: StaffRole[] = ["owner", "admin", "manager", "kitchen", "support", "marketing"];
 
 const ROLE_HINTS: Record<StaffRole, string> = {
@@ -34,6 +35,7 @@ export function BlockUserControl({
   name: string;
 }) {
   const router = useRouter();
+  const errorText = useErrorText();
   const [pending, setPending] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function BlockUserControl({
     const result = await setUserBlockedAction(formData);
 
     if (!result.ok) {
-      setError(result.error.message);
+      setError(errorText(result.error));
       setPending(false);
       return;
     }

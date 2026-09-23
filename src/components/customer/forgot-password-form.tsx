@@ -4,12 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useT } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import { requestPasswordResetAction } from "@/lib/actions/auth";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 
 export function ForgotPasswordForm() {
   const t = useT();
+  const errorText = useErrorText();
   const [identifier, setIdentifier] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
@@ -53,7 +54,7 @@ export function ForgotPasswordForm() {
           className="flex items-start gap-2 rounded-xl border border-chili-500/30 bg-chili-500/8 p-3 text-sm text-chili-600"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          {error.message}
+          {errorText(error)}
         </p>
       ) : null}
 

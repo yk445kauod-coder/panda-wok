@@ -8,6 +8,51 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## Audit findings (2026-09-23, live project)
+
+Verified against the live database, not just the code:
+
+- **`staff` was empty, so `/admin` was unreachable for everyone.** Every admin RLS
+  policy resolves through `current_staff_role()`, which reads `staff`. Nothing in the
+  schema or seed ever created a row, so the whole admin/CRM surface was dead. Fixed by
+  `20260923001000_bootstrap_staff_access.sql` (idempotent; promotes the founding
+  account to `owner`). The row is now live. Promote other staff from the CRM — signup
+  must never be able to grant a role.
+- **The shared delivery pin never reached staff.** `place_order` stores
+  `latitude`/`longitude` in `orders.address_snapshot`, but the admin order detail
+  rendered only the text address, so "share my exact location" did nothing for the
+  driver. The detail page now links to the pin in Maps.
+- **Tenancy is currently inert.** `current_restaurant_id()` is
+  `select id from restaurants where is_active order by created_at asc limit 1` — a
+  hardcoded "first active restaurant", not session-derived. There is exactly 1
+  restaurant and every `restaurant_id` is populated (0 rows missing across
+  orders/profiles/menu_items/categories), so the tenant columns and the
+  `*_restaurant` indexes do nothing today. Real multi-tenant isolation is a redesign,
+  not a fix: it needs session/request-derived tenant resolution.
+- **Do not revoke `EXECUTE` on `current_restaurant_id()`.** It is `SECURITY DEFINER`
+  and used as the column default on 4 tables, so `EXECUTE` is checked for the
+  inserting role; revoking from `anon` breaks anonymous inserts (verified: a bare
+  `set role anon; select current_restaurant_id()` fails with 42501). The advisor
+  warning about it is a false positive here. Same reasoning for `place_order`.
+- **Leaked-password protection cannot be enabled** — Supabase gates
+  HaveIBeenPwned checks behind Pro plans (API returns 402/plan message). Noted, not
+  fixed.
+- **i18n is genuinely complete.** `ar.ts` is typed as `Dictionary` from `en.ts`, so a
+  missing Arabic key fails the build. Language switching is live-verified: the
+  `panda-wok.locale` cookie flips `<html lang dir>` between `en/ltr` and `ar/rtl`.
+  Gap: `AppError.message` from `@/lib/utils/errors` is English-only and is what the
+  client renders for business errors, so error copy does not translate.
+- **Auth:** anonymous sign-ins are now enabled on the project; email/password is
+  still enabled because `staff`/admin login uses it (disabling it locks the owner out
+  of `/admin` — verified). `profiles.email` is `citext` and nullable; placeholder
+  phone emails are `panda-<last10digits>@phone.pandawok.app`.
+- **Perf advisors:** 21 `multiple_permissive_policies` warnings are mostly the
+  `_public_read` OR `_staff_write` pattern, which is intentional. 52 `unused_index`
+  are INFO and reflect tiny tables, not a problem yet.
+- **Deploy:** Cloudflare's Pages CI cannot build this repo (see note above).
+  `.github/workflows/deploy-pages.yml` builds on a runner and runs
+  `wrangler pages deploy .pages`. Needs repo secret `CLOUDFLARE_API_TOKEN`.
+
 ## Ops memory (2026-09-23)
 > **Correction (2026-09-23, verified):** the earlier note below claiming Pages advanced
 > mode "cannot serve static" was wrong. Pages advanced mode *does* expose a working

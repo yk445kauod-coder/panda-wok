@@ -66,3 +66,26 @@ export function useI18n(): I18nValue {
 export function useT() {
   return useI18n().t;
 }
+
+/**
+ * Localises the message on an `ActionResult` failure.
+ *
+ * `AppError.message` is produced on the server by `toAppError`, which has no
+ * request locale to work from, so it is always English. The code is stable and
+ * translated here instead; `detail` (a dish name, a digest) is data, not copy,
+ * so it passes through untouched. Falls back to the server message for any code
+ * the dictionary does not cover.
+ */
+export function useErrorText(): (error: {
+  code: string;
+  message?: string;
+}) => string {
+  const { t } = useI18n();
+  return (error) => {
+    const translated = t(`errors.codes.${error.code}`);
+    // translate() echoes the path when a key is missing.
+    return translated === `errors.codes.${error.code}`
+      ? (error.message ?? "")
+      : translated;
+  };
+}

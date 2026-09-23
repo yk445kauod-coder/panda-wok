@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useI18n, useT } from "@/components/i18n-provider";
+import { useErrorText, useI18n, useT } from "@/components/i18n-provider";
 import { signUpAction } from "@/lib/actions/auth";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/config";
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils/format";
 export function SignUpForm({ next }: { next: string }) {
   const router = useRouter();
   const t = useT();
+  const errorText = useErrorText();
   const { locale, dir } = useI18n();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
@@ -116,7 +117,7 @@ export function SignUpForm({ next }: { next: string }) {
           className="mt-4 flex items-start gap-2 rounded-xl border border-chili-500/30 bg-chili-500/8 p-3 text-sm text-chili-600"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          {error.message}
+          {errorText(error)}
         </p>
       ) : null}
 
