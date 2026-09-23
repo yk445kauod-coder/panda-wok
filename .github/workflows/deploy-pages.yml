@@ -1,0 +1,47 @@
+# Deploy Panda Wok (full SSR) to Cloudflare Pages.
+#
+# Cloudflare's built-in Pages CI cannot build this project: its Functions
+# bundler ignores the project's compatibility_date and fails to resolve bare
+# Node builtins inside Next's vendor bundles. This workflow builds on a normal
+# runner and ships the result with `wrangler pages deploy`, which works.
+#
+# Required repository secret: CLOUDFLARE_API_TOKEN (Workers/Pages edit).
+# Optional repository variable: CLOUDFLARE_ACCOUNT_ID.
+
+name: Deploy Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, production, feature/panda-wok-platform]
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build OpenNext output for Pages
+        run: npm run pages:build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://xjbtsryidznsxqlynmfa.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SITE_URL: https://panda-wok.pages.dev
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy .pages --project-name=panda-wok --branch=production
