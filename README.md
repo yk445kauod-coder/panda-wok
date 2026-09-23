@@ -1,7 +1,15 @@
-# Panda Wok
+<div align="center">
 
-A mobile-first cloud-kitchen platform for Panda Wok — an Asian kitchen in Alexandria, Egypt.
-Next.js App Router + Supabase (Postgres, Auth, Storage, Realtime), deployed on Cloudflare.
+![Panda Wok logo](./public/panda-logo.svg)
+
+# 🐼 Panda Wok
+
+**Asian cloud kitchen · Alexandria, Egypt** — Wok · Ramen · Sushi · Izakaya, crafted to order.
+
+</div>
+
+A mobile-first cloud-kitchen platform for Panda Wok — an Asian kitchenin Alexandria, Egypt.
+Next.js App Router + Supabase (Postgres, Auth, Storage, Realtime, deployed on Cloudflare.
 
 This is the operating system for the kitchen, not a landing page: customer ordering, kitchen
 operations, CRM, loyalty, stock, feedback, messaging, analytics, and a provider-abstracted AI

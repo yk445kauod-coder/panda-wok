@@ -242,6 +242,9 @@ export type PublicSettings = {
     country: string;
     cuisine: string;
     tagline: string;
+    logo_url: string | null;
+    favicon_url: string | null;
+    banner_url: string | null;
   };
   support: {
     phone: string | null;
@@ -316,6 +319,9 @@ export async function getPublicSettings(): Promise<PublicSettings> {
       country: toText(map.get("brand.country"), "Egypt"),
       cuisine: toText(map.get("brand.cuisine"), "Asian cuisine"),
       tagline: toText(map.get("brand.tagline"), "Asian kitchen, crafted to order"),
+      logo_url: toNullableText(map.get("brand.logo_url")),
+      favicon_url: toNullableText(map.get("brand.favicon_url")),
+      banner_url: toNullableText(map.get("brand.banner_url")),
     },
     support: {
       phone: toNullableText(map.get("support.phone")),

@@ -80,6 +80,11 @@
   100% { transform: translate3d(-4%, 0, 0); }
 }
 
+@keyframes enso {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50% { transform: scale(1.1); opacity: 0.85; }
+}
+
 :root {
   --background: var(--color-rice-100);
   --foreground: var(--color-ink-900);
@@ -177,6 +182,10 @@
       color-mix(in oklab, var(--color-ink-700) 30%, transparent),
       transparent
     );
+  }
+
+  [data-motion="enso"] {
+    animation: enso 3.2s ease-in-out infinite;
   }
 
   .text-shadow-ink {

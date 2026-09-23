@@ -9,10 +9,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 ## Ops memory (2026-09-23)
-- Live prod: https://panda-wok.pages.dev (Pages project name: panda-wok; production_branch set to "production" via API; deploy command: `npx wrangler pages deploy /tmp/pw-pages --project-name panda-wok --branch production` where /tmp/pw-pages = .open-next full tree + _worker.js copy).
+- Live topology: https://panda-wok.pages.dev = **302 redirector** → canonical **Worker** https://panda-wok.yk445kauod.workers.dev (serves HTML+CSS+assets;all-200 verified).) Pages advanced `_worker.js`+OpenNext cannot serve static (ASSETS binding unmapped in Pages) — do not revert to Pages-advanced;custom domain later: attach to the Worker (Workers support custom domains).
+- Deploy worker: `npx opennextjs-cloudflare build && npx opennextjs-cloudflare deploy` (wrangler.jsonc: main `.open-next/worker.js` + assets `.open-next/assets`+ AI binding).
 - Worker alias: https://panda-wok.yk445kauod.workers.dev (from `opennextjs-cloudflare deploy`).
 - Remote Supabase project: xjbtsryidznsxqlynmfa; tenancy migration applied remotely as `011_tenancy_fk_hardening` (local file: supabase/migrations/20260922001000_tenancy_fk.sql — same body, different version name — avoid double-`db push` of the same body).
-- Pages project git-build is misconfigured for this stack (build_command npx next build + out) — those deployed failed historically; prod rides direct-upload instead. Secrets: NEXT_PUBLIC_SUPABASE_URL/ANON, SUPABASE_URL, SERVICE_ROLE_KEY, NEXT_PUBLIC_SITE_URL set on the Pages project.
+- Pages project: static-only redirector site (`_redirects` `/* → worker` 302 + fallback `index.html`;no `_worker.js`). Secrets NEXT_PUBLIC_SUPABASE_URL/ANON, SUPABASE_URL, SERVICE_ROLE_KEY, NEXT_PUBLIC_SITE_URL set on Pages;the Worker's secrets live in its own env — keep both in sync.
+- Auth: email optional at signup (phone-first;placeholder email `panda-<last10digits>@phone.pandawok.app`;auto-confirmed via service-role `admin.updateUserById(email_confirm: true)` when no real email;sign-in accepts phone too (maps to the placeholder);`/auth/forgot-password` = phone-or-email reset (route was missing → now created+live).
+- Branding: settings keys `brand.logo_url` / `brand.favicon_url` / `brand.banner_url` (optional,is_public) — when set, footer/about/auth/OG render the uploaded logo via `BrandLogo`;fallback = `/icon.svg`(repo panda mark;file: `public/panda-logo.svg`). Admin sets via Settings → brand rows (generic string editor).
 
 ## Codebase map (2026-09-23)
 - Customer app: src/app/(site)/* — home, menu, dish, cart, checkout, orders, tracking, account, loyalty, feedback, contact, about.

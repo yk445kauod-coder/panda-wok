@@ -11,8 +11,26 @@ export default async function opengraphImage(): Promise<Response> {
   const brand = settings.brand.name;
   const tagline = settings.brand.tagline;
   const location = `${settings.brand.city}, ${settings.brand.country}`;
+  const logoUrl = settings.brand.logo_url;
 
   // A calm rice-paper card with the brand set large; no external assets.
+  const logoBlock = logoUrl
+    ? `
+  <image href="${escapeXml(logoUrl)}" x="80" y="60" width="220" height="220" preserveAspectRatio="xMidYMid meet"/>
+  <text x="340" y="200" font-family="Georgia, 'Times New Roman', serif" font-size="88" font-weight="700" fill="#1b1815">${escapeXml(brand)}</text>
+  <text x="340" y="256" font-family="Georgia, 'Times New Roman', serif" font-size="36" fill="#3a332c">${escapeXml(tagline)}</text>
+  <rect x="340" y="292" width="110" height="4" rx="2" fill="#c8853c"/>
+  <text x="340" y="352" font-family="Helvetica, Arial, sans-serif" font-size="32" fill="#3a332c">${escapeXml(location)}</text>
+  <text x="340" y="398" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#a96a29">Wok · Ramen · Sushi · Izakaya</text>`
+    : `
+  <circle cx="1060" cy="520" r="150" fill="none" stroke="#8f3a4c" stroke-opacity="0.22" stroke-width="10"/>
+  <circle cx="1060" cy="520" r="150" fill="none" stroke="#8f3a4c" stroke-opacity="0.35" stroke-width="10" stroke-dasharray="600 350" stroke-linecap="round"/>
+  <text x="80" y="250" font-family="Georgia, 'Times New Roman', serif" font-size="96" font-weight="700" fill="#1b1815">${escapeXml(brand)}</text>
+  <text x="80" y="320" font-family="Georgia, 'Times New Roman', serif" font-size="40" fill="#3a332c">${escapeXml(tagline)}</text>
+  <rect x="80" y="370" width="120" height="4" rx="2" fill="#c8853c"/>
+  <text x="80" y="440" font-family="Helvetica, Arial, sans-serif" font-size="34" fill="#3a332c">${escapeXml(location)}</text>
+  <text x="80" y="490" font-family="Helvetica, Arial, sans-serif" font-size="28" fill="#a96a29">Wok · Ramen · Sushi · Izakaya</text>`;
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
     <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
@@ -31,13 +49,7 @@ export default async function opengraphImage(): Promise<Response> {
   <rect width="1200" height="630" fill="url(#paper)"/>
   <rect width="1200" height="630" fill="url(#glow)"/>
   <rect width="1200" height="630" fill="url(#glow2)"/>
-  <circle cx="1060" cy="520" r="150" fill="none" stroke="#8f3a4c" stroke-opacity="0.22" stroke-width="10"/>
-  <circle cx="1060" cy="520" r="150" fill="none" stroke="#8f3a4c" stroke-opacity="0.35" stroke-width="10" stroke-dasharray="600 350" stroke-linecap="round"/>
-  <text x="80" y="250" font-family="Georgia, 'Times New Roman', serif" font-size="96" font-weight="700" fill="#1b1815">${escapeXml(brand)}</text>
-  <text x="80" y="320" font-family="Georgia, 'Times New Roman', serif" font-size="40" fill="#3a332c">${escapeXml(tagline)}</text>
-  <rect x="80" y="370" width="120" height="4" rx="2" fill="#c8853c"/>
-  <text x="80" y="440" font-family="Helvetica, Arial, sans-serif" font-size="34" fill="#3a332c">${escapeXml(location)}</text>
-  <text x="80" y="490" font-family="Helvetica, Arial, sans-serif" font-size="28" fill="#a96a29">Wok · Ramen · Sushi · Izakaya</text>
+  ${logoBlock}
 </svg>`;
 
   return new Response(svg, {

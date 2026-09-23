@@ -3,7 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/auth/session";
-import { PandaMark } from "@/components/layout/site-shell";
+import { getPublicSettings } from "@/lib/services/catalog";
+import { BrandLogo } from "@/components/layout/brand-logo";
 
 export const metadata: Metadata = buildMetadata({
   title: "Sign in",
@@ -20,6 +21,8 @@ export default async function AuthLayout({
   const session = await getSession();
   if (session) redirect("/account");
 
+  const settings = await getPublicSettings();
+
   return (
     <div className="relative flex min-h-dvh flex-col">
       <div
@@ -33,7 +36,7 @@ export default async function AuthLayout({
           className="flex items-center gap-2 text-ink-900"
           aria-label="Panda Wok home"
         >
-          <PandaMark className="size-9" />
+          <BrandLogo brand={settings.brand} className="size-9" />
           <span className="font-display text-xl font-semibold">Panda&nbsp;Wok</span>
         </Link>
 

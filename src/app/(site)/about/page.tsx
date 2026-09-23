@@ -5,7 +5,7 @@ import { getPublicSettings, getRestaurant } from "@/lib/services/catalog";
 import { breadcrumbSchema, organisationSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
-import { PandaMark } from "@/components/layout/site-shell";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { Badge } from "@/components/ui/button";
 
 export const revalidate = 600;
@@ -56,7 +56,7 @@ export default async function AboutPage() {
       />
 
       <header className="mt-4 flex items-start gap-4">
-        <PandaMark className="mt-1 size-14 shrink-0" />
+        <BrandLogo brand={settings.brand} className="mt-1 size-14 shrink-0" />
         <div>
           <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
             About {brand}

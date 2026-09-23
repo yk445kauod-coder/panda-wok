@@ -48,7 +48,13 @@ export const signInSchema = z.object({
 export const signUpSchema = z.object({
   fullName: z.string().trim().min(2, "Please enter your name").max(80),
   phone: phoneSchema,
-  email: z.string().trim().email("Enter a valid email address"),
+  email: z
+    .union([z.string().trim().email("Enter a valid email address"), z.literal("")])
+    .optional()
+    .transform((v) => {
+      const value = typeof v === "string" ? v.trim() : "";
+      return value ? value : undefined;
+    }),
   password: z
     .string()
     .min(8, "Use at least 8 characters")

@@ -3,6 +3,7 @@ import { getFeatureFlagMap, getPublicSettings, getRestaurant } from "@/lib/servi
 import { CartProvider } from "@/components/customer/cart-provider";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SiteFooter, SiteHeader } from "@/components/layout/site-shell";
+import { FloatingPanda } from "@/components/layout/floating-panda";
 import { PandaAssistant } from "@/components/panda/assistant";
 import { AssistantProvider } from "@/components/panda/assistant-context";
 import { AnalyticsBeacon } from "@/components/customer/analytics-beacon";
@@ -42,6 +43,7 @@ export default async function SiteLayout({
     city: restaurant?.city ?? settings.brand.city,
     country: restaurant?.country ?? settings.brand.country,
     tagline: restaurant?.tagline_en ?? settings.brand.tagline,
+    logo_url: settings.brand.logo_url,
   };
 
   const structuredData = [
@@ -82,7 +84,10 @@ export default async function SiteLayout({
           <SiteFooter brand={brand} contact={settings.support} />
           {flags["nav.bottom"] !== false ? <BottomNav flags={flags} /> : null}
           {flags.assistant !== false && settings.ai.assistantEnabled ? (
-            <PandaAssistant brandName={brand.name} disclosure={settings.ai.disclosure} />
+            <>
+              <PandaAssistant brandName={brand.name} disclosure={settings.ai.disclosure} />
+              <FloatingPanda />
+            </>
           ) : null}
           <AnalyticsBeacon enabled={flags.analytics !== false} />
         </div>

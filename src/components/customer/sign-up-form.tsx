@@ -138,13 +138,13 @@ export function SignUpForm({ next }: { next: string }) {
         />
         <Field
           id="email"
-          label="Email"
+          label="Email (optional)"
+          hint="Only if you want email receipts or password resets."
           type="email"
           value={form.email}
           onChange={update("email")}
           autoComplete="email"
           error={fields.email}
-          required
         />
         <Field
           id="password"

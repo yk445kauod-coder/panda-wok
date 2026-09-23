@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { PandaMascot } from "@/components/layout/panda-mascot";
 
 /**
@@ -79,36 +80,19 @@ export function SiteHeader({ flags }: { flags: Record<string, boolean> }) {
   );
 }
 
-/** Panda mascot mark, hand-drawn as inline SVG. */
-export function PandaMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
-      <circle cx="9" cy="9" r="6.5" fill="#1b1815" />
-      <circle cx="31" cy="9" r="6.5" fill="#1b1815" />
-      <circle cx="9" cy="9" r="3" fill="#efe7d4" opacity="0.28" />
-      <circle cx="31" cy="9" r="3" fill="#efe7d4" opacity="0.28" />
-      <circle cx="20" cy="22" r="15.5" fill="#fdfbf5" stroke="#1b1815" strokeWidth="1.4" />
-      <ellipse cx="13.6" cy="19.5" rx="4.3" ry="5" fill="#1b1815" transform="rotate(-14 13.6 19.5)" />
-      <ellipse cx="26.4" cy="19.5" rx="4.3" ry="5" fill="#1b1815" transform="rotate(14 26.4 19.5)" />
-      <circle cx="14.4" cy="19" r="1.35" fill="#fdfbf5" />
-      <circle cx="25.6" cy="19" r="1.35" fill="#fdfbf5" />
-      <ellipse cx="20" cy="27" rx="2.4" ry="1.7" fill="#1b1815" />
-      <path
-        d="M20 28.6v1.6M20 30.2c-1.1 1.3-2.6 1.3-3.4.4M20 30.2c1.1 1.3 2.6 1.3 3.4.4"
-        stroke="#1b1815"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        fill="none"
-      />
-    </svg>
-  );
-}
+
 
 export function SiteFooter({
   brand,
   contact,
 }: {
-  brand: { name: string; city: string; country: string; tagline: string };
+  brand: {
+    name: string;
+    city: string;
+    country: string;
+    tagline: string;
+    logo_url: string | null;
+  };
   contact: { phone: string | null; email: string | null; social: Record<string, string> };
 }) {
   const socialEntries = Object.entries(contact.social);
@@ -117,7 +101,7 @@ export function SiteFooter({
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2">
-            <PandaMark className="size-8" />
+            <BrandLogo brand={brand} className="size-9" />
             <span className="font-display text-lg font-semibold">{brand.name}</span>
           </div>
           <p className="mt-2 max-w-xs text-sm text-ink-700/80">{brand.tagline}</p>

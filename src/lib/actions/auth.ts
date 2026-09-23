@@ -25,8 +25,18 @@ export async function signInAction(
   if (!parsed.success) return toFormError(parsed.error);
 
   const supabase = await createServerSupabase();
+
+  // Phone-first accounts sign in with their phone number (the email field was
+  // optional at signup). Map a phone identifier to the deterministic placeholder
+  // email used at signup before attempting authentication.
+  const looksLikePhone = /^[+]?[\d\s()-]{8,}$/.test(parsed.data.email);
+  const email =
+    looksLikePhone
+      ? `panda-${parsed.data.email.replace(/\D/g, "").slice(-10)}@phone.pandawok.app`
+      : parsed.data.email;
+
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
+    email,
     password: parsed.data.password,
   });
 
@@ -35,9 +45,9 @@ export async function signInAction(
       ok: false,
       error: {
         code: "UNKNOWN",
-        message: "That email and password combination did not work.",
+        message: "That email or password combination did not work.",
       },
-      fields: { password: "Check your email and password" },
+      fields: { password: "Check your email or password" },
     };
   }
 
@@ -61,9 +71,18 @@ export async function signUpAction(
 
   if (!parsed.success) return toFormError(parsed.error);
 
+  // Phone-first accounts are the product default: an email is only ever used
+  // when the customer provides one. When absent we derive a deterministic,
+  // per-phone placeholder so Supabase Auth (which validates email formatually,
+  // can still hold the account. Real password resets for phone-first accounts go
+  // through the phone path (see requestPasswordResetAction).
+  const email =
+    parsed.data.email ??
+    `panda-${parsed.data.phone.replace(/\D/g, "").slice(-10)}@phone.pandawok.app`;
+
   const supabase = await createServerSupabase();
   const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
+    email,
     password: parsed.data.password,
     options: {
       data: {
@@ -98,6 +117,16 @@ export async function signUpAction(
   }
 
   if (data.user) {
+    // Phone-first accounts carry a system placeholder email (no real inbox),
+    // so email confirmation can never complete. Auto-confirm the identity the
+    // moment the account is created — the phone number is the real identifier.
+    if (!parsed.data.email) {
+      const admin = await import("@/lib/supabase/server").then((m) => m.tryCreateAdminSupabase());
+      if (admin) {
+        await admin.auth.admin.updateUserById(data.user.id, { email_confirm: true });
+      }
+    }
+
     await logActivity(supabase, {
       userId: data.user.id,
       event: "SIGNUP",
@@ -106,7 +135,7 @@ export async function signUpAction(
     });
   }
 
-  return actionOk({ requiresConfirmation: !data.session });
+  return actionOk({ requiresConfirmation: !data.session && Boolean(parsed.data.email) });
 }
 
 export async function signOutAction(): Promise<void> {
@@ -122,8 +151,28 @@ export async function signOutAction(): Promise<void> {
 
 export async function requestPasswordResetAction(
   formData: FormData,
-): Promise<FormActionResult<undefined>> {
+): Promise<FormActionResult<{ channel: "email" | "phone"; message: string }>> {
   const email = String(formData.get("email") ?? "").trim();
+  const looksLikePhone = /^[+]?[\d\s()-]{8,}$/.test(email);
+
+  // Phone-first accounts cannot receive email resets (no real inbox exists
+  // for the placeholder email). Route them to a human reset insteadso the
+  // endpoint never leaks which identifiers exist.
+
+  if (looksLikePhone) {
+    const { getPublicSettings } = await import("@/lib/services/catalog");
+    const settings = await getPublicSettings().catch(() => null);
+    const supportPhone = settings?.support?.phone ?? "";
+    return {
+      ok: true,
+      data: {
+        channel: "phone",
+        message: supportPhone
+          ? `Phone-first account recognized. Call or WhatsApp us on ${supportPhone} and we will verify your identity and reset your password.`
+          : "Phone-first account recognized. Contact the kitchen and we will verify your identity and reset your password.",
+      },
+    };
+  }
   const parsed = signInSchema.pick({ email: true }).safeParse({ email });
 
   if (!parsed.success) {
@@ -139,5 +188,14 @@ export async function requestPasswordResetAction(
   if (error) return actionError(error);
 
   // Always report success so the endpoint cannot be used to enumerate accounts.
-  return actionOk();
+
+
+
+  return {
+    ok: true,
+    data: {
+      channel: "email",
+      message: "If an account exists for that email, we sent a reset link. Check your inbox.",
+    },
+  };
 }
