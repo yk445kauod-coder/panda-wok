@@ -246,3 +246,58 @@ the integration token available here, so an account owner must set it at
 https://github.com/yk445kauod-coder/panda-wok/settings/secrets/actions
 (optionally `CLOUDFLARE_ACCOUNT_ID` as a repo variable).
 
+## Auth failure root cause + fix (2026-09-23, session 5)
+
+A first-time customer (`madrasty61@gmail.com`, phone `01277593815`) could not
+sign up and then could not sign in with the same credentials; the UI showed
+"Something went wrong". Verified live, not just in code:
+
+- **Root cause: duplicate identity, not config or transport.** The phone
+  `01277593815` is already owned by profile `f7504be6-9c0d-474e-8ad7-75c2675980d0`
+  (the owner account). `handle_new_user()` does a plain `insert ... on conflict
+  (id) do nothing` into `profiles`, so the *unique* `profiles_phone_key` was hit,
+  the trigger raised 23505, and Supabase aborted the whole `auth.users` insert —
+  a 500 the UI could only render as `UNKNOWN`. `signInWithPassword` then failed
+  because no auth user had ever been created for that email/phone. Reproduced in
+  a rolled-back transaction: `insert into profiles (...) values (…, '01277593815', …)`
+  → `23505 duplicate key value violates unique constraint "profiles_phone_key"`.
+- **The live constraints are only on `profiles`**: `profiles_pkey (id)` plus a
+  unique `profiles_phone_key` and `profiles_email_key` (not listed by a
+  `pg_constraint` scan for `contype in ('u','p')` because they are unique
+  *indexes*; query `pg_indexes`/`information_schema`, not just `pg_constraint`).
+  Phone is stored in three shapes across history (`01277593815` legacy,
+  `+201…` canonical), so any duplicate lookup must match all of them.
+- **Live auth config (Management API `/config/auth`)**: `mailer_autoconfirm=false`,
+  no custom SMTP (`smtp_host=null`), `rate_limit_email_sent=2` per hour,
+  `external_email_enabled=true`, `external_phone_enabled=false`,
+  `external_anonymous_users_enabled=true`. Meaning: an emailed confirmation is
+  *not* dependable (no SMTP, 2/hour project-wide) — every customer supplying an
+  email would be either stranded at a confirmation wall or would exhaust the
+  quota and fail signups for everyone. `external_phone_enabled=false` also means
+  the derived placeholder **email** identifier is unavoidable.
+- **Fix (code, no schema change needed):** all signups now go through the
+  service-role admin API (`auth.admin.createUser({ email_confirm: true })`) and
+  are signed in immediately, so nothing depends on the mailer. A pre-flight
+  profile lookup across every stored phone shape returns a specific
+  `PHONE_ALREADY_EXISTS` / `EMAIL_ALREADY_EXISTS`; a race that slips past is
+  classified from the provider's 23505. The profile row is read back and, if
+  missing, repaired — else the auth user is deleted, so no partial account
+  remains. Structured one-line logs (`scope:"auth"`, `requestId`, hashed
+  identifier) via `src/lib/auth/log.ts`; no password/token/PII is logged.
+- **Verified live end-to-end** (unique throwaway accounts, all deleted
+  afterwards; zero leftovers): phone-only signup → created+confirmed → session
+  minted → profile row present with `restaurant_id`; email+phone signup likewise;
+  a repeated phone returns 23505. `handle_new_user` and the tenant
+  `restaurant_id` defaults are healthy.
+- **Menu/basket regression (verified live):** the "Add an extra" group on Spicy
+  Miso Ramen etc. is `max_select=2` with **3** options; the client used to replace
+  the oldest selection instead of refusing, and `place_order` never checked group
+  limits at all. Migration `20260923205905_modifier_limit_enforcement.sql`
+  re-creates `place_order` with a per-group count → `MODIFIER_LIMIT_EXCEEDED`
+  (verified: 3 extras rejected, 2 accepted). The client now refuses the extra tap
+  and shows `addToCart.maxExtras`; basket + checkout list every extra with price.
+- **Tests:** vitest (`npm test`, config `vitest.config.ts`, `tests/`) — 38 unit
+  tests over error mapping, phone canonicalisation, signup validation and the
+  modifier rules. `server-only` is stubbed for the node test env. `npm run
+  typecheck` added. Lint/typecheck/build green.
+
