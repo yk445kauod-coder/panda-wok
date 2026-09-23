@@ -8,6 +8,7 @@ import { useCart } from "@/components/customer/cart-provider";
 import { useT } from "@/components/i18n-provider";
 import { trackEvent } from "@/components/customer/analytics-beacon";
 import { formatPrice } from "@/lib/utils/format";
+import { toggleModifierOption } from "@/lib/services/modifier-selection";
 import type { MenuItemDetail } from "@/lib/services/catalog";
 import type { Locale } from "@/lib/i18n/config";
 
@@ -32,6 +33,7 @@ export function AddToCartPanel({
   const { add, lines, hydrated } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [overrides, setOverrides] = useState<Record<string, string[]>>({});
+  const [atLimit, setAtLimit] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [justAdded, setJustAdded] = useState(false);
 
@@ -91,19 +93,20 @@ export function AddToCartPanel({
   const remaining = Math.max(0, maxPerOrder - alreadyInCart);
 
   function toggleOption(groupId: string, optionId: string, max: number) {
+    setAtLimit(null);
     setOverrides((current) => {
-      const existing = current[groupId] ?? [];
-      if (existing.includes(optionId)) {
-        return { ...current, [groupId]: existing.filter((id) => id !== optionId) };
+      const { selection, rejected } = toggleModifierOption(
+        current,
+        groupId,
+        optionId,
+        max,
+      );
+      if (rejected) {
+        // The extra selection was refused rather than silently replacing an
+        // earlier choice: the label promises a maximum the server also enforces.
+        setAtLimit(groupId);
       }
-      if (max === 1) {
-        return { ...current, [groupId]: [optionId] };
-      }
-      if (existing.length >= max) {
-        // Replace the oldest selection rather than silently ignoring the tap.
-        return { ...current, [groupId]: [...existing.slice(1), optionId] };
-      }
-      return { ...current, [groupId]: [...existing, optionId] };
+      return selection;
     });
   }
 
@@ -185,6 +188,8 @@ export function AddToCartPanel({
             {group.modifier_options.map((option) => {
               const checked = (selected[group.id] ?? []).includes(option.id);
               const delta = Number(option.price_delta);
+              const selectionCount = (selected[group.id] ?? []).length;
+              const atMax = group.max_select > 1 && selectionCount >= group.max_select;
               return (
                 <li key={option.id}>
                   <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-rice-200/60">
@@ -193,10 +198,11 @@ export function AddToCartPanel({
                         type={group.max_select === 1 ? "radio" : "checkbox"}
                         name={`group-${group.id}`}
                         checked={checked}
+                        disabled={!checked && atMax}
                         onChange={() =>
                           toggleOption(group.id, option.id, group.max_select)
                         }
-                        className="size-4 accent-plum-600"
+                        className="size-4 accent-plum-600 disabled:opacity-50"
                       />
                       <span className="text-sm text-ink-900">{localName(option)}</span>
                     </span>
@@ -211,6 +217,11 @@ export function AddToCartPanel({
               );
             })}
           </ul>
+          {atLimit === group.id ? (
+            <p role="alert" className="mt-1.5 text-xs text-chili-600">
+              {t("addToCart.maxExtras", { count: group.max_select })}
+            </p>
+          ) : null}
         </fieldset>
       ))}
 

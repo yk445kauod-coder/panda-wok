@@ -498,13 +498,27 @@ export function CheckoutFlow({
               key={`${line.menuItemId}-${line.modifiers.map((m) => m.id).join("-")}`}
               className="flex justify-between gap-3"
             >
-              <span className="min-w-0 truncate text-ink-800">
-                {line.quantity} × {line.name}
+              <span className="min-w-0 text-ink-800">
+                <span className="block truncate">
+                  {line.quantity} × {line.name}
+                </span>
                 {line.modifiers.length > 0 ? (
-                  <span className="text-ink-700/60">
-                    {" "}
-                    (+{line.modifiers.map((m) => m.name).join(", ")})
-                  </span>
+                  <ul className="mt-0.5 space-y-0.5">
+                    {line.modifiers.map((m) => (
+                      <li
+                        key={m.id}
+                        className="flex items-center gap-2 text-xs text-ink-700/60"
+                      >
+                        <span className="min-w-0 truncate">+ {m.name}</span>
+                        {m.priceDelta !== 0 ? (
+                          <span className="shrink-0 tabular-nums">
+                            ({m.priceDelta > 0 ? "+" : ""}
+                            {formatPrice(m.priceDelta, undefined, locale)})
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
                 ) : null}
               </span>
               <span className="shrink-0 tabular-nums text-ink-800">

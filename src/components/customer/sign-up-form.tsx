@@ -112,13 +112,20 @@ export function SignUpForm({ next }: { next: string }) {
       <p className="mt-1 text-sm text-ink-700/80">{t("auth.signUp.subtitle")}</p>
 
       {error ? (
-        <p
+        <div
           role="alert"
           className="mt-4 flex items-start gap-2 rounded-xl border border-chili-500/30 bg-chili-500/8 p-3 text-sm text-chili-600"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          {errorText(error)}
-        </p>
+          <span>
+            {errorText(error)}
+            {error.requestId ? (
+              <span className="mt-1 block text-xs text-chili-600/80">
+                {t("errors.reference", { digest: error.requestId })}
+              </span>
+            ) : null}
+          </span>
+        </div>
       ) : null}
 
       <div className="mt-4 space-y-3">

@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth/session";
 import { placeOrderSchema } from "@/lib/validation/schemas";
 import {
   actionError,
+  actionFail,
   actionOk,
   type ActionResult,
 } from "@/lib/actions/result";
@@ -33,14 +34,10 @@ export async function placeOrderAction(
 
   const parsed = placeOrderSchema.safeParse(input);
   if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    return {
-      ok: false,
-      error: {
-        code: "UNKNOWN",
-        message: first?.message ?? "Please review your order details.",
-      },
-    };
+    // A locally-rejected payload is a validation failure, not a retryable
+    // server error: surface it with the VALIDATION code so the UI shows field
+    // guidance rather than "something went wrong".
+    return actionFail("VALIDATION", parsed.error.issues[0]?.message);
   }
 
   const supabase = await createServerSupabase();

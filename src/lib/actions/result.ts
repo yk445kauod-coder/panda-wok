@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { toAppError, type AppError, type AppErrorCode } from "@/lib/utils/errors";
+import {
+  appError,
+  toAppError,
+  type AppError,
+  type AppErrorCode,
+} from "@/lib/utils/errors";
 
 /**
  * Uniform result for every server action. Client components branch on `ok`,
@@ -28,8 +33,7 @@ export function actionFail(
   code: AppErrorCode,
   detail?: string,
 ): FormActionResult<never> {
-  const base = toAppError(code);
-  return { ok: false, error: { code, message: base.message, detail } };
+  return { ok: false, error: appError(code, { detail }) };
 }
 
 export function fieldErrors(error: z.ZodError): Record<string, string> {
@@ -41,21 +45,20 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
   return out;
 }
 
-/** Converts a Zod failure into a field map plus a summary message. */
+/**
+ * Converts a Zod failure into a field map plus a summary message. The code is
+ * VALIDATION, not UNKNOWN: the request was rejected locally before any server
+ * call, so the UI must show field-level guidance rather than a retry prompt.
+ */
 export function toFormError(
   error: z.ZodError | undefined,
   fallbackFields?: Record<string, string>,
 ): FormActionResult<never> {
-  if (!error) {
-    return {
-      ok: false,
-      error: { code: "UNKNOWN", message: "Please check the highlighted fields." },
-      fields: fallbackFields,
-    };
-  }
   return {
     ok: false,
-    error: { code: "UNKNOWN", message: "Please check the highlighted fields." },
-    fields: { ...fieldErrors(error), ...fallbackFields },
+    error: appError("VALIDATION"),
+    fields: error
+      ? { ...fieldErrors(error), ...fallbackFields }
+      : fallbackFields,
   };
 }

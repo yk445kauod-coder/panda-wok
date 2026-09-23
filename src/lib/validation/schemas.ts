@@ -1,15 +1,31 @@
 import { z } from "zod";
+import { canonicalPhone } from "@/lib/utils/phone";
 
 /** Shared primitives. Every server action validates against these first. */
 
 export const uuidSchema = z.string().uuid();
 
+/**
+ * Phone numbers are normalised to canonical E.164 (+20… for Egypt) before they
+ * leave validation. Without this, `01277593815` and `+201277593815` would be
+ * treated as different identities, so the unique index could not stop one
+ * person creating two accounts — or, worse, a second account could be rejected
+ * by the trigger with an opaque database error.
+ */
 export const phoneSchema = z
   .string()
   .trim()
   .min(6, "Phone number is too short")
   .max(24, "Phone number is too long")
-  .regex(/^[+0-9()\-\s]+$/, "Phone number contains invalid characters");
+  .regex(/^[+0-9()\-\s]+$/, "Phone number contains invalid characters")
+  .transform((value, ctx) => {
+    const canonical = canonicalPhone(value);
+    if (!canonical) {
+      ctx.addIssue({ code: "custom", message: "Enter a valid phone number" });
+      return z.NEVER;
+    }
+    return canonical;
+  });
 
 export const slugSchema = z
   .string()
@@ -106,6 +122,8 @@ export type AddressInput = z.infer<typeof addressSchema>;
 export const cartLineSchema = z.object({
   menuItemId: uuidSchema,
   quantity: z.coerce.number().int().min(1).max(100),
+  // Ten is a generous hard ceiling; the per-group max_select is enforced
+  // authoritatively inside place_order, which can see the group definition.
   modifiers: z.array(uuidSchema).max(10).default([]),
   notes: z.string().trim().max(200).optional(),
 });

@@ -16,6 +16,7 @@ export type AppErrorCode =
   | "ADDRESS_INVALID"
   | "ADDRESS_NOT_FOUND"
   | "QUANTITY_LIMIT_EXCEEDED"
+  | "MODIFIER_LIMIT_EXCEEDED"
   | "NO_LOYALTY_POINTS"
   | "IDEMPOTENCY_KEY_REQUIRED"
   | "ACCOUNT_BLOCKED"
@@ -25,6 +26,13 @@ export type AppErrorCode =
   | "OFFLINE"
   | "RATE_LIMITED"
   | "NOT_CONFIGURED"
+  | "EMAIL_ALREADY_EXISTS"
+  | "PHONE_ALREADY_EXISTS"
+  | "INVALID_CREDENTIALS"
+  | "AUTH_PROVIDER_NOT_CONFIGURED"
+  | "DATABASE_NOT_CONFIGURED"
+  | "PROFILE_CREATE_FAILED"
+  | "EMAIL_CONFIRMATION_REQUIRED"
   | "UNKNOWN";
 
 const MESSAGES: Record<AppErrorCode, string> = {
@@ -39,6 +47,8 @@ const MESSAGES: Record<AppErrorCode, string> = {
   ADDRESS_INVALID: "That delivery address is missing a street or building.",
   ADDRESS_NOT_FOUND: "We could not find that delivery address.",
   QUANTITY_LIMIT_EXCEEDED: "That quantity is above the per-item limit.",
+  MODIFIER_LIMIT_EXCEEDED:
+    "One or more extras are above the allowed maximum. Please review your choices.",
   NO_LOYALTY_POINTS: "You do not have enough points to redeem.",
   IDEMPOTENCY_KEY_REQUIRED:
     "Something went wrong submitting the order. Please retry.",
@@ -51,6 +61,20 @@ const MESSAGES: Record<AppErrorCode, string> = {
   OFFLINE: "You appear to be offline. Your basket is saved on this device.",
   RATE_LIMITED: "Too many attempts. Please wait a moment and try again.",
   NOT_CONFIGURED: "This feature is not configured yet.",
+  EMAIL_ALREADY_EXISTS:
+    "An account with this email already exists. Try signing in or reset your password.",
+  PHONE_ALREADY_EXISTS:
+    "An account with this phone number already exists. Try signing in or reset your password.",
+  INVALID_CREDENTIALS:
+    "That email, phone number or password combination did not work.",
+  AUTH_PROVIDER_NOT_CONFIGURED:
+    "Account creation is temporarily unavailable. Please try again shortly.",
+  DATABASE_NOT_CONFIGURED:
+    "Account creation is temporarily unavailable. Please try again shortly.",
+  PROFILE_CREATE_FAILED:
+    "We could not finish setting up your account. Please try again — nothing was saved.",
+  EMAIL_CONFIRMATION_REQUIRED:
+    "Check your inbox to confirm your email, then sign in.",
   UNKNOWN: "Something went wrong. Please try again.",
 };
 
@@ -59,6 +83,8 @@ export type AppError = {
   message: string;
   /** Extra detail shown only when it is safe and useful (e.g. the dish name). */
   detail?: string;
+  /** Support reference. Surfaced in the UI; safe to quote to the kitchen. */
+  requestId?: string;
 };
 
 /** Every code the database may raise, as a word so it can be matched in text. */
@@ -76,6 +102,7 @@ const CODE_PATTERN = new RegExp(
       "ADDRESS_INVALID",
       "ADDRESS_NOT_FOUND",
       "QUANTITY_LIMIT_EXCEEDED",
+      "MODIFIER_LIMIT_EXCEEDED",
       "NO_LOYALTY_POINTS",
       "IDEMPOTENCY_KEY_REQUIRED",
       "ACCOUNT_BLOCKED",
@@ -85,6 +112,13 @@ const CODE_PATTERN = new RegExp(
       "OFFLINE",
       "RATE_LIMITED",
       "NOT_CONFIGURED",
+      "EMAIL_ALREADY_EXISTS",
+      "PHONE_ALREADY_EXISTS",
+      "INVALID_CREDENTIALS",
+      "AUTH_PROVIDER_NOT_CONFIGURED",
+      "DATABASE_NOT_CONFIGURED",
+      "PROFILE_CREATE_FAILED",
+      "EMAIL_CONFIRMATION_REQUIRED",
       "UNKNOWN",
     ] as AppErrorCode[]
   ).join("|")})\\b`,
@@ -131,6 +165,19 @@ function rawCode(error: unknown): string | undefined {
 export function toAppError(error: unknown): AppError {
   const raw = rawMessage(error);
 
+  // A duplicate-key violation is a conflict on exactly one identity column, so
+  // name the column rather than collapsing to the generic UNKNOWN. This matters
+  // most for signup, where the phone/email index is what rejects the insert.
+  if (rawCode(error) === "23505" || /duplicate key value violates unique constraint/i.test(raw)) {
+    if (/profiles_phone_key|\(phone\)=/i.test(raw)) {
+      return { code: "PHONE_ALREADY_EXISTS", message: MESSAGES.PHONE_ALREADY_EXISTS };
+    }
+    if (/profiles_email_key|\(email\)=/i.test(raw)) {
+      return { code: "EMAIL_ALREADY_EXISTS", message: MESSAGES.EMAIL_ALREADY_EXISTS };
+    }
+    return { code: "VALIDATION", message: MESSAGES.VALIDATION };
+  }
+
   const match = raw.match(CODE_PATTERN);
   if (match) {
     const code = match[1] as AppErrorCode;
@@ -159,3 +206,85 @@ export function toAppError(error: unknown): AppError {
 
   return { code: "UNKNOWN", message: MESSAGES.UNKNOWN };
 }
+
+/**
+ * Builds a structured AppError from a stable code. Used by the auth actions,
+ * which classify provider and SQLSTATE failures themselves and attach a
+ * correlation id so the exact server log line can be found from the UI.
+ */
+export function appError(
+  code: AppErrorCode,
+  extra?: { detail?: string; requestId?: string },
+): AppError {
+  return {
+    code,
+    message: MESSAGES[code],
+    detail: extra?.detail,
+    requestId: extra?.requestId,
+  };
+}
+
+/** True when the value is a Postgres unique-violation (SQLSTATE 23505). */
+export function isDuplicateKeyError(error: unknown): boolean {
+  return (
+    rawCode(error) === "23505" ||
+    /duplicate key value violates unique constraint/i.test(rawMessage(error))
+  );
+}
+
+/**
+ * Picks the identity column a duplicate-key error names, when the error is a
+ * unique violation. Returns null for any other failure so callers can fall back
+ * to their own classification.
+ */
+export function duplicateKeyColumn(error: unknown): "phone" | "email" | null {
+  if (!isDuplicateKeyError(error)) return null;
+  const raw = rawMessage(error);
+  if (/profiles_phone_key|\(phone\)=/i.test(raw)) return "phone";
+  if (/profiles_email_key|\(email\)=/i.test(raw)) return "email";
+  return null;
+}
+
+/**
+ * Maps a Supabase Auth provider error to a stable app code. GoTrue returns a
+ * machine `code` plus a human message; we match both so a provider upgrade that
+ * renames a field does not silently regress to UNKNOWN.
+ */
+export function classifyAuthProviderError(error: unknown): AppErrorCode {
+  const raw = rawMessage(error);
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : "";
+
+  if (
+    /already registered|already exists|been registered|user_already_exists|email_exists/i.test(
+      `${code} ${raw}`,
+    ) ||
+    isDuplicateKeyError(error)
+  ) {
+    if (/phone/i.test(`${code} ${raw}`) || duplicateKeyColumn(error) === "phone") {
+      return "PHONE_ALREADY_EXISTS";
+    }
+    return "EMAIL_ALREADY_EXISTS";
+  }
+
+  if (/over_email_send_rate_limit|over_request_rate_limit|rate limit|too many/i.test(`${code} ${raw}`)) {
+    return "RATE_LIMITED";
+  }
+
+  if (
+    /email_address_invalid|email_address_not_authorized|email_provider_disabled|signup_disabled|provider.*not.*enabled/i.test(
+      `${code} ${raw}`,
+    )
+  ) {
+    return "AUTH_PROVIDER_NOT_CONFIGURED";
+  }
+
+  if (/database error|unexpected_failure|500/i.test(`${code} ${raw}`)) {
+    return "PROFILE_CREATE_FAILED";
+  }
+
+  return "UNKNOWN";
+}
+

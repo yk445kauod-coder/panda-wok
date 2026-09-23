@@ -107,9 +107,22 @@ export function CartView({
                     {line.name}
                   </Link>
                   {line.modifiers.length > 0 ? (
-                    <p className="mt-0.5 text-xs text-ink-700/70">
-                      {line.modifiers.map((m) => m.name).join(", ")}
-                    </p>
+                    <ul className="mt-0.5 space-y-0.5">
+                      {line.modifiers.map((m) => (
+                        <li
+                          key={m.id}
+                          className="flex items-center justify-between gap-2 text-xs text-ink-700/70"
+                        >
+                          <span className="min-w-0 truncate">{m.name}</span>
+                          {m.priceDelta !== 0 ? (
+                            <span className="shrink-0 tabular-nums text-ink-700/60">
+                              {m.priceDelta > 0 ? "+" : ""}
+                              {formatPrice(m.priceDelta, undefined, locale)}
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
                   ) : null}
                   {line.notes ? (
                     <p className="mt-0.5 text-xs italic text-ink-700/60">

@@ -175,6 +175,7 @@ export const en = {
     chooseAtLeast: ", at least {count}",
     unfinished: "Please finish choosing: {groups}.",
     maxInBasket: "You already have the maximum of this dish in your basket.",
+    maxExtras: "You can choose up to {count} extras. Deselect one first.",
     unavailableTitle: "This dish is unavailable right now.",
     unavailableBody:
       "The kitchen has either run out or paused it. Please pick another dish, or try again later.",
@@ -728,6 +729,8 @@ export const en = {
       ADDRESS_INVALID: "That delivery address is missing a street or building.",
       ADDRESS_NOT_FOUND: "We could not find that delivery address.",
       QUANTITY_LIMIT_EXCEEDED: "That quantity is above the per-item limit.",
+      MODIFIER_LIMIT_EXCEEDED:
+        "One or more extras are above the allowed maximum. Please review your choices.",
       NO_LOYALTY_POINTS: "You do not have enough points to redeem.",
       IDEMPOTENCY_KEY_REQUIRED:
         "Something went wrong submitting the order. Please retry.",
@@ -740,6 +743,20 @@ export const en = {
       OFFLINE: "You appear to be offline. Your basket is saved on this device.",
       RATE_LIMITED: "Too many attempts. Please wait a moment and try again.",
       NOT_CONFIGURED: "This feature is not configured yet.",
+      EMAIL_ALREADY_EXISTS:
+        "An account with this email already exists. Try signing in or reset your password.",
+      PHONE_ALREADY_EXISTS:
+        "An account with this phone number already exists. Try signing in or reset your password.",
+      INVALID_CREDENTIALS:
+        "That email, phone number or password combination did not work.",
+      AUTH_PROVIDER_NOT_CONFIGURED:
+        "Account creation is temporarily unavailable. Please try again shortly.",
+      DATABASE_NOT_CONFIGURED:
+        "Account creation is temporarily unavailable. Please try again shortly.",
+      PROFILE_CREATE_FAILED:
+        "We could not finish setting up your account. Please try again — nothing was saved.",
+      EMAIL_CONFIRMATION_REQUIRED:
+        "Check your inbox to confirm your email, then sign in.",
       UNKNOWN: "Something went wrong. Please try again.",
     },
   },
