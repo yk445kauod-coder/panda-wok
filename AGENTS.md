@@ -9,7 +9,24 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 ## Ops memory (2026-09-23)
-- Live topology: https://panda-wok.pages.dev = **302 redirector** → canonical **Worker** https://panda-wok.yk445kauod.workers.dev (serves HTML+CSS+assets;all-200 verified).) Pages advanced `_worker.js`+OpenNext cannot serve static (ASSETS binding unmapped in Pages) — do not revert to Pages-advanced;custom domain later: attach to the Worker (Workers support custom domains).
+> **Correction (2026-09-23, verified):** the earlier note below claiming Pages advanced
+> mode "cannot serve static" was wrong. Pages advanced mode *does* expose a working
+> `ASSETS` binding (proven with a diagnostic `_worker.js`: `hasAssets: true`,
+> `ASSETS.fetch('/panda-logo.svg') -> 200`). What Pages does not do is serve that
+> assets directory automatically the way Workers does — with a bare OpenNext
+> `_worker.js` the HTML renders but every `/_next/static/*` request 404s. The fix is
+> `scripts/pages/_worker.js`, a thin entrypoint that offers static-looking requests to
+> `ASSETS` first and falls through to the OpenNext handler otherwise.
+> `npm run pages:build` (OpenNext build + `scripts/build-pages.mjs`) assembles `.pages/`,
+> which CLI-deploys cleanly. Verified live on https://panda-wok.pages.dev: SSR pages,
+> middleware auth redirects, dynamic slugs, Supabase-rendered data, robots/sitemap/llms,
+> opengraph image, Arabic RTL, and CSS/JS/assets all 200.
+> Caveat: the Pages *CI* bundler still fails on `wrangler pages functions build` with
+> "Could not resolve http/https/tty" even with `nodejs_compat` set in the dashboard —
+> dashboard compatibility flags are not reaching the CI Functions bundler, so build via
+> CLI (`npm run pages:deploy`) until that is resolved.
+
+- ~~Live topology: https://panda-wok.pages.dev = **302 redirector** → canonical **Worker** https://panda-wok.yk445kauod.workers.dev~~ (superseded: `panda-wok.pages.dev` now serves the app directly over SSR with no redirect; `num_redirects=0` verified).
 - Deploy worker: `npx opennextjs-cloudflare build && npx opennextjs-cloudflare deploy` (wrangler.jsonc: main `.open-next/worker.js` + assets `.open-next/assets`+ AI binding).
 - Worker alias: https://panda-wok.yk445kauod.workers.dev (from `opennextjs-cloudflare deploy`).
 - Remote Supabase project: xjbtsryidznsxqlynmfa; tenancy migration applied remotely as `011_tenancy_fk_hardening` (local file: supabase/migrations/20260922001000_tenancy_fk.sql — same body, different version name — avoid double-`db push` of the same body).

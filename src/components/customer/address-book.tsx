@@ -424,7 +424,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
             <input
               type="hidden"
               name="accuracyM"
-              value={coords?.accuracyM !== null && coords ? String(coords.accuracyM) : ""}
+              value={coords?.accuracyM != null ? String(coords.accuracyM) : ""}
             />
 
             {coords ? (
