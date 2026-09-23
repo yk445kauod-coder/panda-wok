@@ -98,22 +98,6 @@ export async function getLoyaltyOverview(userId: string): Promise<LoyaltyOvervie
   };
 }
 
-export async function getMyNotifications(
-  userId: string,
-  limit = 30,
-): Promise<Database["public"]["Tables"]["notifications"]["Row"][]> {
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("notifications")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw new Error(`Failed to load notifications: ${error.message}`);
-  return data ?? [];
-}
-
 export async function getMyFeedback(
   userId: string,
 ): Promise<Database["public"]["Tables"]["feedback"]["Row"][]> {

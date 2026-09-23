@@ -122,18 +122,6 @@ export function formatRelative(
   return formatDate(d, locale);
 }
 
-export function slugify(input: string) {
-  return input
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 80);
-}
-
 /** Human label for an arbitrary snake_case enum value coming from the DB. */
 export function humanise(value: string | null | undefined) {
   if (!value) return "—";

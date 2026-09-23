@@ -170,27 +170,6 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
   );
 }
 
-/** Small header shown above a group of rows from the same category. */
-export function CategoryHeading({
-  name,
-  count,
-  slug,
-}: {
-  name: string;
-  count: number;
-  slug: string;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 pt-2">
-      <h2 className="font-display text-base font-semibold text-ink-900">
-        {name}{" "}
-        <span className="text-sm font-normal text-ink-700/60">({count})</span>
-      </h2>
-      <span className="text-xs text-ink-700/60">/menu/{slug}</span>
-    </div>
-  );
-}
-
 export function HiddenNotice({ count }: { count: number }) {
   if (count === 0) return null;
   return (

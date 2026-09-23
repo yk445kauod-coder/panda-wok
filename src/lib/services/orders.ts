@@ -97,11 +97,6 @@ export async function getMyAddresses(userId: string): Promise<Address[]> {
   return data ?? [];
 }
 
-export async function getMyDefaultAddress(userId: string): Promise<Address | null> {
-  const addresses = await getMyAddresses(userId);
-  return addresses.find((a) => a.is_default) ?? addresses[0] ?? null;
-}
-
 /** Counts for the account overview, all scoped to the caller by RLS. */
 export async function getMyStats(userId: string): Promise<{
   orderCount: number;

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { serverEnv, externalAiConfigured } from "@/lib/config/env";
+import { serverEnv } from "@/lib/config/env";
 import { tryCreateAdminSupabase } from "@/lib/supabase/server";
 
 /* ================================================================
@@ -31,19 +31,6 @@ export type AiProviderKind =
   | "gemini"
   | "anthropic"
   | "openai_compatible";
-
-export const REMOTE_PROVIDER_KINDS: readonly AiProviderKind[] = [
-  "openrouter",
-  "cloudflare",
-  "pollinations",
-  "gemini",
-  "anthropic",
-  "openai_compatible",
-] as const;
-
-export function isProviderKind(value: string): value is AiProviderKind {
-  return (REMOTE_PROVIDER_KINDS as readonly string[]).includes(value);
-}
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
@@ -530,89 +517,6 @@ function envBlock(kind: AiProviderKind, suffix: "MODEL" | "BASE_URL" | "API_KEY"
   const scoped = (serverEnv as Record<string, string | undefined>)[`AI_${kind.toUpperCase()}_${suffix}`];
   if (scoped) return scoped;
   return (serverEnv as Record<string, string | undefined>)[`AI_${suffix}`];
-}
-
-function buildRemoteFromEnv(kind: AiProviderKind): RemoteProvider | null {
-  const apiKey = envBlock(kind, "API_KEY");
-  const model = envBlock(kind, "MODEL");
-  if (!apiKey || !model) return null;
-
-  const name = (serverEnv as Record<string, string | undefined>)[`AI_${kind.toUpperCase()}_NAME`] ?? kind;
-  return new RemoteProvider({
-    name,
-    kind,
-    model,
-    apiKey,
-    baseUrl: envBlock(kind, "BASE_URL") ?? undefined,
-  });
-}
-
-/**
- * Builds the provider chain. Order:
- *   1. The env-selected primary (AI_PROVIDER_KIND) if fully configured.
- *   2. The deterministic provider (always available, cannot fail).
- *
- * The env key <<AI_PROVIDER_KIND>> selects the adapter; each adapter reads
- * its own scoped env block first, the generic AI_* block second, so primary
- * and fallback credentials can sit side-by-side:
- *   AI_PROVIDER_KIND=openrouter
- *   AI_OPENROUTER_MODEL=...
- *   AI_OPENROUTER_API_KEY=...
- *   AI_CLOUDFLARE_MODEL=...  (fallback candidate)
- *   AI_CLOUDFLARE_API_KEY=...
- *
- */
-export function buildEnvFallbacks(): AiProvider[] {
-  const fallbacks: AiProvider[] = [];
-  for (const kind of REMOTE_PROVIDER_KINDS) {
-    if (kind === serverEnv.AI_PROVIDER_KIND) continue; // primary owns its block.
-    const provider = buildRemoteFromEnv(kind);
-    if (provider) fallbacks.push(provider);
-  }
-  return fallbacks;
-}
-
-export function buildProviderChain(
-  deterministicRender: (request: CompletionRequest) => string,
-  options: { fallbacks?: AiProvider[] } = {},
-): ProviderChain {
-  const builtin = new DeterministicProvider(deterministicRender);
-  const fallbacks = options.fallbacks ?? buildEnvFallbacks();
-
-  if (!externalAiConfigured() && fallbacks.length === 0) {
-    return { primary: null, fallbacks: [], fallback: builtin };
-  }
-
-  let primary: AiProvider | null = null;
-
-  if (externalAiConfigured()) {
-    const kindRaw = serverEnv.AI_PROVIDER_KIND ?? "openrouter";
-    const kind: AiProviderKind = isProviderKind(kindRaw) ? kindRaw : "openrouter";
-    let provider = buildRemoteFromEnv(kind);
-
-    if (!provider && kind === "openai_compatible") {
-      const apiKey = envBlock(kind, "API_KEY");
-      const model = envBlock(kind, "MODEL");
-      if (apiKey && model) {
-        provider = new RemoteProvider({
-          name: kind,
-          kind,
-          model,
-          apiKey,
-          baseUrl: envBlock(kind, "BASE_URL") ?? undefined,
-        });
-      }
-    }
-
-    if (provider) primary = provider;
-  }
-
-  if (!primary && fallbacks.length > 0) {
-    // No env primary configured, but secondary blocks are — promote the first.
-    primary = fallbacks.shift() ?? null;
-  }
-
-  return { primary, fallbacks, fallback: builtin };
 }
 
 export type DbProviderRow = {
