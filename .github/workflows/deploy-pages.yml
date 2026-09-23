@@ -7,10 +7,10 @@
 #
 # Required repository secrets:
 #   CLOUDFLARE_API_TOKEN            — Workers/Pages edit
-#   NEXT_PUBLIC_SUPABASE_ANON_KEY   — the publishable (sb_publishable_…) key.
-#     Not sensitive: it ships in the browser bundle. Without it the build
-#     aborts while collecting config for /api/analytics, so the deploy step is
-#     skipped and the live site keeps whatever it had.
+#
+# NEXT_PUBLIC_SUPABASE_ANON_KEY is NOT required: it is the publishable key,
+# which ships to every browser by design, so the build falls back to it below.
+# A repository secret with the same name still overrides the fallback.
 # Optional repository variable: CLOUDFLARE_ACCOUNT_ID.
 
 name: Deploy Pages
@@ -41,7 +41,12 @@ jobs:
         run: npm run pages:build
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://xjbtsryidznsxqlynmfa.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Publishable key: public by design (ships in the browser bundle).
+          # The `||` keeps the build green when the secret is unset — without
+          # it, config collection for /api/analytics aborts and no deploy runs.
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: >-
+            ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+                'sb_publishable_0zVizyDItI9BdiQq667KxA_gnYlTfPX' }}
           NEXT_PUBLIC_SITE_URL: https://panda-wok.pages.dev
 
       - name: Deploy to Cloudflare Pages
