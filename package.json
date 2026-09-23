@@ -44,5 +44,8 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "wrangler": "^4.136.3"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

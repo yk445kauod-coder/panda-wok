@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Languages } from "lucide-react";
 import { LOCALES, LOCALE_LABELS, LOCALE_SHORT, type Locale } from "@/lib/i18n/config";
 import { setLocaleAction } from "@/lib/actions/locale";
@@ -19,11 +20,16 @@ export function LanguageSwitcher({
   variant?: "compact" | "labelled";
 }) {
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   function choose(locale: Locale) {
     if (locale === current || pending) return;
     startTransition(async () => {
       await setLocaleAction(locale);
+      // revalidatePath only clears the server cache; the client Router Cache
+      // still holds the previous locale's payload, so the tree would keep
+      // rendering the old language until a manual reload.
+      router.refresh();
     });
   }
 
