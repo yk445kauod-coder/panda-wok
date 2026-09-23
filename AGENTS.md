@@ -301,3 +301,37 @@ sign up and then could not sign in with the same credentials; the UI showed
   modifier rules. `server-only` is stubbed for the node test env. `npm run
   typecheck` added. Lint/typecheck/build green.
 
+## Design/UX engagement (2026-09-23, session 5) — phased, awaiting approval
+
+New brief: production-grade design overhaul; admin must control all visitor-facing
+content without a deploy; mascot must be the original sprite (no code-drawn SVG);
+public pages must not redirect; bilingual AR/EN. Executed in 8 phases; each phase
+is its own commit and is reported pass/fail before moving on. Docs committed:
+
+- `docs/baseline.md` (Phase 0) — systems inventory, mock-content audit (0
+  fabricated items found), admin-control audit, mascot audit, live redirect
+  matrix, defects D1–D5.
+- `docs/env.md` (Phase 1) — every env var, where each secret lives, leak check.
+  `INTERNAL_LOG_SALT` documented (was read by `log.ts` but missing from
+  `.env.example`).
+- `docs/deploy.md` (Phase 2) — Pages/CI topology. `eslint.config.mjs` now ignores
+  `.pages/**` (`npm run lint`: 1186 errors to 0). CI is branch-aware
+  (main/production to production, else preview).
+- `docs/architecture.md` (Phase 3) — content model (`page_content`, `faqs`,
+  `delivery_zones`, `announcements`, `page_seo`), admin `/admin/content`, design
+  tokens, motion, mascot plan. Stops for approval: Decisions A–D.
+
+Two mascots exist (important). `page-mascot` sprite (M1) is the floating
+companion; a hand-drawn SVG `PandaMascot` (M2, `src/components/panda/mascot.tsx`)
+is the assistant avatar. Defect D1: `(site)/layout.tsx:105` renders
+`PandaAssistant` (its own floating trigger) AND `FloatingPanda`, so two panda
+buttons overlap on every customer page (confirmed in live DOM). Fix in Phase 4
+pending Decision B.
+
+Do not invent content, contacts, or a new mascot character. `support.*` settings
+are empty in the DB on purpose; contact/footer render empty states.
+
+Known blocker for CI auto-deploy: the GitHub repo secret `CLOUDFLARE_API_TOKEN` is
+unset and cannot be set from here (`secrets: write` missing). Manual deploy:
+`npm run pages:deploy` with a token in the environment.
+
