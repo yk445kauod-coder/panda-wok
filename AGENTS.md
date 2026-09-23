@@ -63,8 +63,25 @@ Verified live: anon menu/category/restaurant reads still 200, `rpc/current_resta
 - `next build` + `tsc --noEmit` are green after these changes.
 
 ## Deployment topology (canonical, 2026-09-23)
-- **Never redirect.** `panda-wok.pages.dev` must not be used as a 302 hop. The app is served by the **Worker** `panda-wok` (alias `panda-wok.yk445kauod.workers.dev`); a custom domain attaches to the Worker directly.
-- Deploy: `npx opennextjs-cloudflare build && npx opennextjs-cloudflare deploy`.
-- Worker secrets (own env, set with `wrangler secret put`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
-- AI: `wrangler.jsonc` declares the in-account `AI` binding (keyless; `CloudflareBindingProvider`). A standalone **Cloudflare AI API Worker** fronts Workers AI over HTTP for cases where the binding is unavailable; its key is the same Cloudflare API token (`AI_CLOUDFLARE_API_KEY` + `AI_CLOUDFLARE_BASE_URL=https://api.cloudflare.com/client/v4/accounts/<account>/ai/run`).
-- A **secrets Worker** is the single server-side source of truth for service keys, so the app Worker never ships a service key in its own vars.
+- **Never redirect.** `panda-wok.pages.dev` must not be used as a 302 hop. The app is served by the **Worker** `panda-wok` (alias `panda-wok.yk445kauod.workers.dev`); a custom domain attaches to the Worker directly. There is no zone on this account, so the `workers.dev` alias is the canonical URL until one exists.
+- The app Worker itself never redirects: the 307s on `/checkout` `/orders` `/loyalty` `/admin` are auth middleware, and `/<route>/` → `/<route>` 308 is Next's trailing-slash canonicalisation.
+- Deploy: `npx opennextjs-cloudflare build && npx opennextjs-cloudflare deploy`. `NEXT_PUBLIC_*` are **inlined at build time**, so export production values before building or the deployed bundle keeps whatever was in scope.
+- Worker secrets (own env, set with `wrangler secret put`): `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, `VAULT_TOKEN`, `AI_API_TOKEN`, `AI_CLOUDFLARE_API_KEY`, `AI_CLOUDFLARE_NAME`.
+- `NEXT_PUBLIC_SITE_URL` must be the Worker URL (`https://panda-wok.yk445kauod.workers.dev`) — it drives canonical/OG/sitemap URLs, so `localhost` there leaks into production metadata.
+
+## Satellite workers (2026-09-23, session 2 — deployed)
+- `workers/ai-api` → `https://panda-wok-ai-api.yk445kauod.workers.dev`. Bearer-guarded proxy over the account's Workers AI binding. Implements the exact `POST /ai/run/<model>` contract the app's `cloudflare` remote provider builds, so it is a drop-in base URL. `/health` is open; no token = 401. Default model `@cf/meta/llama-4-scout-17b-16e-instruct` (the previous `llama-3.1-8b-instruct` is deprecated — the binding errors if named).
+- `workers/secrets-vault` → `https://panda-wok-secrets.yk445kauod.workers.dev`. Single server-side home for service keys. `GET /secrets/<NAME>` returns one allow-listed value behind a constant-time bearer check; there is deliberately **no bulk-dump route** (requesting `/secrets` is 404). `/health` reports configured names only, never values.
+- Shared tokens live in `.agent_tmp/worker-tokens.env` (gitignored) — regenerate and re-`secret put` if lost; they are not recoverable from the workers.
+
+## AI provider chain (2026-09-23, session 2 — live)
+- The assistant's chain is **DB-driven**: `buildDbProviderChain` reads `ai_providers` rows; the env `buildProviderChain` is only a fallback path.
+- Migration `20260923002000_ai_binding_provider.sql` adds row `workers-ai-binding` (`kind='cloudflare'`, `secret_ref=null`, `priority=10`) so the **keyless Workers AI binding** is the live primary. `resolveDbProvider` returns null when the binding is absent (plain `next dev`/`next build`), so the chain drops to the `deterministic` row at priority 900 and the assistant still answers without a key.
+- Verified live: `ai_requests` logged `provider: "Workers AI"`, `model: llama-4-scout`, `status: ok`. Before this row existed every request logged `deterministic`/`fallback`.
+- The AI worker's URL/model are wired on the app Worker as `AI_CLOUDFLARE_BASE_URL` / `AI_CLOUDFLARE_MODEL` vars (remote fallback), with `AI_CLOUDFLARE_API_KEY` holding the shared AI token.
+
+## i18n (AR/EN) — verified live (2026-09-23, session 2)
+- Both dictionaries are at parity: 481 keys each, no key missing from `ar.ts`. The switcher is mounted in `site-shell` (header + footer), `/account`, and `auth/layout`.
+- Resolution order in `getLocale()`: explicit cookie (`panda-wok.locale`) → signed-in `profiles.locale` → `Accept-Language` → English.
+- Verified on the **live Worker**: `Cookie: panda-wok.locale=ar` → `<html lang="ar" dir="rtl">`; default → `<html lang="en" dir="ltr">`; `Accept-Language: ar` → RTL. Arabic copy renders.
+- **Deploy gotcha:** locale switching appeared broken until the Worker was rebuilt. The live bundle predated the i18n commit — always rebuild+redeploy after app changes, then re-test with the cookie before assuming a code bug.
