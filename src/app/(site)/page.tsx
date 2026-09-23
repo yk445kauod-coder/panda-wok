@@ -20,7 +20,8 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/server";
 import { localiseCategory } from "@/lib/i18n/catalog";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const [settings, locale] = await Promise.all([getPublicSettings(), getLocale()]);

@@ -15,7 +15,8 @@ import { Badge } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/utils/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const [locale, settings] = await Promise.all([getLocale(), getPublicSettings()]);

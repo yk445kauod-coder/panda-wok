@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getPublicSettings, getMenuSlugs, getRestaurant } from "@/lib/services/catalog";
 import { SITE_URL } from "@/lib/seo/metadata";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
+
 
 /**
  * llms.txt — served at /llms.txt via a rewrite in next.config.ts. It is the

@@ -1,6 +1,7 @@
 import { getPublicSettings } from "@/lib/services/catalog";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
+
 
 /**
  * Generated PNG-compatible Open Graph image. Kept as a plain response rather

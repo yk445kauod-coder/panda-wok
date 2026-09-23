@@ -2,7 +2,8 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo/metadata";
 import { getMenuSlugs, getFeatureFlagMap } from "@/lib/services/catalog";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
+
 
 /**
  * Sitemap generated from the live catalogue, so a new dish or category appears

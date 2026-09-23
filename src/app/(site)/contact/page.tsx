@@ -7,7 +7,8 @@ import { breadcrumbSchema, restaurantSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicSettings();

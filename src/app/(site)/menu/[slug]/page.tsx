@@ -4,7 +4,6 @@ import {
   getCategoryBySlug,
   getMenuItemsByCategory,
   getMenuItemBySlug,
-  getMenuSlugs,
   getPublicCategories,
   getPublicMenu,
   getRestaurant,
@@ -28,32 +27,7 @@ import {
  * The category is resolved first, then the dish, and anything else 404s. This
  * keeps public URLs free of ids and avoids a colliding route tree.
  */
-export const revalidate = 300;
-
-// Slugs are listed at build time for the sitemap, but the menu changes without
-// a redeploy, so unknown slugs must still render on demand — and 404 properly
-// when they match neither a category nor a dish.
-export const dynamicParams = true;
-
-export async function generateStaticParams() {
-  const [categories, slugs] = await Promise.all([
-    getPublicCategories(),
-    getMenuSlugs(),
-  ]);
-
-  // A category wins if a dish ever shares its slug, because the category page
-  // is the more useful destination for a bare section name.
-  const seen = new Set(categories.map((c) => c.slug));
-  const params = [...seen].map((slug) => ({ slug }));
-
-  for (const item of slugs.items) {
-    if (!seen.has(item.slug)) {
-      seen.add(item.slug);
-      params.push({ slug: item.slug });
-    }
-  }
-  return params;
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

@@ -12,6 +12,8 @@ import { formatDate, formatNumber, humanise } from "@/lib/utils/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { tierLabel } from "@/lib/i18n/loyalty";
 
+export const dynamic = "force-dynamic";
+
 /** Sum of redeemed points, derived from the ledger rather than a cached column. */
 function redeemedPoints(transactions: { type: string; points: number }[]): number {
   return Math.abs(
@@ -21,7 +23,6 @@ function redeemedPoints(transactions: { type: string; points: number }[]): numbe
   );
 }
 
-export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const [locale, settings] = await Promise.all([getLocale(), getPublicSettings()]);

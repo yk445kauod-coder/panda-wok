@@ -8,7 +8,8 @@ import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { Badge } from "@/components/ui/button";
 
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicSettings();

@@ -16,7 +16,6 @@ import { getLocale, getT } from "@/lib/i18n/server";
  * Public catalogue metadata is DB-driven, so update it on a short interval
  * rather than serving stale titles after a menu change.
  */
-export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const [settings, locale] = await Promise.all([getPublicSettings(), getLocale()]);
