@@ -1,72 +1,53 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Badge } from "@/components/ui/button";
-import { formatPrice } from "@/lib/utils/format";
+import { DishCard } from "@/components/customer/dish-card";
 import type { MenuItem } from "@/lib/services/catalog";
+import type { Locale } from "@/lib/i18n/config";
+import { ar } from "@/lib/i18n/dictionaries/ar";
+import { en } from "@/lib/i18n/dictionaries/en";
+import { makeTranslator } from "@/lib/i18n/translate";
 
 /**
- * Horizontally scrollable featured strip. On a phone this is a natural swipe
- * gesture; on desktop it becomes a centred row.
+ * Horizontally scrolling strip of featured dishes. On small screens it scrolls
+ * with snap points so a thumb can flick through it; on larger screens it lays
+ * out as a grid. Server component, so it receives the locale as a prop.
  */
 export function FeaturedDishStrip({
   items,
   currency,
+  locale,
 }: {
   items: MenuItem[];
   currency: string;
+  locale: Locale;
 }) {
-  void currency;
+  const t = makeTranslator(locale === "ar" ? ar : en);
 
   return (
-    <ul
-      className="no-scrollbar -mx-4 mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0"
-      aria-label="Featured dishes"
-    >
-      {items.map((item) => (
-        <li
-          key={item.id}
-          className="w-[68vw] max-w-xs shrink-0 snap-start sm:w-64"
-        >
-          <Link
-            href={`/menu/${item.slug}`}
-            className="washi-panel group flex h-full flex-col overflow-hidden transition-shadow hover:shadow-washi-lg"
+    <div className="-mx-4 mt-4 px-4">
+      <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3">
+        {items.map((item, index) => (
+          <li
+            key={item.id}
+            className="w-[76%] shrink-0 snap-start sm:w-auto"
           >
-            <div className="relative aspect-[5/3] overflow-hidden bg-rice-200">
-              {item.image_url ? (
-                <Image
-                  src={item.image_url}
-                  alt={item.image_alt ?? item.name_en}
-                  fill
-                  sizes="(max-width: 640px) 68vw, 256px"
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                />
-              ) : (
-                <div aria-hidden="true" className="seigaiha h-full w-full" />
-              )}
-              {item.has_transparent_png ? (
-                <span className="absolute bottom-2 right-2">
-                  <Badge tone="info">Cut-out ready</Badge>
-                </span>
-              ) : null}
-            </div>
-            <div className="flex flex-1 flex-col justify-between p-3.5">
-              <div>
-                <h3 className="font-display text-base font-semibold text-ink-900">
-                  {item.name_en}
-                </h3>
-                {item.description_en ? (
-                  <p className="mt-1 line-clamp-2 text-sm text-ink-700/80">
-                    {item.description_en}
-                  </p>
-                ) : null}
-              </div>
-              <p className="mt-3 text-sm font-semibold text-ink-900">
-                {formatPrice(item.price)}
-              </p>
-            </div>
-          </Link>
-        </li>
-      ))}
-    </ul>
+            <DishCard
+              item={item}
+              currency={currency}
+              locale={locale}
+              priority={index < 3}
+            />
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 text-center sm:hidden">
+        <Link
+          href="/menu"
+          className="text-sm font-medium text-plum-600 hover:text-plum-700"
+        >
+          {t("home.seeWholeMenu")}
+        </Link>
+      </div>
+    </div>
   );
 }
+

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/customer/cart-provider";
+import { useT } from "@/components/i18n-provider";
 
 type ReorderItem = {
   menuItemId: string;
@@ -19,6 +20,7 @@ type ReorderItem = {
  * live data, so a stale price can never be charged.
  */
 export function ReorderButton({ items }: { items: ReorderItem[] }) {
+  const t = useT();
   const router = useRouter();
   const { add, hydrated } = useCart();
   const [done, setDone] = useState(false);
@@ -53,7 +55,7 @@ export function ReorderButton({ items }: { items: ReorderItem[] }) {
       onClick={reorder}
     >
       <RotateCcw className="size-4" aria-hidden="true" />
-      {done ? "Added to basket" : "Order again"}
+      {done ? t("orders.reorderAdded") : t("orders.reorder")}
     </Button>
   );
 }

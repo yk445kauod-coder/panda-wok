@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { requireCapability } from "@/lib/auth/session";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { listRewards } from "@/lib/services/admin-catalog";
 import { listCrmCustomers, segmentOverview } from "@/lib/crm/customers";
 import { AdminForm, Field, TextArea, Toggle } from "@/components/admin/form-kit";
 import { saveRewardAction } from "@/lib/actions/admin";
+import { RewardRowActions } from "@/components/admin/reward-row-actions";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AdjustPointsForm } from "@/components/admin/customer-controls";
@@ -19,8 +21,13 @@ type Transaction = Database["public"]["Tables"]["loyalty_transactions"]["Row"];
  * Loyalty centre. The earning rules are read from the settings table, so the
  * "1 order = X points" ratio is editable by the operator rather than coded in.
  */
-export default async function AdminLoyaltyPage() {
+export default async function AdminLoyaltyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>;
+}) {
   await requireCapability("loyalty.manage");
+  const params = await searchParams;
 
   const supabase = await createServerSupabase();
 
@@ -59,6 +66,10 @@ export default async function AdminLoyaltyPage() {
 
   const memberSegment = segments.find((segment) => segment.segment === "loyalty_members");
   const redeemable = customers.filter((customer) => customer.points_balance > 0);
+
+  const editing = params.edit
+    ? rewards.find((reward) => reward.id === params.edit) ?? null
+    : null;
 
   return (
     <div className="space-y-6">
@@ -148,7 +159,10 @@ export default async function AdminLoyaltyPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="washi-panel p-4" aria-label="Rewards">
-          <h2 className="font-display text-lg font-semibold text-ink-900">Rewards</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-display text-lg font-semibold text-ink-900">Rewards</h2>
+            <Badge tone="neutral">{rewards.length}</Badge>
+          </div>
 
           {rewards.length === 0 ? (
             <EmptyState
@@ -186,6 +200,9 @@ export default async function AdminLoyaltyPage() {
                   {reward.description_en ? (
                     <p className="mt-1 text-xs text-ink-800/80">{reward.description_en}</p>
                   ) : null}
+                  <div className="mt-2">
+                    <RewardRowActions reward={reward} />
+                  </div>
                 </li>
               ))}
             </ul>
@@ -194,24 +211,52 @@ export default async function AdminLoyaltyPage() {
 
         <section className="washi-panel p-4" aria-label="Create or edit a reward">
           <h2 className="font-display text-lg font-semibold text-ink-900">
-            Add a reward
+            {editing ? "Edit reward" : "Add a reward"}
           </h2>
           <p className="mt-1 text-xs text-ink-700/70">
             Rewards are granted at redemption after the loyalty ledger confirms the balance.
           </p>
           <div className="mt-3">
             <AdminForm
+              key={editing?.id ?? "new"}
               action={saveRewardAction}
-              submitLabel="Create reward"
-              options={{ successMessage: "Reward created." }}
+              submitLabel={editing ? "Save changes" : "Create reward"}
+              options={{
+                successMessage: editing ? "Reward updated." : "Reward created.",
+              }}
+              extraActions={
+                editing ? (
+                  <Link
+                    href="/admin/loyalty"
+                    className="inline-flex h-11 items-center rounded-xl border border-ink-900/15 px-4 text-sm text-ink-800 hover:bg-rice-200"
+                  >
+                    Cancel
+                  </Link>
+                ) : null
+              }
             >
+              {editing ? <input type="hidden" name="id" value={editing.id} /> : null}
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field name="nameEn" label="Name (English)" />
-                <Field name="nameAr" label="Name (Arabic)" />
+                <Field name="nameEn" label="Name (English)" defaultValue={editing?.name_en} />
+                <Field
+                  name="nameAr"
+                  label="Name (Arabic)"
+                  defaultValue={editing?.name_ar ?? undefined}
+                />
               </div>
-              <TextArea name="descriptionEn" label="Description (English)" rows={2} />
+              <TextArea
+                name="descriptionEn"
+                label="Description (English)"
+                rows={2}
+                defaultValue={editing?.description_en ?? undefined}
+              />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field name="pointsCost" label="Points cost" placeholder="200" />
+                <Field
+                  name="pointsCost"
+                  label="Points cost"
+                  placeholder="200"
+                  defaultValue={editing ? String(editing.points_cost) : undefined}
+                />
                 <div>
                   <label htmlFor="kind" className="block text-sm font-medium text-ink-900">
                     Kind
@@ -219,17 +264,25 @@ export default async function AdminLoyaltyPage() {
                   <select
                     id="kind"
                     name="kind"
-                    defaultValue="free_item"
+                    defaultValue={editing?.kind ?? "free_item"}
                     className="mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
                   >
                     <option value="free_item">Free item</option>
                     <option value="discount_percent">Percentage discount</option>
-                    <option value="discount_fixed">Fixed discount</option>
-                    <option value="free_delivery">Free delivery</option>
+                    <option value="discount_amount">Fixed discount (EGP)</option>
                   </select>
                 </div>
-                <Field name="value" label="Value" hint="EGP or percent, depending on kind." defaultValue="0" />
-                <Field name="minOrderTotal" label="Minimum order (EGP)" defaultValue="0" />
+                <Field
+                  name="value"
+                  label="Value"
+                  hint="EGP, percent or the item id, depending on kind."
+                  defaultValue={editing ? String(editing.value) : "0"}
+                />
+                <Field
+                  name="minOrderTotal"
+                  label="Minimum order (EGP)"
+                  defaultValue={editing ? String(editing.min_order_total) : "0"}
+                />
                 <div>
                   <label
                     htmlFor="tierRequired"
@@ -240,7 +293,7 @@ export default async function AdminLoyaltyPage() {
                   <select
                     id="tierRequired"
                     name="tierRequired"
-                    defaultValue="bronze"
+                    defaultValue={editing?.tier_required ?? "bronze"}
                     className="mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
                   >
                     {(["bronze", "silver", "gold", "platinum"] as LoyaltyTier[]).map((tier) => (
@@ -250,9 +303,18 @@ export default async function AdminLoyaltyPage() {
                     ))}
                   </select>
                 </div>
-                <Field name="stockLimit" label="Stock limit" hint="Optional cap on redemptions." />
+                <Field
+                  name="stockLimit"
+                  label="Stock limit"
+                  hint="Optional cap on redemptions."
+                  defaultValue={editing?.stock_limit ? String(editing.stock_limit) : undefined}
+                />
               </div>
-              <Toggle name="isEnabled" label="Enabled" defaultChecked />
+              <Toggle
+                name="isEnabled"
+                label="Enabled"
+                defaultChecked={editing ? editing.is_enabled : true}
+              />
             </AdminForm>
           </div>
         </section>

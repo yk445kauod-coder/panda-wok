@@ -8,72 +8,118 @@ export function cn(...inputs: ClassValue[]) {
 const DEFAULT_CURRENCY = "EGP";
 const formatters = new Map<string, Intl.NumberFormat>();
 
-/** Formatters are cached because constructing one per row is measurably slow. */
-function currencyFormatter(currency: string) {
-  const existing = formatters.get(currency);
+/**
+ * Prices and quantities always render with Latin (Western) digits, in both
+ * languages: that is how Egyptian customers read an EGP price, and it keeps
+ * order totals unambiguous. The locale is still part of the cache key so a
+ * locale-aware convention change cannot silently reuse a stale formatter.
+ */
+function currencyFormatter(currency: string, locale = "en") {
+  const key = `${locale}:${currency}`;
+  const existing = formatters.get(key);
   if (existing) return existing;
 
   const formatter = new Intl.NumberFormat("en-EG", {
     style: "currency",
     currency,
+    numberingSystem: "latn",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  formatters.set(currency, formatter);
+  formatters.set(key, formatter);
   return formatter;
 }
 
 export function formatPrice(
   value: number | string | null | undefined,
   currency: string = DEFAULT_CURRENCY,
+  locale = "en",
 ) {
   const n = typeof value === "string" ? Number(value) : value;
-  const formatter = currencyFormatter(currency);
+  const formatter = currencyFormatter(currency, locale);
   if (n === null || n === undefined || Number.isNaN(n)) return formatter.format(0);
   return formatter.format(n);
 }
 
 export function formatNumber(value: number | null | undefined) {
   if (value === null || value === undefined) return "0";
-  return new Intl.NumberFormat("en-EG").format(value);
+  return new Intl.NumberFormat("en-EG", { numberingSystem: "latn" }).format(value);
 }
 
-export function formatDate(value: string | Date | null | undefined) {
+/** Date locale: Egyptian Arabic for `ar`, British English otherwise. */
+function dateLocale(locale: string) {
+  return locale === "ar" ? "ar-EG" : "en-GB";
+}
+
+export function formatDate(
+  value: string | Date | null | undefined,
+  locale = "en",
+) {
   if (!value) return "—";
   const d = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(dateLocale(locale), {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    numberingSystem: "latn",
   }).format(d);
 }
 
-export function formatDateTime(value: string | Date | null | undefined) {
+export function formatDateTime(
+  value: string | Date | null | undefined,
+  locale = "en",
+) {
   if (!value) return "—";
   const d = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(dateLocale(locale), {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    numberingSystem: "latn",
   }).format(d);
 }
 
-export function formatRelative(value: string | Date | null | undefined) {
-  if (!value) return "never";
+export function formatRelative(
+  value: string | Date | null | undefined,
+  locale = "en",
+) {
+  if (!value) return locale === "ar" ? "أبداً" : "never";
   const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "never";
+  if (Number.isNaN(d.getTime())) return locale === "ar" ? "أبداً" : "never";
   const diffMs = Date.now() - d.getTime();
   const mins = Math.round(diffMs / 60000);
-  if (Math.abs(mins) < 1) return "just now";
-  if (Math.abs(mins) < 60) return mins > 0 ? `${mins}m ago` : `in ${-mins}m`;
+  const ar = locale === "ar";
+  if (Math.abs(mins) < 1) return ar ? "الآن" : "just now";
+  if (Math.abs(mins) < 60)
+    return ar
+      ? mins > 0
+        ? `قبل ${mins} د`
+        : `خلال ${-mins} د`
+      : mins > 0
+        ? `${mins}m ago`
+        : `in ${-mins}m`;
   const hours = Math.round(mins / 60);
-  if (Math.abs(hours) < 24) return hours > 0 ? `${hours}h ago` : `in ${-hours}h`;
+  if (Math.abs(hours) < 24)
+    return ar
+      ? hours > 0
+        ? `قبل ${hours} س`
+        : `خلال ${-hours} س`
+      : hours > 0
+        ? `${hours}h ago`
+        : `in ${-hours}h`;
   const days = Math.round(hours / 24);
-  if (Math.abs(days) < 30) return days > 0 ? `${days}d ago` : `in ${-days}d`;
-  return formatDate(d);
+  if (Math.abs(days) < 30)
+    return ar
+      ? days > 0
+        ? `قبل ${days} ي`
+        : `خلال ${-days} ي`
+      : days > 0
+        ? `${days}d ago`
+        : `in ${-days}d`;
+  return formatDate(d, locale);
 }
 
 export function slugify(input: string) {

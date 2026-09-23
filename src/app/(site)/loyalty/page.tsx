@@ -4,12 +4,13 @@ import { Award, Gift, Sparkles, TrendingUp } from "lucide-react";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/auth/session";
 import { getLoyaltyOverview } from "@/lib/services/loyalty";
-import { getEnabledRewards, getPublicSettings } from "@/lib/services/catalog";
-import { getFeatureFlagMap } from "@/lib/services/catalog";
+import { getEnabledRewards, getFeatureFlagMap, getPublicSettings } from "@/lib/services/catalog";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate, formatNumber, humanise } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { tierLabel } from "@/lib/i18n/loyalty";
 
 /** Sum of redeemed points, derived from the ledger rather than a cached column. */
 function redeemedPoints(transactions: { type: string; points: number }[]): number {
@@ -23,29 +24,33 @@ function redeemedPoints(transactions: { type: string; points: number }[]): numbe
 export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getPublicSettings();
+  const [locale, settings] = await Promise.all([getLocale(), getPublicSettings()]);
+  const t = await getT(locale);
   return buildMetadata({
-    title: "Loyalty",
-    description: `Earn points on every ${settings.brand.name} order and turn them into rewards.`,
+    title: t("loyalty.metaTitle"),
+    description: t("loyalty.metaDescription", { brand: settings.brand.name }),
     path: "/loyalty",
     siteName: settings.brand.name,
+    locale,
   });
 }
 
 export default async function LoyaltyPage() {
-  const [session, flags, settings, rewards] = await Promise.all([
+  const [session, flags, settings, rewards, locale] = await Promise.all([
     getSession(),
     getFeatureFlagMap(),
     getPublicSettings(),
     getEnabledRewards(),
+    getLocale(),
   ]);
+  const t = await getT(locale);
 
   if (flags.loyalty === false) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
         <EmptyState
-          title="Loyalty is currently switched off"
-          description="Our loyalty programme is paused right now. Please check back soon."
+          title={t("loyalty.offTitle")}
+          description={t("loyalty.offBody")}
         />
       </div>
     );
@@ -58,40 +63,42 @@ export default async function LoyaltyPage() {
     <div className="mx-auto max-w-3xl px-4 py-6">
       <Breadcrumbs
         items={[
-          { name: "Home", path: "/" },
-          { name: "Loyalty", path: "/loyalty" },
+          { name: t("common.home"), path: "/" },
+          { name: t("common.loyalty"), path: "/loyalty" },
         ]}
       />
 
       <header className="mt-4">
-        <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">Loyalty</h1>
-        <p className="mt-1.5 text-sm text-ink-700/85">
-          Every order earns points. Points become rewards you can spend on your next meal.
-        </p>
+        <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
+          {t("loyalty.title")}
+        </h1>
+        <p className="mt-1.5 text-sm text-ink-700/85">{t("loyalty.subtitle")}</p>
       </header>
 
       {!session ? (
         <section className="washi-panel mt-5 p-5">
           <h2 className="font-display text-lg font-semibold text-ink-900">
-            Join the programme
+            {t("loyalty.joinHeading")}
           </h2>
           <p className="mt-1.5 text-sm text-ink-700/85">
-            {formatNumber(settings.loyalty.pointsPerCurrency)} point
-            {settings.loyalty.pointsPerCurrency === 1 ? "" : "s"} for every EGP spent. Points accumulate on your
-            account and can be redeemed at checkout.
+            {t("loyalty.joinBody", {
+              points: formatNumber(settings.loyalty.pointsPerCurrency),
+              plural:
+                settings.loyalty.pointsPerCurrency === 1 ? "" : "s",
+            })}
           </p>
           <div className="mt-4 flex gap-3">
             <Link
               href="/auth/sign-up?next=%2Floyalty"
               className="inline-flex h-11 items-center rounded-xl bg-plum-600 px-5 text-sm font-medium text-rice-50 hover:bg-plum-700"
             >
-              Create an account
+              {t("common.createAccount")}
             </Link>
             <Link
               href="/auth/sign-in?next=%2Floyalty"
               className="inline-flex h-11 items-center rounded-xl border border-ink-900/15 px-5 text-sm font-medium text-ink-900 hover:bg-rice-200"
             >
-              Sign in
+              {t("common.signIn")}
             </Link>
           </div>
         </section>
@@ -99,36 +106,40 @@ export default async function LoyaltyPage() {
         <>
           <section aria-labelledby="balance-heading" className="washi-panel mt-5 p-5">
             <h2 id="balance-heading" className="sr-only">
-              Your points
+              {t("loyalty.yourPointsBalance")}
             </h2>
 
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="text-sm text-ink-700/75">Your points balance</p>
+                <p className="text-sm text-ink-700/75">
+                  {t("loyalty.yourPointsBalance")}
+                </p>
                 <p className="font-display text-4xl font-semibold text-ink-900 tabular-nums">
                   {formatNumber(account?.points_balance ?? 0)}
                 </p>
                 <p className="mt-1 text-xs text-ink-700/70">
-                  Worth about{" "}
-                  {formatNumber((account?.points_balance ?? 0) * settings.loyalty.pointValue)}{" "}
-                  EGP off
+                  {t("loyalty.worthAbout", {
+                    value: formatNumber(
+                      (account?.points_balance ?? 0) * settings.loyalty.pointValue,
+                    ),
+                  })}
                 </p>
               </div>
               <Badge tone="plum">
                 <Award className="size-3.5" aria-hidden="true" />
-                {humanise(account?.tier ?? "bronze")}
+                {tierLabel(account?.tier ?? "bronze", locale)}
               </Badge>
             </div>
 
             <dl className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-rice-200/60 p-3">
-                <dt className="text-xs text-ink-700/70">Lifetime points</dt>
+                <dt className="text-xs text-ink-700/70">{t("loyalty.lifetimePoints")}</dt>
                 <dd className="mt-0.5 text-lg font-semibold text-ink-900 tabular-nums">
                   {formatNumber(account?.lifetime_points ?? 0)}
                 </dd>
               </div>
               <div className="rounded-xl bg-rice-200/60 p-3">
-                <dt className="text-xs text-ink-700/70">Points used</dt>
+                <dt className="text-xs text-ink-700/70">{t("loyalty.pointsUsed")}</dt>
                 <dd className="mt-0.5 text-lg font-semibold text-ink-900 tabular-nums">
                   {formatNumber(redeemedPoints(overview?.transactions ?? []))}
                 </dd>
@@ -140,8 +151,10 @@ export default async function LoyaltyPage() {
                 <div className="flex items-center justify-between text-xs text-ink-700/80">
                   <span className="inline-flex items-center gap-1.5">
                     <TrendingUp className="size-3.5" aria-hidden="true" />
-                    {formatNumber(overview.nextTier.remaining)} points to{" "}
-                    {humanise(overview.nextTier.tier)}
+                    {t("loyalty.pointsToTier", {
+                      remaining: formatNumber(overview.nextTier.remaining),
+                      tier: tierLabel(overview.nextTier.tier, locale),
+                    })}
                   </span>
                   <span>{overview.progressPercent}%</span>
                 </div>
@@ -150,7 +163,9 @@ export default async function LoyaltyPage() {
                   aria-valuenow={overview.progressPercent}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={`Progress towards ${overview.nextTier.tier}`}
+                  aria-label={t("loyalty.progressLabel", {
+                    tier: tierLabel(overview.nextTier.tier, locale),
+                  })}
                   className="mt-2 h-2.5 overflow-hidden rounded-full bg-ink-900/10"
                 >
                   <div
@@ -162,7 +177,7 @@ export default async function LoyaltyPage() {
             ) : (
               <p className="mt-5 inline-flex items-center gap-1.5 text-sm text-miso-600">
                 <Sparkles className="size-4" aria-hidden="true" />
-                You are on our highest tier. Thank you for ordering with us.
+                {t("loyalty.highestTier")}
               </p>
             )}
           </section>
@@ -174,48 +189,53 @@ export default async function LoyaltyPage() {
               className="flex items-center gap-1.5 text-lg font-semibold text-ink-900"
             >
               <Gift className="size-4 text-plum-600" aria-hidden="true" />
-              Rewards
+              {t("loyalty.rewardsHeading")}
             </h2>
 
             {rewards.length === 0 ? (
               <EmptyState
                 className="mt-3"
-                title="No rewards published yet"
-                description="The kitchen has not published any rewards. Your points still accumulate."
+                title={t("loyalty.noRewardsTitle")}
+                description={t("loyalty.noRewardsBody")}
               />
             ) : (
               <ul className="mt-3 space-y-3">
                 {rewards.map((reward) => {
                   const affordable = (account?.points_balance ?? 0) >= reward.points_cost;
+                  const tier = tierLabel(reward.tier_required ?? "bronze", locale);
                   return (
                     <li key={reward.id} className="washi-panel flex items-center gap-3 p-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium text-ink-900">
-                            {reward.name_en}
+                            {locale === "ar" && reward.name_ar ? reward.name_ar : reward.name_en}
                           </span>
-                          {reward.tier_required !== "bronze" ? (
-                            <Badge tone="info">
-                              {humanise(reward.tier_required)}+
-                            </Badge>
+                          {reward.tier_required && reward.tier_required !== "bronze" ? (
+                            <Badge tone="info">{tier}+</Badge>
                           ) : null}
                         </div>
                         {reward.description_en ? (
                           <p className="mt-1 text-sm text-ink-700/80">
-                            {reward.description_en}
+                            {locale === "ar" && reward.description_ar
+                              ? reward.description_ar
+                              : reward.description_en}
                           </p>
                         ) : null}
                         {reward.valid_until ? (
                           <p className="mt-1 text-xs text-ink-700/60">
-                            Available until {formatDate(reward.valid_until)}
+                            {t("loyalty.availableUntil", {
+                              date: formatDate(reward.valid_until, locale),
+                            })}
                           </p>
                         ) : null}
                       </div>
-                      <div className="shrink-0 text-right">
+                      <div className="shrink-0 text-end">
                         <p className="text-sm font-semibold text-ink-900 tabular-nums">
                           {formatNumber(reward.points_cost)}
                         </p>
-                        <p className="text-[11px] text-ink-700/65">points</p>
+                        <p className="text-[11px] text-ink-700/65">
+                          {t("loyalty.pointsLabel")}
+                        </p>
                         <p
                           className={
                             affordable
@@ -223,7 +243,9 @@ export default async function LoyaltyPage() {
                               : "mt-1 text-[11px] text-ink-700/55"
                           }
                         >
-                          {affordable ? "Available" : "Keep earning"}
+                          {affordable
+                            ? t("loyalty.rewardAvailable")
+                            : t("loyalty.rewardKeepEarning")}
                         </p>
                       </div>
                     </li>
@@ -232,22 +254,19 @@ export default async function LoyaltyPage() {
               </ul>
             )}
 
-            <p className="mt-3 text-xs text-ink-700/70">
-              Rewards are applied at checkout, where your balance is verified on the
-              server.
-            </p>
+            <p className="mt-3 text-xs text-ink-700/70">{t("loyalty.rewardsFootnote")}</p>
           </section>
 
           {/* History */}
           <section aria-labelledby="history-heading" className="mt-6">
             <h2 id="history-heading" className="text-lg font-semibold text-ink-900">
-              Points history
+              {t("loyalty.historyHeading")}
             </h2>
             {!overview || overview.transactions.length === 0 ? (
               <EmptyState
                 className="mt-3"
-                title="No points activity yet"
-                description="Your first order will start your points history."
+                title={t("loyalty.noHistoryTitle")}
+                description={t("loyalty.noHistoryBody")}
               />
             ) : (
               <ul className="mt-3 space-y-2">
@@ -261,7 +280,7 @@ export default async function LoyaltyPage() {
                         {transaction.reason ?? humanise(transaction.type)}
                       </p>
                       <p className="mt-0.5 text-xs text-ink-700/65">
-                        {formatDate(transaction.created_at)}
+                        {formatDate(transaction.created_at, locale)}
                       </p>
                     </div>
                     <span
@@ -282,7 +301,7 @@ export default async function LoyaltyPage() {
         </>
       )}
 
-      <JsonLdLoyaltyNote brand={settings.brand.name} />
+      <JsonLdLoyaltyNote brand={settings.brand.name} t={t} />
     </div>
   );
 }
@@ -290,13 +309,15 @@ export default async function LoyaltyPage() {
 /**
  * Loyalty is not a search destination, but a short FAQ block is genuinely
  * useful for the few real questions customers ask.
+
+ * The note comes from the dictionary file itself, so it ships in both languages.
+
+ * The brand name interpolates through `t()` at render time.
  */
-function JsonLdLoyaltyNote({ brand }: { brand: string }) {
+function JsonLdLoyaltyNote({ brand, t }: { brand: string; t: (path: string, vars?: Record<string, string | number>) => string }) {
   return (
     <p className="mt-6 text-xs leading-relaxed text-ink-700/60">
-      {brand} loyalty points are awarded per completed order, never on canceled or
-      refunded orders. Points expire only if the programme is retired, and we will tell
-      you before that happens.
+      {t("loyalty.footnote", { brand })}
     </p>
   );
 }

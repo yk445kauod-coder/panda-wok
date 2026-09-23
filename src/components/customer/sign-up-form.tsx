@@ -3,17 +3,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n, useT } from "@/components/i18n-provider";
 import { signUpAction } from "@/lib/actions/auth";
 import { toAppError, type AppError } from "@/lib/utils/errors";
+import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/config";
+import { cn } from "@/lib/utils/format";
 
 /**
- * Registration. Phone is required because the rider needs to reach the customer,
- * and the copy explains why rather than demanding it silently.
+ * Registration. Phone is required because the rider needs to reach the
+ * customer, and the copy explains why rather than demanding it silently. The
+ * language chosen here is stored on the account (via the signup trigger) and on
+ * this device (via cookie), so the whole app continues in that language.
  */
 export function SignUpForm({ next }: { next: string }) {
   const router = useRouter();
+  const t = useT();
+  const { locale, dir } = useI18n();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -23,9 +30,10 @@ export function SignUpForm({ next }: { next: string }) {
     email: "",
     phone: "",
     password: "",
+    locale,
   });
 
-  function update(key: keyof typeof form) {
+  function update(key: "fullName" | "email" | "phone" | "password") {
     return (event: React.ChangeEvent<HTMLInputElement>) =>
       setForm((current) => ({ ...current, [key]: event.target.value }));
   }
@@ -43,6 +51,7 @@ export function SignUpForm({ next }: { next: string }) {
       formData.set("phone", form.phone);
       formData.set("email", form.email);
       formData.set("password", form.password);
+      formData.set("locale", form.locale);
       formData.set("next", next);
 
       const result = await signUpAction(formData);
@@ -55,9 +64,7 @@ export function SignUpForm({ next }: { next: string }) {
       }
 
       if (result.data.requiresConfirmation) {
-        setNotice(
-          "Check your inbox — we sent a link to confirm your email before you can sign in.",
-        );
+        setNotice(t("auth.signUp.successBody"));
         setPending(false);
         return;
       }
@@ -74,7 +81,7 @@ export function SignUpForm({ next }: { next: string }) {
     return (
       <div>
         <h1 className="font-display text-xl font-semibold text-ink-900">
-          Confirm your email
+          {t("auth.signUp.successTitle")}
         </h1>
         <p
           role="status"
@@ -90,7 +97,7 @@ export function SignUpForm({ next }: { next: string }) {
           href="/auth/sign-in"
           className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-plum-600 text-sm font-medium text-rice-50 hover:bg-plum-700"
         >
-          Back to sign in
+          {t("auth.forgot.backToSignIn")}
         </Link>
       </div>
     );
@@ -99,11 +106,9 @@ export function SignUpForm({ next }: { next: string }) {
   return (
     <form onSubmit={onSubmit} noValidate>
       <h1 className="font-display text-xl font-semibold text-ink-900">
-        Create your account
+        {t("auth.signUp.title")}
       </h1>
-      <p className="mt-1 text-sm text-ink-700/80">
-        An account lets you order, track deliveries and earn loyalty points.
-      </p>
+      <p className="mt-1 text-sm text-ink-700/80">{t("auth.signUp.subtitle")}</p>
 
       {error ? (
         <p
@@ -118,7 +123,8 @@ export function SignUpForm({ next }: { next: string }) {
       <div className="mt-4 space-y-3">
         <Field
           id="fullName"
-          label="Full name"
+          label={t("auth.signUp.fullName")}
+          placeholder={t("auth.signUp.fullNamePlaceholder")}
           value={form.fullName}
           onChange={update("fullName")}
           autoComplete="name"
@@ -127,8 +133,9 @@ export function SignUpForm({ next }: { next: string }) {
         />
         <Field
           id="phone"
-          label="Phone number"
-          hint="So the rider can reach you about your delivery."
+          label={t("auth.signUp.phone")}
+          hint={t("auth.signUp.phoneHint")}
+          placeholder={t("auth.signUp.phonePlaceholder")}
           value={form.phone}
           onChange={update("phone")}
           autoComplete="tel"
@@ -138,8 +145,9 @@ export function SignUpForm({ next }: { next: string }) {
         />
         <Field
           id="email"
-          label="Email (optional)"
-          hint="Only if you want email receipts or password resets."
+          label={t("auth.signUp.emailOptional")}
+          hint={t("auth.signUp.emailHint")}
+          placeholder={t("auth.signUp.emailPlaceholder")}
           type="email"
           value={form.email}
           onChange={update("email")}
@@ -148,8 +156,8 @@ export function SignUpForm({ next }: { next: string }) {
         />
         <Field
           id="password"
-          label="Password"
-          hint="At least 8 characters."
+          label={t("auth.signUp.password")}
+          hint={t("auth.signUp.passwordHint")}
           type="password"
           value={form.password}
           onChange={update("password")}
@@ -157,19 +165,57 @@ export function SignUpForm({ next }: { next: string }) {
           error={fields.password}
           required
         />
+
+        {/* Language choice. A visible picker rather than a silent default, so
+            an Arabic-first customer never lands on an English page first. */}
+        <fieldset>
+          <legend className="flex items-center gap-1.5 text-sm font-medium text-ink-900">
+            <Languages className="size-3.5 text-ink-700/60" aria-hidden="true" />
+            {t("auth.signUp.language")}
+          </legend>
+          <p className="mt-0.5 text-xs text-ink-700/65">
+            {t("auth.signUp.languageHint")}
+          </p>
+          <div role="radiogroup" className="mt-2 grid grid-cols-2 gap-2">
+            {LOCALES.map((option) => {
+              const active = form.locale === option;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() =>
+                    setForm((current) => ({ ...current, locale: option as Locale }))
+                  }
+                  className={cn(
+                    "rounded-xl border p-3 text-start text-sm font-medium transition-colors",
+                    active
+                      ? "border-plum-600 bg-plum-600/8 text-ink-900"
+                      : "border-ink-900/12 text-ink-800 hover:bg-rice-200/60",
+                  )}
+                >
+                  <span dir={option === "ar" ? "rtl" : dir}>
+                    {LOCALE_LABELS[option]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
       </div>
 
       <Button type="submit" size="lg" className="mt-5 w-full" loading={pending}>
-        Create account
+        {pending ? t("auth.signUp.submitting") : t("auth.signUp.submit")}
       </Button>
 
       <p className="mt-4 text-center text-xs text-ink-700/70">
-        Already have an account?{" "}
+        {t("auth.signUp.haveAccount")}{" "}
         <Link
           href={`/auth/sign-in${next !== "/account" ? `?next=${encodeURIComponent(next)}` : ""}`}
           className="font-medium text-plum-600 hover:text-plum-700"
         >
-          Sign in
+          {t("auth.signUp.signIn")}
         </Link>
       </p>
     </form>
@@ -183,6 +229,7 @@ function Field({
   onChange,
   error,
   hint,
+  placeholder,
   type = "text",
   required,
   autoComplete,
@@ -194,6 +241,7 @@ function Field({
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string;
   hint?: string;
+  placeholder?: string;
   type?: string;
   required?: boolean;
   autoComplete?: string;
@@ -211,6 +259,7 @@ function Field({
         type={type}
         required={required}
         value={value}
+        placeholder={placeholder}
         onChange={onChange}
         autoComplete={autoComplete}
         inputMode={inputMode}

@@ -152,6 +152,7 @@ export async function listFeedbackAdmin(params: {
   category?: Database["public"]["Enums"]["feedback_category"];
   search?: string;
   limit?: number;
+  offset?: number;
 }) {
   const supabase = await createServerSupabase();
 
@@ -164,6 +165,10 @@ export async function listFeedbackAdmin(params: {
   if (params.status) query = query.eq("status", params.status);
   if (params.category) query = query.eq("category", params.category);
   if (params.search) query = query.ilike("message", `%${params.search}%`);
+  if (params.offset) {
+    const limit = params.limit ?? 100;
+    query = query.range(params.offset, params.offset + limit - 1);
+  }
 
   const { data, error } = await query;
   if (error) throw new Error(`Failed to load feedback: ${error.message}`);
@@ -290,6 +295,25 @@ export async function listStaff(): Promise<
   return (data ?? []) as unknown as (Database["public"]["Tables"]["staff"]["Row"] & {
     profiles: { full_name: string | null; email: string | null } | null;
   })[];
+}
+
+/** Head-count for a filtered list, so pages can paginate. */
+export async function countFeedbackAdmin(params: {
+  status?: Database["public"]["Enums"]["feedback_status"];
+  category?: Database["public"]["Enums"]["feedback_category"];
+  search?: string;
+}): Promise<number> {
+  const supabase = await createServerSupabase();
+
+  let query = supabase.from("feedback").select("id", { count: "exact", head: true });
+
+  if (params.status) query = query.eq("status", params.status);
+  if (params.category) query = query.eq("category", params.category);
+  if (params.search) query = query.ilike("message", `%${params.search}%`);
+
+  const { count, error } = await query;
+  if (error) throw new Error(`Failed to count feedback: ${error.message}`);
+  return count ?? 0;
 }
 
 export async function listUpsellRules() {

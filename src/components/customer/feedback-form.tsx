@@ -5,24 +5,16 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/format";
+import { useT } from "@/components/i18n-provider";
 import { submitFeedbackAction } from "@/lib/actions/communication";
 
-const CATEGORIES = [
-  { key: "overall", label: "Overall experience" },
-  { key: "food_quality", label: "Food quality" },
-  { key: "delivery", label: "Delivery" },
-  { key: "service", label: "Service" },
-  { key: "other", label: "Something else" },
+const CATEGORY_KEYS = [
+  "overall",
+  "food_quality",
+  "delivery",
+  "service",
+  "other",
 ] as const;
-
-const RATING_LABELS = [
-  "",
-  "Not good",
-  "Could be better",
-  "Fine",
-  "Really good",
-  "Excellent",
-];
 
 /**
  * Feedback form. Works with or without a linked order; when the customer picks
@@ -35,10 +27,11 @@ export function FeedbackForm({
   orders: { id: string; orderNumber: string }[];
   defaultOrderId?: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
-  const [category, setCategory] = useState<(typeof CATEGORIES)[number]["key"]>("overall");
+  const [category, setCategory] = useState<(typeof CATEGORY_KEYS)[number]>("overall");
   const [orderId, setOrderId] = useState(defaultOrderId ?? "");
   const [message, setMessage] = useState("");
   const [title, setTitle] = useState("");
@@ -79,15 +72,12 @@ export function FeedbackForm({
       <div className="washi-panel p-5 text-center">
         <CheckCircle2 className="mx-auto size-10 text-jade-600" aria-hidden="true" />
         <h2 className="mt-3 font-display text-lg font-semibold text-ink-900">
-          Thank you for telling us
+          {t("feedback.doneTitle")}
         </h2>
-        <p className="mt-1.5 text-sm text-ink-700/85">
-          A real person reads every message. If you asked for a reply, you will find it in
-          your messages.
-        </p>
+        <p className="mt-1.5 text-sm text-ink-700/85">{t("feedback.doneBody")}</p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Button variant="outline" onClick={() => router.push("/orders")}>
-            Your orders
+            {t("feedback.yourOrders")}
           </Button>
           <Button
             onClick={() => {
@@ -97,7 +87,7 @@ export function FeedbackForm({
               setTitle("");
             }}
           >
-            Send more feedback
+            {t("feedback.sendMore")}
           </Button>
         </div>
       </div>
@@ -107,11 +97,9 @@ export function FeedbackForm({
   return (
     <form onSubmit={onSubmit} className="washi-panel p-5" noValidate>
       <h2 className="font-display text-lg font-semibold text-ink-900">
-        Tell us how it went
+        {t("feedback.formHeading")}
       </h2>
-      <p className="mt-1 text-sm text-ink-700/80">
-        Good or bad, it goes straight to the kitchen and helps us get better.
-      </p>
+      <p className="mt-1 text-sm text-ink-700/80">{t("feedback.formBody")}</p>
 
       {error ? (
         <p
@@ -125,7 +113,9 @@ export function FeedbackForm({
 
       {/* Rating */}
       <fieldset className="mt-4">
-        <legend className="text-sm font-medium text-ink-900">Your rating</legend>
+        <legend className="text-sm font-medium text-ink-900">
+          {t("feedback.yourRating")}
+        </legend>
         <div className="mt-2 flex items-center gap-1">
           {[1, 2, 3, 4, 5].map((value) => {
             const active = value <= (hovered || rating);
@@ -136,7 +126,7 @@ export function FeedbackForm({
                 onClick={() => setRating(value)}
                 onMouseEnter={() => setHovered(value)}
                 onMouseLeave={() => setHovered(0)}
-                aria-label={`${value} out of 5`}
+                aria-label={t("feedback.ratingAria", { value })}
                 aria-pressed={rating === value}
                 className="grid size-11 place-items-center rounded-lg hover:bg-rice-200"
               >
@@ -151,7 +141,9 @@ export function FeedbackForm({
             );
           })}
           {rating > 0 ? (
-            <span className="ml-2 text-sm text-ink-700/80">{RATING_LABELS[rating]}</span>
+            <span className="ms-2 text-sm text-ink-700/80">
+              {t(`feedback.rating.${rating}`)}
+            </span>
           ) : null}
         </div>
         {fields.rating ? (
@@ -161,22 +153,24 @@ export function FeedbackForm({
 
       {/* Category */}
       <fieldset className="mt-4">
-        <legend className="text-sm font-medium text-ink-900">What is this about?</legend>
+        <legend className="text-sm font-medium text-ink-900">
+          {t("feedback.categoryHeading")}
+        </legend>
         <div className="mt-2 flex flex-wrap gap-2">
-          {CATEGORIES.map((option) => (
+          {CATEGORY_KEYS.map((key) => (
             <button
-              key={option.key}
+              key={key}
               type="button"
-              onClick={() => setCategory(option.key)}
-              aria-pressed={category === option.key}
+              onClick={() => setCategory(key)}
+              aria-pressed={category === key}
               className={cn(
                 "rounded-full border px-3.5 py-2 text-sm transition-colors",
-                category === option.key
+                category === key
                   ? "border-plum-600 bg-plum-600 text-rice-50"
                   : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
               )}
             >
-              {option.label}
+              {t(`feedback.categories.${key}`)}
             </button>
           ))}
         </div>
@@ -186,21 +180,19 @@ export function FeedbackForm({
       {orders.length > 0 ? (
         <div className="mt-4">
           <label htmlFor="feedback-order" className="block text-sm font-medium text-ink-900">
-            Which order?
+            {t("feedback.orderLabel")}
           </label>
-          <p className="mt-0.5 text-xs text-ink-700/65">
-            Optional. Linking an order lets the kitchen see exactly what you received.
-          </p>
+          <p className="mt-0.5 text-xs text-ink-700/65">{t("feedback.orderHint")}</p>
           <select
             id="feedback-order"
             value={orderId}
             onChange={(event) => setOrderId(event.target.value)}
             className="mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           >
-            <option value="">Not about a specific order</option>
+            <option value="">{t("feedback.orderGeneral")}</option>
             {orders.map((order) => (
               <option key={order.id} value={order.id}>
-                Order #{order.orderNumber}
+                {`#${order.orderNumber}`}
               </option>
             ))}
           </select>
@@ -209,15 +201,15 @@ export function FeedbackForm({
 
       <div className="mt-4">
         <label htmlFor="feedback-title" className="block text-sm font-medium text-ink-900">
-          Short summary
+          {t("feedback.categoryLabel")}
         </label>
-        <p className="mt-0.5 text-xs text-ink-700/65">Optional.</p>
+        <p className="mt-0.5 text-xs text-ink-700/65">{t("feedback.categoryOptional")}</p>
         <input
           id="feedback-title"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           maxLength={120}
-          placeholder="Ramen was perfect, delivery was quick…"
+          placeholder={t("feedback.titlePlaceholder")}
           className="mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
         />
         {fields.title ? (
@@ -230,7 +222,7 @@ export function FeedbackForm({
           htmlFor="feedback-message"
           className="block text-sm font-medium text-ink-900"
         >
-          Your message
+          {t("feedback.messageLabel")}
         </label>
         <textarea
           id="feedback-message"
@@ -239,7 +231,7 @@ export function FeedbackForm({
           rows={4}
           maxLength={2000}
           required
-          placeholder="What did you like? What could we do better?"
+          placeholder={t("feedback.messagePlaceholder")}
           aria-invalid={fields.message ? true : undefined}
           className={cn(
             "mt-1.5 w-full rounded-xl border bg-rice-50 px-3 py-2 text-sm outline-none",
@@ -249,18 +241,23 @@ export function FeedbackForm({
           )}
         />
         <div className="mt-1 flex justify-between text-xs text-ink-700/60">
-          <span>{fields.message ? <span className="text-chili-600">{fields.message}</span> : ""}</span>
+          <span>
+            {fields.message ? (
+              <span className="text-chili-600">{fields.message}</span>
+            ) : (
+              ""
+            )}
+          </span>
           <span className="tabular-nums">{message.length}/2000</span>
         </div>
       </div>
 
       <Button type="submit" size="lg" className="mt-5 w-full" loading={saving}>
-        Send feedback
+        {t("feedback.submit")}
       </Button>
 
       <p className="mt-3 text-center text-[11px] text-ink-700/60">
-        Your feedback is only visible to Panda Wok staff. Your name is never shown
-        publicly.
+        {t("feedback.privacyNote")}
       </p>
     </form>
   );

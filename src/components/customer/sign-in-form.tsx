@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n-provider";
 import { signInAction } from "@/lib/actions/auth";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 
@@ -14,6 +15,7 @@ import { toAppError, type AppError } from "@/lib/utils/errors";
  */
 export function SignInForm({ next }: { next: string }) {
   const router = useRouter();
+  const t = useT();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AppError | string | null>(null);
   const [email, setEmail] = useState("");
@@ -51,10 +53,10 @@ export function SignInForm({ next }: { next: string }) {
 
   return (
     <form onSubmit={onSubmit} noValidate>
-      <h1 className="font-display text-xl font-semibold text-ink-900">Welcome back</h1>
-      <p className="mt-1 text-sm text-ink-700/80">
-        Sign in to order, track deliveries and collect loyalty points.
-      </p>
+      <h1 className="font-display text-xl font-semibold text-ink-900">
+        {t("auth.signIn.title")}
+      </h1>
+      <p className="mt-1 text-sm text-ink-700/80">{t("auth.signIn.subtitle")}</p>
 
       {message ? (
         <p
@@ -69,15 +71,16 @@ export function SignInForm({ next }: { next: string }) {
       <div className="mt-4 space-y-3">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-ink-900">
-            Email
+            {t("auth.signIn.identifier")}
           </label>
           <input
             id="email"
             name="email"
-            type="email"
-            autoComplete="email"
+            type="text"
+            autoComplete="username"
             required
             value={email}
+            placeholder={t("auth.signIn.identifierPlaceholder")}
             onChange={(event) => setEmail(event.target.value)}
             className="mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           />
@@ -85,7 +88,7 @@ export function SignInForm({ next }: { next: string }) {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-ink-900">
-            Password
+            {t("auth.signIn.password")}
           </label>
           <input
             id="password"
@@ -101,18 +104,18 @@ export function SignInForm({ next }: { next: string }) {
       </div>
 
       <Button type="submit" size="lg" className="mt-5 w-full" loading={pending}>
-        Sign in
+        {pending ? t("auth.signIn.submitting") : t("auth.signIn.submit")}
       </Button>
 
       <div className="mt-4 flex items-center justify-between text-xs">
         <Link href="/auth/forgot-password" className="text-plum-600 hover:text-plum-700">
-          Forgot your password?
+          {t("auth.signIn.forgot")}
         </Link>
         <Link
           href={`/auth/sign-up${next !== "/account" ? `?next=${encodeURIComponent(next)}` : ""}`}
           className="font-medium text-ink-900 hover:text-plum-600"
         >
-          Create an account
+          {t("auth.signIn.noAccount")}
         </Link>
       </div>
     </form>

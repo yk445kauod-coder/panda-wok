@@ -5,34 +5,37 @@ import Link from "next/link";
 import { useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { useCart } from "@/components/customer/cart-provider";
+import { useT } from "@/components/i18n-provider";
 import { trackEvent } from "@/components/customer/analytics-beacon";
 import { formatPrice } from "@/lib/utils/format";
 import type { MenuItem } from "@/lib/services/catalog";
+import type { Locale } from "@/lib/i18n/config";
 
 /** Compact one-tap add row used inside the upsell list. */
 export function UpsellCard({
   item,
   headline,
   currency,
+  locale = "en",
 }: {
   item: MenuItem;
   headline: string | null;
   currency: string;
+  locale?: Locale;
 }) {
-  void currency;
-
+  const t = useT();
   const { add, lines, hydrated } = useCart();
   const [added, setAdded] = useState(false);
 
-  const inCart = hydrated
-    ? lines.some((line) => line.menuItemId === item.id)
-    : false;
+  const name = locale === "ar" && item.name_ar?.trim() ? item.name_ar : item.name_en;
+
+  const inCart = hydrated ? lines.some((line) => line.menuItemId === item.id) : false;
 
   function handleAdd() {
     add({
       menuItemId: item.id,
       slug: item.slug,
-      name: item.name_en,
+      name,
       nameAr: item.name_ar,
       unitPrice: Number(item.price),
       imageUrl: item.image_url,
@@ -61,7 +64,7 @@ export function UpsellCard({
         {item.image_url ? (
           <Image
             src={item.image_url}
-            alt={item.image_alt ?? item.name_en}
+            alt={item.image_alt ?? name}
             fill
             sizes="56px"
             className="object-cover"
@@ -73,15 +76,13 @@ export function UpsellCard({
 
       <div className="min-w-0 flex-1">
         <Link href={`/menu/${item.slug}`} className="block">
-          <span className="block truncate text-sm font-medium text-ink-900">
-            {item.name_en}
-          </span>
+          <span className="block truncate text-sm font-medium text-ink-900">{name}</span>
         </Link>
         {headline ? (
           <span className="block truncate text-xs text-ink-700/70">{headline}</span>
         ) : null}
         <span className="block text-xs font-semibold text-ink-800">
-          {formatPrice(item.price)}
+          {formatPrice(item.price, currency, locale)}
         </span>
       </div>
 
@@ -93,12 +94,12 @@ export function UpsellCard({
         {added || inCart ? (
           <>
             <Check className="size-3.5" aria-hidden="true" />
-            {added ? "Added" : "In basket"}
+            {added ? t("addToCart.added") : t("common.inBasket")}
           </>
         ) : (
           <>
             <Plus className="size-3.5" aria-hidden="true" />
-            Add
+            {t("common.add")}
           </>
         )}
       </button>

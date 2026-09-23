@@ -646,18 +646,11 @@ export async function getAiProviderUsage(config: { name: string; kind: string })
   const minuteStart = new Date(now.getTime() - 60 * 1000).toISOString();
 
   try {
-    const [{ count: monthTokens }, { count: minuteReqs }] = await Promise.all([
-      admin
-        .from("ai_requests")
-        .select("prompt_tokens,completion_tokens", { count: "exact", head: true })
-        .eq("provider", config.name)
-        .gte("created_at", monthStart),
-      admin
-        .from("ai_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("provider", config.name)
-        .gte("created_at", minuteStart),
-    ]);
+    const { count: minuteReqs } = await admin
+      .from("ai_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("provider", config.name)
+      .gte("created_at", minuteStart);
 
     // Counting rows counts requests, not tokens; the token figures are summed
     // via a separate aggregate query because the head:true form cannot sum..

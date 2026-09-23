@@ -16,14 +16,25 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { formatPrice } from "@/lib/utils/format";
 import { DishCard } from "@/components/customer/dish-card";
 import { FeaturedDishStrip } from "@/components/customer/featured-strip";
+import { getLocale, getT } from "@/lib/i18n/server";
+import type { T } from "@/lib/i18n/server";
+import { localiseCategory, localiseItem } from "@/lib/i18n/catalog";
 
 export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getPublicSettings();
+  const [settings, locale] = await Promise.all([getPublicSettings(), getLocale()]);
+  const t = await getT(locale);
   return buildMetadata({
-    title: `${settings.brand.name} — wok, ramen and sushi delivered in ${settings.brand.city}`,
-    description: `${settings.brand.tagline}. Browse the full Panda Wok menu, order for delivery across ${settings.brand.city} and track your food from the kitchen to your door.`,
+    title: t("home.metaTitle", {
+      brand: settings.brand.name,
+      city: settings.brand.city,
+    }),
+    description: t("home.metaDescription", {
+      tagline: settings.brand.tagline,
+      brand: settings.brand.name,
+      city: settings.brand.city,
+    }),
     path: "/",
     keywords: [
       "Panda Wok",
@@ -33,20 +44,24 @@ export async function generateMetadata(): Promise<Metadata> {
       "sushi Alexandria",
     ],
     siteName: settings.brand.name,
+    locale,
   });
 }
 
 export default async function HomePage() {
-  const [featured, categories, menu, settings, restaurant] = await Promise.all([
+  const [featured, categories, menu, settings, restaurant, locale] = await Promise.all([
     getFeaturedItems(6),
     getPublicCategories(),
     getPublicMenu(),
     getPublicSettings(),
     getRestaurant(),
+    getLocale(),
   ]);
+  const t = await getT(locale);
 
   const brand = restaurant?.name_en ?? settings.brand.name;
   const currency = restaurant?.currency ?? "EGP";
+  const categoryById = new Map(categories.map((c) => [c.id, c]));
 
   const menuItems = menu.items.slice(0, 40).map((item) => ({
     slug: item.slug,
@@ -55,7 +70,8 @@ export default async function HomePage() {
     price: Number(item.price),
     currency,
     image: item.image_url,
-    category: categories.find((c) => c.id === item.category_id)?.name_en ?? "Menu",
+    category:
+      categoryById.get(item.category_id)?.name_en ?? t("menu.categoryFallback"),
     available: item.is_available,
     vegetarian: item.is_vegetarian,
     vegan: item.is_vegan,
@@ -78,6 +94,7 @@ export default async function HomePage() {
         acceptingOrders={settings.ordering.acceptingOrders}
         minOrder={settings.ordering.minOrderTotal}
         hasMenu={menu.items.length > 0}
+        t={t}
       />
 
       {featured.length > 0 ? (
@@ -85,36 +102,37 @@ export default async function HomePage() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 id="featured-heading" className="text-xl font-semibold text-ink-900">
-                What the kitchen is proud of
+                {t("home.featuredHeading")}
               </h2>
               <p className="mt-1 text-sm text-ink-700/80">
-                Hand-picked dishes, cooked when you order.
+                {t("home.featuredSubheading")}
               </p>
             </div>
             <Link
               href="/menu"
               className="hidden shrink-0 items-center gap-1.5 text-sm font-medium text-plum-600 hover:text-plum-700 sm:inline-flex"
             >
-              Full menu <ArrowRight className="size-4" aria-hidden="true" />
+              {t("home.fullMenu")} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
             </Link>
           </div>
-          <FeaturedDishStrip items={featured} currency={currency} />
+          <FeaturedDishStrip items={featured} currency={currency} locale={locale} />
         </section>
       ) : null}
 
       <section aria-labelledby="categories-heading" className="mx-auto max-w-6xl px-4 py-6">
         <h2 id="categories-heading" className="text-xl font-semibold text-ink-900">
-          Browse by section
+          {t("home.browseBySection")}
         </h2>
         {categories.length === 0 ? (
           <EmptyState
             className="mt-4"
-            title="The menu is being prepared"
-            description="Our sections will appear here as soon as the kitchen publishes them."
+            title={t("home.sectionEmptyTitle")}
+            description={t("home.sectionEmptyBody")}
           />
         ) : (
           <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {categories.map((category) => {
+              const local = localiseCategory(category, locale);
               const count = menu.items.filter((i) => i.category_id === category.id).length;
               return (
                 <li key={category.id}>
@@ -123,7 +141,7 @@ export default async function HomePage() {
                     className="washi-panel group flex h-full flex-col justify-between p-4 transition-shadow hover:shadow-washi-lg"
                   >
                     <span className="font-display text-base font-semibold text-ink-900">
-                      {category.name_en}
+                      {local.name}
                     </span>
                     {category.name_ja ? (
                       <span className="mt-0.5 text-xs text-ink-700/60" lang="ja">
@@ -131,7 +149,7 @@ export default async function HomePage() {
                       </span>
                     ) : null}
                     <span className="mt-3 text-xs text-ink-700/70">
-                      {count} {count === 1 ? "dish" : "dishes"}
+                      {count} {count === 1 ? t("common.dish") : t("common.dishes")}
                     </span>
                   </Link>
                 </li>
@@ -144,7 +162,7 @@ export default async function HomePage() {
       {menu.items.length > 0 ? (
         <section aria-labelledby="popular-heading" className="mx-auto max-w-6xl px-4 py-10">
           <h2 id="popular-heading" className="text-xl font-semibold text-ink-900">
-            Available right now
+            {t("home.availableNow")}
           </h2>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {menu.items
@@ -155,8 +173,11 @@ export default async function HomePage() {
                   <DishCard
                     item={item}
                     currency={currency}
+                    locale={locale}
                     categoryName={
-                      categories.find((c) => c.id === item.category_id)?.name_en ?? "Menu"
+                      categoryById.get(item.category_id)
+                        ? localiseCategory(categoryById.get(item.category_id)!, locale).name
+                        : t("menu.categoryFallback")
                     }
                   />
                 </li>
@@ -167,21 +188,21 @@ export default async function HomePage() {
               href="/menu"
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-plum-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-plum-700 sm:w-auto"
             >
-              See the whole menu <ArrowRight className="size-4" aria-hidden="true" />
+              {t("home.seeWholeMenu")} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
             </Link>
           </div>
         </section>
       ) : (
         <section className="mx-auto max-w-6xl px-4 py-10">
           <EmptyState
-            title="No dishes published yet"
-            description="Once the kitchen adds dishes they will appear here, with prices and allergen information."
+            title={t("home.noDishesTitle")}
+            description={t("home.noDishesBody")}
             action={
               <Link
                 href="/contact"
                 className="text-sm font-medium text-plum-600 hover:text-plum-700"
               >
-                Contact the kitchen
+                {t("common.contactKitchen")}
               </Link>
             }
           />
@@ -201,6 +222,7 @@ function Hero({
   acceptingOrders,
   minOrder,
   hasMenu,
+  t,
 }: {
   brand: string;
   tagline: string;
@@ -209,6 +231,7 @@ function Hero({
   acceptingOrders: boolean;
   minOrder: number;
   hasMenu: boolean;
+  t: T;
 }) {
   return (
     <section className="relative overflow-hidden border-b border-ink-900/8">
@@ -220,15 +243,15 @@ function Hero({
       <div
         aria-hidden="true"
         data-motion="decorative"
-        className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-miso-300/25 blur-2xl"
+        className="pointer-events-none absolute -end-16 -top-20 size-64 rounded-full bg-miso-300/25 blur-2xl"
       />
 
       <div className="relative mx-auto max-w-6xl px-4 py-12 sm:py-16">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone="plum">Cloud kitchen</Badge>
+          <Badge tone="plum">{t("home.cloudKitchen")}</Badge>
           <Badge tone="info">{city}</Badge>
           <Badge tone={acceptingOrders ? "success" : "warning"}>
-            {acceptingOrders ? "Accepting orders" : "Closed for new orders"}
+            {acceptingOrders ? t("home.acceptingOrders") : t("home.closedForOrders")}
           </Badge>
         </div>
 
@@ -240,18 +263,18 @@ function Hero({
         <dl className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-sm text-ink-700/85">
           <div className="flex items-center gap-1.5">
             <Clock className="size-4 text-bamboo-600" aria-hidden="true" />
-            <dt className="sr-only">Typical delivery time</dt>
-            <dd>About {etaMinutes} minutes, plus prep</dd>
+            <dt className="sr-only">{t("home.srDeliveryTime")}</dt>
+            <dd>{t("home.deliveryTime", { minutes: etaMinutes })}</dd>
           </div>
           <div className="flex items-center gap-1.5">
             <Sparkles className="size-4 text-miso-600" aria-hidden="true" />
-            <dt className="sr-only">Minimum order</dt>
-            <dd>Minimum {formatPrice(minOrder)}</dd>
+            <dt className="sr-only">{t("home.srMinimumOrder")}</dt>
+            <dd>{t("home.minimumOrderValue", { price: formatPrice(minOrder) })}</dd>
           </div>
           <div className="flex items-center gap-1.5">
             <Leaf className="size-4 text-jade-600" aria-hidden="true" />
-            <dt className="sr-only">Dietary labels</dt>
-            <dd>Vegetarian and spicy dishes labelled</dd>
+            <dt className="sr-only">{t("home.srDietaryLabels")}</dt>
+            <dd>{t("home.dietaryLabels")}</dd>
           </div>
         </dl>
 
@@ -260,14 +283,14 @@ function Hero({
             href="/menu"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-plum-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-plum-700"
           >
-            {hasMenu ? "Start your order" : "View the menu"}
-            <ArrowRight className="size-4" aria-hidden="true" />
+            {hasMenu ? t("home.startOrder") : t("home.viewMenu")}
+            <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
           </Link>
           <Link
             href="/about"
             className="inline-flex h-12 items-center justify-center rounded-xl border border-ink-900/15 bg-rice-50/70 px-6 font-medium text-ink-900 transition-colors hover:bg-rice-100"
           >
-            Our story
+            {t("home.ourStory")}
           </Link>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useT } from "@/components/i18n-provider";
 
 /**
  * Subscribes to order_status_history inserts for one order and refreshes the
@@ -17,6 +18,7 @@ export function OrderStatusRealtime({
   orderId: string;
   enabled: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [live, setLive] = useState(false);
   const [lastEventAt, setLastEventAt] = useState<number>(() => Date.now());
@@ -79,12 +81,10 @@ export function OrderStatusRealtime({
       <span
         aria-hidden="true"
         className={
-          live
-            ? "size-1.5 rounded-full bg-jade-500"
-            : "size-1.5 rounded-full bg-miso-500"
+          live ? "size-1.5 rounded-full bg-jade-500" : "size-1.5 rounded-full bg-miso-500"
         }
       />
-      {live ? "Updating live" : "Checking for updates every 30 seconds"}
+      {live ? t("orders.liveUpdating") : t("orders.polling")}
     </p>
   );
 }

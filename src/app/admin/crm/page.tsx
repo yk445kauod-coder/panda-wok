@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { requireCapability } from "@/lib/auth/session";
-import { listCrmCustomers } from "@/lib/crm/customers";
-import { Badge } from "@/components/ui/button";
+import { getCrmStats, listCrmCustomers } from "@/lib/crm/customers";
+import { Badge, Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader, StatCard } from "@/components/ui/page-header";
 import { formatDate, formatNumber, formatPrice, humanise } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
 /**
  * CRM home: who our customers are, how much they spend and whether they are
- * still active. At-risk customers are flagged from their real last-order date.
+ * still active. Headline figures come from a whole-book SQL aggregate, not
+ * from the rows on this page.
  */
 export default async function AdminCrmPage({
   searchParams,
@@ -19,10 +21,10 @@ export default async function AdminCrmPage({
   await requireCapability("crm.view");
   const params = await searchParams;
 
-  const customers = await listCrmCustomers({
-    search: params.q,
-    limit: 100,
-  });
+  const [customers, stats] = await Promise.all([
+    listCrmCustomers({ search: params.q, limit: 100 }),
+    getCrmStats(),
+  ]);
 
   const sort = params.sort ?? "lifetime_value";
   const sorted = [...customers].sort((a, b) => {
@@ -38,45 +40,43 @@ export default async function AdminCrmPage({
     }
   });
 
-  const totalValue = customers.reduce((sum, c) => sum + c.lifetime_value, 0);
-  const atRisk = customers.filter((c) => (c.days_since_last_order ?? 0) >= 30).length;
-  const repeat = customers.filter((c) => c.order_count >= 3).length;
-
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-ink-900">CRM</h1>
-          <p className="mt-1 text-sm text-ink-700/80">
-            Every customer with their real order history, spend and engagement. Figures come
-            from orders and loyalty rows, never estimates.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/admin/crm/segments"
-            className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
-          >
-            Segments
-          </Link>
-          <Link
-            href="/admin/crm/insights"
-            className="h-10 rounded-xl bg-plum-600 px-4 text-sm leading-10 text-rice-50 hover:bg-plum-700"
-          >
-            AI insights
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="CRM"
+        title="Customers"
+        description="Every customer with their real order history, spend and engagement. Figures come from orders and loyalty rows, never estimates."
+        actions={
+          <>
+            <Link
+              href="/admin/crm/segments"
+              className="inline-flex h-11 items-center rounded-xl border border-ink-900/15 px-4 text-sm text-ink-800 hover:bg-rice-200"
+            >
+              Segments
+            </Link>
+            <Link
+              href="/admin/crm/insights"
+              className="inline-flex h-11 items-center rounded-xl bg-plum-600 px-4 text-sm text-rice-50 hover:bg-plum-700"
+            >
+              AI insights
+            </Link>
+          </>
+        }
+      />
 
       <section aria-label="CRM summary" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Summary label="Customers" value={formatNumber(customers.length)} />
-        <Summary label="Lifetime value" value={formatPrice(totalValue)} />
-        <Summary label="Repeat customers" value={formatNumber(repeat)} hint="3 or more orders" />
-        <Summary
+        <StatCard label="Customers" value={formatNumber(stats.customer_count)} />
+        <StatCard label="Lifetime value" value={formatPrice(stats.lifetime_value)} tone="good" />
+        <StatCard
+          label="Repeat customers"
+          value={formatNumber(stats.repeat_customers)}
+          hint="3 or more orders"
+        />
+        <StatCard
           label="At risk"
-          value={formatNumber(atRisk)}
+          value={formatNumber(stats.at_risk_customers)}
           hint="No order in 30+ days"
-          tone={atRisk > 0 ? "warning" : "neutral"}
+          tone={stats.at_risk_customers > 0 ? "warn" : "neutral"}
         />
       </section>
 
@@ -90,7 +90,7 @@ export default async function AdminCrmPage({
             name="q"
             defaultValue={params.q ?? ""}
             placeholder="Name or phone"
-            className="mt-1 h-10 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
+            className="mt-1 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           />
         </div>
         <div>
@@ -101,7 +101,7 @@ export default async function AdminCrmPage({
             id="crm-sort"
             name="sort"
             defaultValue={sort}
-            className="mt-1 h-10 rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
+            className="mt-1 h-11 rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           >
             <option value="lifetime_value">Total spend</option>
             <option value="orders">Order count</option>
@@ -109,16 +109,13 @@ export default async function AdminCrmPage({
             <option value="at_risk">At risk first</option>
           </select>
         </div>
-        <button
-          type="submit"
-          className="h-10 rounded-xl bg-plum-600 px-4 text-sm font-medium text-rice-50 hover:bg-plum-700"
-        >
+        <Button type="submit" size="md">
           Apply
-        </button>
+        </Button>
         {params.q || params.sort ? (
           <Link
             href="/admin/crm"
-            className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
+            className="inline-flex h-11 items-center rounded-xl border border-ink-900/15 px-4 text-sm text-ink-800 hover:bg-rice-200"
           >
             Clear
           </Link>
@@ -222,32 +219,6 @@ export default async function AdminCrmPage({
           })}
         </ul>
       )}
-    </div>
-  );
-}
-
-function Summary({
-  label,
-  value,
-  hint,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  tone?: "neutral" | "warning";
-}) {
-  return (
-    <div className="washi-panel p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-700/75">{label}</p>
-      <p
-        className={`mt-1 font-display text-xl font-semibold tabular-nums ${
-          tone === "warning" ? "text-chili-600" : "text-ink-900"
-        }`}
-      >
-        {value}
-      </p>
-      {hint ? <p className="mt-0.5 text-xs text-ink-700/65">{hint}</p> : null}
     </div>
   );
 }

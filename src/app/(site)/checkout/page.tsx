@@ -9,27 +9,35 @@ import { getLoyaltyOverview } from "@/lib/services/loyalty";
 import { getSession } from "@/lib/auth/session";
 import { CheckoutFlow } from "@/components/customer/checkout-flow";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getLocale, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Checkout",
-  description: "Confirm your Panda Wok delivery details and place your order.",
-  path: "/checkout",
-  noIndex: true,
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const [locale, settings] = await Promise.all([getLocale(), getPublicSettings()]);
+  const t = await getT(locale);
+  return buildMetadata({
+    title: t("checkout.metaTitle"),
+    description: t("checkout.metaDescription", { brand: settings.brand.name }),
+    path: "/checkout",
+    siteName: settings.brand.name,
+    locale,
+    noIndex: true,
+  });
+}
 
 export default async function CheckoutPage() {
-  const session = await getSession();
+  const [session, locale] = await Promise.all([getSession(), getLocale()]);
+  const t = await getT(locale);
   const flags = await getFeatureFlagMap();
 
   if (flags.ordering === false) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
         <EmptyState
-          title="Ordering is paused"
-          description="Online ordering is temporarily switched off. Please contact the kitchen."
+          title={t("cart.paused")}
+          description={t("checkout.errors.closed")}
           action={
             <Link href="/contact" className="text-sm font-medium text-plum-600">
-              Contact the kitchen
+              {t("common.contactKitchen")}
             </Link>
           }
         />
@@ -63,6 +71,7 @@ export default async function CheckoutPage() {
       loyaltyPoints={loyalty.account?.points_balance ?? 0}
       loyaltyTier={loyalty.account?.tier ?? null}
       previousOrders={stats.orderCount}
+      locale={locale}
     />
   );
 }

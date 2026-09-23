@@ -6,8 +6,10 @@ import { AlertTriangle, Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCart } from "@/components/customer/cart-provider";
+import { useT } from "@/components/i18n-provider";
 import { computeTotals, type CheckoutConfig } from "@/lib/services/checkout-math";
 import { formatPrice } from "@/lib/utils/format";
+import type { Locale } from "@/lib/i18n/config";
 
 /**
  * Basket review. Totals shown here are a preview only: the same arithmetic is
@@ -17,10 +19,13 @@ import { formatPrice } from "@/lib/utils/format";
 export function CartView({
   config,
   acceptingOrders,
+  locale = "en",
 }: {
   config: CheckoutConfig;
   acceptingOrders: boolean;
+  locale?: Locale;
 }) {
+  const t = useT();
   const { lines, hydrated, setQuantity, remove, subtotal, itemCount, priceOf } = useCart();
 
   if (!hydrated) {
@@ -32,7 +37,7 @@ export function CartView({
             <div key={n} className="h-24 animate-pulse rounded-washi bg-rice-200/70" />
           ))}
         </div>
-        <span className="sr-only">Loading your basket</span>
+        <span className="sr-only">{t("common.loadingBasket")}</span>
       </div>
     );
   }
@@ -40,17 +45,17 @@ export function CartView({
   if (lines.length === 0) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="text-2xl font-semibold text-ink-900">Your basket</h1>
+        <h1 className="text-2xl font-semibold text-ink-900">{t("cart.title")}</h1>
         <EmptyState
           className="mt-4"
-          title="Your basket is empty"
-          description="Add a few dishes and they will appear here. Your basket is saved on this device, so it survives a refresh."
+          title={t("cart.emptyTitle")}
+          description={t("cart.emptyBody")}
           action={
             <Link
               href="/menu"
               className="inline-flex h-11 items-center rounded-xl bg-plum-600 px-5 text-sm font-medium text-rice-50 hover:bg-plum-700"
             >
-              Browse the menu
+              {t("common.browseMenu")}
             </Link>
           }
         />
@@ -64,9 +69,11 @@ export function CartView({
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="text-2xl font-semibold text-ink-900">
-        Your basket
-        <span className="ml-2 text-base font-normal text-ink-700/70">
-          {itemCount} {itemCount === 1 ? "item" : "items"}
+        {t("cart.title")}
+        <span className="ms-2 text-base font-normal text-ink-700/70">
+          {itemCount === 1
+            ? t("cart.itemCountSingular", { count: itemCount })
+            : t("cart.itemCountPlural", { count: itemCount })}
         </span>
       </h1>
 
@@ -111,7 +118,7 @@ export function CartView({
                   ) : null}
                 </div>
                 <span className="shrink-0 text-sm font-semibold text-ink-900">
-                  {formatPrice(priceOf(line))}
+                  {formatPrice(priceOf(line), undefined, locale)}
                 </span>
               </div>
 
@@ -120,7 +127,7 @@ export function CartView({
                   <button
                     type="button"
                     onClick={() => setQuantity(line.menuItemId, line.quantity - 1)}
-                    aria-label={`Reduce ${line.name} quantity`}
+                    aria-label={t("cart.reduceQuantity", { name: line.name })}
                     className="grid size-9 place-items-center text-ink-800"
                   >
                     <Minus className="size-3.5" />
@@ -132,7 +139,7 @@ export function CartView({
                     type="button"
                     onClick={() => setQuantity(line.menuItemId, line.quantity + 1)}
                     disabled={line.quantity >= Math.min(line.maxQuantity || 20, 20)}
-                    aria-label={`Increase ${line.name} quantity`}
+                    aria-label={t("cart.increaseQuantity", { name: line.name })}
                     className="grid size-9 place-items-center text-ink-800 disabled:opacity-40"
                   >
                     <Plus className="size-3.5" />
@@ -145,7 +152,7 @@ export function CartView({
                   className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-chili-600 hover:bg-chili-500/8"
                 >
                   <Trash2 className="size-3.5" aria-hidden="true" />
-                  Remove
+                  {t("common.remove")}
                 </button>
               </div>
             </div>
@@ -155,37 +162,41 @@ export function CartView({
 
       <section aria-labelledby="summary-heading" className="washi-panel mt-5 p-4">
         <h2 id="summary-heading" className="text-sm font-semibold text-ink-900">
-          Summary
+          {t("cart.summary")}
         </h2>
         <dl className="mt-3 space-y-1.5 text-sm">
           <div className="flex justify-between">
-            <dt className="text-ink-700/85">Subtotal</dt>
-            <dd className="tabular-nums">{formatPrice(totals.subtotal)}</dd>
+            <dt className="text-ink-700/85">{t("cart.subtotal")}</dt>
+            <dd className="tabular-nums">{formatPrice(totals.subtotal, undefined, locale)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-ink-700/85">Delivery</dt>
+            <dt className="text-ink-700/85">{t("cart.delivery")}</dt>
             <dd className="tabular-nums">
-              {totals.deliveryFee === 0 ? "Free" : formatPrice(totals.deliveryFee)}
+              {totals.deliveryFee === 0
+                ? t("common.free")
+                : formatPrice(totals.deliveryFee, undefined, locale)}
             </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-ink-700/85">
-              Tax
-              <span className="ml-1 text-xs text-ink-700/60">
+              {t("cart.tax")}
+              <span className="ms-1 text-xs text-ink-700/60">
                 ({Math.round(config.taxRate * 100)}%)
               </span>
             </dt>
-            <dd className="tabular-nums">{formatPrice(totals.tax)}</dd>
+            <dd className="tabular-nums">{formatPrice(totals.tax, undefined, locale)}</dd>
           </div>
           <div className="mt-2 flex justify-between border-t border-ink-900/8 pt-2.5 text-base font-semibold">
-            <dt>Total</dt>
-            <dd className="tabular-nums">{formatPrice(totals.total)}</dd>
+            <dt>{t("cart.total")}</dt>
+            <dd className="tabular-nums">{formatPrice(totals.total, undefined, locale)}</dd>
           </div>
         </dl>
 
         {subtotal < config.freeDeliveryOver && totals.deliveryFee > 0 ? (
           <p className="mt-3 rounded-lg bg-jade-500/10 px-3 py-2 text-xs text-jade-600">
-            Add {formatPrice(config.freeDeliveryOver - subtotal)} more for free delivery.
+            {t("cart.freeDeliveryHint", {
+              amount: formatPrice(config.freeDeliveryOver - subtotal, undefined, locale),
+            })}
           </p>
         ) : null}
 
@@ -195,8 +206,10 @@ export function CartView({
             className="mt-3 flex items-start gap-1.5 rounded-lg bg-miso-500/15 px-3 py-2 text-xs text-miso-600"
           >
             <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            Minimum order is {formatPrice(config.minOrderTotal)}. Add{" "}
-            {formatPrice(config.minOrderTotal - subtotal)} more to check out.
+            {t("cart.minimumHint", {
+              minimum: formatPrice(config.minOrderTotal, undefined, locale),
+              amount: formatPrice(config.minOrderTotal - subtotal, undefined, locale),
+            })}
           </p>
         ) : null}
 
@@ -206,36 +219,31 @@ export function CartView({
             className="mt-3 flex items-start gap-1.5 rounded-lg bg-chili-500/10 px-3 py-2 text-xs text-chili-600"
           >
             <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            The kitchen is not accepting new orders at the moment. You can still keep your
-            basket and try again shortly.
+            {t("cart.notAccepting")}
           </p>
         ) : null}
 
         {belowMinimum || !acceptingOrders ? (
           <Button className="mt-4 w-full" size="lg" disabled>
-            Go to checkout
+            {t("cart.goToCheckout")}
           </Button>
         ) : (
           <Link
             href="/checkout"
             className="mt-4 inline-flex h-13 w-full items-center justify-center rounded-xl bg-plum-600 font-medium text-rice-50 shadow-washi transition-colors hover:bg-plum-700"
           >
-            Go to checkout
+            {t("cart.goToCheckout")}
           </Link>
         )}
 
         <p className="mt-3 text-center text-[11px] text-ink-700/60">
-          Prices, availability and stock are confirmed on the server when the order is
-          placed.
+          {t("common.priceNote")}
         </p>
       </section>
 
       <div className="mt-4 flex justify-center">
-        <Link
-          href="/menu"
-          className="text-sm font-medium text-plum-600 hover:text-plum-700"
-        >
-          Add more dishes
+        <Link href="/menu" className="text-sm font-medium text-plum-600 hover:text-plum-700">
+          {t("cart.addMore")}
         </Link>
       </div>
     </div>

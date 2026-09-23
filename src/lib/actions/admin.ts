@@ -1,11 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createServerSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
 import { assertCapability } from "@/lib/auth/session";
 import { logAudit } from "@/lib/activity/log";
 import {
+  buildExport,
+  exportObjectPath,
+  isExportDataset,
+} from "@/lib/export/build";
+import { backupObjectPath, buildBackup } from "@/lib/backup/build";
+import {
   actionError,
+  actionFail,
   actionOk,
   toFormError,
   type FormActionResult,
@@ -28,7 +35,13 @@ import {
   staffSchema,
   feedbackResponseSchema,
   conversationStatusSchema,
+  uuidSchema,
 } from "@/lib/validation/schemas";
+
+/** Narrow guard shared by the single-row mutations. */
+function isUuid(value: string) {
+  return uuidSchema.safeParse(value).success;
+}
 
 /**
  * Admin mutations. Every entry point asserts a capability before touching the
@@ -645,6 +658,74 @@ export async function saveRewardAction(
   return actionOk({ id: result.data.id });
 }
 
+export async function deleteRewardAction(
+  rewardId: string,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("loyalty.manage");
+
+  if (!isUuid(rewardId)) {
+    return actionFail("VALIDATION", "That reward id is not valid.");
+  }
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("loyalty_rewards")
+    .delete()
+    .eq("id", rewardId);
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.user.id,
+    actorRole: session.role,
+    action: "reward.deleted",
+    entity: "loyalty_rewards",
+    entityId: rewardId,
+  });
+
+  revalidatePath("/admin/loyalty");
+  revalidatePath("/loyalty");
+  return actionOk();
+}
+
+export async function toggleRewardAction(
+  rewardId: string,
+): Promise<FormActionResult<{ enabled: boolean }>> {
+  const session = await assertCapability("loyalty.manage");
+
+  if (!isUuid(rewardId)) {
+    return actionFail("VALIDATION", "That reward id is not valid.");
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: current, error: readError } = await supabase
+    .from("loyalty_rewards")
+    .select("is_enabled")
+    .eq("id", rewardId)
+    .maybeSingle();
+  if (readError) return actionError(readError);
+  if (!current) return actionFail("NOT_FOUND", "That reward no longer exists.");
+
+  const enabled = !current.is_enabled;
+  const { error } = await supabase
+    .from("loyalty_rewards")
+    .update({ is_enabled: enabled })
+    .eq("id", rewardId);
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.user.id,
+    actorRole: session.role,
+    action: enabled ? "reward.enabled" : "reward.disabled",
+    entity: "loyalty_rewards",
+    entityId: rewardId,
+    after: { is_enabled: enabled },
+  });
+
+  revalidatePath("/admin/loyalty");
+  revalidatePath("/loyalty");
+  return actionOk({ enabled });
+}
+
 export async function adjustLoyaltyPointsAction(
   formData: FormData,
 ): Promise<FormActionResult<undefined>> {
@@ -1105,29 +1186,90 @@ export async function requestExportAction(
     format: formData.get("format") || "csv",
   });
   if (!parsed.success) return toFormError(parsed.error);
+  if (!isExportDataset(parsed.data.dataset)) {
+    return actionFail("VALIDATION", "That dataset cannot be exported.");
+  }
 
-  const supabase = await createServerSupabase();
+  const admin = tryCreateAdminSupabase();
+  if (!admin) {
+    return actionFail(
+      "UNKNOWN",
+      "Exports need the service-role key configured on the server.",
+    );
+  }
 
-  const { data, error } = await supabase.rpc("create_export", {
-    p_dataset: parsed.data.dataset,
-    p_format: parsed.data.format,
-  });
+  // The job row is created first so a failure leaves an auditable, failed row
+  // rather than nothing at all.
+  const { data: job, error: createError } = await admin
+    .from("exports")
+    .insert({
+      dataset: parsed.data.dataset,
+      format: parsed.data.format,
+      status: "running",
+      requested_by: session.user.id,
+    })
+    .select("id")
+    .single();
 
-  if (error) return actionError(error);
+  if (createError || !job) {
+    return actionError(createError ?? new Error("Could not queue the export."));
+  }
 
-  const row = Array.isArray(data) ? data[0] : data;
+  try {
+    const built = await buildExport({
+      dataset: parsed.data.dataset,
+      format: parsed.data.format,
+    });
 
-  await logAudit(supabase, {
-    actorId: session.user.id,
-    actorRole: session.role,
-    action: "export.created",
-    entity: "exports",
-    entityId: row?.export_id ?? null,
-    after: { dataset: parsed.data.dataset, format: parsed.data.format },
-  });
+    const path = exportObjectPath(job.id, built.extension);
+    const { error: uploadError } = await admin.storage
+      .from("exports")
+      .upload(path, built.body, {
+        contentType: built.mime,
+        upsert: true,
+      });
 
-  revalidatePath("/admin/exports");
-  return actionOk({ id: row?.export_id ?? "", rows: Number(row?.row_count ?? 0) });
+    if (uploadError) throw new Error(uploadError.message);
+
+    const { error: finishError } = await admin
+      .from("exports")
+      .update({
+        status: "ready",
+        row_count: built.rows,
+        bytes: Buffer.byteLength(built.body, "utf8"),
+        storage_path: path,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", job.id);
+
+    if (finishError) throw new Error(finishError.message);
+
+    await logAudit(admin, {
+      actorId: session.user.id,
+      actorRole: session.role,
+      action: "export.created",
+      entity: "exports",
+      entityId: job.id,
+      after: {
+        dataset: parsed.data.dataset,
+        format: parsed.data.format,
+        rows: built.rows,
+      },
+    });
+
+    revalidatePath("/admin/exports");
+    return actionOk({ id: job.id, rows: built.rows });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "The export could not be built.";
+
+    await admin
+      .from("exports")
+      .update({ status: "failed", error: message.slice(0, 500) })
+      .eq("id", job.id);
+
+    return actionFail("UNKNOWN", message);
+  }
 }
 
 /* ---------------------------------------------------------------- backups */
@@ -1145,34 +1287,80 @@ export async function requestBackupAction(
   if (!parsed.success) return toFormError(parsed.error);
 
   if (!parsed.data.confirm) {
-    return {
-      ok: false,
-      error: { code: "UNKNOWN", message: "Confirm that you want to create a backup." },
-    };
+    return actionFail("VALIDATION", "Confirm that you want to create a backup.");
   }
 
-  const supabase = await createServerSupabase();
+  const admin = tryCreateAdminSupabase();
+  if (!admin) {
+    return actionFail(
+      "UNKNOWN",
+      "Backups need the service-role key configured on the server.",
+    );
+  }
 
-  const { data, error } = await supabase.rpc("create_backup", {
-    p_kind: parsed.data.kind,
-    ...(parsed.data.label ? { p_label: parsed.data.label } : {}),
-  });
+  // Job row first, so a failed build leaves a visible failed record instead of
+  // nothing at all.
+  const { data: job, error: createError } = await admin
+    .from("backup_records")
+    .insert({
+      kind: parsed.data.kind,
+      status: "running",
+      label: parsed.data.label ?? null,
+      created_by: session.user.id,
+    })
+    .select("id")
+    .single();
 
-  if (error) return actionError(error);
+  if (createError || !job) {
+    return actionError(createError ?? new Error("Could not queue the backup."));
+  }
 
-  const row = Array.isArray(data) ? data[0] : data;
+  try {
+    const built = await buildBackup({
+      kind: parsed.data.kind,
+      label: parsed.data.label ?? null,
+    });
 
-  await logAudit(supabase, {
-    actorId: session.user.id,
-    actorRole: session.role,
-    action: "backup.created",
-    entity: "backup_records",
-    entityId: row?.backup_id ?? null,
-    after: { kind: parsed.data.kind },
-  });
+    const path = backupObjectPath(job.id);
+    const { error: uploadError } = await admin.storage
+      .from("backups")
+      .upload(path, built.body, { contentType: "application/json", upsert: true });
+    if (uploadError) throw new Error(uploadError.message);
 
-  revalidatePath("/admin/backups");
-  return actionOk({ id: row?.backup_id ?? "", bytes: Number(row?.bytes ?? 0) });
+    const { error: finishError } = await admin
+      .from("backup_records")
+      .update({
+        status: "ready",
+        bytes: built.bytes,
+        storage_path: path,
+        manifest: JSON.parse(JSON.stringify(built.bundle)),
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", job.id);
+    if (finishError) throw new Error(finishError.message);
+
+    await logAudit(admin, {
+      actorId: session.user.id,
+      actorRole: session.role,
+      action: "backup.created",
+      entity: "backup_records",
+      entityId: job.id,
+      after: { kind: parsed.data.kind, bytes: built.bytes, tables: built.tables },
+    });
+
+    revalidatePath("/admin/backups");
+    return actionOk({ id: job.id, bytes: built.bytes });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "The backup could not be built.";
+
+    await admin
+      .from("backup_records")
+      .update({ status: "failed", error: message.slice(0, 500) })
+      .eq("id", job.id);
+
+    return actionFail("UNKNOWN", message);
+  }
 }
 
 /* --------------------------------------------------------------- AI centre */

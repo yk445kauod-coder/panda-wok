@@ -1,9 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { signInSchema, signUpSchema } from "@/lib/validation/schemas";
+import { LOCALE_COOKIE } from "@/lib/i18n/config";
 import {
   actionError,
   actionOk,
@@ -65,6 +67,7 @@ export async function signUpAction(
     phone: formData.get("phone"),
     email: formData.get("email"),
     password: formData.get("password"),
+    locale: formData.get("locale") ?? undefined,
     marketingOptIn: formData.get("marketingOptIn") === "on",
     next: formData.get("next") ?? undefined,
   });
@@ -88,6 +91,9 @@ export async function signUpAction(
       data: {
         full_name: parsed.data.fullName,
         phone: parsed.data.phone,
+        // The handle_new_user trigger reads this and stores it on the profile,
+        // so the language chosen at signup is the one the account starts with.
+        locale: parsed.data.locale,
       },
     },
   });
@@ -107,6 +113,16 @@ export async function signUpAction(
         : undefined,
     };
   }
+
+  // Remember the choice on this device too, so the very next page (including a
+  // confirmation screen) renders in the language they picked.
+  const cookieStore = await cookies();
+  cookieStore.set(LOCALE_COOKIE, parsed.data.locale, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+    httpOnly: false,
+  });
 
   // The profile row is created by a database trigger; apply the opt-in here.
   if (data.user && parsed.data.marketingOptIn) {

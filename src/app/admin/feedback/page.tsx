@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { requireCapability } from "@/lib/auth/session";
-import { listFeedbackAdmin } from "@/lib/services/admin-catalog";
+import { countFeedbackAdmin, listFeedbackAdmin } from "@/lib/services/admin-catalog";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  DEFAULT_PAGE_SIZE,
+  Pagination,
+  resolvePage,
+} from "@/components/ui/pagination";
 import { FeedbackReplyControl } from "@/components/admin/customer-controls";
 import { cn, formatDateTime, humanise } from "@/lib/utils/format";
 import type { Database } from "@/lib/types/database";
@@ -23,7 +29,7 @@ const CATEGORIES: FeedbackCategory[] = ["food_quality", "delivery", "service", "
 export default async function AdminFeedbackPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; category?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; category?: string; q?: string; page?: string }>;
 }) {
   await requireCapability("feedback.manage");
   const params = await searchParams;
@@ -35,12 +41,18 @@ export default async function AdminFeedbackPage({
     ? (params.category as FeedbackCategory)
     : undefined;
 
-  const feedback = await listFeedbackAdmin({
-    status,
-    category,
-    search: params.q,
-    limit: 150,
-  });
+  const page = resolvePage(params.page);
+  const pageSize = DEFAULT_PAGE_SIZE;
+  const filter = { status, category, search: params.q };
+
+  const [feedback, total] = await Promise.all([
+    listFeedbackAdmin({
+      ...filter,
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    }),
+    countFeedbackAdmin(filter),
+  ]);
 
   const average =
     feedback.length > 0
@@ -61,25 +73,27 @@ export default async function AdminFeedbackPage({
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Feedback</h1>
-          <p className="mt-1 text-sm text-ink-700/80">
-            What customers told the kitchen. Replies are visible to the customer; contact
-            details stay on this page.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge tone="neutral">{feedback.length} shown</Badge>
-          {feedback.length > 0 ? (
-            <Badge tone="info">
-              <Star className="mr-1 size-3" aria-hidden="true" />
-              {average.toFixed(1)} average
-            </Badge>
-          ) : null}
-          {open > 0 ? <Badge tone="warning">{open} needing a reply</Badge> : <Badge tone="success">All answered</Badge>}
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="CRM"
+        title="Feedback"
+        description="What customers told the kitchen. Replies are visible to the customer; contact details stay on this page."
+        actions={
+          <>
+            <Badge tone="neutral">{total} total</Badge>
+            {feedback.length > 0 ? (
+              <Badge tone="info">
+                <Star className="mr-1 size-3" aria-hidden="true" />
+                {average.toFixed(1)} average on this page
+              </Badge>
+            ) : null}
+            {open > 0 ? (
+              <Badge tone="warning">{open} needing a reply</Badge>
+            ) : (
+              <Badge tone="success">All answered</Badge>
+            )}
+          </>
+        }
+      />
 
       <form method="get" className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
@@ -268,6 +282,14 @@ export default async function AdminFeedbackPage({
           ))}
         </ul>
       )}
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        basePath="/admin/feedback"
+        searchParams={{ status, category, q: params.q }}
+      />
     </div>
   );
 }

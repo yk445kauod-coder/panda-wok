@@ -1,35 +1,38 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  Award,
-  MapPin,
-  MessageSquare,
-  Package,
-  Receipt,
-  Star,
-  Wallet,
-} from "lucide-react";
+import { Award, MapPin, MessageSquare, Package, Receipt, Star, Wallet } from "lucide-react";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/auth/session";
 import { getMyStats, getMyOrders, getMyAddresses } from "@/lib/services/orders";
 import { getLoyaltyOverview } from "@/lib/services/loyalty";
-import { getFeatureFlagMap } from "@/lib/services/catalog";
+import { getFeatureFlagMap, getPublicSettings } from "@/lib/services/catalog";
 import { Badge } from "@/components/ui/button";
 import { SignOutButton } from "@/components/customer/sign-out-button";
 import { ProfileForm } from "@/components/customer/profile-form";
-import { formatDate, formatPrice, humanise } from "@/lib/utils/format";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { formatDate, formatPrice } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { statusLabel } from "@/lib/i18n/orders";
 
-export const metadata: Metadata = buildMetadata({
-  title: "Your account",
-  description: "Manage your Panda Wok profile, addresses and loyalty points.",
-  path: "/account",
-  noIndex: true,
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const [locale, settings] = await Promise.all([getLocale(), getPublicSettings()]);
+  const t = await getT(locale);
+  return buildMetadata({
+    title: t("account.metaTitle"),
+    description: t("account.metaDescription", { brand: settings.brand.name }),
+    path: "/account",
+    noIndex: true,
+    locale,
+  });
+}
 
 export default async function AccountPage() {
   const session = await getSession();
   if (!session) redirect("/auth/sign-in?next=%2Faccount");
+
+  const locale = await getLocale();
+  const t = await getT(locale);
 
   const [stats, orders, addresses, loyalty, flags] = await Promise.all([
     getMyStats(session.user.id),
@@ -43,14 +46,19 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-ink-900">
-          {profile?.full_name ? `Hello, ${profile.full_name.split(" ")[0]}` : "Your account"}
-        </h1>
-        <p className="mt-1 text-sm text-ink-700/80">
-          Member since {formatDate(profile?.created_at)}
-          {session.isStaff ? " · Staff account" : ""}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink-900">
+            {profile?.full_name
+              ? t("account.hello", { name: profile.full_name.split(" ")[0] })
+              : t("account.title")}
+          </h1>
+          <p className="mt-1 text-sm text-ink-700/80">
+            {t("account.memberSince", { date: formatDate(profile?.created_at, locale) })}
+            {session.isStaff ? t("account.staffAccount") : ""}
+          </p>
+        </div>
+        <LanguageSwitcher current={locale} />
       </header>
 
       {profile?.is_blocked ? (
@@ -58,31 +66,34 @@ export default async function AccountPage() {
           role="alert"
           className="mt-4 rounded-xl border border-chili-500/30 bg-chili-500/8 p-3.5 text-sm text-chili-600"
         >
-          This account is currently blocked from placing orders. Please contact the
-          kitchen to resolve it.
+          {t("account.blockedNotice")}
         </p>
       ) : null}
 
       <section aria-labelledby="stats-heading" className="mt-5">
         <h2 id="stats-heading" className="sr-only">
-          Your activity
+          {t("account.statsHeading")}
         </h2>
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard icon={Receipt} label="Orders" value={String(stats.orderCount)} />
+          <StatCard
+            icon={Receipt}
+            label={t("account.statOrders")}
+            value={String(stats.orderCount)}
+          />
           <StatCard
             icon={Wallet}
-            label="Lifetime spend"
-            value={formatPrice(stats.lifetimeSpend)}
+            label={t("account.statLifetimeSpend")}
+            value={formatPrice(stats.lifetimeSpend, undefined, locale)}
           />
           <StatCard
             icon={Package}
-            label="Active orders"
+            label={t("account.statActiveOrders")}
             value={String(stats.activeOrders)}
           />
           {flags.loyalty !== false ? (
             <StatCard
               icon={Award}
-              label="Loyalty points"
+              label={t("account.statLoyaltyPoints")}
               value={String(loyalty.account?.points_balance ?? 0)}
               href="/loyalty"
             />
@@ -91,10 +102,12 @@ export default async function AccountPage() {
       </section>
 
       {/* Active order shortcut */}
-      {orders.some((o) => ["new", "accepted", "in_progress", "prepared", "out_for_delivery"].includes(o.status)) ? (
+      {orders.some((o) =>
+        ["new", "accepted", "in_progress", "prepared", "out_for_delivery"].includes(o.status),
+      ) ? (
         <section aria-labelledby="active-heading" className="washi-panel mt-5 p-4">
           <h2 id="active-heading" className="text-sm font-semibold text-ink-900">
-            Track your order
+            {t("account.trackOrder")}
           </h2>
           <ul className="mt-3 space-y-2">
             {orders
@@ -114,11 +127,13 @@ export default async function AccountPage() {
                         #{order.order_number}
                       </span>
                       <span className="block text-xs text-ink-700/70">
-                        {order.item_count} {order.item_count === 1 ? "item" : "items"} ·{" "}
-                        {formatPrice(order.total)}
+                        {order.item_count === 1
+                          ? t("orders.itemCountSingular", { count: order.item_count })
+                          : t("orders.itemCountPlural", { count: order.item_count })}{" "}
+                        · {formatPrice(order.total, undefined, locale)}
                       </span>
                     </span>
-                    <Badge tone="info">{humanise(order.status)}</Badge>
+                    <Badge tone="info">{statusLabel(order.status, locale)}</Badge>
                   </Link>
                 </li>
               ))}
@@ -129,7 +144,7 @@ export default async function AccountPage() {
       {/* Profile */}
       <section aria-labelledby="profile-heading" className="washi-panel mt-5 p-4">
         <h2 id="profile-heading" className="text-sm font-semibold text-ink-900">
-          Your details
+          {t("account.detailsHeading")}
         </h2>
         <ProfileForm
           defaults={{
@@ -149,19 +164,17 @@ export default async function AccountPage() {
             className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
           >
             <MapPin className="size-4 text-plum-600" aria-hidden="true" />
-            Delivery addresses
+            {t("account.addressesHeading")}
           </h2>
           <Link
             href="/account/addresses"
             className="text-xs font-medium text-plum-600 hover:text-plum-700"
           >
-            Manage
+            {t("common.manage")}
           </Link>
         </div>
         {addresses.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-700/75">
-            No addresses saved yet. Add one so checkout is a single tap.
-          </p>
+          <p className="mt-3 text-sm text-ink-700/75">{t("account.noAddresses")}</p>
         ) : (
           <ul className="mt-3 space-y-2 text-sm">
             {addresses.slice(0, 3).map((address) => (
@@ -174,7 +187,9 @@ export default async function AccountPage() {
                       .join(" · ")}
                   </span>
                 </span>
-                {address.is_default ? <Badge tone="info">Default</Badge> : null}
+                {address.is_default ? (
+                  <Badge tone="info">{t("common.default")}</Badge>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -182,14 +197,18 @@ export default async function AccountPage() {
       </section>
 
       {/* Shortcuts */}
-      <nav aria-label="Account shortcuts" className="mt-5 grid grid-cols-2 gap-3">
-        <ShortcutLink href="/orders" icon={Receipt} label="Your orders" />
-        <ShortcutLink href="/account/addresses" icon={MapPin} label="Addresses" />
+      <nav aria-label={t("account.shortcuts")} className="mt-5 grid grid-cols-2 gap-3">
+        <ShortcutLink href="/orders" icon={Receipt} label={t("account.yourOrders")} />
+        <ShortcutLink
+          href="/account/addresses"
+          icon={MapPin}
+          label={t("account.addresses")}
+        />
         {flags.loyalty !== false ? (
-          <ShortcutLink href="/loyalty" icon={Star} label="Loyalty" />
+          <ShortcutLink href="/loyalty" icon={Star} label={t("common.loyalty")} />
         ) : null}
         {flags.feedback !== false ? (
-          <ShortcutLink href="/feedback" icon={MessageSquare} label="Feedback" />
+          <ShortcutLink href="/feedback" icon={MessageSquare} label={t("common.feedback")} />
         ) : null}
       </nav>
 
@@ -222,10 +241,7 @@ function StatCard({
   );
 
   return href ? (
-    <Link
-      href={href}
-      className="washi-panel p-3 transition-shadow hover:shadow-washi-lg"
-    >
+    <Link href={href} className="washi-panel p-3 transition-shadow hover:shadow-washi-lg">
       {content}
     </Link>
   ) : (

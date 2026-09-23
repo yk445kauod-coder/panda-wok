@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { requireCapability } from "@/lib/auth/session";
 import { listStaff } from "@/lib/services/admin-catalog";
-import { listCrmCustomers } from "@/lib/crm/customers";
+import { countCrmCustomers, listCrmCustomers } from "@/lib/crm/customers";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { DEFAULT_PAGE_SIZE, Pagination, resolvePage } from "@/components/ui/pagination";
 import { BlockUserControl, StaffRoleForm } from "@/components/admin/customer-controls";
 import { formatDate, formatDateTime, formatNumber, formatPrice, humanise } from "@/lib/utils/format";
 import type { StaffRole } from "@/lib/auth/rbac";
@@ -18,13 +20,29 @@ export const dynamic = "force-dynamic";
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; role?: string }>;
+  searchParams: Promise<{ q?: string; role?: string; page?: string }>;
 }) {
   await requireCapability("users.manage");
   const params = await searchParams;
 
-  const [customers, staff] = await Promise.all([
-    listCrmCustomers({ search: params.q, limit: 200 }).catch(() => []),
+  const page = resolvePage(params.page);
+  const pageSize = DEFAULT_PAGE_SIZE;
+
+  // The staff/role filters are applied outside SQL (they read the `staff` table),
+  // so a page would be filtered down to almost nothing. When one is active the
+  // whole book is fetched up to a hard ceiling and pagination is hidden, which
+  // is honest about the fact that this view is not a true paged query.
+  const roleFiltered = Boolean(params.role);
+  const limit = roleFiltered ? 1000 : pageSize;
+  const offset = roleFiltered ? 0 : (page - 1) * pageSize;
+
+  const [customers, total, staff] = await Promise.all([
+    listCrmCustomers({
+      search: params.q,
+      limit,
+      offset,
+    }).catch(() => []),
+    countCrmCustomers(params.q).catch(() => 0),
     listStaff().catch(() => []),
   ]);
 
@@ -44,19 +62,17 @@ export default async function AdminUsersPage({
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Users</h1>
-          <p className="mt-1 text-sm text-ink-700/80">
-            Customer accounts and staff access. Only the details needed for support and
-            operations are shown.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge tone="neutral">{customers.length} accounts</Badge>
-          <Badge tone="info">{staff.length} staff</Badge>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="Operations"
+        title="Users"
+        description="Customer accounts and staff access. Only the details needed for support and operations are shown."
+        actions={
+          <>
+            <Badge tone="neutral">{formatNumber(total)} accounts</Badge>
+            <Badge tone="info">{staff.length} staff</Badge>
+          </>
+        }
+      />
 
       <form method="get" className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
@@ -184,6 +200,16 @@ export default async function AdminUsersPage({
           })}
         </ul>
       )}
+
+      {!roleFiltered ? (
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          basePath="/admin/users"
+          searchParams={{ q: params.q }}
+        />
+      ) : null}
 
       <p className="text-xs text-ink-700/60">
         Role changes are recorded in the audit log with the acting staff member. The database

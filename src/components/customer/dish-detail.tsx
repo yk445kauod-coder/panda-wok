@@ -17,36 +17,42 @@ import { UpsellSuggestions } from "@/components/customer/upsell-suggestions";
 import { ItemViewTracker } from "@/components/customer/item-view-tracker";
 import { formatPrice, humanise } from "@/lib/utils/format";
 import type { MenuItem, MenuItemDetail } from "@/lib/services/catalog";
+import type { Locale } from "@/lib/i18n/config";
+import { ar } from "@/lib/i18n/dictionaries/ar";
+import { en } from "@/lib/i18n/dictionaries/en";
+import { makeTranslator } from "@/lib/i18n/translate";
+import { localisedName, localisedDescription } from "@/lib/i18n/catalog";
 
 export function DishDetail({
   dish,
   related,
   currency,
   categoryName,
+  locale = "en",
 }: {
   dish: MenuItemDetail;
   related: MenuItem[];
   currency: string;
   categoryName: string;
+  locale?: Locale;
 }) {
+  const t = makeTranslator(locale === "ar" ? ar : en);
   const unavailable = !dish.is_available;
+  const name = localisedName(dish, locale);
+  const description = localisedDescription(dish, locale);
 
   const breadcrumbs = [
-    { name: "Home", path: "/" },
-    { name: "Menu", path: "/menu" },
+    { name: t("common.home"), path: "/" },
+    { name: t("menu.title"), path: "/menu" },
     ...(dish.categories
       ? [{ name: categoryName, path: `/menu/${dish.categories.slug}` }]
       : []),
-    { name: dish.name_en, path: `/menu/${dish.slug}` },
+    { name, path: `/menu/${dish.slug}` },
   ];
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <ItemViewTracker
-        menuItemId={dish.id}
-        slug={dish.slug}
-        name={dish.name_en}
-      />
+      <ItemViewTracker menuItemId={dish.id} slug={dish.slug} name={dish.name_en} />
 
       <Breadcrumbs items={breadcrumbs} />
 
@@ -56,7 +62,7 @@ export function DishDetail({
             {dish.image_url ? (
               <Image
                 src={dish.image_url}
-                alt={dish.image_alt ?? dish.name_en}
+                alt={dish.image_alt ?? name}
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 priority
@@ -67,12 +73,12 @@ export function DishDetail({
                 aria-hidden="true"
                 className="seigaiha grid h-full place-items-center text-sm text-ink-700/50"
               >
-                Photo coming soon
+                {t("common.photoSoon")}
               </div>
             )}
             {dish.has_transparent_png ? (
-              <span className="absolute left-3 top-3">
-                <Badge tone="info">Cut-out available</Badge>
+              <span className="absolute start-3 top-3">
+                <Badge tone="info">{t("dish.cutOutAvailable")}</Badge>
               </span>
             ) : null}
           </div>
@@ -87,7 +93,10 @@ export function DishDetail({
                     <div className="relative size-20 overflow-hidden rounded-lg border border-ink-900/10">
                       <Image
                         src={src}
-                        alt={image.alt_en ?? `${dish.name_en} view ${index + 1}`}
+                        alt={
+                          image.alt_en ??
+                          t("dish.imageAltView", { name, index: index + 1 })
+                        }
                         fill
                         sizes="80px"
                         className="object-cover"
@@ -108,19 +117,14 @@ export function DishDetail({
             >
               {categoryName}
             </Link>
-            {dish.is_featured ? <Badge tone="plum">Chef&apos;s pick</Badge> : null}
-            {unavailable ? <Badge tone="danger">Sold out</Badge> : null}
+            {dish.is_featured ? <Badge tone="plum">{t("dish.chefPick")}</Badge> : null}
+            {unavailable ? <Badge tone="danger">{t("dish.soldOut")}</Badge> : null}
           </div>
 
           <h1 className="mt-2 text-2xl font-semibold text-ink-900 sm:text-3xl">
-            {dish.name_en}
+            {name}
           </h1>
 
-          {dish.name_ar ? (
-            <p className="mt-1 text-base text-ink-700/80" dir="rtl" lang="ar">
-              {dish.name_ar}
-            </p>
-          ) : null}
           {dish.name_ja ? (
             <p className="mt-0.5 text-sm text-ink-700/60" lang="ja">
               {dish.name_ja}
@@ -128,10 +132,10 @@ export function DishDetail({
           ) : null}
 
           <p className="mt-3 text-2xl font-semibold text-ink-900">
-            {formatPrice(dish.price)}
+            {formatPrice(dish.price, currency, locale)}
             {dish.compare_at_price && Number(dish.compare_at_price) > Number(dish.price) ? (
-              <span className="ml-2 text-base font-normal text-ink-700/50 line-through">
-                {formatPrice(dish.compare_at_price)}
+              <span className="ms-2 text-base font-normal text-ink-700/50 line-through">
+                {formatPrice(dish.compare_at_price, currency, locale)}
               </span>
             ) : null}
           </p>
@@ -140,59 +144,49 @@ export function DishDetail({
             {dish.prep_minutes ? (
               <li className="inline-flex items-center gap-1.5 rounded-full bg-rice-200/70 px-2.5 py-1 text-ink-800">
                 <Clock className="size-3.5" aria-hidden="true" />
-                About {dish.prep_minutes} min prep
+                {t("dish.prepAbout", { minutes: dish.prep_minutes })}
               </li>
             ) : null}
             {dish.calories ? (
               <li className="inline-flex items-center gap-1.5 rounded-full bg-rice-200/70 px-2.5 py-1 text-ink-800">
                 <Utensils className="size-3.5" aria-hidden="true" />
-                {dish.calories} kcal
+                {t("dish.kcal", { calories: dish.calories })}
               </li>
             ) : null}
             {dish.is_spicy ? (
               <li className="inline-flex items-center gap-1.5 rounded-full bg-chili-500/12 px-2.5 py-1 text-chili-600">
                 <Flame className="size-3.5" aria-hidden="true" />
-                Spicy
+                {t("dish.spicy")}
               </li>
             ) : null}
             {dish.is_vegan ? (
               <li className="inline-flex items-center gap-1.5 rounded-full bg-jade-500/12 px-2.5 py-1 text-jade-600">
                 <Leaf className="size-3.5" aria-hidden="true" />
-                Vegan
+                {t("dish.vegan")}
               </li>
             ) : dish.is_vegetarian ? (
               <li className="inline-flex items-center gap-1.5 rounded-full bg-jade-500/12 px-2.5 py-1 text-jade-600">
                 <Leaf className="size-3.5" aria-hidden="true" />
-                Vegetarian
+                {t("dish.vegetarian")}
               </li>
             ) : null}
             {dish.contains_nuts ? (
               <li className="inline-flex items-center gap-1.5 rounded-full bg-miso-500/18 px-2.5 py-1 text-miso-600">
                 <Nut className="size-3.5" aria-hidden="true" />
-                Contains nuts
+                {t("dish.containsNuts")}
               </li>
             ) : null}
           </ul>
 
-          {dish.description_en ? (
-            <p className="mt-4 text-sm leading-relaxed text-ink-700/90">
-              {dish.description_en}
-            </p>
-          ) : null}
-
-          {dish.description_ar ? (
-            <p
-              className="mt-2 text-sm leading-relaxed text-ink-700/80"
-              dir="rtl"
-              lang="ar"
-            >
-              {dish.description_ar}
-            </p>
+          {description ? (
+            <p className="mt-4 text-sm leading-relaxed text-ink-700/90">{description}</p>
           ) : null}
 
           {dish.ingredients && dish.ingredients.length > 0 ? (
             <section className="mt-5">
-              <h2 className="text-sm font-semibold text-ink-900">Ingredients</h2>
+              <h2 className="text-sm font-semibold text-ink-900">
+                {t("dish.ingredients")}
+              </h2>
               <ul className="mt-2 flex flex-wrap gap-1.5">
                 {dish.ingredients.map((ingredient) => (
                   <li
@@ -210,7 +204,7 @@ export function DishDetail({
             <section className="mt-5 rounded-xl border border-miso-500/25 bg-miso-300/12 p-3.5">
               <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink-900">
                 <ShieldAlert className="size-4 text-miso-600" aria-hidden="true" />
-                Allergens recorded for this dish
+                {t("dish.allergensHeading")}
               </h2>
               <ul className="mt-2 flex flex-wrap gap-1.5">
                 {dish.allergens.map((allergen) => (
@@ -224,18 +218,18 @@ export function DishDetail({
               </ul>
               <p className="mt-2 flex items-start gap-1.5 text-xs text-ink-700/80">
                 <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                This list is what the kitchen has recorded and is not a guarantee. If you
-                have a serious allergy, please confirm directly with us before ordering.
+                {t("dish.allergensDisclaimer")}
               </p>
             </section>
           ) : null}
 
-          <AddToCartPanel dish={dish} currency={currency} />
+          <AddToCartPanel dish={dish} currency={currency} locale={locale} />
 
           <UpsellSuggestions
             triggerMenuItemId={dish.id}
             triggerCategoryId={dish.category_id}
             currency={currency}
+            locale={locale}
           />
         </div>
       </div>
@@ -243,12 +237,17 @@ export function DishDetail({
       {related.length > 0 ? (
         <section className="mt-12" aria-labelledby="related-heading">
           <h2 id="related-heading" className="text-lg font-semibold text-ink-900">
-            More from {categoryName}
+            {t("dish.moreFrom", { category: categoryName })}
           </h2>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {related.map((item) => (
               <li key={item.id}>
-                <DishCard item={item} currency={currency} categoryName={categoryName} />
+                <DishCard
+                  item={item}
+                  currency={currency}
+                  locale={locale}
+                  categoryName={categoryName}
+                />
               </li>
             ))}
           </ul>

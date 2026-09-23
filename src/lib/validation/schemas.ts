@@ -59,6 +59,7 @@ export const signUpSchema = z.object({
     .string()
     .min(8, "Use at least 8 characters")
     .max(72, "Password is too long"),
+  locale: z.enum(["en", "ar"]).default("en"),
   marketingOptIn: z.coerce.boolean().default(false),
   next: z.string().optional(),
 });

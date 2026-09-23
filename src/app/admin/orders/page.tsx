@@ -1,11 +1,22 @@
 import Link from "next/link";
 import { requireCapability } from "@/lib/auth/session";
-import { getOrderStatusCounts, listAdminOrders } from "@/lib/services/admin-orders";
+import {
+  countAdminOrders,
+  getOrderStatusCounts,
+  listAdminOrders,
+} from "@/lib/services/admin-orders";
 import type { OrderStatus } from "@/lib/services/admin-orders";
 import { ORDER_STATUS_LABELS } from "@/lib/services/order-status";
-import { Badge } from "@/components/ui/button";
+import { Badge, Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  DEFAULT_PAGE_SIZE,
+  Pagination,
+  resolvePage,
+} from "@/components/ui/pagination";
 import { OrderStatusControl } from "@/components/admin/order-status-control";
+import { LiveOrdersFeed } from "@/components/admin/live-refresh";
 import { formatDateTime, formatPrice, humanise } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/format";
 
@@ -25,7 +36,7 @@ const TABS: { key: OrderStatus | "active" | "all"; label: string }[] = [
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
   await requireCapability("orders.view");
 
@@ -34,20 +45,25 @@ export default async function AdminOrdersPage({
   const status = TABS.some((tab) => tab.key === requested)
     ? (requested as OrderStatus | "active" | "all")
     : "active";
+  const page = resolvePage(params.page);
+  const pageSize = DEFAULT_PAGE_SIZE;
 
-  const [orders, counts] = await Promise.all([
-    listAdminOrders({ status, search: params.q, limit: 120 }),
+  const filter = { status, search: params.q };
+
+  const [orders, counts, total] = await Promise.all([
+    listAdminOrders({ ...filter, limit: pageSize, offset: (page - 1) * pageSize }),
     getOrderStatusCounts(),
+    countAdminOrders(filter),
   ]);
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-2xl font-semibold text-ink-900">Orders</h1>
-        <p className="mt-1 text-sm text-ink-700/80">
-          Every status change is recorded with who made it and when.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Operations"
+        title="Orders"
+        description="Every status change is recorded with who made it and when."
+        actions={<LiveOrdersFeed />}
+      />
 
       <form method="get" className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="status" value={status} />
@@ -63,16 +79,13 @@ export default async function AdminOrdersPage({
             className="mt-1 h-10 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           />
         </div>
-        <button
-          type="submit"
-          className="h-10 rounded-xl bg-plum-600 px-4 text-sm font-medium text-rice-50 hover:bg-plum-700"
-        >
+        <Button type="submit" size="md">
           Search
-        </button>
+        </Button>
         {params.q ? (
           <Link
             href={`/admin/orders?status=${status}`}
-            className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
+            className="inline-flex h-11 items-center rounded-xl border border-ink-900/15 px-4 text-sm text-ink-800 hover:bg-rice-200"
           >
             Clear
           </Link>
@@ -188,6 +201,14 @@ export default async function AdminOrdersPage({
           ))}
         </ul>
       )}
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        basePath="/admin/orders"
+        searchParams={{ status, q: params.q }}
+      />
     </div>
   );
 }

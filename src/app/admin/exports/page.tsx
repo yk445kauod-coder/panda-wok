@@ -1,13 +1,16 @@
 import { requireCapability } from "@/lib/auth/session";
 import { listExports } from "@/lib/services/admin-catalog";
+import { getExportDownloadUrls } from "@/lib/export/download";
 import {
   ExportRequestForm,
   type DatasetOption,
 } from "@/components/admin/export-request-form";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { RunStatusBadge, isRunInFlight } from "@/components/admin/run-status";
 import { formatDateTime, formatNumber, humanise } from "@/lib/utils/format";
+import { Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -95,15 +98,19 @@ export default async function AdminExportsPage() {
   const exports = await listExports(50);
   const personalCount = DATASETS.filter((dataset) => dataset.sensitivity === "personal").length;
 
+  const downloadUrls = await getExportDownloadUrls(
+    exports
+      .filter((record) => record.status === "ready" && record.storage_path)
+      .map((record) => record.storage_path as string),
+  );
+
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-ink-900">Exports</h1>
-        <p className="mt-1 text-sm text-ink-700/80">
-          Request a dataset in CSV or JSON. Large exports run in the background, so the
-          page stays responsive and the job appears in the history below.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Platform"
+        title="Exports"
+        description="Request a dataset in CSV or JSON. The file is built immediately and stored in the private exports bucket, then downloadable from the history below."
+      />
 
       <section className="washi-panel p-4" aria-label="Request an export">
         <h2 className="font-display text-lg font-semibold text-ink-900">
@@ -121,7 +128,8 @@ export default async function AdminExportsPage() {
       <section aria-label="Export history">
         <h2 className="font-display text-lg font-semibold text-ink-900">History</h2>
         <p className="mt-1 text-sm text-ink-700/75">
-          Every export request, newest first, with the row count captured at request time.
+          Every export request, newest first. Download links are signed and expire after an
+          hour.
         </p>
 
         {exports.length === 0 ? (
@@ -132,41 +140,54 @@ export default async function AdminExportsPage() {
           />
         ) : (
           <ul className="mt-3 space-y-2">
-            {exports.map((record) => (
-              <li key={record.id} className="washi-panel p-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-ink-900">
-                      {humanise(record.dataset)}
-                      <Badge tone="neutral">{record.format.toUpperCase()}</Badge>
-                      <RunStatusBadge status={record.status} />
-                    </p>
-                    <p className="mt-0.5 text-xs text-ink-700/70">
-                      {record.row_count !== null
-                        ? `${formatNumber(record.row_count)} rows`
-                        : "Row count pending"}
-                      {record.bytes ? ` · ${(record.bytes / 1024).toFixed(1)} KB` : ""}
-                      {" · requested "}
-                      {formatDateTime(record.created_at)}
-                      {record.completed_at
-                        ? ` · completed ${formatDateTime(record.completed_at)}`
-                        : ""}
-                    </p>
-                    {record.error ? (
-                      <p role="alert" className="mt-1 text-xs text-chili-600">
-                        {record.error}
+            {exports.map((record) => {
+              const href = record.storage_path
+                ? downloadUrls[record.storage_path]
+                : undefined;
+              return (
+                <li key={record.id} className="washi-panel p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-ink-900">
+                        {humanise(record.dataset)}
+                        <Badge tone="neutral">{record.format.toUpperCase()}</Badge>
+                        <RunStatusBadge status={record.status} />
                       </p>
+                      <p className="mt-0.5 text-xs text-ink-700/70">
+                        {record.row_count !== null
+                          ? `${formatNumber(record.row_count)} rows`
+                          : "Row count pending"}
+                        {record.bytes ? ` · ${(record.bytes / 1024).toFixed(1)} KB` : ""}
+                        {" · requested "}
+                        {formatDateTime(record.created_at)}
+                        {record.completed_at
+                          ? ` · completed ${formatDateTime(record.completed_at)}`
+                          : ""}
+                      </p>
+                      {record.error ? (
+                        <p role="alert" className="mt-1 text-xs text-chili-600">
+                          {record.error}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    {isRunInFlight(record.status) ? (
+                      <Badge tone="info">Building…</Badge>
+                    ) : href ? (
+                      <a
+                        href={href}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-plum-600 px-3 text-xs font-medium text-rice-50 hover:bg-plum-700"
+                      >
+                        <Download className="size-3.5" aria-hidden="true" />
+                        Download
+                      </a>
+                    ) : record.status === "ready" ? (
+                      <Badge tone="success">Ready</Badge>
                     ) : null}
                   </div>
-
-                  {isRunInFlight(record.status) ? (
-                    <Badge tone="info">Building…</Badge>
-                  ) : record.status === "ready" ? (
-                    <Badge tone="success">Ready</Badge>
-                  ) : null}
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Fraunces, Inter, IBM_Plex_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { SITE_URL } from "@/lib/seo/metadata";
+import { ToastProvider } from "@/components/ui/toast";
+import { I18nProvider } from "@/components/i18n-provider";
+import { getDictionary, getLocale, getT } from "@/lib/i18n/server";
+import { dirFor } from "@/lib/i18n/config";
 
 const bodyFont = Inter({
   variable: "--font-body",
@@ -15,18 +19,36 @@ const displayFont = Fraunces({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: "Panda Wok — Asian kitchen in Alexandria",
-    template: "%s | Panda Wok",
-  },
-  description:
-    "Panda Wok is a cloud kitchen in Alexandria, Egypt, cooking Asian-inspired wok, ramen and sushi to order.",
-  applicationName: "Panda Wok",
-  manifest: "/manifest.webmanifest",
-  formatDetection: { telephone: true, address: false, email: true },
-};
+/** Arabic needs a typeface with real Arabic coverage; Inter has none. */
+const arabicFont = IBM_Plex_Sans_Arabic({
+  variable: "--font-arabic",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getT(locale);
+
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: t("home.metaTitle", { brand: "Panda Wok", city: "Alexandria" }),
+      template: "%s | Panda Wok",
+    },
+    description: t("home.metaDescription", {
+      tagline:
+        "Panda Wok is a cloud kitchen in Alexandria, Egypt, cooking Asian-inspired wok, ramen and sushi to order.",
+      brand: "Panda Wok",
+      city: "Alexandria",
+    }),
+    applicationName: "Panda Wok",
+    manifest: "/manifest.webmanifest",
+    formatDetection: { telephone: true, address: false, email: true },
+    alternates: { canonical: "/" },
+  };
+}
 
 export const viewport = {
   themeColor: "#f8f4e9",
@@ -36,17 +58,26 @@ export const viewport = {
   viewportFit: "cover" as const,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const dict = await getDictionary(locale);
+
   return (
     <html
-      lang="en"
-      className={`${bodyFont.variable} ${displayFont.variable} h-full antialiased`}
+      lang={locale}
+      dir={dirFor(locale)}
+      className={`${bodyFont.variable} ${displayFont.variable} ${arabicFont.variable} h-full antialiased`}
+      data-locale={locale}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <I18nProvider locale={locale} dict={dict}>
+          <ToastProvider>{children}</ToastProvider>
+        </I18nProvider>
+      </body>
     </html>
   );
 }

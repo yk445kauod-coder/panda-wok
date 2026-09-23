@@ -1909,26 +1909,7 @@ export type Database = {
       can_manage_feedback: { Args: never; Returns: boolean }
       can_manage_marketing: { Args: never; Returns: boolean }
       can_manage_orders: { Args: never; Returns: boolean }
-      create_backup: {
-        Args: {
-          p_kind: Database["public"]["Enums"]["backup_kind"]
-          p_label?: string
-        }
-        Returns: {
-          backup_id: string
-          bytes: number
-        }[]
-      }
-      create_export: {
-        Args: {
-          p_dataset: string
-          p_format?: Database["public"]["Enums"]["export_format"]
-        }
-        Returns: {
-          export_id: string
-          row_count: number
-        }[]
-      }
+      crm_customer_count: { Args: { p_search?: string }; Returns: number }
       crm_customers: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
         Returns: {
@@ -1966,10 +1947,29 @@ export type Database = {
           user_id: string
         }[]
       }
+      crm_stats: {
+        Args: never
+        Returns: {
+          at_risk_customers: number
+          blocked_customers: number
+          customer_count: number
+          lifetime_value: number
+          marketing_opt_in: number
+          repeat_customers: number
+        }[]
+      }
       current_restaurant_id: { Args: never; Returns: string }
       current_staff_role: {
         Args: never
         Returns: Database["public"]["Enums"]["staff_role"]
+      }
+      feedback_count: {
+        Args: {
+          p_category?: Database["public"]["Enums"]["feedback_category"]
+          p_search?: string
+          p_status?: Database["public"]["Enums"]["feedback_status"]
+        }
+        Returns: number
       }
       has_role: {
         Args: { required: Database["public"]["Enums"]["staff_role"] }

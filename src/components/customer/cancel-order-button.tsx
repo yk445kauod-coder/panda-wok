@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n-provider";
 import { cancelOrderAction } from "@/lib/actions/checkout";
 
 /**
@@ -12,6 +13,7 @@ import { cancelOrderAction } from "@/lib/actions/checkout";
  * stale page cannot cancel an order that has already progressed.
  */
 export function CancelOrderButton({ orderId }: { orderId: string }) {
+  const t = useT();
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
@@ -38,7 +40,7 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
         onClick={() => setConfirming(true)}
       >
         <XCircle className="size-4" aria-hidden="true" />
-        Cancel order
+        {t("orders.cancelOrder")}
       </Button>
     );
   }
@@ -47,12 +49,9 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
     <div className="rounded-xl border border-chili-500/30 bg-chili-500/8 p-3.5 sm:flex-1">
       <p className="flex items-start gap-2 text-sm font-medium text-chili-600">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-        Cancel this order?
+        {t("orders.cancelConfirmTitle")}
       </p>
-      <p className="mt-1 text-xs text-ink-700/85">
-        This cannot be undone. Once the kitchen starts cooking, the order can no longer be
-        canceled.
-      </p>
+      <p className="mt-1 text-xs text-ink-700/85">{t("orders.cancelConfirmBody")}</p>
 
       {error ? (
         <p role="alert" className="mt-2 text-xs text-chili-600">
@@ -68,7 +67,7 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
           loading={pending}
           onClick={() => void cancel()}
         >
-          Yes, cancel it
+          {t("orders.cancelYes")}
         </Button>
         <Button
           type="button"
@@ -77,7 +76,7 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
           disabled={pending}
           onClick={() => setConfirming(false)}
         >
-          Keep order
+          {t("orders.cancelKeep")}
         </Button>
       </div>
     </div>

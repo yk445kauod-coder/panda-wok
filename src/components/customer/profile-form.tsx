@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n-provider";
 import { updateProfileAction } from "@/lib/actions/account";
 
 /** Profile editor. Field errors come back keyed by name from the Zod schema. */
@@ -17,6 +18,7 @@ export function ProfileForm({
     notificationsOptIn: boolean;
   };
 }) {
+  const t = useT();
   const router = useRouter();
   const [form, setForm] = useState(defaults);
   const [pending, setPending] = useState(false);
@@ -55,7 +57,7 @@ export function ProfileForm({
     <form onSubmit={onSubmit} className="mt-3 space-y-3" noValidate>
       <div>
         <label htmlFor="fullName" className="block text-sm font-medium text-ink-900">
-          Full name
+          {t("account.profile.fullName")}
         </label>
         <input
           id="fullName"
@@ -73,7 +75,7 @@ export function ProfileForm({
 
       <div>
         <label htmlFor="phone" className="block text-sm font-medium text-ink-900">
-          Phone number
+          {t("account.profile.phone")}
         </label>
         <input
           id="phone"
@@ -92,7 +94,9 @@ export function ProfileForm({
       </div>
 
       <fieldset className="space-y-2 pt-1">
-        <legend className="text-sm font-medium text-ink-900">Messages from us</legend>
+        <legend className="text-sm font-medium text-ink-900">
+          {t("account.profile.messagesHeading")}
+        </legend>
         <label className="flex cursor-pointer items-start gap-2.5">
           <input
             type="checkbox"
@@ -106,9 +110,9 @@ export function ProfileForm({
             className="mt-0.5 size-4 accent-plum-600"
           />
           <span className="text-sm text-ink-800">
-            Order updates
+            {t("account.profile.orderUpdates")}
             <span className="mt-0.5 block text-xs text-ink-700/65">
-              Status changes and anything the kitchen needs to tell you about your order.
+              {t("account.profile.orderUpdatesHint")}
             </span>
           </span>
         </label>
@@ -125,9 +129,9 @@ export function ProfileForm({
             className="mt-0.5 size-4 accent-plum-600"
           />
           <span className="text-sm text-ink-800">
-            Offers and new dishes
+            {t("account.profile.offers")}
             <span className="mt-0.5 block text-xs text-ink-700/65">
-              Occasional announcements. You can turn this off at any time.
+              {t("account.profile.offersHint")}
             </span>
           </span>
         </label>
@@ -141,12 +145,12 @@ export function ProfileForm({
 
       <div className="flex items-center gap-3">
         <Button type="submit" loading={pending}>
-          Save changes
+          {t("account.profile.saveChanges")}
         </Button>
         {saved ? (
           <span className="inline-flex items-center gap-1.5 text-sm text-jade-600">
             <Check className="size-4" aria-hidden="true" />
-            Saved
+            {t("account.profile.saved")}
           </span>
         ) : null}
       </div>

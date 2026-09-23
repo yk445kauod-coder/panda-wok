@@ -4,15 +4,19 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n-provider";
 import { requestPasswordResetAction } from "@/lib/actions/auth";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 
 export function ForgotPasswordForm() {
+  const t = useT();
   const [identifier, setIdentifier] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
-  const [success, setSuccess] = useState<{ channel: string; message: string } | null>(null);
+  const [success, setSuccess] = useState<{ channel: string; message: string } | null>(
+    null,
+  );
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,7 +46,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="mt-4 space-y-4">
+    <form onSubmit={onSubmit} noValidate className="space-y-4">
       {error ? (
         <p
           role="alert"
@@ -58,14 +62,20 @@ export function ForgotPasswordForm() {
           role="status"
           className="flex items-start gap-2 rounded-xl border border-jade-500/30 bg-jade-500/10 p-3.5 text-sm text-ink-800"
         >
-          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-jade-600" aria-hidden="true" />
+          <CheckCircle2
+            className="mt-0.5 size-4 shrink-0 text-jade-600"
+            aria-hidden="true"
+          />
           {success.message}
         </p>
       ) : null}
 
       <div>
-        <label htmlFor="identifier" className="mb-1.5 block text-sm font-medium text-ink-800">
-          Phone or email
+        <label
+          htmlFor="identifier"
+          className="mb-1.5 block text-sm font-medium text-ink-800"
+        >
+          {t("auth.forgot.identifier")}
         </label>
         <input
           id="identifier"
@@ -75,10 +85,10 @@ export function ForgotPasswordForm() {
           autoComplete="email"
           value={identifier}
           onChange={(event) => setIdentifier(event.target.value)}
-          placeholder="e.g. +20 100 000 0000 or you@email.com"
+          placeholder={t("auth.signIn.identifierPlaceholder")}
           required
           aria-invalid={Boolean(fields.identifier)}
-          className="h-11 w-full rounded-xl border border-ink-200 bg-rice-50 px-3.5 text-base text-ink-900 outline-none transition placeholder:text-ink-400 focus:border-plum-500 focus:ring-2 focus:ring-plum-500/20"
+          className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3.5 text-base text-ink-900 outline-none transition focus:border-plum-500 focus:ring-2 focus:ring-plum-500/20"
         />
         {fields.identifier ? (
           <p className="mt-1 text-xs text-chili-600">{fields.identifier}</p>
@@ -86,13 +96,15 @@ export function ForgotPasswordForm() {
       </div>
 
       <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Sending…" : "Send reset instructions"}
+        {pending ? t("auth.forgot.submitting") : t("auth.forgot.submit")}
       </Button>
 
       <p className="text-center text-sm text-ink-700/70">
-        Remembered it?{" "}
-        <Link href="/auth/sign-in" className="font-medium text-plum-600 hover:text-plum-700">
-          Back to sign in
+        <Link
+          href="/auth/sign-in"
+          className="font-medium text-plum-600 hover:text-plum-700"
+        >
+          {t("auth.forgot.backToSignIn")}
         </Link>
       </p>
     </form>

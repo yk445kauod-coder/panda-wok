@@ -75,6 +75,58 @@ export async function listCrmCustomers(params: {
   }));
 }
 
+/**
+ * Head-count under the same filter `listCrmCustomers` uses, so a page can show
+ * "x of y" and stop paging at the end of the book.
+ */
+export async function countCrmCustomers(search?: string): Promise<number> {
+  const admin = tryCreateAdminSupabase();
+  if (!admin) return 0;
+
+  const { data, error } = await admin.rpc("crm_customer_count", {
+    ...(search ? { p_search: search } : {}),
+  });
+  if (error) return 0;
+  return Number(data ?? 0);
+}
+
+/**
+ * Whole-book CRM aggregates. Computed in SQL rather than by summing the page
+ * of rows the dashboard happens to show, which made the figures depend on the
+ * page size.
+ */
+export async function getCrmStats(): Promise<{
+  customer_count: number;
+  lifetime_value: number;
+  repeat_customers: number;
+  at_risk_customers: number;
+  blocked_customers: number;
+  marketing_opt_in: number;
+}> {
+  const admin = tryCreateAdminSupabase();
+  const empty = {
+    customer_count: 0,
+    lifetime_value: 0,
+    repeat_customers: 0,
+    at_risk_customers: 0,
+    blocked_customers: 0,
+    marketing_opt_in: 0,
+  };
+  if (!admin) return empty;
+
+  const { data, error } = await admin.rpc("crm_stats").maybeSingle();
+  if (error || !data) return empty;
+
+  return {
+    customer_count: Number(data.customer_count),
+    lifetime_value: Number(data.lifetime_value),
+    repeat_customers: Number(data.repeat_customers),
+    at_risk_customers: Number(data.at_risk_customers),
+    blocked_customers: Number(data.blocked_customers),
+    marketing_opt_in: Number(data.marketing_opt_in),
+  };
+}
+
 export async function getCrmCustomer(userId: string): Promise<CrmCustomer | null> {
   const admin = createAdminSupabase();
   const { data, error } = await admin.rpc("crm_customers", {

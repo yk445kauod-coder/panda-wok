@@ -10,6 +10,7 @@ import { AnalyticsBeacon } from "@/components/customer/analytics-beacon";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { restaurantSchema, websiteSchema, organisationSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
+import { getLocale, getT } from "@/lib/i18n/server";
 
 /**
  * Public catalogue metadata is DB-driven, so update it on a short interval
@@ -18,12 +19,21 @@ import { JsonLdScript } from "@/components/seo/json-ld";
 export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getPublicSettings();
+  const [settings, locale] = await Promise.all([getPublicSettings(), getLocale()]);
+  const t = await getT(locale);
   return buildMetadata({
-    title: `${settings.brand.name} — Asian kitchen in ${settings.brand.city}`,
-    description: `${settings.brand.tagline}. Order wok, ramen and sushi for delivery in ${settings.brand.city}, ${settings.brand.country}.`,
+    title: t("home.metaTitle", {
+      brand: settings.brand.name,
+      city: settings.brand.city,
+    }),
+    description: t("home.metaDescription", {
+      tagline: settings.brand.tagline,
+      brand: settings.brand.name,
+      city: settings.brand.city,
+    }),
     path: "/",
     siteName: settings.brand.name,
+    locale,
   });
 }
 
@@ -32,24 +42,31 @@ export default async function SiteLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [flags, settings, restaurant] = await Promise.all([
+  const [flags, settings, restaurant, locale] = await Promise.all([
     getFeatureFlagMap(),
     getPublicSettings(),
     getRestaurant(),
+    getLocale(),
   ]);
 
   const brand = {
-    name: restaurant?.name_en ?? settings.brand.name,
+    name:
+      locale === "ar" && restaurant?.name_ar?.trim()
+        ? restaurant.name_ar
+        : restaurant?.name_en ?? settings.brand.name,
     city: restaurant?.city ?? settings.brand.city,
     country: restaurant?.country ?? settings.brand.country,
-    tagline: restaurant?.tagline_en ?? settings.brand.tagline,
+    tagline:
+      locale === "ar" && restaurant?.tagline_ar?.trim()
+        ? restaurant.tagline_ar
+        : restaurant?.tagline_en ?? settings.brand.tagline,
     logo_url: settings.brand.logo_url,
   };
 
   const structuredData = [
     websiteSchema({
       name: brand.name,
-      description: `${brand.tagline}. Asian cloud kitchen in ${brand.city}.`,
+      description: `${brand.tagline}.`,
     }),
     organisationSchema({
       name: brand.name,
@@ -57,7 +74,8 @@ export default async function SiteLayout({
     }),
     restaurantSchema({
       name: brand.name,
-      description: restaurant?.description_en ?? null,
+      description:
+        restaurant?.description_en ?? null,
       tagline: restaurant?.tagline_en ?? null,
       cuisineTags: restaurant?.cuisine_tags ?? [],
       city: restaurant?.city ?? null,

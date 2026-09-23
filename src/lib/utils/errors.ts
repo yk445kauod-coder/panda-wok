@@ -20,6 +20,8 @@ export type AppErrorCode =
   | "IDEMPOTENCY_KEY_REQUIRED"
   | "ACCOUNT_BLOCKED"
   | "INVALID_TOTAL"
+  | "VALIDATION"
+  | "NOT_FOUND"
   | "OFFLINE"
   | "RATE_LIMITED"
   | "NOT_CONFIGURED"
@@ -44,6 +46,8 @@ const MESSAGES: Record<AppErrorCode, string> = {
     "This account cannot place orders. Please contact the kitchen.",
   INVALID_TOTAL:
     "The order total could not be calculated. Please review your basket and try again.",
+  VALIDATION: "Some of the details are not valid. Please check and try again.",
+  NOT_FOUND: "That record no longer exists.",
   OFFLINE: "You appear to be offline. Your basket is saved on this device.",
   RATE_LIMITED: "Too many attempts. Please wait a moment and try again.",
   NOT_CONFIGURED: "This feature is not configured yet.",

@@ -89,6 +89,7 @@ export async function listAdminOrders(params: {
   from?: string;
   to?: string;
   limit?: number;
+  offset?: number;
 }): Promise<AdminOrderRow[]> {
   const supabase = await createServerSupabase();
 
@@ -115,10 +116,48 @@ export async function listAdminOrders(params: {
   if (params.from) query = query.gte("created_at", params.from);
   if (params.to) query = query.lte("created_at", params.to);
   if (params.search) query = query.ilike("order_number", `%${params.search}%`);
+  if (params.offset) query = query.range(params.offset, params.offset + (params.limit ?? 100) - 1);
 
   const { data, error } = await query;
   if (error) throw new Error(`Failed to load orders: ${error.message}`);
   return ((data ?? []) as unknown as RawAdminOrder[]).map(shapeOrder);
+}
+
+/**
+ * Total row count for the current filter, so the queue can paginate. Uses a
+ * head request with an exact count rather than fetching rows.
+ */
+export async function countAdminOrders(params: {
+  status?: OrderStatus | "active" | "all";
+  search?: string;
+  from?: string;
+  to?: string;
+}): Promise<number> {
+  const supabase = await createServerSupabase();
+
+  let query = supabase.from("orders").select("id", { count: "exact", head: true });
+
+  if (params.status && params.status !== "all") {
+    if (params.status === "active") {
+      query = query.in("status", [
+        "new",
+        "accepted",
+        "in_progress",
+        "prepared",
+        "out_for_delivery",
+      ]);
+    } else {
+      query = query.eq("status", params.status);
+    }
+  }
+
+  if (params.from) query = query.gte("created_at", params.from);
+  if (params.to) query = query.lte("created_at", params.to);
+  if (params.search) query = query.ilike("order_number", `%${params.search}%`);
+
+  const { count, error } = await query;
+  if (error) throw new Error(`Failed to count orders: ${error.message}`);
+  return count ?? 0;
 }
 
 export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null> {

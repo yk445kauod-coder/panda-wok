@@ -2,6 +2,11 @@ import { Sparkles } from "lucide-react";
 import { getPublicMenu, getUpsellRules } from "@/lib/services/catalog";
 import { UpsellCard } from "@/components/customer/upsell-card";
 import type { MenuItem, UpsellRule } from "@/lib/services/catalog";
+import type { Locale } from "@/lib/i18n/config";
+import { ar } from "@/lib/i18n/dictionaries/ar";
+import { en } from "@/lib/i18n/dictionaries/en";
+import { makeTranslator } from "@/lib/i18n/translate";
+
 
 /**
  * Resolves the admin-configured upsell rules for a dish. Suggestions are
@@ -12,11 +17,14 @@ export async function UpsellSuggestions({
   triggerMenuItemId,
   triggerCategoryId,
   currency,
+  locale = "en",
 }: {
   triggerMenuItemId: string;
   triggerCategoryId: string;
   currency: string;
+  locale?: Locale;
 }) {
+  const t = makeTranslator(locale === "ar" ? ar : en);
   const [rules, menu] = await Promise.all([getUpsellRules(), getPublicMenu()]);
 
   const applicable = rules
@@ -38,7 +46,11 @@ export async function UpsellSuggestions({
     for (const candidate of candidates) {
       if (seen.has(candidate.id)) continue;
       seen.add(candidate.id);
-      suggestions.push({ item: candidate, headline: rule.headline_en });
+      const headline =
+        locale === "ar" && rule.headline_ar?.trim()
+          ? rule.headline_ar
+          : rule.headline_en;
+      suggestions.push({ item: candidate, headline });
       if (suggestions.length >= 3) break;
     }
     if (suggestions.length >= 3) break;
@@ -53,16 +65,19 @@ export async function UpsellSuggestions({
         className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
       >
         <Sparkles className="size-4 text-miso-600" aria-hidden="true" />
-        Goes well with this
+        {t("upsell.heading")}
       </h2>
-      <p className="mt-0.5 text-xs text-ink-700/70">
-        Optional additions the kitchen suggests. Nothing is added automatically.
-      </p>
+      <p className="mt-0.5 text-xs text-ink-700/70">{t("upsell.note")}</p>
 
       <ul className="mt-3 space-y-2">
         {suggestions.map(({ item, headline }) => (
           <li key={item.id}>
-            <UpsellCard item={item} headline={headline} currency={currency} />
+            <UpsellCard
+              item={item}
+              headline={headline}
+              currency={currency}
+              locale={locale}
+            />
           </li>
         ))}
       </ul>
@@ -70,11 +85,7 @@ export async function UpsellSuggestions({
   );
 }
 
-function matches(
-  rule: UpsellRule,
-  menuItemId: string,
-  categoryId: string,
-): boolean {
+function matches(rule: UpsellRule, menuItemId: string, categoryId: string): boolean {
   if (rule.trigger_kind === "item") {
     return rule.trigger_menu_item_id === menuItemId;
   }

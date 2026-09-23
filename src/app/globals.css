@@ -12,6 +12,8 @@
   --color-rice-300: #e2d5b8;
   --color-rice-400: #cdb894;
 
+  --color-ink-500: #6b6259;
+  --color-ink-600: #4f4840;
   --color-ink-700: #3a332c;
   --color-ink-800: #292420;
   --color-ink-900: #1b1815;
@@ -26,6 +28,7 @@
   --color-miso-500: #c8853c;
   --color-miso-600: #a96a29;
 
+  --color-plum-500: #a94455;
   --color-plum-600: #8f3a4c;
   --color-plum-700: #732f3e;
 
@@ -35,10 +38,18 @@
   --color-chili-500: #c4472f;
   --color-chili-600: #a2371f;
 
+  /* Text scale. The 2xs/3xs steps exist because labels and badges were
+     previously written as text-[11px]/text-[10px] literals. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.15;
+  --text-3xs: 0.625rem;
+  --text-3xs--line-height: 1.1;
+
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-display), ui-serif, Georgia, serif;
 
   --radius-washi: 0.875rem;
+  --radius-washi-lg: 1.25rem;
 
   --shadow-washi:
     0 1px 2px rgb(27 24 21 / 0.04), 0 8px 24px -12px rgb(27 24 21 / 0.14);
@@ -125,6 +136,29 @@
     font-family: var(--font-display);
     letter-spacing: -0.015em;
     text-wrap: balance;
+  }
+
+  /* Arabic ships its own display and body faces. Inter and Fraunces have no
+     Arabic glyphs, so without these overrides Arabic copy falls back to a
+     system font and the brand voice breaks. Arabic is a cursive script, so
+     the negative tracking used for Latin is removed rather than inherited. */
+  html[lang="ar"] body {
+    font-family: var(--font-arabic), var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  html[lang="ar"] h1,
+  html[lang="ar"] h2,
+  html[lang="ar"] h3,
+  html[lang="ar"] h4,
+  html[lang="ar"] .font-display {
+    font-family: var(--font-arabic), var(--font-display), ui-serif, Georgia, serif;
+    letter-spacing: 0;
+  }
+
+  /* Numbers and prices stay Latin/numeric in both languages, because Arabic
+     customers read Egyptian prices in Western digits. */
+  html[lang="ar"] .tabular-nums {
+    font-family: var(--font-body), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
   }
 
   p { text-wrap: pretty; }

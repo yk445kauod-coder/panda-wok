@@ -26,7 +26,7 @@ export function Breadcrumbs({
                   <Link href={item.path} className="hover:text-ink-900">
                     {item.name}
                   </Link>
-                  <ChevronRight className="size-3.5" aria-hidden="true" />
+                  <ChevronRight className="size-3.5 rtl:rotate-180" aria-hidden="true" />
                 </>
               )}
             </li>

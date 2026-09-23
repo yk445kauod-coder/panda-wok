@@ -76,12 +76,20 @@ def main() -> int:
         secret=secret,
     )
     (ROOT / ".env.local").write_text(body)
-    (ROOT / ".env.example").write_text(
-        body.replace(secret, "your-service-role-key").replace(
-            publishable, "your-publishable-key"
+
+    # The committed template documents every supported variable, including the
+    # per-provider AI blocks, so it is richer than what this script can produce.
+    # Only write it when absent; never clobber the documented version.
+    example = ROOT / ".env.example"
+    if not example.exists():
+        example.write_text(
+            body.replace(secret, "your-service-role-key").replace(
+                publishable, "your-publishable-key"
+            )
         )
-    )
-    print("wrote .env.local and .env.example")
+        print("wrote .env.local and a starter .env.example")
+    else:
+        print("wrote .env.local (.env.example left as-is)")
     return 0
 
 

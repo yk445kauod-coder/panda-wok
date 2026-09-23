@@ -8,23 +8,31 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { DishCard } from "@/components/customer/dish-card";
 import { MenuFilters } from "@/components/customer/menu-filters";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
+import { getLocale, getT } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
+import { localiseCategory } from "@/lib/i18n/catalog";
 
 export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const restaurant = await getRestaurant();
+  const [restaurant, locale] = await Promise.all([getRestaurant(), getLocale()]);
+  const t = await getT(locale);
   const brand = restaurant?.name_en ?? "Panda Wok";
   return buildMetadata({
-    title: `Menu — Asian wok, ramen and sushi`,
-    description: `The full ${brand} menu with prices in EGP: wok dishes, ramen, sushi and izakaya plates, cooked to order and delivered across Alexandria.`,
+    title: t("menu.metaTitle"),
+    description: t("menu.metaDescription", { brand }),
     path: "/menu",
-    keywords: [
-      "Panda Wok menu",
-      "Alexandria Asian menu",
-      "ramen price Egypt",
-      "sushi delivery Alexandria",
-    ],
+    keywords:
+      locale === "ar"
+        ? ["قائمة باندا ووك", "طعام آسيوي الإسكندرية", "سوشي الإسكندرية", "رامن توصيل"]
+        : [
+            "Panda Wok menu",
+            "Alexandria Asian menu",
+            "ramen price Egypt",
+            "sushi delivery Alexandria",
+          ],
     siteName: brand,
+    locale,
   });
 }
 
@@ -34,22 +42,32 @@ export default async function MenuPage({
   searchParams: Promise<{ q?: string; diet?: string }>;
 }) {
   const params = await searchParams;
-  const [categories, menu, restaurant] = await Promise.all([
+  const [categories, menu, restaurant, locale] = await Promise.all([
     getPublicCategories(),
     getPublicMenu(),
     getRestaurant(),
+    getLocale(),
   ]);
+  const t = await getT(locale);
 
   const brand = restaurant?.name_en ?? "Panda Wok";
   const currency = restaurant?.currency ?? "EGP";
   const categoryById = new Map(categories.map((c) => [c.id, c]));
+  const localisedCategories = categories.map((c) => localiseCategory(c, locale));
+  const categoryName = (categoryId: string) =>
+    categoryById.get(categoryId)
+      ? localiseCategory(categoryById.get(categoryId)!, locale).name
+      : t("menu.categoryFallback");
 
   const query = params.q?.trim().toLowerCase() ?? "";
   const diet = params.diet ?? "";
 
+  // The search haystack intentionally includes both languages, so a customer
+  // can find a dish by either its Arabic or English name.
   const filtered = menu.items.filter((item) => {
     if (query) {
-      const haystack = `${item.name_en} ${item.name_ar ?? ""} ${item.name_ja ?? ""} ${item.description_en ?? ""}`.toLowerCase();
+      const haystack =
+        `${item.name_en} ${item.name_ar ?? ""} ${item.name_ja ?? ""} ${item.description_en ?? ""} ${item.description_ar ?? ""}`.toLowerCase();
       if (!haystack.includes(query)) return false;
     }
     if (diet === "spicy" && !item.is_spicy) return false;
@@ -63,15 +81,15 @@ export default async function MenuPage({
 
   const structured = [
     breadcrumbSchema([
-      { name: "Home", path: "/" },
-      { name: "Menu", path: "/menu" },
+      { name: t("common.home"), path: "/" },
+      { name: t("menu.title"), path: "/menu" },
     ]),
     ...(query || diet
       ? []
       : [
           menuSchema({
             name: `${brand} menu`,
-            description: `Wok, ramen, sushi and izakaya plates from ${brand} in Alexandria.`,
+            description: `${brand} — ${restaurant?.city ?? "Alexandria"}`,
             url: "/menu",
             items: menu.items.map((item) => ({
               slug: item.slug,
@@ -80,7 +98,7 @@ export default async function MenuPage({
               price: Number(item.price),
               currency,
               image: item.image_url,
-              category: categoryById.get(item.category_id)?.name_en ?? "Menu",
+              category: categoryById.get(item.category_id)?.name_en ?? t("menu.categoryFallback"),
               available: item.is_available,
               vegetarian: item.is_vegetarian,
               vegan: item.is_vegan,
@@ -93,27 +111,36 @@ export default async function MenuPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Menu", path: "/menu" }]} />
+      <Breadcrumbs
+        items={[
+          { name: t("common.home"), path: "/" },
+          { name: t("menu.title"), path: "/menu" },
+        ]}
+      />
 
       <header className="mt-4">
-        <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">Menu</h1>
+        <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
+          {t("menu.title")}
+        </h1>
         <p className="mt-1.5 text-sm text-ink-700/85">
-          {menu.items.length} dishes, {availableCount} available right now. Everything is
-          cooked to order.
+          {t("menu.summary", {
+            total: menu.items.length,
+            available: availableCount,
+          })}
         </p>
       </header>
 
       {/* Section links, kept as real links so crawlers can follow them. */}
       {categories.length > 0 ? (
-        <nav aria-label="Menu sections" className="no-scrollbar -mx-4 mt-5 overflow-x-auto px-4">
+        <nav aria-label={t("menu.sections")} className="no-scrollbar -mx-4 mt-5 overflow-x-auto px-4">
           <ul className="flex gap-2">
-            {categories.map((category) => (
+            {localisedCategories.map((category) => (
               <li key={category.id}>
                 <Link
                   href={`/menu/${category.slug}`}
                   className="inline-flex whitespace-nowrap rounded-full border border-ink-900/12 bg-rice-50 px-3.5 py-2 text-sm text-ink-800 transition-colors hover:bg-rice-200"
                 >
-                  {category.name_en}
+                  {category.name}
                 </Link>
               </li>
             ))}
@@ -126,25 +153,21 @@ export default async function MenuPage({
       {menu.items.length === 0 ? (
         <EmptyState
           className="mt-6"
-          title="The menu is empty"
-          description="The kitchen has not published any dishes yet. Please check back shortly or contact us directly."
+          title={t("menu.emptyTitle")}
+          description={t("menu.emptyBody")}
         />
       ) : filtered.length === 0 ? (
         <EmptyState
           className="mt-6"
-          title={isFiltered ? "No dishes match that" : "Nothing to show"}
-          description={
-            isFiltered
-              ? "Try a different search term or clear the dietary filter."
-              : "The kitchen has not published any dishes yet."
-          }
+          title={isFiltered ? t("menu.noMatchTitle") : t("menu.nothingTitle")}
+          description={isFiltered ? t("menu.noMatchBody") : t("menu.nothingBody")}
           action={
             isFiltered ? (
               <Link
                 href="/menu"
                 className="text-sm font-medium text-plum-600 hover:text-plum-700"
               >
-                Clear filters
+                {t("menu.clearFilters")}
               </Link>
             ) : null
           }
@@ -152,7 +175,9 @@ export default async function MenuPage({
       ) : isFiltered ? (
         <section className="mt-6" aria-live="polite">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-700/70">
-            {filtered.length} {filtered.length === 1 ? "result" : "results"}
+            {filtered.length === 1
+              ? t("menu.resultCount", { count: filtered.length })
+              : t("menu.resultsCount", { count: filtered.length })}
           </h2>
           <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((item, index) => (
@@ -160,7 +185,8 @@ export default async function MenuPage({
                 <DishCard
                   item={item}
                   currency={currency}
-                  categoryName={categoryById.get(item.category_id)?.name_en}
+                  locale={locale}
+                  categoryName={categoryName(item.category_id)}
                   priority={index < 3}
                 />
               </li>
@@ -169,7 +195,7 @@ export default async function MenuPage({
         </section>
       ) : (
         <div className="mt-8 space-y-10">
-          {categories.map((category) => {
+          {localisedCategories.map((category) => {
             const items = menu.items.filter((i) => i.category_id === category.id);
             if (items.length === 0) return null;
 
@@ -181,11 +207,11 @@ export default async function MenuPage({
                       id={`cat-${category.slug}`}
                       className="text-xl font-semibold text-ink-900"
                     >
-                      {category.name_en}
+                      {category.name}
                     </h2>
-                    {category.description_en ? (
+                    {category.description ? (
                       <p className="mt-1 text-sm text-ink-700/80">
-                        {category.description_en}
+                        {category.description}
                       </p>
                     ) : null}
                   </div>
@@ -193,7 +219,7 @@ export default async function MenuPage({
                     href={`/menu/${category.slug}`}
                     className="shrink-0 text-sm font-medium text-plum-600 hover:text-plum-700"
                   >
-                    Section page
+                    {t("menu.sectionPage")}
                   </Link>
                 </div>
 
@@ -203,7 +229,8 @@ export default async function MenuPage({
                       <DishCard
                         item={item}
                         currency={currency}
-                        categoryName={category.name_en}
+                        locale={locale}
+                        categoryName={category.name}
                       />
                     </li>
                   ))}
@@ -218,3 +245,6 @@ export default async function MenuPage({
     </div>
   );
 }
+
+/** Kept for typing clarity when the locale is needed elsewhere in this file. */
+export type { Locale };

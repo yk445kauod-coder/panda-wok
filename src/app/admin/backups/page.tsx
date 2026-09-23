@@ -1,6 +1,7 @@
-import { AlertTriangle, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Download, ShieldAlert } from "lucide-react";
 import { requireCapability } from "@/lib/auth/session";
 import { listBackups } from "@/lib/services/admin-catalog";
+import { getBackupDownloadUrls } from "@/lib/backup/download";
 import { BackupRequestForm } from "@/components/admin/backup-request-form";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -35,6 +36,12 @@ export default async function AdminBackupsPage() {
   const last = backups[0] ?? null;
   const totalBytes = backups.reduce((sum, record) => sum + (record.bytes ?? 0), 0);
   const failed = backups.filter((record) => record.status === "failed").length;
+
+  const downloadUrls = await getBackupDownloadUrls(
+    backups
+      .filter((record) => record.status === "ready" && record.storage_path)
+      .map((record) => record.storage_path as string),
+  );
 
   return (
     <div className="space-y-6">
@@ -157,7 +164,17 @@ export default async function AdminBackupsPage() {
                     </div>
 
                     {record.status === "ready" ? (
-                      <Badge tone="success">Ready</Badge>
+                      downloadUrls[record.storage_path ?? ""] ? (
+                        <a
+                          href={downloadUrls[record.storage_path as string]}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-plum-600 px-3 text-xs font-medium text-rice-50 hover:bg-plum-700"
+                        >
+                          <Download className="size-3.5" aria-hidden="true" />
+                          Download
+                        </a>
+                      ) : (
+                        <Badge tone="success">Ready</Badge>
+                      )
                     ) : null}
                   </div>
                 </li>

@@ -14,6 +14,12 @@ import { breadcrumbSchema, productSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { CategorySection } from "@/components/customer/category-section";
 import { DishDetail } from "@/components/customer/dish-detail";
+import { getLocale, getT } from "@/lib/i18n/server";
+import {
+  localiseCategory,
+  localisedName,
+  localisedDescription,
+} from "@/lib/i18n/catalog";
 
 /**
  * A single segment serves both nested shapes the spec calls for:
@@ -55,41 +61,48 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const restaurant = await getRestaurant();
+  const [restaurant, locale] = await Promise.all([getRestaurant(), getLocale()]);
+  const t = await getT(locale);
   const brand = restaurant?.name_en ?? "Panda Wok";
 
   const category = await getCategoryBySlug(slug);
   if (category) {
+    const local = localiseCategory(category, locale);
+    const seoTitle =
+      locale === "ar" ? category.seo_title ?? null : category.seo_title;
     return buildMetadata({
-      title: category.seo_title ?? `${category.name_en} — ${brand} menu`,
+      title: seoTitle ?? `${local.name} — ${brand}`,
       description:
         category.seo_description ??
-        category.description_en ??
-        `Order ${category.name_en} from ${brand} in Alexandria. Cooked to order and delivered hot.`,
+        local.description ??
+        `${brand} — ${local.name}`,
       path: `/menu/${category.slug}`,
       image: category.image_url,
-      imageAlt: category.name_en,
+      imageAlt: local.name,
       siteName: brand,
+      locale,
     });
   }
 
   const dish = await getMenuItemBySlug(slug);
   if (dish) {
+    const dishName = localisedName(dish, locale);
     const description =
       dish.seo_description ??
-      dish.description_en ??
-      `${dish.name_en} from ${brand}. ${Number(dish.price).toFixed(2)} EGP, cooked to order.`;
+      localisedDescription(dish, locale) ??
+      `${dishName} — ${Number(dish.price).toFixed(2)} EGP.`;
 
     return buildMetadata({
       title:
-        dish.seo_title ?? `${dish.name_en} — ${Number(dish.price).toFixed(2)} EGP`,
+        dish.seo_title ?? `${dishName} — ${Number(dish.price).toFixed(2)} EGP`,
       description,
       path: `/menu/${dish.slug}`,
       image: dish.image_url,
-      imageAlt: dish.image_alt ?? dish.name_en,
+      imageAlt: dish.image_alt ?? dishName,
       keywords: dish.seo_keywords ?? undefined,
       type: "article",
       siteName: brand,
+      locale,
     });
   }
 
@@ -99,8 +112,8 @@ export async function generateMetadata({
   // correct UI while this metadata guarantees the noindex directive.
 
   return buildMetadata({
-    title: "Not found",
-    description: "That menu item is not available.",
+    title: t("errors.notFoundTitle"),
+    description: t("errors.notFoundBody"),
     path: `/menu/${slug}`,
     noIndex: true,
   });
@@ -112,16 +125,19 @@ export default async function MenuSlugPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [restaurant, categories] = await Promise.all([
+  const [restaurant, categories, locale] = await Promise.all([
     getRestaurant(),
     getPublicCategories(),
+    getLocale(),
   ]);
+  const t = await getT(locale);
   const currency = restaurant?.currency ?? "EGP";
 
   const category = await getCategoryBySlug(slug);
 
   if (category) {
     const items = await getMenuItemsByCategory(category.id);
+    const local = localiseCategory(category, locale);
     return (
       <>
         <CategorySection
@@ -129,12 +145,13 @@ export default async function MenuSlugPage({
           items={items}
           categories={categories}
           currency={currency}
+          locale={locale}
         />
         <JsonLdScript
           data={breadcrumbSchema([
-            { name: "Home", path: "/" },
-            { name: "Menu", path: "/menu" },
-            { name: category.name_en, path: `/menu/${category.slug}` },
+            { name: t("common.home"), path: "/" },
+            { name: t("menu.title"), path: "/menu" },
+            { name: local.name, path: `/menu/${category.slug}` },
           ])}
         />
       </>
@@ -150,14 +167,17 @@ export default async function MenuSlugPage({
     .filter((i) => i.category_id === dish.category_id && i.id !== dish.id)
     .slice(0, 4);
 
-  const categoryName = dish.categories?.name_en ?? "Menu";
+  const categoryName = dish.categories
+    ? localisedName(dish.categories, locale)
+    : t("menu.categoryFallback");
+  const dishName = localisedName(dish, locale);
   const breadcrumbs = [
-    { name: "Home", path: "/" },
-    { name: "Menu", path: "/menu" },
+    { name: t("common.home"), path: "/" },
+    { name: t("menu.title"), path: "/menu" },
     ...(dish.categories
       ? [{ name: categoryName, path: `/menu/${dish.categories.slug}` }]
       : []),
-    { name: dish.name_en, path: `/menu/${dish.slug}` },
+    { name: dishName, path: `/menu/${dish.slug}` },
   ];
 
   return (
@@ -167,6 +187,7 @@ export default async function MenuSlugPage({
         related={related}
         currency={currency}
         categoryName={categoryName}
+        locale={locale}
       />
       <JsonLdScript
         data={[
