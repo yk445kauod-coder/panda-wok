@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
-import { PandaMascot } from "@/components/layout/panda-mascot";
 
 /**
  * Desktop header. On mobile the bottom navigation carries the load, so this
@@ -32,7 +31,13 @@ function DesktopNav({ flags }: { flags: Record<string, boolean> }) {
   );
 }
 
-export function SiteHeader({ flags }: { flags: Record<string, boolean> }) {
+export function SiteHeader({
+  brand,
+  flags,
+}: {
+  brand: { name: string; logo_url: string | null };
+  flags: Record<string, boolean>;
+}) {
   return (
     <>
       <a
@@ -48,11 +53,9 @@ export function SiteHeader({ flags }: { flags: Record<string, boolean> }) {
             className="flex items-center gap-2 text-ink-900"
             aria-label="Panda Wok home"
           >
-            <div className="flex items-center">
-              <PandaMascot />
-            </div>
+            <BrandLogo brand={brand} className="size-8" />
             <span className="font-display text-lg font-semibold tracking-tight">
-              Panda&nbsp;Wok
+              {brand.name}
             </span>
           </Link>
 

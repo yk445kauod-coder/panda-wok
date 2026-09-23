@@ -77,7 +77,7 @@ export default async function SiteLayout({
     <AssistantProvider>
       <CartProvider>
         <div className="flex min-h-dvh flex-col">
-          <SiteHeader flags={flags} />
+          <SiteHeader brand={brand} flags={flags} />
           <main id="main" className="flex-1 pb-24 md:pb-0">
             {children}
           </main>
