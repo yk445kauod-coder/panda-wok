@@ -51,7 +51,14 @@ Verified against the live database, not just the code:
   are INFO and reflect tiny tables, not a problem yet.
 - **Deploy:** Cloudflare's Pages CI cannot build this repo (see note above).
   `.github/workflows/deploy-pages.yml` builds on a runner and runs
-  `wrangler pages deploy .pages`. Needs repo secret `CLOUDFLARE_API_TOKEN`.
+  `wrangler pages deploy .pages`. It needs **two** repository secrets:
+  `CLOUDFLARE_API_TOKEN` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (the publishable
+  key; not sensitive, it ships in the browser bundle). With the anon key absent
+  the build fails while collecting config for `/api/analytics`, the deploy step
+  is skipped, and the live site silently keeps the previous deployment.
+  `panda-wok.pages.dev` currently serves 200 directly (no redirector) for `/`,
+  `/menu`, `/about`, `/contact`, `/cart`, `/auth/sign-in`, `/robots.txt`,
+  `/sitemap.xml`, `/llms-txt`.
 
 ## Ops memory (2026-09-23)
 > **Correction (2026-09-23, verified):** the earlier note below claiming Pages advanced

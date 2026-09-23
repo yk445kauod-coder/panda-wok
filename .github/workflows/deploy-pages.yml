@@ -5,7 +5,12 @@
 # Node builtins inside Next's vendor bundles. This workflow builds on a normal
 # runner and ships the result with `wrangler pages deploy`, which works.
 #
-# Required repository secret: CLOUDFLARE_API_TOKEN (Workers/Pages edit).
+# Required repository secrets:
+#   CLOUDFLARE_API_TOKEN            — Workers/Pages edit
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY   — the publishable (sb_publishable_…) key.
+#     Not sensitive: it ships in the browser bundle. Without it the build
+#     aborts while collecting config for /api/analytics, so the deploy step is
+#     skipped and the live site keeps whatever it had.
 # Optional repository variable: CLOUDFLARE_ACCOUNT_ID.
 
 name: Deploy Pages
