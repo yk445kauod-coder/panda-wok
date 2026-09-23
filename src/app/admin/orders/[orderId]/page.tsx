@@ -23,8 +23,18 @@ type AddressSnapshot = {
   area?: string | null;
   city?: string | null;
   notes?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  accuracy_m?: number | string | null;
   mode?: string;
 };
+
+/** Postgres `numeric` arrives as a string; `Number()` normalises either shape. */
+function toCoord(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 export default async function AdminOrderDetailPage({
   params,
@@ -39,6 +49,13 @@ export default async function AdminOrderDetailPage({
 
   const address = safeJson<AddressSnapshot>(order.address_snapshot, {});
   const isPickup = order.fulfillment === "pickup" || address.mode === "pickup";
+
+  const latitude = toCoord(address.latitude);
+  const longitude = toCoord(address.longitude);
+  const hasPin = latitude !== null && longitude !== null;
+  const mapUrl = hasPin
+    ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+    : null;
 
   return (
     <div className="space-y-5">
@@ -191,6 +208,24 @@ export default async function AdminOrderDetailPage({
                 </span>
               </address>
             )}
+
+            {!isPickup && mapUrl ? (
+              <a
+                href={mapUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-jade-700 hover:text-jade-800"
+              >
+                <MapPin className="size-4" aria-hidden="true" />
+                Open shared pin in Maps
+              </a>
+            ) : null}
+
+            {!isPickup && !mapUrl ? (
+              <p className="mt-2 text-xs text-ink-700/60">
+                No map pin shared with this address.
+              </p>
+            ) : null}
 
             {order.customer_note ? (
               <p className="mt-3 rounded-lg bg-miso-300/25 px-3 py-2 text-sm text-ink-800">
