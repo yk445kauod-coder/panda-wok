@@ -1,7 +1,9 @@
 import "server-only";
 
 import {
-  buildProviderChain,
+  buildDbProviderChain,
+  loadDbProviders,
+  getWorkersAiBinding,
   runCompletion,
   type ChatMessage,
   type CompletionRequest,
@@ -226,7 +228,8 @@ export async function answerAssistantQuestion(params: {
   const snapshot = await buildGroundingSnapshot();
   const dataBlock = renderSnapshot(snapshot);
 
-  const chain = buildProviderChain((request) => {
+  const [providers, binding] = await Promise.all([loadDbProviders(), getWorkersAiBinding()]);
+  const chain = await buildDbProviderChain({ rows: providers, binding }, (request) => {
     // The deterministic provider recovers the raw question from the last user
     // turn and answers straight from the snapshot.
     const lastUser = [...request.messages]

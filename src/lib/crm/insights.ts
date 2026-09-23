@@ -1,7 +1,13 @@
 import "server-only";
 
 import { createAdminSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
-import { buildProviderChain, runCompletion, type CompletionRequest } from "@/lib/ai/provider";
+import {
+  buildDbProviderChain,
+  loadDbProviders,
+  getWorkersAiBinding,
+  runCompletion,
+  type CompletionRequest,
+} from "@/lib/ai/provider";
 import { recordAiRequest } from "@/lib/ai/usage";
 import type { Database } from "@/lib/types/database";
 
@@ -633,7 +639,8 @@ export async function generateInsights(params: {
   const deterministic = buildDeterministicInsights(data);
   const context = renderInsightContext(data);
 
-  const chain = buildProviderChain(() => context);
+  const [providers, binding] = await Promise.all([loadDbProviders(), getWorkersAiBinding()]);
+  const chain = await buildDbProviderChain({ rows: providers, binding }, () => context);
   const request: CompletionRequest = {
     messages: [
       { role: "system", content: params.systemInstruction },

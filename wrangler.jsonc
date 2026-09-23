@@ -13,6 +13,10 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  // Workers AI runs in-account with no API key; the assistant prefers it.
+  "ai": {
+    "binding": "AI"
+  },
   "observability": {
     "enabled": true
   }
