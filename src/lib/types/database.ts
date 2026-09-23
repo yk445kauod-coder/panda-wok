@@ -528,6 +528,7 @@ export type Database = {
           name_ar: string | null
           name_en: string
           name_ja: string | null
+          restaurant_id: string
           seo_description: string | null
           seo_title: string | null
           slug: string
@@ -544,6 +545,7 @@ export type Database = {
           name_ar?: string | null
           name_en: string
           name_ja?: string | null
+          restaurant_id?: string
           seo_description?: string | null
           seo_title?: string | null
           slug: string
@@ -560,13 +562,22 @@ export type Database = {
           name_ar?: string | null
           name_en?: string
           name_ja?: string | null
+          restaurant_id?: string
           seo_description?: string | null
           seo_title?: string | null
           slug?: string
           sort_order?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversations: {
         Row: {
@@ -1037,6 +1048,7 @@ export type Database = {
       menu_items: {
         Row: {
           allergens: string[]
+          availability_mode: string
           calories: number | null
           category_id: string
           compare_at_price: number | null
@@ -1060,6 +1072,7 @@ export type Database = {
           name_ja: string | null
           prep_minutes: number
           price: number
+          restaurant_id: string
           seo_description: string | null
           seo_keywords: string[]
           seo_title: string | null
@@ -1069,6 +1082,7 @@ export type Database = {
         }
         Insert: {
           allergens?: string[]
+          availability_mode?: string
           calories?: number | null
           category_id: string
           compare_at_price?: number | null
@@ -1092,6 +1106,7 @@ export type Database = {
           name_ja?: string | null
           prep_minutes?: number
           price: number
+          restaurant_id?: string
           seo_description?: string | null
           seo_keywords?: string[]
           seo_title?: string | null
@@ -1101,6 +1116,7 @@ export type Database = {
         }
         Update: {
           allergens?: string[]
+          availability_mode?: string
           calories?: number | null
           category_id?: string
           compare_at_price?: number | null
@@ -1124,6 +1140,7 @@ export type Database = {
           name_ja?: string | null
           prep_minutes?: number
           price?: number
+          restaurant_id?: string
           seo_description?: string | null
           seo_keywords?: string[]
           seo_title?: string | null
@@ -1137,6 +1154,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
         ]
@@ -1429,6 +1453,7 @@ export type Database = {
           points_earned: number
           points_redeemed: number
           prepared_at: string | null
+          restaurant_id: string
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax_total: number
@@ -1458,6 +1483,7 @@ export type Database = {
           points_earned?: number
           points_redeemed?: number
           prepared_at?: string | null
+          restaurant_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax_total?: number
@@ -1487,6 +1513,7 @@ export type Database = {
           points_earned?: number
           points_redeemed?: number
           prepared_at?: string | null
+          restaurant_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax_total?: number
@@ -1494,7 +1521,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1508,6 +1543,7 @@ export type Database = {
           marketing_opt_in: boolean
           notifications_opt_in: boolean
           phone: string | null
+          restaurant_id: string
           updated_at: string
         }
         Insert: {
@@ -1521,6 +1557,7 @@ export type Database = {
           marketing_opt_in?: boolean
           notifications_opt_in?: boolean
           phone?: string | null
+          restaurant_id?: string
           updated_at?: string
         }
         Update: {
@@ -1534,9 +1571,18 @@ export type Database = {
           marketing_opt_in?: boolean
           notifications_opt_in?: boolean
           phone?: string | null
+          restaurant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       restaurants: {
         Row: {
@@ -1857,9 +1903,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_backup: { Args: never; Returns: boolean }
+      can_broadcast: { Args: never; Returns: boolean }
+      can_export: { Args: never; Returns: boolean }
       can_manage_feedback: { Args: never; Returns: boolean }
       can_manage_marketing: { Args: never; Returns: boolean }
       can_manage_orders: { Args: never; Returns: boolean }
+      create_backup: {
+        Args: {
+          p_kind: Database["public"]["Enums"]["backup_kind"]
+          p_label?: string
+        }
+        Returns: {
+          backup_id: string
+          bytes: number
+        }[]
+      }
+      create_export: {
+        Args: {
+          p_dataset: string
+          p_format?: Database["public"]["Enums"]["export_format"]
+        }
+        Returns: {
+          export_id: string
+          row_count: number
+        }[]
+      }
       crm_customers: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
         Returns: {
@@ -1897,6 +1966,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      current_restaurant_id: { Args: never; Returns: string }
       current_staff_role: {
         Args: never
         Returns: Database["public"]["Enums"]["staff_role"]
@@ -1907,8 +1977,21 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      log_audit_event: {
+        Args: {
+          p_action: string
+          p_after?: Json
+          p_entity: string
+          p_entity_id: string
+        }
+        Returns: undefined
+      }
       next_order_number: { Args: never; Returns: string }
       order_is_editable: {
+        Args: { s: Database["public"]["Enums"]["order_status"] }
+        Returns: boolean
+      }
+      order_is_terminal: {
         Args: { s: Database["public"]["Enums"]["order_status"] }
         Returns: boolean
       }
@@ -1929,30 +2012,10 @@ export type Database = {
           total: number
         }[]
       }
-      create_backup: {
-        Args: { p_kind: Database["public"]["Enums"]["backup_kind"]; p_label?: string }
-        Returns: {
-          backup_id: string
-          bytes: number
-        }[]
-      }
-      create_export: {
-        Args: {
-          p_dataset: string
-          p_format?: Database["public"]["Enums"]["export_format"]
-        }
-        Returns: {
-          export_id: string
-          row_count: number
-        }[]
-      }
-      log_audit_event: {
-        Args: { p_action: string; p_after?: Json; p_entity: string; p_entity_id: string }
-        Returns: undefined
-      }
-      order_is_terminal: {
-        Args: { s: Database["public"]["Enums"]["order_status"] }
-        Returns: boolean
+      recompute_stock_status: { Args: { item_id: string }; Returns: undefined }
+      segment_user_ids: {
+        Args: { p_segment: string; p_value?: number }
+        Returns: string[]
       }
       send_broadcast: {
         Args: {
@@ -1967,11 +2030,6 @@ export type Database = {
           recipients: number
         }[]
       }
-      segment_user_ids: {
-        Args: { p_segment: string; p_value?: number }
-        Returns: string[]
-      }
-      recompute_stock_status: { Args: { item_id: string }; Returns: undefined }
       setting_numeric: {
         Args: { p_default: number; p_key: string }
         Returns: number
@@ -2012,7 +2070,13 @@ export type Database = {
         | "archived"
       fulfillment_type: "delivery" | "pickup"
       loyalty_tier: "bronze" | "silver" | "gold" | "platinum"
-      loyalty_txn_type: "earn" | "redeem" | "expire" | "adjust" | "bonus"
+      loyalty_txn_type:
+        | "earn"
+        | "redeem"
+        | "expire"
+        | "adjust"
+        | "bonus"
+        | "clawback"
       order_status:
         | "new"
         | "accepted"
@@ -2192,7 +2256,14 @@ export const Constants = {
       feedback_status: ["new", "reviewed", "responded", "resolved", "archived"],
       fulfillment_type: ["delivery", "pickup"],
       loyalty_tier: ["bronze", "silver", "gold", "platinum"],
-      loyalty_txn_type: ["earn", "redeem", "expire", "adjust", "bonus"],
+      loyalty_txn_type: [
+        "earn",
+        "redeem",
+        "expire",
+        "adjust",
+        "bonus",
+        "clawback",
+      ],
       order_status: [
         "new",
         "accepted",

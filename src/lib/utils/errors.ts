@@ -19,6 +19,7 @@ export type AppErrorCode =
   | "NO_LOYALTY_POINTS"
   | "IDEMPOTENCY_KEY_REQUIRED"
   | "ACCOUNT_BLOCKED"
+  | "INVALID_TOTAL"
   | "OFFLINE"
   | "RATE_LIMITED"
   | "NOT_CONFIGURED"
@@ -41,6 +42,8 @@ const MESSAGES: Record<AppErrorCode, string> = {
     "Something went wrong submitting the order. Please retry.",
   ACCOUNT_BLOCKED:
     "This account cannot place orders. Please contact the kitchen.",
+  INVALID_TOTAL:
+    "The order total could not be calculated. Please review your basket and try again.",
   OFFLINE: "You appear to be offline. Your basket is saved on this device.",
   RATE_LIMITED: "Too many attempts. Please wait a moment and try again.",
   NOT_CONFIGURED: "This feature is not configured yet.",
@@ -63,7 +66,7 @@ export function toAppError(error: unknown): AppError {
         : "";
 
   const match = raw.match(
-    /\b(AUTH_REQUIRED|FORBIDDEN|EMPTY_CART|CART_TOO_LARGE|ITEM_UNAVAILABLE|ITEM_NOT_FOUND|MIN_ORDER_NOT_MET|ADDRESS_REQUIRED|ADDRESS_INVALID|ADDRESS_NOT_FOUND|QUANTITY_LIMIT_EXCEEDED|NO_LOYALTY_POINTS|IDEMPOTENCY_KEY_REQUIRED|ACCOUNT_BLOCKED)\b/,
+    /\b(AUTH_REQUIRED|FORBIDDEN|EMPTY_CART|CART_TOO_LARGE|ITEM_UNAVAILABLE|ITEM_NOT_FOUND|MIN_ORDER_NOT_MET|ADDRESS_REQUIRED|ADDRESS_INVALID|ADDRESS_NOT_FOUND|QUANTITY_LIMIT_EXCEEDED|NO_LOYALTY_POINTS|IDEMPOTENCY_KEY_REQUIRED|ACCOUNT_BLOCKED|INVALID_TOTAL)\b/,
   );
 
   if (match) {

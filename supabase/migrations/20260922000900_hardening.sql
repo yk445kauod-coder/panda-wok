@@ -8,9 +8,21 @@ alter table public.menu_items
   check (availability_mode in ('auto', 'forced_on', 'forced_off'));
 
 -- Backfill: false → auto; true → forced_on (admin-owned rows stay untouched by automation).
-update public.menu_items
-  set availability_mode = case when availability_override then 'forced_on' else 'auto' end
-  where availability_mode = 'auto';
+-- availability_override only ever existed in the live database, so on a fresh
+-- replay the column is absent and this backfill must be skipped rather than fail.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'menu_items'
+      and column_name = 'availability_override'
+  ) then
+    update public.menu_items
+      set availability_mode = case when availability_override then 'forced_on' else 'auto' end
+      where availability_mode = 'auto';
+  end if;
+end $$;
 
 alter table public.menu_items drop column if exists availability_override;
 
