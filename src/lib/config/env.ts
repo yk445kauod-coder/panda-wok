@@ -65,40 +65,62 @@ function parsePublic() {
 
 export const publicEnv = parsePublic();
 
-export const serverEnv = serverSchema.parse({
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  AI_PROVIDER_KIND: process.env.AI_PROVIDER_KIND,
-  AI_MODEL: process.env.AI_MODEL,
-  AI_BASE_URL: process.env.AI_BASE_URL,
-  AI_API_KEY: process.env.AI_API_KEY,
-  AI_FALLBACK_MODEL: process.env.AI_FALLBACK_MODEL,
-  AI_OPENROUTER_MODEL: process.env.AI_OPENROUTER_MODEL,
-  AI_OPENROUTER_BASE_URL: process.env.AI_OPENROUTER_BASE_URL,
-  AI_OPENROUTER_API_KEY: process.env.AI_OPENROUTER_API_KEY,
-  AI_OPENROUTER_NAME: process.env.AI_OPENROUTER_NAME,
-  AI_CLOUDFLARE_MODEL: process.env.AI_CLOUDFLARE_MODEL,
-  AI_CLOUDFLARE_BASE_URL: process.env.AI_CLOUDFLARE_BASE_URL,
-  AI_CLOUDFLARE_API_KEY: process.env.AI_CLOUDFLARE_API_KEY,
-  AI_CLOUDFLARE_NAME: process.env.AI_CLOUDFLARE_NAME,
-  AI_POLLINATIONS_MODEL: process.env.AI_POLLINATIONS_MODEL,
-  AI_POLLINATIONS_BASE_URL: process.env.AI_POLLINATIONS_BASE_URL,
-  AI_POLLINATIONS_API_KEY: process.env.AI_POLLINATIONS_API_KEY,
-  AI_POLLINATIONS_NAME: process.env.AI_POLLINATIONS_NAME,
-  AI_GEMINI_MODEL: process.env.AI_GEMINI_MODEL,
-  AI_GEMINI_BASE_URL: process.env.AI_GEMINI_BASE_URL,
-  AI_GEMINI_API_KEY: process.env.AI_GEMINI_API_KEY,
-  AI_GEMINI_NAME: process.env.AI_GEMINI_NAME,
-  AI_ANTHROPIC_MODEL: process.env.AI_ANTHROPIC_MODEL,
-  AI_ANTHROPIC_BASE_URL: process.env.AI_ANTHROPIC_BASE_URL,
-  AI_ANTHROPIC_API_KEY: process.env.AI_ANTHROPIC_API_KEY,
-  AI_ANTHROPIC_NAME: process.env.AI_ANTHROPIC_NAME,
-  AI_OPENAI_COMPATIBLE_MODEL: process.env.AI_OPENAI_COMPATIBLE_MODEL,
-  AI_OPENAI_COMPATIBLE_BASE_URL: process.env.AI_OPENAI_COMPATIBLE_BASE_URL,
-  AI_OPENAI_COMPATIBLE_API_KEY: process.env.AI_OPENAI_COMPATIBLE_API_KEY,
-  AI_OPENAI_COMPATIBLE_NAME: process.env.AI_OPENAI_COMPATIBLE_NAME,
-  RESEND_API_KEY: process.env.RESEND_API_KEY,
-  EMAIL_FROM: process.env.EMAIL_FROM,
-});
+/**
+ * Server-only values are read through a computed lookup, not `process.env.NAME`.
+ * Next.js statically replaces the latter at build time, which bakes the value
+ * into the deployed server bundle (verified: the service role key appeared in
+ * `.pages/cloudflare/next-env.mjs`). These are Cloudflare runtime bindings, so
+ * they should only ever exist in the worker's environment at request time —
+ * a computed access keeps them out of the bundle entirely, so a routing
+ * mistake can never turn a build artefact into a leaked credential.
+ */
+function runtimeEnv(name: string): string | undefined {
+  const value = process.env[name];
+  // The build redacts these keys to "" in next-env.mjs, and Cloudflare only
+  // overwrites them when the binding is actually set. Normalising "" to
+  // undefined keeps `serviceRoleAvailable()` honest and lets the optional
+  // schema entries stay optional instead of failing `.min()` on a blank value.
+  return value ? value : undefined;
+}
+
+const SERVER_ONLY_KEYS = [
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "AI_PROVIDER_KIND",
+  "AI_MODEL",
+  "AI_BASE_URL",
+  "AI_API_KEY",
+  "AI_FALLBACK_MODEL",
+  "AI_OPENROUTER_MODEL",
+  "AI_OPENROUTER_BASE_URL",
+  "AI_OPENROUTER_API_KEY",
+  "AI_OPENROUTER_NAME",
+  "AI_CLOUDFLARE_MODEL",
+  "AI_CLOUDFLARE_BASE_URL",
+  "AI_CLOUDFLARE_API_KEY",
+  "AI_CLOUDFLARE_NAME",
+  "AI_POLLINATIONS_MODEL",
+  "AI_POLLINATIONS_BASE_URL",
+  "AI_POLLINATIONS_API_KEY",
+  "AI_POLLINATIONS_NAME",
+  "AI_GEMINI_MODEL",
+  "AI_GEMINI_BASE_URL",
+  "AI_GEMINI_API_KEY",
+  "AI_GEMINI_NAME",
+  "AI_ANTHROPIC_MODEL",
+  "AI_ANTHROPIC_BASE_URL",
+  "AI_ANTHROPIC_API_KEY",
+  "AI_ANTHROPIC_NAME",
+  "AI_OPENAI_COMPATIBLE_MODEL",
+  "AI_OPENAI_COMPATIBLE_BASE_URL",
+  "AI_OPENAI_COMPATIBLE_API_KEY",
+  "AI_OPENAI_COMPATIBLE_NAME",
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
+] as const;
+
+export const serverEnv = serverSchema.parse(
+  Object.fromEntries(SERVER_ONLY_KEYS.map((key) => [key, runtimeEnv(key)])),
+);
 
 /**
  * A configured external model provider is optional. When absent the AI layer

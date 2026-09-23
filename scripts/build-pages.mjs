@@ -37,7 +37,34 @@ async function main() {
   const wrapper = await readFile(path.join(root, "scripts", "pages", "_worker.js"), "utf8");
   await writeFile(path.join(OUT, "_worker.js"), wrapper, "utf8");
 
+  await redactServerEnv(OUT);
+
   console.log("Pages output ready in .pages/");
+}
+
+/**
+ * OpenNext compiles every value from `.env.local` (and friends) into
+ * `cloudflare/next-env.mjs` so the worker can see it. That file ships inside
+ * the deployment directory, so a server-only secret such as
+ * SUPABASE_SERVICE_ROLE_KEY ends up sitting in the build output (verified: it
+ * was served publicly from `/cloudflare/next-env.mjs`). Cloudflare injects
+ * these as runtime bindings anyway, so the compiled copies are pure liability —
+ * blank them, keeping the keys so lookups still resolve to "" instead of
+ * undefined.
+ */
+async function redactServerEnv(outDir) {
+  const file = path.join(outDir, "cloudflare", "next-env.mjs");
+  if (!existsSync(file)) return;
+
+  const source = await readFile(file, "utf8");
+  const redacted = source.replace(
+    /("(?:SUPABASE_SERVICE_ROLE_KEY|SUPABASE_URL|RESEND_API_KEY|EMAIL_FROM|AI_[A-Z0-9_]+)"\s*:\s*)"(?:[^"\\]|\\.)*"/g,
+    '$1""',
+  );
+
+  const removed = source.length - redacted.length;
+  await writeFile(file, redacted, "utf8");
+  console.log(`Redacted server-only env values from next-env.mjs (${removed} bytes).`);
 }
 
 main().catch((error) => {
