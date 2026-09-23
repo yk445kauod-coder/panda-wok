@@ -14,6 +14,7 @@ next-env.d.ts
 
 # cloudflare / opennext
 /.open-next/
+/.pages/
 /.wrangler/
 cloudflare-env.d.ts
 
