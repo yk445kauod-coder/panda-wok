@@ -160,3 +160,27 @@ Verified live: anon menu/category/restaurant reads still 200, `rpc/current_resta
 - Resolution order in `getLocale()`: explicit cookie (`panda-wok.locale`) → signed-in `profiles.locale` → `Accept-Language` → English.
 - Verified on the **live Worker**: `Cookie: panda-wok.locale=ar` → `<html lang="ar" dir="rtl">`; default → `<html lang="en" dir="ltr">`; `Accept-Language: ar` → RTL. Arabic copy renders.
 - **Deploy gotcha:** locale switching appeared broken until the Worker was rebuilt. The live bundle predated the i18n commit — always rebuild+redeploy after app changes, then re-test with the cookie before assuming a code bug.
+
+## Audit pass (2026-09-23, session 3)
+
+### Live topology correction
+- `panda-wok.pages.dev` now serves the app **directly** (`/` and `/menu` -> 200, no `Location`). The older "302 redirector -> Worker" note above is obsolete; the Pages project serves the OpenNext `.pages` output. `deploy-pages.yml` is the active path (`node-version: 22`, `pages deploy .pages --branch=production`).
+
+### Verified healthy (no change needed)
+- **Tenancy:** `restaurant_id` on `categories`/`menu_items`/`orders`/`profiles` carries `default current_restaurant_id()`, so inserts satisfy the NOT NULL from 011. All 21 migrations are applied remotely; `supabase db push` is a no-op.
+- **RLS:** policies are role-scoped and tenant-scoped (`anon` only ever reaches `*_public_read` rows such as `categories_public_read`, `restaurants_public_read`, `settings_public_read`); owner/staff policies are `authenticated`-only. The advisor's "anonymous access policies" warnings are the expected `{anon,authenticated}` public-read rows, not leaks.
+- **Error codes:** all 21 `AppErrorCode` members are translated in both `en.ts` and `ar.ts`.
+- **Security definers:** `current_restaurant_id`, `is_staff`, `has_role`, `place_order` are intentionally `SECURITY DEFINER` and each pins `search_path = public`; `rls_auto_enable` is revoked from `public/anon/authenticated`.
+
+### i18n switcher bug (fixed)
+- The switcher wrote the cookie but the page kept the old language until a manual reload: `revalidatePath("/", "layout")` clears only the **server** cache, while the client **Router Cache** still held the previous locale's payload. `language-switcher.tsx` now calls `router.refresh()` after the action.
+- Confirmed per-request SSR: `Cookie: panda-wok.locale=ar` -> `<html lang="ar" dir="rtl">` on the first byte; responses are `cache-control: private, no-cache, no-store` and RSC requests are cookie-keyed (no ISR/edge caching of locale).
+
+### Dead code removed
+- `src/lib/ai/provider.ts`: `buildProviderChain`, `buildEnvFallbacks`, `buildRemoteFromEnv`, `REMOTE_PROVIDER_KINDS`, `isProviderKind` - unreachable since the chain became DB-driven (`buildDbProviderChain`). `getAiProviderUsage` stays (called by `QuotaEnforcedProvider`).
+- Also removed: `CategoryHeading`, `slugify`, `getMyDefaultAddress`, `getMyNotifications` (no callers).
+
+### Still open (advisor, judgement calls - not applied)
+- `auth_otp_long_expiry`, `auth_leaked_password_protection` (dashboard toggles).
+- 40 `unused_index` + 21 `multiple_permissive_policies` performance warnings.
+- `anon` can still `EXECUTE public.current_restaurant_id()`; harmless (reads one active restaurant id) but revocable if the linter must be clean.
