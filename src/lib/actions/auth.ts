@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { signInSchema, signUpSchema } from "@/lib/validation/schemas";
+import { siteUrl } from "@/lib/seo/metadata";
 import { LOCALE_COOKIE } from "@/lib/i18n/config";
 import {
   actionError,
@@ -196,7 +197,7 @@ export async function requestPasswordResetAction(
   }
 
   const supabase = await createServerSupabase();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const origin = siteUrl();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
     redirectTo: `${origin}/auth/callback?next=/account`,
   });

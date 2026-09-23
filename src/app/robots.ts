@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/seo/metadata";
+import { siteUrl } from "@/lib/seo/metadata";
 
 /**
  * Private and transactional surfaces are disallowed. Public catalogue pages are
@@ -56,7 +56,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin", "/api/", "/auth/", "/account", "/cart", "/checkout", "/orders", "/chat"],
       },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
+    sitemap: `${siteUrl()}/sitemap.xml`,
+    host: siteUrl(),
   };
 }

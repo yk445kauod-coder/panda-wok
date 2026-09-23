@@ -1,4 +1,4 @@
-import { SITE_URL, absoluteUrl } from "@/lib/seo/metadata";
+import { absoluteUrl, siteUrl } from "@/lib/seo/metadata";
 
 export type JsonLd = Record<string, unknown>;
 
@@ -36,9 +36,9 @@ export function restaurantSchema(params: {
   const node: JsonLd = {
     "@context": "https://schema.org",
     "@type": ["Restaurant", "LocalBusiness"],
-    "@id": `${SITE_URL}/#restaurant`,
+    "@id": `${siteUrl()}/#restaurant`,
     name: params.name,
-    url: SITE_URL,
+    url: siteUrl(),
     description: params.description ?? params.tagline ?? undefined,
     servesCuisine: params.cuisineTags.length > 0 ? params.cuisineTags : undefined,
     address,
@@ -88,9 +88,9 @@ export function organisationSchema(params: {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "@id": `${SITE_URL}/#organisation`,
+    "@id": `${siteUrl()}/#organisation`,
     name: params.name,
-    url: SITE_URL,
+    url: siteUrl(),
     logo: params.logoUrl ?? absoluteUrl("/panda-logo.svg"),
     ...(sameAs.length > 0 ? { sameAs } : {}),
   };
@@ -100,11 +100,11 @@ export function websiteSchema(params: { name: string; description: string }): Js
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": `${SITE_URL}/#website`,
+    "@id": `${siteUrl()}/#website`,
     name: params.name,
-    url: SITE_URL,
+    url: siteUrl(),
     description: params.description,
-    publisher: { "@id": `${SITE_URL}/#organisation` },
+    publisher: { "@id": `${siteUrl()}/#organisation` },
     inLanguage: ["en", "ar"],
     /**
      * AEO: answer engines and voice assistants may read these sections aloud,
@@ -118,7 +118,7 @@ export function websiteSchema(params: { name: string; description: string }): Js
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${SITE_URL}/menu?q={search_term_string}`,
+        urlTemplate: `${siteUrl()}/menu?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },

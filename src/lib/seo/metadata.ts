@@ -1,11 +1,30 @@
 import type { Metadata } from "next";
 import { publicEnv } from "@/lib/config/env";
 
-export const SITE_URL = publicEnv.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
+/**
+ * Resolves the public origin at request time.
+ *
+ * This deliberately is a function, not a module-level constant. ES module
+ * imports are evaluated before OpenNext's `init()` runs, and `init()` is what
+ * copies the Cloudflare bindings into `process.env`. A top-level constant
+ * therefore reads the build-time value baked in from `.env.local` — which is
+ * how a local build shipped `http://localhost:3000` into every canonical URL
+ * and the sitemap. Reading inside the call happens after the bindings exist.
+ */
+export function siteUrl(): string {
+  // Computed lookup on purpose: `process.env.NEXT_PUBLIC_SITE_URL` would be
+  // statically replaced by the bundler, which is exactly the bug being fixed.
+  // OpenNext assigns the Cloudflare bindings into process.env unconditionally
+  // before falling back to the compiled copies, so reading through a variable
+  // key yields the real deployment origin.
+  const fromRuntime = process.env["NEXT_PUBLIC_SITE_URL"];
+  const raw = fromRuntime || publicEnv.NEXT_PUBLIC_SITE_URL;
+  return raw.replace(/\/$/, "");
+}
 
 export function absoluteUrl(path: string) {
   if (!path.startsWith("/")) path = `/${path}`;
-  return `${SITE_URL}${path}`;
+  return `${siteUrl()}${path}`;
 }
 
 export type SeoInput = {

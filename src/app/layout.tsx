@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, IBM_Plex_Sans_Arabic } from "next/font/google";
 import "./globals.css";
-import { SITE_URL } from "@/lib/seo/metadata";
+import { siteUrl } from "@/lib/seo/metadata";
 import { ToastProvider } from "@/components/ui/toast";
 import { I18nProvider } from "@/components/i18n-provider";
 import { getDictionary, getLocale, getT } from "@/lib/i18n/server";
@@ -32,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getT(locale);
 
   return {
-    metadataBase: new URL(SITE_URL),
+    metadataBase: new URL(siteUrl()),
     title: {
       default: t("home.metaTitle", { brand: "Panda Wok", city: "Alexandria" }),
       template: "%s | Panda Wok",

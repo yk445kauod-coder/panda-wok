@@ -39,8 +39,26 @@ export const optionalUuid = z
   .optional()
   .or(z.literal("").transform(() => null));
 
+/**
+ * Sign-in accepts either identifier the product supports: a real email, or a
+ * phone number. Most accounts are created with a phone only (see signUpSchema),
+ * so validating this as an email rejected the majority of customers before the
+ * phone-to-placeholder mapping in signInAction could ever run. The field is
+ * deliberately permissive here — the authoritative check is Supabase's, and
+ * being stricter only locks people out with a confusing message.
+ */
 export const signInSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Enter your email or phone number")
+    .max(160, "That value is too long")
+    .refine(
+      (value) =>
+        /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value) ||
+        /^[+]?[\d\s()-]{8,}$/.test(value),
+      "Enter a valid email address or phone number",
+    ),
   password: z.string().min(8, "Password must be at least 8 characters"),
   next: z.string().optional(),
 });
