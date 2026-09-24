@@ -17,9 +17,33 @@ const PROTECTED_PREFIXES = [
   "/chat",
 ] as const;
 
+/**
+ * Pages that have a faithful markdown counterpart in /llms.txt. Agents that
+ * ask for `text/markdown` get the text contract instead of the HTML document,
+ * mirroring Cloudflare's "Markdown for Agents" behaviour in app code.
+ */
+const MARKDOWN_PAGES = new Set(["/", "/menu", "/about", "/contact", "/faq", "/location", "/privacy-policy"]);
+
 export async function middleware(request: NextRequest) {
   const { response, userId } = await updateSession(request);
   const { pathname, search } = request.nextUrl;
+
+  // Markdown for Agents (RFC: Accept: text/markdown). Honest AI agents request
+  // a markdown view; browsers never send this exact media type alone. Rewrite
+  // to the llms.txt contract so agents get one canonical, data-grounded text
+  // representation of the public site.
+  if (
+    MARKDOWN_PAGES.has(pathname) &&
+    request.headers.get("accept")?.includes("text/markdown")
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/llms-txt";
+    url.search = "";
+    const rewritten = NextResponse.rewrite(url);
+    applySecurityHeaders(rewritten);
+    rewritten.headers.set("Content-Type", "text/markdown; charset=utf-8");
+    return rewritten;
+  }
 
   const needsAuth = PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -74,6 +98,14 @@ function applySecurityHeaders(response: NextResponse) {
     ].join("; "),
   );
   response.headers.set("Content-Language", "en, ar");
+
+  // Agent discovery (RFC 8288). Every dynamic document advertises the two
+  // machine-readable views of the site so AI agents that follow Link headers
+  // can find the text contract and the sitemap without extra crawling.
+  response.headers.set(
+    "Link",
+    `</llms.txt>; rel="alternate"; type="text/markdown", </sitemap.xml>; rel="sitemap"`,
+  );
 }
 
 export const config = {

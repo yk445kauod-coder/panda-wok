@@ -85,7 +85,8 @@ export async function GET() {
 
   return new NextResponse(lines.join("\n"), {
     headers: {
-      "Content-Type": "text/plain; charset=utf-8",
+      "Content-Type": "text/markdown; charset=utf-8",
+      "x-markdown-tokens": "full",
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
     },
   });
