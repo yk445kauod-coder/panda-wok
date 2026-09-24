@@ -23,8 +23,12 @@ const SERVER_ONLY_PREFIXES = [
 ];
 
 const ASSET_PREFIXES = ["/_next/static/", "/mascots/"];
+// `.html` is included so site-verification files (google*.html, bing*.html,
+// etc.) served from `public/` are offered from ASSETS instead of falling through to
+// Next's 404 page. Absent files still fall through — ASSETS.fetch returns 404 and
+// the handler continues, so this never masks a real route.
 const ASSET_FILE =
-  /\.(?:svg|png|jpg|jpeg|webp|avif|ico|gif|css|js|mjs|woff2?|ttf|txt|xml|webmanifest|json|map)$/i;
+  /\.(?:svg|png|jpg|jpeg|webp|avif|ico|gif|css|js|mjs|woff2?|ttf|txt|xml|webmanifest|json|map|html)$/i;
 
 export default {
   async fetch(request, env, ctx) {
