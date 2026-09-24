@@ -2,35 +2,59 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getPublicSettings, getRestaurant } from "@/lib/services/catalog";
+import { getPageContent } from "@/lib/services/content";
 import { breadcrumbSchema, organisationSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { Badge } from "@/components/ui/button";
+import { getLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getPublicSettings();
+  const [settings, locale] = await Promise.all([getPublicSettings(), getLocale()]);
+  const t = await getT(locale);
   return buildMetadata({
-    title: `About ${settings.brand.name}`,
-    description: `The story behind ${settings.brand.name}, an Asian cloud kitchen cooking wok, ramen and sushi to order in ${settings.brand.city}, ${settings.brand.country}.`,
+    title: t("about.metaTitle", { brand: settings.brand.name }),
+    description: t("about.metaDescription", {
+      brand: settings.brand.name,
+      city: settings.brand.city,
+      country: settings.brand.country,
+    }),
     path: "/about",
     siteName: settings.brand.name,
   });
 }
 
+/**
+ * The about page reads its long-form copy from `page_content` when staff have
+ * entered it, and falls back to the dictionary otherwise. That keeps the page
+ * whole before the table is populated and after it is edited, and the identical
+ * section keys mean an edit replaces exactly the block it names.
+ */
 export default async function AboutPage() {
-  const [settings, restaurant] = await Promise.all([
+  const locale = await getLocale();
+  const [settings, restaurant, t, sections] = await Promise.all([
     getPublicSettings(),
     getRestaurant(),
+    getT(locale),
+    getPageContent("about", locale),
   ]);
+
+  const copy = new Map(sections.map((section) => [section.sectionKey, section]));
+  const heading = (key: string, fallback: string) =>
+    copy.get(key)?.heading?.trim() || fallback;
+  const body = (key: string, fallback: string) =>
+    copy.get(key)?.body?.trim() || fallback;
 
   const brand = restaurant?.name_en ?? settings.brand.name;
   const description =
-    restaurant?.description_en ??
-    `${brand} is an Asian-inspired cloud kitchen in ${settings.brand.city}, cooking wok, ramen and izakaya plates to order.`;
+    restaurant?.description_en ?? t("about.fallbackDescription", {
+      brand,
+      city: settings.brand.city,
+    });
 
   const cuisine = (restaurant?.cuisine_tags ?? []).filter(
     (tag): tag is string => typeof tag === "string",
@@ -42,8 +66,8 @@ export default async function AboutPage() {
       social: settings.support.social,
     }),
     breadcrumbSchema([
-      { name: "Home", path: "/" },
-      { name: "About", path: "/about" },
+      { name: t("nav.home"), path: "/" },
+      { name: t("nav.about"), path: "/about" },
     ]),
   ];
 
@@ -51,8 +75,8 @@ export default async function AboutPage() {
     <article className="mx-auto max-w-3xl px-4 py-6">
       <Breadcrumbs
         items={[
-          { name: "Home", path: "/" },
-          { name: "About", path: "/about" },
+          { name: t("nav.home"), path: "/" },
+          { name: t("nav.about"), path: "/about" },
         ]}
       />
 
@@ -60,7 +84,7 @@ export default async function AboutPage() {
         <BrandLogo brand={settings.brand} className="mt-1 size-14 shrink-0" />
         <div>
           <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
-            About {brand}
+            {t("about.title", { brand })}
           </h1>
           <p className="mt-1.5 text-sm text-ink-700/85">
             {restaurant?.tagline_en ?? settings.brand.tagline}
@@ -81,44 +105,29 @@ export default async function AboutPage() {
         <p>{description}</p>
 
         <h2 className="font-display text-lg font-semibold text-ink-900">
-          A cloud kitchen, not a dining room
+          {heading("story", t("about.cloudKitchenHeading"))}
         </h2>
-        <p>
-          We cook in a dedicated kitchen and send everything straight to you. That means
-          no tables, no queues and no waiting room — just food made when you order it, and
-          a smaller operation that can pay attention to detail.
-        </p>
+        <p>{body("story", t("about.cloudKitchenBody"))}</p>
 
         <h2 className="font-display text-lg font-semibold text-ink-900">
-          How we cook
+          {heading("how_we_cook", t("about.howWeCookHeading"))}
         </h2>
-        <p>
-          Wok dishes are cooked over high heat to order, broth is made ahead and held
-          hot, and sushi is rolled as the order comes in. Nothing sits under a lamp
-          waiting to be chosen. Because everything is made to order, our prep times are
-          honest rather than instant, and a busy night affects everyone equally.
-        </p>
+        <p>{body("how_we_cook", t("about.howWeCookBody"))}</p>
 
         <h2 className="font-display text-lg font-semibold text-ink-900">
-          Allergens and honest labelling
+          {heading("allergens", t("about.allergensHeading"))}
         </h2>
-        <p>
-          Every dish page lists the allergens the kitchen has recorded, along with
-          vegetarian, vegan and spicy markers. That information is what we know about our
-          own preparation; it is not a guarantee, because suppliers and shared equipment
-          can introduce traces. If you have a serious allergy, please speak to us directly
-          before ordering.
-        </p>
+        <p>{body("allergens", t("about.allergensBody"))}</p>
 
         <h2 className="font-display text-lg font-semibold text-ink-900">
-          Where we are
+          {t("about.whereHeading")}
         </h2>
         <p>
-          We cook in {restaurant?.area ? `${restaurant.area}, ` : ""}
-          {restaurant?.city ?? settings.brand.city},{" "}
-          {restaurant?.country ?? settings.brand.country}, and deliver across the city.
-          Delivery fees, minimums and typical timings are listed on each order as you
-          check out, and they are set by the kitchen rather than fixed in the code.
+          {t("about.whereBody", {
+            area: restaurant?.area ? `${restaurant.area}, ` : "",
+            city: restaurant?.city ?? settings.brand.city,
+            country: restaurant?.country ?? settings.brand.country,
+          })}
         </p>
       </section>
 
@@ -127,13 +136,13 @@ export default async function AboutPage() {
           href="/menu"
           className="inline-flex h-12 items-center justify-center rounded-xl bg-plum-600 px-6 font-medium text-rice-50 hover:bg-plum-700 sm:flex-1"
         >
-          See the menu
+          {t("about.seeMenu")}
         </Link>
         <Link
           href="/contact"
           className="inline-flex h-12 items-center justify-center rounded-xl border border-ink-900/15 px-6 font-medium text-ink-900 hover:bg-rice-200 sm:flex-1"
         >
-          Contact us
+          {t("about.contactUs")}
         </Link>
       </div>
 
@@ -141,3 +150,4 @@ export default async function AboutPage() {
     </article>
   );
 }
+

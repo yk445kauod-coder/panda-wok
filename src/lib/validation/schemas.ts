@@ -405,3 +405,80 @@ export const conversationStatusSchema = z.object({
   assignedTo: optionalUuid,
 });
 
+/* ----------------------------------------------------------------- content */
+
+const localeSchema = z.enum(["en", "ar"]).default("en");
+const pageKeySchema = z.string().trim().min(2).max(40);
+const sectionKeySchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(40)
+  .regex(/^[a-z0-9_]+$/, "Use lowercase letters, numbers and underscores");
+
+export const pageContentSchema = z.object({
+  id: optionalUuid,
+  pageKey: pageKeySchema,
+  sectionKey: sectionKeySchema,
+  locale: localeSchema,
+  heading: optionalText(160),
+  body: optionalText(6000),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+  isPublished: z.coerce.boolean().default(true),
+});
+
+export const faqSchema = z.object({
+  id: optionalUuid,
+  locale: localeSchema,
+  question: z.string().trim().min(4, "Write the question").max(300),
+  answer: z.string().trim().min(4, "Write the answer").max(4000),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+  isPublished: z.coerce.boolean().default(true),
+});
+
+export const deliveryZoneSchema = z.object({
+  id: optionalUuid,
+  nameEn: z.string().trim().min(2, "Name the zone").max(80),
+  nameAr: optionalText(80),
+  areas: z
+    .string()
+    .trim()
+    .max(600)
+    .optional()
+    .default("")
+    .transform((value) =>
+      value
+        .split(",")
+        .map((area) => area.trim())
+        .filter(Boolean),
+    ),
+  fee: moneySchema,
+  freeOver: z.coerce.number().min(0).max(1_000_000).nullable().optional(),
+  etaMinutes: z.coerce.number().int().min(1).max(600).nullable().optional(),
+  isActive: z.coerce.boolean().default(true),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+});
+
+export const announcementSchema = z.object({
+  id: optionalUuid,
+  locale: localeSchema,
+  message: z.string().trim().min(4, "Write the announcement").max(300),
+  href: optionalText(500),
+  tone: z.enum(["info", "success", "warning", "plum"]).default("info"),
+  startsAt: optionalText(40),
+  endsAt: optionalText(40),
+  isActive: z.coerce.boolean().default(true),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+});
+
+export const pageSeoSchema = z.object({
+  id: optionalUuid,
+  pageKey: pageKeySchema,
+  locale: localeSchema,
+  title: optionalText(120),
+  description: optionalText(320),
+  ogImageUrl: optionalText(500),
+  noindex: z.coerce.boolean().default(false),
+});
+
+

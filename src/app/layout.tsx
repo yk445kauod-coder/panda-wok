@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, IBM_Plex_Sans_Arabic } from "next/font/google";
+import {
+  Fraunces,
+  IBM_Plex_Sans_Arabic,
+  Inter,
+  Noto_Kufi_Arabic,
+} from "next/font/google";
 import "./globals.css";
 import { siteUrl } from "@/lib/seo/metadata";
 import { ToastProvider } from "@/components/ui/toast";
@@ -23,6 +28,18 @@ const displayFont = Fraunces({
 const arabicFont = IBM_Plex_Sans_Arabic({
   variable: "--font-arabic",
   subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+/**
+ * Arabic display face for headings only. Kufi is a heavier, more geometric
+ * script than the Plex body face, which gives Arabic headings the same
+ * "display vs body" contrast Latin gets from Fraunces vs Inter.
+ */
+const arabicDisplayFont = Noto_Kufi_Arabic({
+  variable: "--font-arabic-display",
+  subsets: ["arabic"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
@@ -77,7 +94,7 @@ export default async function RootLayout({
     <html
       lang={locale}
       dir={dirFor(locale)}
-      className={`${bodyFont.variable} ${displayFont.variable} ${arabicFont.variable} h-full antialiased`}
+      className={`${bodyFont.variable} ${displayFont.variable} ${arabicFont.variable} ${arabicDisplayFont.variable} h-full antialiased`}
       data-locale={locale}
     >
       <body className="min-h-full flex flex-col">

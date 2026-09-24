@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Send, X } from "lucide-react";
+import { Mascot } from "page-mascot";
 import { Button, Spinner } from "@/components/ui/button";
-import { PandaMascot, type PandaState } from "@/components/panda/mascot";
 import { askAssistantAction } from "@/lib/actions/assistant";
 import { useAssistant } from "@/components/panda/assistant-context";
 import { cn } from "@/lib/utils/format";
@@ -24,6 +24,16 @@ const SUGGESTIONS = [
   "How do loyalty points work?",
 ];
 
+/** Sprite animation per conversational state; styling lives in globals.css. */
+type AssistantMood =
+  | "idle"
+  | "watching"
+  | "thinking"
+  | "speaking"
+  | "surprised"
+  | "happy"
+  | "greeting";
+
 /**
  * The Panda assistant. Tapping the mascot opens a chat sheet; answers come
  * from the server action, which is grounded in live database data. When the
@@ -37,18 +47,18 @@ export function PandaAssistant({
   brandName: string;
   disclosure: string;
 }) {
-  const { open: open, openAssistant, closeAssistant } = useAssistant();
+  const { open: open, closeAssistant } = useAssistant();
   const close = closeAssistant;
-  // The transient animation state (greeting, thinking, speaking…). The resting
-  // pose is derived below rather than written back from an effect.
-  const [activity, setActivity] = useState<PandaState>("idle");
+  // The transient sprite reaction on the panel avatar. The resting pose is
+  // derived below rather than written back from an effect.
+  const [moodState, setMoodState] = useState<AssistantMood>("idle");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const errorText = useErrorText();
   const [error, setError] = useState<string | null>(null);
   const panelId = useId();
-  const state: PandaState = open && activity === "idle" ? "watching" : activity;
+  const mood: AssistantMood = open && moodState === "idle" ? "watching" : moodState;
   const scroller = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -59,8 +69,8 @@ export function PandaAssistant({
   }, []);
 
   useEffect(() => {
-    schedule(() => setActivity("greeting"), 1400);
-    schedule(() => setActivity("idle"), 4200);
+    schedule(() => setMoodState("greeting"), 1400);
+    schedule(() => setMoodState("idle"), 4200);
     return () => {
       for (const id of timers.current) clearTimeout(id);
       timers.current = [];
@@ -96,15 +106,15 @@ export function PandaAssistant({
       const history = turns.slice(-6).map((t) => ({ role: t.role, content: t.content }));
       setTurns((current) => [...current, { role: "user", content: trimmed }]);
       setPending(true);
-      setActivity("thinking");
+      setMoodState("thinking");
 
       try {
         const result = await askAssistantAction({ question: trimmed, history });
 
         if (!result.ok) {
           setError(errorText(result.error));
-          setActivity("surprised");
-          schedule(() => setActivity("idle"), 2200);
+          setMoodState("surprised");
+          schedule(() => setMoodState("idle"), 2200);
           return;
         }
 
@@ -116,39 +126,22 @@ export function PandaAssistant({
             status: result.data.status,
           },
         ]);
-        setActivity("speaking");
-        schedule(() => setActivity("happy"), 900);
-        schedule(() => setActivity("idle"), 2600);
+        setMoodState("speaking");
+        schedule(() => setMoodState("happy"), 900);
+        schedule(() => setMoodState("idle"), 2600);
       } catch {
         setError("The assistant could not be reached. Please try again.");
-        setActivity("surprised");
-        schedule(() => setActivity("idle"), 2200);
+        setMoodState("surprised");
+        schedule(() => setMoodState("idle"), 2200);
       } finally {
         setPending(false);
       }
     },
-    [pending, turns, schedule],
+    [pending, turns, schedule, errorText],
   );
 
   return (
     <>
-      <button
-        type="button"
-        onClick={openAssistant}
-        aria-expanded={open}
-        aria-controls={panelId}
-        aria-label="Open the Panda assistant"
-        data-motion="decorative"
-        className={cn(
-          "fixed bottom-20 right-4 z-40 grid size-14 place-items-center rounded-full",
-          "border border-ink-900/10 bg-rice-50 shadow-washi-lg transition-transform",
-          "hover:scale-105 active:scale-95 md:bottom-6 md:size-16",
-          open && "pointer-events-none opacity-0",
-        )}
-      >
-        <PandaMascot state={state} className="size-11 md:size-13" />
-      </button>
-
       <AnimatePresence>
         {open ? (
           <motion.section
@@ -166,7 +159,17 @@ export function PandaAssistant({
             )}
           >
             <header className="flex items-center gap-3 border-b border-ink-900/8 px-4 py-3">
-              <PandaMascot state={state} className="size-10 shrink-0" />
+              <span
+                data-mood={mood}
+                className="assistant-mascot grid size-10 shrink-0 place-items-center"
+              >
+                <Mascot
+                  directions="/mascots/panda-directions.webp"
+                  reactions="/mascots/panda-reactions.webp"
+                  size={38}
+                  label="Panda Wok assistant"
+                />
+              </span>
               <div className="min-w-0 flex-1">
                 <h2 className="truncate font-display text-base font-semibold text-ink-900">
                   Panda assistant

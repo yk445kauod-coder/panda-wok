@@ -304,3 +304,50 @@ export async function listUpsellRules() {
   if (error) throw new Error(`Failed to load upsell rules: ${error.message}`);
   return data ?? [];
 }
+
+/* ----------------------------------------------------------------- content */
+
+export async function listPageContent() {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("page_content")
+    .select("*")
+    .order("page_key", { ascending: true })
+    .order("sort_order", { ascending: true });
+
+  if (error) throw new Error(`Failed to load page content: ${error.message}`);
+  return data ?? [];
+}
+
+export async function listFaqs() {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("faqs")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (error) throw new Error(`Failed to load FAQs: ${error.message}`);
+  return data ?? [];
+}
+
+export async function listDeliveryZones() {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("delivery_zones")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (error) throw new Error(`Failed to load delivery zones: ${error.message}`);
+  return data ?? [];
+}
+
+export async function listAnnouncements() {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("announcements")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (error) throw new Error(`Failed to load announcements: ${error.message}`);
+  return data ?? [];
+}

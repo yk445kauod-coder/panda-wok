@@ -56,6 +56,20 @@
   --shadow-washi-lg:
     0 2px 4px rgb(27 24 21 / 0.05), 0 24px 48px -20px rgb(27 24 21 / 0.22);
 
+  /* ---- Semantic layer -------------------------------------------------
+     Components should read these, not the raw palette. They are aliases onto
+     the palette tokens above, so the underlying scheme can be retuned without
+     touching call sites. `surface`/`border`/`text` describe role, not hue. */
+  --surface: var(--color-rice-100);
+  --surface-raised: var(--color-rice-50);
+  --surface-muted: var(--color-rice-200);
+  --border-subtle: color-mix(in oklab, var(--color-rice-400) 55%, transparent);
+  --text-primary: var(--color-ink-900);
+  --text-muted: var(--color-ink-500);
+  --accent: var(--color-plum-600);
+  --accent-strong: var(--color-plum-700);
+  --accent-contrast: var(--color-rice-50);
+
   --animate-rise: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-sway: sway 7s ease-in-out infinite;
   --animate-leaf: leaf 14s linear infinite;
@@ -94,6 +108,50 @@
 @keyframes enso {
   0%, 100% { transform: scale(1); opacity: 0.55; }
   50% { transform: scale(1.1); opacity: 0.85; }
+}
+
+/* Assistant panel avatar reactions. Animation only, so the sprite never
+   distorts; each mood settles back to the resting pose. */
+@keyframes idle-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-1.5px) scale(1.02); }
+}
+
+@keyframes talk-pop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.05); }
+}
+
+@keyframes pop {
+  0% { transform: scale(0.9); }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+.assistant-mascot[data-mood="idle"],
+.assistant-mascot[data-mood="watching"] {
+  animation: idle-breathe 3.4s ease-in-out infinite;
+}
+.assistant-mascot[data-mood="thinking"] {
+  animation: sway 1.6s ease-in-out infinite;
+}
+.assistant-mascot[data-mood="speaking"] {
+  animation: talk-pop 0.5s ease-in-out infinite;
+}
+.assistant-mascot[data-mood="happy"] {
+  animation: talk-pop 0.6s ease-in-out 2;
+}
+.assistant-mascot[data-mood="greeting"] {
+  animation: wave 0.9s ease-in-out 2;
+}
+.assistant-mascot[data-mood="surprised"] {
+  animation: pop 0.4s ease-out 1;
 }
 
 :root {
@@ -151,7 +209,7 @@
   html[lang="ar"] h3,
   html[lang="ar"] h4,
   html[lang="ar"] .font-display {
-    font-family: var(--font-arabic), var(--font-display), ui-serif, Georgia, serif;
+    font-family: var(--font-arabic-display), var(--font-arabic), var(--font-display), ui-serif, Georgia, serif;
     letter-spacing: 0;
   }
 
@@ -228,6 +286,29 @@
 
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
+
+  /* Scroll reveal. Elements start slightly transparent+offset and settle when
+     they enter the viewport (the observer toggles `data-reveal` between
+     "pending" and "shown").
+     Falls back to fully visible when JS is off, because the element renders
+     "shown" and nothing ever demotes it to "pending". */
+  [data-reveal="pending"] {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  [data-reveal="shown"] {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Fluid heading scale: large on wide screens, legible but never tiny on
+     phones. `clamp` keeps the ramp smooth with no breakpoint jumps. */
+  .text-fluid-hero { font-size: clamp(2.25rem, 6vw + 0.5rem, 4.5rem); line-height: 1.04; }
+  .text-fluid-h2 { font-size: clamp(1.6rem, 3vw + 0.75rem, 2.6rem); line-height: 1.12; }
+  .text-fluid-h3 { font-size: clamp(1.25rem, 1.4vw + 0.9rem, 1.7rem); line-height: 1.2; }
 }
 
 /*
