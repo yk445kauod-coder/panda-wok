@@ -335,3 +335,46 @@ Known blocker for CI auto-deploy: the GitHub repo secret `CLOUDFLARE_API_TOKEN` 
 unset and cannot be set from here (`secrets: write` missing). Manual deploy:
 `npm run pages:deploy` with a token in the environment.
 
+## Auth audit + ops gate (2026-09-24, session 5)
+
+### Fixed: phone sign-in was broken for accounts that have a real email
+`signInAction` always derived `panda-<last10digits>@example.com` from a phone
+identifier. That is only correct for a genuinely phone-first account; an account
+registered *with* an email lives in Supabase Auth under that email, so signing in
+with the phone never matched. Live symptom: `INVALID_CREDENTIALS` for a phone that
+had just signed up, while the email worked.
+
+`pickSignInEmail(identifier, storedEmail)` in `src/lib/auth/phone.ts` now resolves
+the typed identifier to the address Auth holds: the profile's stored email when it
+differs from the placeholder this phone derives, else the placeholder. The lookup
+uses `phoneLookupCandidates` so legacy national-form numbers resolve too.
+Verified against the live project: the QA account's real email authenticates
+(`ok:true`) while the *derived* placeholder returns `invalid_credentials`.
+
+Refinement worth remembering: the discriminator is the **exact derived
+placeholder**, not the `example.com` domain — customers (and the QA account)
+legitimately register real mailboxes at `example.com`, and skipping those would
+lock them out.
+
+### Added: `/admin` shared-passcode gate (layer 1)
+`src/lib/auth/admin-gate.ts` — HMAC cookie keyed by the passcode, so rotating
+`ADMIN_PASSCODE` (default `panda2026`) invalidates every existing cookie. The
+passcode never leaves the server; the client only sees the digest. Wired into
+`src/app/admin/layout.tsx` ahead of the staff-role check. This is a second factor,
+not a replacement: `requireCapability` and RLS still apply. Verified locally —
+unauthed `/admin` = 200 passcode form (no `/auth` redirect); valid cookie = 307 to
+`/auth/sign-in?next=/admin`; wrong cookie = passcode form.
+
+### Fixed: HEAD never built (CI failed on every run since "Phase 3")
+Commit `a01a898` committed pages importing `@/lib/services/content` and
+`@/components/ui/reveal` that were **never tracked**, so `next build` died with
+`Module not found`. This was the real cause of the `Deploy Pages` build failure
+that had been misdiagnosed as an env-var problem. Fixed in `35d0b46` by committing
+the missing closure (content service/actions/screens, reveal, schemas, admin nav).
+
+The Actions build step is now green. The **deploy step still fails** on the unset
+`CLOUDFLARE_API_TOKEN` repo secret — an account owner must set it (the integration
+token here gets 403 on `secrets: write`). Live `panda-wok.pages.dev` therefore
+still runs the old bundle; nothing in this session is deployed yet. Manual deploy:
+`npm run pages:deploy` with a token in the environment.
+
