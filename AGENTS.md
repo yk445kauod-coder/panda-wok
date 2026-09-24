@@ -433,3 +433,27 @@ These flow into JSON-LD `sameAs` automatically via `restaurantSchema`/`localBusi
 - Still open: the repo secret `CLOUDFLARE_API_TOKEN` cannot be set with the
   integration token here (`gh secret set` → 403). An account owner must add it for
   push-to-deploy. Manual deploy works with the token in the environment.
+
+## 1102 on /admin (2026-09-24) — transient, verified not reproducible + hardening
+
+- Symptom: correct admin passcode + staff sign-in -> "Error 1102 - Worker exceeded
+  resource limits" (Ray a401adf8cc40243c, 12:09:19 UTC).
+- Investigation: reproduced the full flow live against `panda-wok.pages.dev` with a
+  real staff session (magic-link token via admin API -> /auth/v1/verify -> minted
+  sb-xjbtsryidznsxqlynmfa-auth-token cookie) + forged gate cookie
+  (createHmac sha256 passcode:panda-wok-gate over open:admin) -> /admin renders 200
+  in ~1.6s. The code path is healthy under current (tiny) data.
+- No Supabase trace at 12:09 (no auth_logs request, no activity_logs/LOGIN row), so
+  the 1102 was thrown at the Cloudflare edge before app code ran - a transient
+  resource-limit event on the Free plan (10ms CPU / 50 subrequests / 128MB), likely
+  a cold isolate plus the dashboard's ~10 parallel PostgREST subrequests.
+- Hardening (committed c94689e): getDashboardMetrics queries in
+  src/lib/crm/insights.ts now carry per-query .limit() caps (orders 2000,
+  order_items 5000, stock 200, feedback 2000, loyalty 2000, profiles 2000) so worst
+  case transfer/in-isolate work cannot blow the Free-plan limits as data grows.
+- Google Search Console verification: public/google469af7ac01566c8d.html
+  (google-site-verification: google469af7ac01566c8d.html) is committed and is
+  emitted into .pages/. It is NOT yet live (404 on pages.dev) because the last
+  deploy predates it - deploy then re-check it returns 200.
+- Deploy still blocked on the unset CLOUDFLARE_API_TOKEN repo secret (owner must
+  add it). Manual: CLOUDFLARE_API_TOKEN=... npm run pages:deploy.
