@@ -63,7 +63,12 @@ export function pickSignInEmail(
 ): string {
   const value = identifier.trim();
   if (!looksLikePhone(value)) return value;
+
+  // Compare against the placeholder this exact phone would derive, not merely
+  // the placeholder domain: a customer is free to register a real address at
+  // `example.com`, and treating that as derived would send them back to a
+  // mailbox they cannot read.
   const stored = storedEmail?.trim();
-  if (stored && !isPlaceholderEmail(stored)) return stored;
+  if (stored && stored !== placeholderEmailFor(value)) return stored;
   return placeholderEmailFor(value);
 }

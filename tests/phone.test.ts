@@ -88,6 +88,14 @@ describe("pickSignInEmail", () => {
     );
   });
 
+  it("honours a real address that merely shares the placeholder domain", () => {
+    // Customers may register any address at `example.com`; only the exact
+    // derived placeholder is "not a real mailbox".
+    expect(pickSignInEmail("01277593815", "madrasty61@example.com")).toBe(
+      "madrasty61@example.com",
+    );
+  });
+
   it("maps every phone spelling to the same account", () => {
     const expected = "madrasty61@gmail.com";
     for (const input of ["01277593815", "+201277593815", "0127 759 3815"]) {
