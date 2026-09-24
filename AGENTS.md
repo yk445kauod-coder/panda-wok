@@ -457,3 +457,26 @@ These flow into JSON-LD `sameAs` automatically via `restaurantSchema`/`localBusi
   deploy predates it - deploy then re-check it returns 200.
 - Deploy still blocked on the unset CLOUDFLARE_API_TOKEN repo secret (owner must
   add it). Manual: CLOUDFLARE_API_TOKEN=... npm run pages:deploy.
+
+## PageSpeed + Agent-readiness pass (2026-09-24)
+- **LCP 5.0s -> target**: PageSpeed flagged 1.1 MiB image savings. All dish
+  images were Unsplash 1200px JPEGs served uncompressed. Fix (committed
+  c2e7d06): src/lib/images/responsive.ts (dishImageSrc/dishImageSrcSet rewrite
+  Unsplash URLs to width-tuned WebP); DishCard/dish-detail/cart/upsell use it
+  with explicit width/height + fetchpriority on LCP hero, lazy below fold. DB
+  migration 20260924001100 rewrote all 12 menu_items.image_url to
+  ?w=800&q=70&fm=webp (applied live).
+- **Agent-readiness** (committed 17cd5ed, isitagentready checklist):
+  - robots.txt moved to a route handler (app/robots.txt/route.ts) with
+    Content-Signal: ai-train=no, search=yes, ai-input=no.
+  - Middleware sets RFC 8288 Link header on dynamic docs pointing at
+    /llms.txt (alternate, text/markdown) + /sitemap.xml (sitemap).
+  - Markdown for Agents: Accept: text/markdown on / /menu /about /contact
+    /faq /location /privacy-policy rewrites to /llms-txt with
+    Content-Type: text/markdown. Browsers unaffected (they send text/html).
+  - /llms.txt serves Content-Type: text/markdown + x-markdown-tokens: full.
+  - ARD manifest /.well-known/ai-catalog.json generated from live catalogue
+    (llms.txt, sitemap, homepage, each menu category) with ACAO: *.
+  - Deliberately NOT implemented (no public API/auth/payments on the site):
+    OAuth/OIDC discovery, auth.md, api-catalog, MCP server card, agent-skills
+    index, WebMCP, x402/MPP/UCP/ACP. DNS-AID N/A on pages.dev (no zone).
