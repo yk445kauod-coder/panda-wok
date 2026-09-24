@@ -77,7 +77,16 @@ export const en = {
     account: "Your account",
     reachKitchen: "Reach the kitchen",
     contactPending: "Contact details are being finalised.",
+    followUs: "Follow the kitchen",
     copyright: "© {year} {brand}. Cloud kitchen, {city}. All prices in EGP.",
+  },
+
+  social: {
+    instagram: "Instagram",
+    facebook: "Facebook",
+    tiktok: "TikTok",
+    whatsapp: "WhatsApp",
+    website: "Website",
   },
 
   home: {
@@ -108,6 +117,18 @@ export const en = {
     srDeliveryTime: "Typical delivery time",
     srMinimumOrder: "Minimum order",
     srDietaryLabels: "Dietary labels",
+    identityHeading: "Two kitchens, one wok and one counter",
+    identityBody:
+      "The menu crosses Asia: Japanese technique at the sushi counter, Chinese fire in the wok. Same kitchen, same made-to-order discipline.",
+    identityJapaneseLabel: "Japanese counter",
+    identityJapaneseScript: "日本",
+    identityJapaneseBody:
+      "Sushi rolled and ramen broth built the Japanese way — clean, precise, and never pre-made.",
+    identityChineseLabel: "Chinese wok",
+    identityChineseScript: "中华",
+    identityChineseBody:
+      "Wok classics seared over high heat with clean seasoning, cooked the moment you order.",
+    identitySig: "{brand} · Asian kitchen · {city}",
   },
 
   menu: {
@@ -667,7 +688,7 @@ export const en = {
       },
       cuisine: {
         q: "What kind of food does {brand} serve?",
-        a: "{brand} cooks {cuisine} to order: wok dishes, ramen, sushi and izakaya-style starters, in one wok station and one sushi counter.",
+        a: "{brand} cooks {cuisine} to order, drawing on two traditions: a Japanese sushi counter for sushi and ramen broth, and a Chinese wok for high-heat wok dishes. Everything is made in one kitchen when you order it.",
       },
       vegetarian: {
         q: "Are there vegetarian or vegan options?",

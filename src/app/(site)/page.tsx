@@ -17,6 +17,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { formatPrice } from "@/lib/utils/format";
 import { DishCard } from "@/components/customer/dish-card";
 import { FeaturedDishStrip } from "@/components/customer/featured-strip";
+import { IdentityBand } from "@/components/customer/identity-band";
 import { getLocale, getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/server";
 import { localiseCategory } from "@/lib/i18n/catalog";
@@ -69,6 +70,14 @@ export default async function HomePage() {
   const currency = restaurant?.currency ?? "EGP";
   const categoryById = new Map(categories.map((c) => [c.id, c]));
 
+  // The live cuisine tags are the honest description of the kitchen ("Japanese-
+  // inspired", "Chinese-inspired", …). They are shown verbatim rather than
+  // replaced by a slogan, so the page never claims more than the menu supports.
+  const cuisineIdentity =
+    restaurant?.cuisine_tags && restaurant.cuisine_tags.length > 0
+      ? restaurant.cuisine_tags.slice(0, 4).join(" · ")
+      : settings.brand.cuisine;
+
   const menuItems = menu.items.slice(0, 40).map((item) => ({
     slug: item.slug,
     name: item.name_en,
@@ -95,6 +104,7 @@ export default async function HomePage() {
       <Hero
         brand={brand}
         tagline={restaurant?.tagline_en ?? settings.brand.tagline}
+        cuisine={cuisineIdentity}
         city={settings.brand.city}
         etaMinutes={settings.ordering.etaMinutes}
         acceptingOrders={settings.ordering.acceptingOrders}
@@ -102,6 +112,8 @@ export default async function HomePage() {
         hasMenu={menu.items.length > 0}
         t={t}
       />
+
+      <IdentityBand brand={brand} city={settings.brand.city} t={t} />
 
       {featured.length > 0 ? (
         <section aria-labelledby="featured-heading" className="mx-auto max-w-6xl px-4 py-10">
@@ -226,6 +238,7 @@ export default async function HomePage() {
 function Hero({
   brand,
   tagline,
+  cuisine,
   city,
   etaMinutes,
   acceptingOrders,
@@ -235,6 +248,7 @@ function Hero({
 }: {
   brand: string;
   tagline: string;
+  cuisine: string | null;
   city: string;
   etaMinutes: number;
   acceptingOrders: boolean;
@@ -268,6 +282,26 @@ function Hero({
           {brand}
         </h1>
         <p className="mt-3 max-w-xl text-base text-ink-700/90 sm:text-lg">{tagline}</p>
+        {cuisine ? (
+          <p
+            className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-display text-sm font-medium text-plum-700"
+            aria-label={cuisine}
+          >
+            <span lang="ja" aria-hidden="true">
+              日本
+            </span>
+            <span aria-hidden="true" className="text-ink-700/40">
+              ·
+            </span>
+            <span lang="zh-Hans" aria-hidden="true">
+              中华
+            </span>
+            <span aria-hidden="true" className="text-ink-700/40">
+              ·
+            </span>
+            <span>{cuisine}</span>
+          </p>
+        ) : null}
 
         <dl className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-sm text-ink-700/85">
           <div className="flex items-center gap-1.5">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { socialIcon, socialLabel, sortSocialEntries } from "@/components/icons/social";
 import { getLocale, getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/server";
 
@@ -107,11 +108,19 @@ export async function SiteFooter({
     tagline: string;
     logo_url: string | null;
   };
-  contact: { phone: string | null; email: string | null; social: Record<string, string> };
+  contact: {
+    phone: string | null;
+    whatsapp: string | null;
+    email: string | null;
+    social: Record<string, string>;
+  };
 }) {
   const locale = await getLocale();
   const t = await getT(locale);
-  const socialEntries = Object.entries(contact.social);
+  const socialEntries = sortSocialEntries(contact.social);
+  const whatsappHref = contact.whatsapp
+    ? `https://wa.me/${contact.whatsapp.replace(/\D/g, "").replace(/^0/, "20")}`
+    : null;
 
   return (
     <footer className="mt-12 border-t border-ink-900/10 bg-rice-50/70">
@@ -163,6 +172,18 @@ export async function SiteFooter({
                 </a>
               </li>
             ) : null}
+            {whatsappHref ? (
+              <li>
+                <a
+                  href={whatsappHref}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  className="hover:text-ink-900"
+                >
+                  {t("social.whatsapp")}
+                </a>
+              </li>
+            ) : null}
             {contact.email ? (
               <li>
                 <a href={`mailto:${contact.email}`} className="hover:text-ink-900">
@@ -170,22 +191,37 @@ export async function SiteFooter({
                 </a>
               </li>
             ) : null}
-            {socialEntries.map(([key, url]) => (
-              <li key={key}>
-                <a
-                  href={url}
-                  rel="noopener noreferrer me"
-                  target="_blank"
-                  className="capitalize hover:text-ink-900"
-                >
-                  {key}
-                </a>
-              </li>
-            ))}
-            {!contact.phone && !contact.email && socialEntries.length === 0 ? (
-              <li className="text-ink-700/60">{t("footer.contactPending")}</li>
-            ) : null}
           </ul>
+
+          {socialEntries.length > 0 ? (
+            <div className="mt-4">
+              <h2 className="text-sm font-semibold text-ink-900">{t("footer.followUs")}</h2>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {socialEntries.map(([key, url]) => {
+                  const Icon = socialIcon(key);
+                  const label = socialLabel(t, key);
+                  return (
+                    <li key={key}>
+                      <a
+                        href={url}
+                        rel="noopener noreferrer me"
+                        target="_blank"
+                        aria-label={label}
+                        title={label}
+                        className="inline-flex size-9 items-center justify-center rounded-lg border border-ink-900/12 text-ink-700 transition-colors hover:border-plum-600/40 hover:bg-plum-600/8 hover:text-plum-700"
+                      >
+                        <Icon className="size-4" />
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+
+          {!contact.phone && !whatsappHref && !contact.email && socialEntries.length === 0 ? (
+            <p className="mt-3 text-ink-700/60">{t("footer.contactPending")}</p>
+          ) : null}
         </div>
       </div>
 

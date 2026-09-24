@@ -79,7 +79,16 @@ export const ar: Dictionary = {
     account: "حسابك",
     reachKitchen: "تواصل مع المطبخ",
     contactPending: "تجري حالياً مراجعة بيانات التواصل.",
+    followUs: "تابع المطبخ",
     copyright: "© {year} {brand}. مطبخ سحابي، {city}. جميع الأسعار بالجنيه المصري.",
+  },
+
+  social: {
+    instagram: "إنستجرام",
+    facebook: "فيسبوك",
+    tiktok: "تيك توك",
+    whatsapp: "واتساب",
+    website: "الموقع",
   },
 
   home: {
@@ -109,6 +118,18 @@ export const ar: Dictionary = {
     srDeliveryTime: "مدة التوصيل المعتادة",
     srMinimumOrder: "الحد الأدنى للطلب",
     srDietaryLabels: "التصنيفات الغذائية",
+    identityHeading: "مطبخان في مكان واحد: ووك ومنصة سوشي",
+    identityBody:
+      "القائمة تعبر آسيا: تقنية يابانية على منصة السوشي، ونار صينية في الووك. المطبخ نفسه والانضباط نفسه في التحضير حسب الطلب.",
+    identityJapaneseLabel: "المنصة اليابانية",
+    identityJapaneseScript: "اليابان",
+    identityJapaneseBody:
+      "سوشي تُلفّ ورامن يُبنى مرقه على الطريقة اليابانية — نظيف ودقيق ولا يُحضَّر مسبقاً أبداً.",
+    identityChineseLabel: "الووك الصيني",
+    identityChineseScript: "الصين",
+    identityChineseBody:
+      "أطباق الووك الكلاسيكية تُشوى على نار عالية بتتبيل نظيف، وتُطبخ لحظة طلبك.",
+    identitySig: "{brand} · مطبخ آسيوي · {city}",
   },
 
   menu: {
@@ -655,7 +676,7 @@ export const ar: Dictionary = {
       },
       cuisine: {
         q: "ما نوع الطعام الذي يقدمه {brand}؟",
-        a: "يطبخ {brand} {cuisine} حسب الطلب: أطباق الووك والرامن والسوشي والمقبلات بنمط الإيزاكايا، في محطة ووك واحدة ومنصة سوشي واحدة.",
+        a: "يطبخ {brand} {cuisine} حسب الطلب، مستنداً إلى مدرستين: منصة سوشي يابانية للسوشي ومرق الرامن، وووك صيني للأطباق على نار عالية. كل شيء يُحضَّر في مطبخ واحد لحظة طلبك.",
       },
       vegetarian: {
         q: "هل توجد خيارات نباتية أو نباتية صرفة؟",

@@ -115,6 +115,43 @@ export default async function AboutPage() {
         <p>{body("how_we_cook", t("about.howWeCookBody"))}</p>
 
         <h2 className="font-display text-lg font-semibold text-ink-900">
+          {heading("identity", t("home.identityHeading"))}
+        </h2>
+        <p>{body("identity", t("home.identityBody"))}</p>
+        <dl className="grid gap-3 sm:grid-cols-2">
+          <div className="washi-panel p-4">
+            <dt className="flex items-center gap-2 text-sm font-semibold text-ink-900">
+              <span
+                lang="ja"
+                aria-hidden="true"
+                className="grid size-8 place-items-center rounded-lg bg-plum-600/10 font-display text-sm font-semibold text-plum-700"
+              >
+                {t("home.identityJapaneseScript")}
+              </span>
+              {t("home.identityJapaneseLabel")}
+            </dt>
+            <dd className="mt-2 text-sm text-ink-700/85">
+              {t("home.identityJapaneseBody")}
+            </dd>
+          </div>
+          <div className="washi-panel p-4">
+            <dt className="flex items-center gap-2 text-sm font-semibold text-ink-900">
+              <span
+                lang="zh-Hans"
+                aria-hidden="true"
+                className="grid size-8 place-items-center rounded-lg bg-chili-500/10 font-display text-sm font-semibold text-chili-600"
+              >
+                {t("home.identityChineseScript")}
+              </span>
+              {t("home.identityChineseLabel")}
+            </dt>
+            <dd className="mt-2 text-sm text-ink-700/85">
+              {t("home.identityChineseBody")}
+            </dd>
+          </div>
+        </dl>
+
+        <h2 className="font-display text-lg font-semibold text-ink-900">
           {heading("allergens", t("about.allergensHeading"))}
         </h2>
         <p>{body("allergens", t("about.allergensBody"))}</p>

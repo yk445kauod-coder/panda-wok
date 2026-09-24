@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import type { ComponentType, SVGProps } from "react";
 import Link from "next/link";
-import { Clock, Mail, MapPin, MessageCircle, Phone, Store } from "lucide-react";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getPublicSettings, getRestaurant } from "@/lib/services/catalog";
 import { breadcrumbSchema, faqPageSchema } from "@/lib/seo/schema";
 import { buildFaq } from "@/lib/seo/faq";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
+import { socialIcon, socialLabel, sortSocialEntries, WhatsAppIcon } from "@/components/icons/social";
 import { getLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -54,10 +56,13 @@ export default async function ContactPage() {
     (openingHours ?? {}) as Record<string, unknown>,
   ).filter(([, value]) => typeof value === "string" && value.trim());
 
-  const socialEntries = Object.entries(social);
+  const socialEntries = sortSocialEntries(social);
+  const whatsappHref = whatsapp
+    ? `https://wa.me/${whatsapp.replace(/\D/g, "").replace(/^0/, "20")}`
+    : null;
 
   const hasAnyChannel =
-    Boolean(phone) || Boolean(whatsapp) || Boolean(email) || socialEntries.length > 0;
+    Boolean(phone) || Boolean(whatsappHref) || Boolean(email) || socialEntries.length > 0;
 
   // The (site) layout already emits the Restaurant/LocalBusiness node for every
   // public page, so this page only adds what is unique to it: the breadcrumb and
@@ -107,12 +112,12 @@ export default async function ContactPage() {
             />
           ) : null}
 
-          {whatsapp ? (
+          {whatsappHref ? (
             <ContactRow
-              icon={MessageCircle}
-              label="WhatsApp"
-              value={whatsapp}
-              href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}`}
+              icon={WhatsAppIcon}
+              label={t("social.whatsapp")}
+              value={whatsapp as string}
+              href={whatsappHref}
               note="Send us a message and a photo of your location if helpful."
               external
             />
@@ -131,8 +136,8 @@ export default async function ContactPage() {
           {socialEntries.map(([key, url]) => (
             <ContactRow
               key={key}
-              icon={Store}
-              label={key.charAt(0).toUpperCase() + key.slice(1)}
+              icon={socialIcon(key)}
+              label={socialLabel(t, key)}
               value={url.replace(/^https?:\/\//, "")}
               href={url}
               note="Follow us for new dishes and announcements."
@@ -267,7 +272,7 @@ function ContactRow({
   note,
   external,
 }: {
-  icon: typeof Phone;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
   label: string;
   value: string;
   href: string;

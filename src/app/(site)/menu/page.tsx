@@ -209,6 +209,14 @@ export default async function MenuPage({
                       className="text-xl font-semibold text-ink-900"
                     >
                       {category.name}
+                      {category.name_ja ? (
+                        <span
+                          lang="ja"
+                          className="ms-2 align-middle text-sm font-normal text-ink-700/60"
+                        >
+                          {category.name_ja}
+                        </span>
+                      ) : null}
                     </h2>
                     {category.description ? (
                       <p className="mt-1 text-sm text-ink-700/80">

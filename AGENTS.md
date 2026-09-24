@@ -378,3 +378,35 @@ token here gets 403 on `secrets: write`). Live `panda-wok.pages.dev` therefore
 still runs the old bundle; nothing in this session is deployed yet. Manual deploy:
 `npm run pages:deploy` with a token in the environment.
 
+
+## Contact channels, social links and Asian identity (2026-09-24)
+- Public contact data lives in `settings` (`support.phone`, `support.whatsapp`,
+  `support.email`, `support.social` as JSON), read by `getPublicSettings` in
+  `src/lib/services/catalog.ts`. Live values: phone `01095052232`, WhatsApp
+  `01500988196`, socials TikTok/Instagram/Facebook (see below). The AI assistant
+  grounding (`src/lib/ai/grounding.ts`) already renders these, so the assistant
+  answers with the same numbers and links.
+- `src/components/icons/social.tsx` — inline brand SVGs (no dependency) plus
+  `socialIcon(key)` (falls back to a globe), `sortSocialEntries` (canonical
+  TikTok → Instagram → Facebook → … order) and `socialLabel(t, key)` (translated
+  known platforms, capitalised fallback for unknown keys).
+- Footer (`SiteFooter` in `src/components/layout/site-shell.tsx`) renders tel /
+  WhatsApp / mailto links plus labelled social icon buttons under
+  `footer.followUs`; contact page (`/contact`) lists every channel with its icon
+  and label.
+- WhatsApp links are normalised at render time: Egyptian `01X…` → `wa.me/20…`
+  (`replace(/\D/g,"").replace(/^0/,"20")`). Do not store the `20` prefix in
+  settings; keep the local `01…` form as the display value.
+- **Asian identity** is surfaced from real DB data, not a slogan: restaurant
+  `cuisine_tags` (`Japanese-inspired`, `Chinese-inspired`) drive the hero line
+  and FAQ; `categories.name_ja` (寿司/中華鍋/ラーメン…) shows beside the localised
+  category name on `/menu`; the home `IdentityBand`
+  (`src/components/customer/identity-band.tsx`) and the About "identity" section
+  name the two kitchens (Japanese sushi counter, Chinese wok) with 日本 / 中华
+  glyphs. Dictionary keys are `home.identity*`.
+
+### Social URLs (live)
+- TikTok `https://www.tiktok.com/@panda.wok21122`
+- Instagram `https://www.instagram.com/panda.wok21122`
+- Facebook `https://www.facebook.com/share/1bvsj3obpl/`
+These flow into JSON-LD `sameAs` automatically via `restaurantSchema`/`localBusinessSchema`.
