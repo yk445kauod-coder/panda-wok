@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { useCart } from "@/components/customer/cart-provider";
 import { useT } from "@/components/i18n-provider";
 import { trackEvent } from "@/components/customer/analytics-beacon";
+import { dishImageSrc } from "@/lib/images/responsive";
 import { formatPrice } from "@/lib/utils/format";
 import type { MenuItem } from "@/lib/services/catalog";
 import type { Locale } from "@/lib/i18n/config";
@@ -62,12 +62,14 @@ export function UpsellCard({
         className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-rice-200"
       >
         {item.image_url ? (
-          <Image
-            src={item.image_url}
+          <img
+            src={dishImageSrc(item.image_url, 128)}
             alt={item.image_alt ?? name}
-            fill
-            sizes="56px"
-            className="object-cover"
+            width={128}
+            height={96}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 size-full object-cover"
           />
         ) : (
           <span aria-hidden="true" className="seigaiha block h-full w-full" />

@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { AlertTriangle, Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCart } from "@/components/customer/cart-provider";
+import { dishImageSrc } from "@/lib/images/responsive";
 import { useT } from "@/components/i18n-provider";
 import { computeTotals, type CheckoutConfig } from "@/lib/services/checkout-math";
 import { formatPrice } from "@/lib/utils/format";
@@ -85,12 +85,14 @@ export function CartView({
           >
             <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-rice-200">
               {line.imageUrl ? (
-                <Image
-                  src={line.imageUrl}
+                <img
+                  src={dishImageSrc(line.imageUrl, 160)}
                   alt={line.name}
-                  fill
-                  sizes="80px"
-                  className="object-cover"
+                  width={160}
+                  height={120}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 size-full object-cover"
                 />
               ) : (
                 <span aria-hidden="true" className="seigaiha block h-full w-full" />

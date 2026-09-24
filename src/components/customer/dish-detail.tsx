@@ -16,6 +16,7 @@ import { AddToCartPanel } from "@/components/customer/add-to-cart-panel";
 import { UpsellSuggestions } from "@/components/customer/upsell-suggestions";
 import { ItemViewTracker } from "@/components/customer/item-view-tracker";
 import { formatPrice, humanise } from "@/lib/utils/format";
+import { dishImageSrc, dishImageSrcSet } from "@/lib/images/responsive";
 import type { MenuItem, MenuItemDetail } from "@/lib/services/catalog";
 import type { Locale } from "@/lib/i18n/config";
 import { ar } from "@/lib/i18n/dictionaries/ar";
@@ -60,13 +61,17 @@ export function DishDetail({
         <div>
           <div className="relative aspect-[4/3] overflow-hidden rounded-washi bg-rice-200 shadow-washi">
             {dish.image_url ? (
-              <Image
-                src={dish.image_url}
-                alt={dish.image_alt ?? name}
-                fill
+              <img
+                src={dishImageSrc(dish.image_url, 800)}
+                srcSet={dishImageSrcSet(dish.image_url)}
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                priority
-                className="object-cover"
+                alt={dish.image_alt ?? name}
+                width={800}
+                height={600}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="absolute inset-0 size-full object-cover"
               />
             ) : (
               <div

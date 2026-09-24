@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Flame, Leaf, Clock, CircleSlash } from "lucide-react";
 import { Badge } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils/format";
+import { dishImageSrc, dishImageSrcSet } from "@/lib/images/responsive";
 import type { MenuItem } from "@/lib/services/catalog";
 import type { Locale } from "@/lib/i18n/config";
 import { ar } from "@/lib/i18n/dictionaries/ar";
@@ -44,13 +44,17 @@ export function DishCard({
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-rice-200">
         {item.image_url ? (
-          <Image
-            src={item.image_url}
-            alt={item.image_alt ?? name}
-            fill
+          <img
+            src={dishImageSrc(item.image_url, 480)}
+            srcSet={dishImageSrcSet(item.image_url)}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            priority={priority}
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            alt={item.image_alt ?? name}
+            width={480}
+            height={360}
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
+            decoding="async"
+            className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div
