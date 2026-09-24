@@ -344,6 +344,59 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          href: string | null
+          id: string
+          is_active: boolean
+          locale: string
+          message: string
+          restaurant_id: string
+          sort_order: number
+          starts_at: string | null
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          href?: string | null
+          id?: string
+          is_active?: boolean
+          locale?: string
+          message: string
+          restaurant_id?: string
+          sort_order?: number
+          starts_at?: string | null
+          tone?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          href?: string | null
+          id?: string
+          is_active?: boolean
+          locale?: string
+          message?: string
+          restaurant_id?: string
+          sort_order?: number
+          starts_at?: string | null
+          tone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -629,6 +682,59 @@ export type Database = {
           },
         ]
       }
+      delivery_zones: {
+        Row: {
+          areas: string[]
+          created_at: string
+          eta_minutes: number | null
+          fee: number
+          free_over: number | null
+          id: string
+          is_active: boolean
+          name_ar: string | null
+          name_en: string
+          restaurant_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          areas?: string[]
+          created_at?: string
+          eta_minutes?: number | null
+          fee?: number
+          free_over?: number | null
+          id?: string
+          is_active?: boolean
+          name_ar?: string | null
+          name_en: string
+          restaurant_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          areas?: string[]
+          created_at?: string
+          eta_minutes?: number | null
+          fee?: number
+          free_over?: number | null
+          id?: string
+          is_active?: boolean
+          name_ar?: string | null
+          name_en?: string
+          restaurant_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_zones_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exports: {
         Row: {
           bytes: number | null
@@ -676,6 +782,50 @@ export type Database = {
           storage_path?: string | null
         }
         Relationships: []
+      }
+      faqs: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          is_published: boolean
+          locale: string
+          question: string
+          restaurant_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          locale?: string
+          question: string
+          restaurant_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          locale?: string
+          question?: string
+          restaurant_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faqs_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       feature_flags: {
         Row: {
@@ -1531,6 +1681,103 @@ export type Database = {
           },
         ]
       }
+      page_content: {
+        Row: {
+          body: string | null
+          created_at: string
+          heading: string | null
+          id: string
+          is_published: boolean
+          locale: string
+          page_key: string
+          restaurant_id: string
+          section_key: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          heading?: string | null
+          id?: string
+          is_published?: boolean
+          locale?: string
+          page_key: string
+          restaurant_id?: string
+          section_key: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          heading?: string | null
+          id?: string
+          is_published?: boolean
+          locale?: string
+          page_key?: string
+          restaurant_id?: string
+          section_key?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_content_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_seo: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          locale: string
+          noindex: boolean
+          og_image_url: string | null
+          page_key: string
+          restaurant_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          locale?: string
+          noindex?: boolean
+          og_image_url?: string | null
+          page_key: string
+          restaurant_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          locale?: string
+          noindex?: boolean
+          og_image_url?: string | null
+          page_key?: string
+          restaurant_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_seo_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -2034,8 +2281,6 @@ export type Database = {
         Args: { p_default: number; p_key: string }
         Returns: number
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       backup_kind:
