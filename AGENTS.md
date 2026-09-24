@@ -410,3 +410,26 @@ still runs the old bundle; nothing in this session is deployed yet. Manual deplo
 - Instagram `https://www.instagram.com/panda.wok21122`
 - Facebook `https://www.facebook.com/share/1bvsj3obpl/`
 These flow into JSON-LD `sameAs` automatically via `restaurantSchema`/`localBusinessSchema`.
+
+## Pages production branch — must deploy with the right `--branch` (2026-09-24)
+- The Pages project `panda-wok` has `production_branch = feature/panda-wok-platform`
+  (not `production`/`main`). `panda-wok.pages.dev` and the `production.panda-wok.pages.dev`
+  alias both serve whatever was deployed **with that branch name**.
+- `npm run pages:deploy` used to pass `--branch production`, which created a
+  *preview* deployment — the root domain kept serving the old bundle and it looked
+  like the deploy silently failed. Fixed: the script no longer pins a branch, so
+  wrangler uses the current git branch (which is `feature/panda-wok-platform` =
+  production). If you deploy from another branch, pass `--branch feature/panda-wok-platform`
+  explicitly to publish to production.
+- The `Deploy Pages` GitHub workflow already resolves this correctly for pushes to
+  `feature/panda-wok-platform` (else-branch = ref name = production branch). Pushing
+  to `main` would produce a preview, not production — only relevant if the default
+  branch ever changes.
+- Verified live after deploying from `3c1cfc4`: `/`, `/menu`, `/about`, `/contact`,
+  `/cart`, `/faq`, `/auth/sign-up`, `/auth/sign-in`, robots/sitemap/llms all 200;
+  footer shows phone 01095052232 + WhatsApp 01500988196 + labelled TikTok/Instagram/
+  Facebook icon links; `wa.me/201500988196`; identity band (日本/中华) on home, About
+  and menu category names; Arabic cookie → `dir="rtl"` with Arabic identity copy.
+- Still open: the repo secret `CLOUDFLARE_API_TOKEN` cannot be set with the
+  integration token here (`gh secret set` → 403). An account owner must add it for
+  push-to-deploy. Manual deploy works with the token in the environment.

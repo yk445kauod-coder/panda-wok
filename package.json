@@ -10,7 +10,7 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "pages:build": "opennextjs-cloudflare build && node scripts/build-pages.mjs",
-    "pages:deploy": "npm run pages:build && wrangler pages deploy .pages --project-name panda-wok --branch production",
+    "pages:deploy": "npm run pages:build && wrangler pages deploy .pages --project-name panda-wok",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "db:link": "supabase link --project-ref xjbtsryidznsxqlynmfa",
     "db:list": "supabase migration list",
