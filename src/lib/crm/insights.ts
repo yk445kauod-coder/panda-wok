@@ -86,27 +86,33 @@ export async function getDashboardMetrics(days = 30): Promise<DashboardMetrics> 
       admin
         .from("orders")
         .select("id, status, total, created_at, user_id, payment_status")
-        .gte("created_at", windowStart.toISOString()),
+        .gte("created_at", windowStart.toISOString())
+        .limit(2000),
       admin
         .from("order_items")
         .select("name_snapshot, quantity, line_total, order_id, orders!inner (created_at, status, menu_item_id), menu_item_id")
-        .gte("orders.created_at", windowStart.toISOString()),
+        .gte("orders.created_at", windowStart.toISOString())
+        .limit(5000),
       admin
         .from("stock_items")
         .select("id, name_en, quantity, min_threshold, unit, status")
         .in("status", ["low", "out"])
-        .order("status", { ascending: true }),
+        .order("status", { ascending: true })
+        .limit(200),
       admin
         .from("feedback")
         .select("rating, status")
-        .gte("created_at", windowStart.toISOString()),
+        .gte("created_at", windowStart.toISOString())
+        .limit(2000),
       admin
         .from("loyalty_accounts")
-        .select("tier, points_balance, lifetime_points"),
+        .select("tier, points_balance, lifetime_points")
+        .limit(2000),
       admin
         .from("profiles")
         .select("id, created_at")
-        .gte("created_at", windowStart.toISOString()),
+        .gte("created_at", windowStart.toISOString())
+        .limit(2000),
     ]);
 
   const orders = ordersRes.data ?? [];
