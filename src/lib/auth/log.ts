@@ -29,7 +29,7 @@ export function hashIdentifier(value: string | null | undefined): string {
     .slice(0, 16);
 }
 
-type AuthEvent = "signup" | "signin" | "password_reset";
+type AuthEvent = "signup" | "signin" | "password_reset" | "admin_gate";
 
 /**
  * Structured auth diagnostic. Emitted as a single JSON line so Cloudflare's

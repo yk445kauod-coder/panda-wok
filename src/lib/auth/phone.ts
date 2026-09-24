@@ -48,3 +48,22 @@ export function emailForIdentifier(identifier: string): string {
   const value = identifier.trim();
   return looksLikePhone(value) ? placeholderEmailFor(value) : value;
 }
+
+/**
+ * Chooses the address to authenticate with, given whatever the customer typed
+ * and whatever email (if any) the matching profile stores.
+ *
+ * Kept pure and separate from the lookup so the branch that stranded returning
+ * customers — signing in with a phone whose account has a real email — is
+ * covered by a unit test rather than only by a live probe.
+ */
+export function pickSignInEmail(
+  identifier: string,
+  storedEmail: string | null | undefined,
+): string {
+  const value = identifier.trim();
+  if (!looksLikePhone(value)) return value;
+  const stored = storedEmail?.trim();
+  if (stored && !isPlaceholderEmail(stored)) return stored;
+  return placeholderEmailFor(value);
+}

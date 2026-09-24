@@ -4,7 +4,7 @@ import {
   phoneLookupCandidates,
   phoneNationalDigits,
 } from "@/lib/utils/phone";
-import { placeholderEmailFor } from "@/lib/auth/phone";
+import { placeholderEmailFor, pickSignInEmail } from "@/lib/auth/phone";
 
 describe("canonicalPhone", () => {
   it("canonicalises the Egyptian national form", () => {
@@ -60,5 +60,38 @@ describe("phoneNationalDigits", () => {
   it("takes the final ten digits", () => {
     expect(phoneNationalDigits("+201277593815")).toBe("1277593815");
     expect(phoneNationalDigits("01277593815")).toBe("1277593815");
+  });
+});
+
+describe("pickSignInEmail", () => {
+  it("returns a typed email unchanged, trimmed", () => {
+    expect(pickSignInEmail("  Madrasty61@Gmail.com ", null)).toBe(
+      "Madrasty61@Gmail.com",
+    );
+  });
+
+  it("prefers the account's real email when signing in with a phone", () => {
+    expect(pickSignInEmail("01277593815", "madrasty61@gmail.com")).toBe(
+      "madrasty61@gmail.com",
+    );
+  });
+
+  it("falls back to the placeholder for a genuinely phone-first account", () => {
+    expect(pickSignInEmail("01277593815", null)).toBe(
+      placeholderEmailFor("01277593815"),
+    );
+  });
+
+  it("ignores a placeholder stored on the profile", () => {
+    expect(pickSignInEmail("01277593815", placeholderEmailFor("01277593815"))).toBe(
+      placeholderEmailFor("01277593815"),
+    );
+  });
+
+  it("maps every phone spelling to the same account", () => {
+    const expected = "madrasty61@gmail.com";
+    for (const input of ["01277593815", "+201277593815", "0127 759 3815"]) {
+      expect(pickSignInEmail(input, expected)).toBe(expected);
+    }
   });
 });

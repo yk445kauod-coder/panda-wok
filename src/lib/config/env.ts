@@ -44,6 +44,9 @@ const serverSchema = z.object({
   AI_OPENAI_COMPATIBLE_NAME: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
+  // Shared passcode that fronts the whole /admin surface, on top of the
+  // staff-role check. Optional: unset falls back to the built-in default.
+  ADMIN_PASSCODE: z.string().min(4).optional(),
 });
 
 function parsePublic() {
@@ -116,6 +119,9 @@ const SERVER_ONLY_KEYS = [
   "AI_OPENAI_COMPATIBLE_NAME",
   "RESEND_API_KEY",
   "EMAIL_FROM",
+  // Read through the computed lookup like the other server-only values so the
+  // passcodes never get inlined into the deployed bundle.
+  "ADMIN_PASSCODE",
 ] as const;
 
 export const serverEnv = serverSchema.parse(

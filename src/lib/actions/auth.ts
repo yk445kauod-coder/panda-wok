@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createServerSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
 import { signInSchema, signUpSchema } from "@/lib/validation/schemas";
-import { emailForIdentifier, isPlaceholderEmail, looksLikePhone, placeholderEmailFor } from "@/lib/auth/phone";
+import { isPlaceholderEmail, looksLikePhone, placeholderEmailFor, pickSignInEmail } from "@/lib/auth/phone";
 import { phoneLookupCandidates } from "@/lib/utils/phone";
 import { siteUrl } from "@/lib/seo/metadata";
 import { LOCALE_COOKIE } from "@/lib/i18n/config";
@@ -43,8 +43,9 @@ export async function signInAction(
 
   // Phone-first accounts sign in with their phone number; the email field is
   // optional at signup. Resolve whichever identifier was typed to the address
-  // Supabase Auth actually holds for the account.
-  const email = emailForIdentifier(parsed.data.email);
+  // Supabase Auth actually holds for the account — an account created with a
+  // real email must be looked up by that email, not the phone placeholder.
+  const email = await resolveSignInEmail(parsed.data.email);
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -159,6 +160,35 @@ async function findExistingIdentity(params: {
     // Ignore: classification below is the safety net.
   }
   return null;
+}
+
+/**
+ * Resolves whatever the customer typed into the sign-in field to the address
+ * Supabase Auth actually holds for that account.
+ *
+ * A phone number is the product's primary identifier, but it is not the
+ * account's auth identity: signup derives a placeholder address only when the
+ * customer gives no real email. An account created *with* an email therefore
+ * lives in Auth under `madrasty61@gmail.com`, and signing in with the phone
+ * would fail if we blindly recomputed the placeholder. That regression is
+ * exactly what stranded returning customers, so the stored address wins and
+ * the derived placeholder is only the fallback for a genuinely phone-first
+ * account.
+ */
+async function resolveSignInEmail(identifier: string): Promise<string> {
+  if (!looksLikePhone(identifier)) return identifier.trim();
+
+  const admin = tryCreateAdminSupabase();
+  if (admin) {
+    const { data } = await admin
+      .from("profiles")
+      .select("email")
+      .in("phone", phoneLookupCandidates(identifier))
+      .limit(1);
+    return pickSignInEmail(identifier, data?.[0]?.email ?? null);
+  }
+
+  return pickSignInEmail(identifier, null);
 }
 
 export async function signUpAction(
