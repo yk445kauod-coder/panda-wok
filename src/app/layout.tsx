@@ -47,6 +47,13 @@ export async function generateMetadata(): Promise<Metadata> {
     manifest: "/manifest.webmanifest",
     formatDetection: { telephone: true, address: false, email: true },
     alternates: { canonical: "/" },
+    // Search Console ownership. Emitted as
+    // `<meta name="google-site-verification" content="...">` on every document;
+    // the same token is also served as a static file at
+    // /google469af7ac01566c8d.html for the alternative verification method.
+    verification: {
+      google: "LD42BDyIchUHWtltC7PZsyUi9oT8mic03JhlOuUL9TU",
+    },
   };
 }
 
