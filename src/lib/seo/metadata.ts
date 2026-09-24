@@ -28,7 +28,7 @@ export function absoluteUrl(path: string) {
 }
 
 export type SeoInput = {
-  title: string;
+  title: string | { absolute: string };
   description: string;
   path: string;
   /** Images must be absolute for Open Graph consumers. */
@@ -49,6 +49,10 @@ export type SeoInput = {
  */
 export function buildMetadata(input: SeoInput): Metadata {
   const canonical = absoluteUrl(input.path);
+  // Open Graph and Twitter have no title template, so they always receive a
+  // flat string even when the document title opts out of the root template.
+  const titleText =
+    typeof input.title === "string" ? input.title : input.title.absolute;
   const image = input.image ?? absoluteUrl("/opengraph-image");
 
   return {
@@ -74,7 +78,7 @@ export function buildMetadata(input: SeoInput): Metadata {
     openGraph: {
       type: input.type ?? "website",
       url: canonical,
-      title: input.title,
+      title: titleText,
       description: input.description,
       siteName: input.siteName ?? "Panda Wok",
       locale: input.locale ?? "en_EG",
@@ -83,7 +87,7 @@ export function buildMetadata(input: SeoInput): Metadata {
           url: image,
           width: 1200,
           height: 630,
-          alt: input.imageAlt ?? input.title,
+          alt: input.imageAlt ?? titleText,
         },
       ],
       ...(input.type === "article" && input.publishedTime
@@ -92,7 +96,7 @@ export function buildMetadata(input: SeoInput): Metadata {
     },
     twitter: {
       card: "summary_large_image",
-      title: input.title,
+      title: titleText,
       description: input.description,
       images: [image],
     },

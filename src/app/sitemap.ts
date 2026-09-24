@@ -30,6 +30,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   entries.push(
     { url: `${siteUrl()}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${siteUrl()}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${siteUrl()}/location`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${siteUrl()}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${siteUrl()}/privacy-policy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   );
 
   if (flags.loyalty !== false) {

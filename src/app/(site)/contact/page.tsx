@@ -3,9 +3,11 @@ import Link from "next/link";
 import { Clock, Mail, MapPin, MessageCircle, Phone, Store } from "lucide-react";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getPublicSettings, getRestaurant } from "@/lib/services/catalog";
-import { breadcrumbSchema, restaurantSchema } from "@/lib/seo/schema";
+import { breadcrumbSchema, faqPageSchema } from "@/lib/seo/schema";
+import { buildFaq } from "@/lib/seo/faq";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
+import { getLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +38,14 @@ const DAY_LABELS: Record<string, string> = {
  * missing we say so instead of showing a placeholder.
  */
 export default async function ContactPage() {
-  const [settings, restaurant] = await Promise.all([
+  const [settings, restaurant, locale] = await Promise.all([
     getPublicSettings(),
     getRestaurant(),
+    getLocale(),
   ]);
+  const t = await getT(locale);
+
+  const faqs = buildFaq(t, settings, restaurant);
 
   const brand = restaurant?.name_en ?? settings.brand.name;
   const { phone, whatsapp, email, social, openingHours } = settings.support;
@@ -53,27 +59,15 @@ export default async function ContactPage() {
   const hasAnyChannel =
     Boolean(phone) || Boolean(whatsapp) || Boolean(email) || socialEntries.length > 0;
 
+  // The (site) layout already emits the Restaurant/LocalBusiness node for every
+  // public page, so this page only adds what is unique to it: the breadcrumb and
+  // the FAQ. Re-declaring the same @id here would send conflicting descriptions.
   const structured = [
-    restaurantSchema({
-      name: brand,
-      description: restaurant?.description_en ?? null,
-      tagline: restaurant?.tagline_en ?? null,
-      cuisineTags: restaurant?.cuisine_tags ?? [],
-      city: restaurant?.city ?? settings.brand.city,
-      country: restaurant?.country ?? settings.brand.country,
-      area: restaurant?.area ?? null,
-      latitude: restaurant?.latitude ?? null,
-      longitude: restaurant?.longitude ?? null,
-      phone,
-      email,
-      social,
-      openingHours: (openingHours ?? {}) as Record<string, unknown>,
-      currency: restaurant?.currency ?? "EGP",
-    }),
     breadcrumbSchema([
       { name: "Home", path: "/" },
       { name: "Contact", path: "/contact" },
     ]),
+    faqPageSchema(faqs),
   ];
 
   return (
@@ -225,6 +219,24 @@ export default async function ContactPage() {
         <p className="mt-2 text-xs text-ink-700/70">
           Timings are a guide rather than a promise, and depend on how busy the kitchen is.
         </p>
+      </section>
+
+      <section aria-labelledby="faq-heading" className="mt-5">
+        <h2 id="faq-heading" className="text-sm font-semibold text-ink-900">
+          {t("contact.faqHeading")}
+        </h2>
+        <p className="mt-1 text-xs text-ink-700/75">{t("contact.faqSubtitle")}</p>
+        <dl className="mt-3 space-y-3">
+          {faqs.slice(0, 6).map((faq) => (
+            <div key={faq.question} className="washi-panel p-4">
+              <dt className="text-sm font-semibold text-ink-900">{faq.question}</dt>
+              <dd className="mt-1.5 text-sm text-ink-700/85">{faq.answer}</dd>
+            </div>
+          ))}
+        </dl>
+        <Link href="/faq" className="mt-3 inline-block text-sm font-medium text-plum-700 hover:text-plum-800">
+          {t("faq.title")} →
+        </Link>
       </section>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">

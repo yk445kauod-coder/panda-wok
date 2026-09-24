@@ -63,6 +63,9 @@ export async function GET() {
   lines.push(`- Menu: ${siteUrl()}/menu`);
   lines.push(`- About: ${siteUrl()}/about`);
   lines.push(`- Contact: ${siteUrl()}/contact`);
+  lines.push(`- Location and delivery area: ${siteUrl()}/location`);
+  lines.push(`- FAQ: ${siteUrl()}/faq`);
+  lines.push(`- Privacy policy: ${siteUrl()}/privacy-policy`);
   lines.push(`- Loyalty: ${siteUrl()}/loyalty`);
   lines.push(`- Feedback: ${siteUrl()}/feedback`);
   lines.push("");

@@ -13,6 +13,7 @@ import { JsonLdScript } from "@/components/seo/json-ld";
 import { menuSchema } from "@/lib/seo/schema";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Reveal } from "@/components/ui/reveal";
 import { formatPrice } from "@/lib/utils/format";
 import { DishCard } from "@/components/customer/dish-card";
 import { FeaturedDishStrip } from "@/components/customer/featured-strip";
@@ -27,10 +28,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const [settings, locale] = await Promise.all([getPublicSettings(), getLocale()]);
   const t = await getT(locale);
   return buildMetadata({
-    title: t("home.metaTitle", {
-      brand: settings.brand.name,
-      city: settings.brand.city,
-    }),
+    // The home title already ends in the brand name, so it opts out of the root
+    // layout's `%s | Panda Wok` template; otherwise the brand is printed twice.
+    title: {
+      absolute: t("home.metaTitle", {
+        brand: settings.brand.name,
+        city: settings.brand.city,
+      }),
+    },
     description: t("home.metaDescription", {
       tagline: settings.brand.tagline,
       brand: settings.brand.name,
@@ -100,64 +105,67 @@ export default async function HomePage() {
 
       {featured.length > 0 ? (
         <section aria-labelledby="featured-heading" className="mx-auto max-w-6xl px-4 py-10">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <h2 id="featured-heading" className="text-xl font-semibold text-ink-900">
-                {t("home.featuredHeading")}
-              </h2>
-              <p className="mt-1 text-sm text-ink-700/80">
-                {t("home.featuredSubheading")}
-              </p>
+          <Reveal>
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <h2 id="featured-heading" className="text-xl font-semibold text-ink-900">
+                  {t("home.featuredHeading")}
+                </h2>
+                <p className="mt-1 text-sm text-ink-700/80">
+                  {t("home.featuredSubheading")}
+                </p>
+              </div>
+              <Link
+                href="/menu"
+                className="hidden shrink-0 items-center gap-1.5 text-sm font-medium text-plum-600 hover:text-plum-700 sm:inline-flex"
+              >
+                {t("home.fullMenu")} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+              </Link>
             </div>
-            <Link
-              href="/menu"
-              className="hidden shrink-0 items-center gap-1.5 text-sm font-medium text-plum-600 hover:text-plum-700 sm:inline-flex"
-            >
-              {t("home.fullMenu")} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
-            </Link>
-          </div>
-          <FeaturedDishStrip items={featured} currency={currency} locale={locale} />
+            <FeaturedDishStrip items={featured} currency={currency} locale={locale} />
+          </Reveal>
         </section>
       ) : null}
-
       <section aria-labelledby="categories-heading" className="mx-auto max-w-6xl px-4 py-6">
-        <h2 id="categories-heading" className="text-xl font-semibold text-ink-900">
-          {t("home.browseBySection")}
-        </h2>
-        {categories.length === 0 ? (
-          <EmptyState
-            className="mt-4"
-            title={t("home.sectionEmptyTitle")}
-            description={t("home.sectionEmptyBody")}
-          />
-        ) : (
-          <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {categories.map((category) => {
-              const local = localiseCategory(category, locale);
-              const count = menu.items.filter((i) => i.category_id === category.id).length;
-              return (
-                <li key={category.id}>
-                  <Link
-                    href={`/menu/${category.slug}`}
-                    className="washi-panel group flex h-full flex-col justify-between p-4 transition-shadow hover:shadow-washi-lg"
-                  >
-                    <span className="font-display text-base font-semibold text-ink-900">
-                      {local.name}
-                    </span>
-                    {category.name_ja ? (
-                      <span className="mt-0.5 text-xs text-ink-700/60" lang="ja">
-                        {category.name_ja}
+        <Reveal>
+          <h2 id="categories-heading" className="text-xl font-semibold text-ink-900">
+            {t("home.browseBySection")}
+          </h2>
+          {categories.length === 0 ? (
+            <EmptyState
+              className="mt-4"
+              title={t("home.sectionEmptyTitle")}
+              description={t("home.sectionEmptyBody")}
+            />
+          ) : (
+            <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {categories.map((category, index) => {
+                const local = localiseCategory(category, locale);
+                const count = menu.items.filter((i) => i.category_id === category.id).length;
+                return (
+                  <Reveal as="li" key={category.id} delay={Math.min(index, 8) * 40}>
+                    <Link
+                      href={`/menu/${category.slug}`}
+                      className="washi-panel group flex h-full flex-col justify-between p-4 transition-shadow hover:shadow-washi-lg"
+                    >
+                      <span className="font-display text-base font-semibold text-ink-900">
+                        {local.name}
                       </span>
-                    ) : null}
-                    <span className="mt-3 text-xs text-ink-700/70">
-                      {count} {count === 1 ? t("common.dish") : t("common.dishes")}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                      {category.name_ja ? (
+                        <span className="mt-0.5 text-xs text-ink-700/60" lang="ja">
+                          {category.name_ja}
+                        </span>
+                      ) : null}
+                      <span className="mt-3 text-xs text-ink-700/70">
+                        {count} {count === 1 ? t("common.dish") : t("common.dishes")}
+                      </span>
+                    </Link>
+                  </Reveal>
+                );
+              })}
+            </ul>
+          )}
+        </Reveal>
       </section>
 
       {menu.items.length > 0 ? (
@@ -169,8 +177,8 @@ export default async function HomePage() {
             {menu.items
               .filter((item) => item.is_available)
               .slice(0, 9)
-              .map((item) => (
-                <li key={item.id}>
+              .map((item, index) => (
+                <Reveal as="li" key={item.id} delay={Math.min(index, 9) * 45}>
                   <DishCard
                     item={item}
                     currency={currency}
@@ -181,7 +189,7 @@ export default async function HomePage() {
                         : t("menu.categoryFallback")
                     }
                   />
-                </li>
+                </Reveal>
               ))}
           </ul>
           <div className="mt-6 flex justify-center">

@@ -135,6 +135,8 @@ export async function SiteFooter({
           <ul className="mt-3 space-y-2 text-sm text-ink-700/85">
             <li><Link className="hover:text-ink-900" href="/menu">{t("nav.menu")}</Link></li>
             <li><Link className="hover:text-ink-900" href="/about">{t("nav.about")}</Link></li>
+            <li><Link className="hover:text-ink-900" href="/location">{t("nav.location")}</Link></li>
+            <li><Link className="hover:text-ink-900" href="/faq">{t("nav.faq")}</Link></li>
             <li><Link className="hover:text-ink-900" href="/loyalty">{t("nav.loyalty")}</Link></li>
             <li><Link className="hover:text-ink-900" href="/feedback">{t("nav.feedback")}</Link></li>
           </ul>
@@ -147,6 +149,7 @@ export async function SiteFooter({
             <li><Link className="hover:text-ink-900" href="/orders">{t("nav.orderTracking")}</Link></li>
             <li><Link className="hover:text-ink-900" href="/cart">{t("nav.basket")}</Link></li>
             <li><Link className="hover:text-ink-900" href="/contact">{t("nav.contact")}</Link></li>
+            <li><Link className="hover:text-ink-900" href="/privacy-policy">{t("nav.privacy")}</Link></li>
           </ul>
         </nav>
 

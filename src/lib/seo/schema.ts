@@ -138,6 +138,27 @@ export function breadcrumbSchema(items: { name: string; path: string }[]): JsonL
   };
 }
 
+/**
+ * FAQPage node. AEO/GEO answer engines read the same markup Google does, so a
+ * single Q&A list serves both. The questions must be visible on the page — the
+ * page renders exactly these pairs, and this only mirrors them.
+ */
+export function faqPageSchema(items: { question: string; answer: string }[]): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl("/faq")}#faq`,
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
 export function menuSchema(params: {
   name: string;
   description: string | null;

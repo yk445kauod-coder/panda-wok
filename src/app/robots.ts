@@ -52,7 +52,7 @@ export default function robots(): MetadataRoute.Robots {
           "Amazonbot",
           "YouBot",
         ],
-        allow: ["/", "/menu", "/menu/", "/about", "/contact", "/llms.txt"],
+        allow: ["/", "/menu", "/menu/", "/about", "/contact", "/location", "/faq", "/privacy-policy", "/llms.txt"],
         disallow: ["/admin", "/api/", "/auth/", "/account", "/cart", "/checkout", "/orders", "/chat"],
       },
     ],

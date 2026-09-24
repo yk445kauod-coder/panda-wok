@@ -67,6 +67,9 @@ export const en = {
     brandHome: "{brand} home",
     askPanda: "Ask Panda",
     askPandaAssistant: "Ask {brand} assistant",
+    location: "Location",
+    faq: "FAQ",
+    privacy: "Privacy",
   },
 
   footer: {
@@ -628,6 +631,100 @@ export const en = {
       fri: "Friday",
       sat: "Saturday",
       sun: "Sunday",
+    },
+  },
+
+  faq: {
+    metaTitle: "FAQ — {brand} delivery, allergens and ordering",
+    metaDescription:
+      "Answers to the questions customers ask {brand} most: where we deliver, minimum order, allergens, payment and how to order online.",
+    title: "Frequently asked questions",
+    subtitle:
+      "Straight answers about ordering, delivery, allergens and payment. Every figure here is read from the kitchen's live settings, so it matches what checkout charges.",
+    contactPrompt: "Still unsure about something?",
+    contactLink: "Contact the kitchen",
+    seeMenu: "See the menu",
+    items: {
+      where: {
+        q: "Where does {brand} cook, and where do you deliver?",
+        a: "{brand} is a cloud kitchen in {city}, {country}. We deliver across {city}; the delivery fee is {fee} and delivery is free on orders over {freeOver}.",
+      },
+      order: {
+        q: "How do I order online?",
+        a: "Add dishes to your basket, open checkout and confirm your address. The minimum order is {minOrder}. You can order as a guest or sign in to keep your order history and loyalty points.",
+      },
+      deliveryTime: {
+        q: "How long does delivery take?",
+        a: "A typical delivery takes about {minutes} minutes including preparation. It is a guide rather than a promise, and depends on how busy the kitchen is.",
+      },
+      collection: {
+        q: "Can I collect my order instead of having it delivered?",
+        a: "Yes. There is no dining room — we are a cloud kitchen — but you can choose collection at checkout and pick your order up from the kitchen.",
+      },
+      allergens: {
+        q: "Can you tell me about allergens?",
+        a: "Dishes are labelled vegetarian and vegan where that applies. If you have a serious allergy, contact the kitchen before ordering: our food is prepared in a single kitchen where nuts, shellfish, gluten and soy are all handled.",
+      },
+      cuisine: {
+        q: "What kind of food does {brand} serve?",
+        a: "{brand} cooks {cuisine} to order: wok dishes, ramen, sushi and izakaya-style starters, in one wok station and one sushi counter.",
+      },
+      vegetarian: {
+        q: "Are there vegetarian or vegan options?",
+        a: "Yes. Vegetarian and vegan dishes are labelled on the menu. You can filter the menu by dietary preference and each dish page lists what applies to it.",
+      },
+      payment: {
+        q: "What payment methods do you accept?",
+        a: "All prices are shown in {currency}. Available payment methods are offered at checkout, and you will see the final total — including delivery and any tax — before you confirm.",
+      },
+      hours: {
+        q: "What are your opening hours?",
+        a: "Opening hours are being confirmed. Please check the contact page or call the kitchen before ordering outside usual mealtimes.",
+      },
+      reservations: {
+        q: "Can I book a table?",
+        a: "No. {brand} is a cloud kitchen with no dining room, so there is nothing to reserve. Delivery and collection are the two options.",
+      },
+      account: {
+        q: "Do I need an account to order?",
+        a: "No. An account is optional; it keeps your order history, saved addresses and loyalty points. Orders placed as a guest can still be tracked with your order reference.",
+      },
+    },
+  },
+
+  location: {
+    metaTitle: "{brand} location and delivery area in {city}",
+    metaDescription:
+      "Where {brand} cooks and which areas it delivers to in {city}. Delivery fees, minimum order and typical timings from the kitchen's own settings.",
+    title: "{brand} in {city}",
+    subtitle:
+      "{brand} is a cloud kitchen: we cook in one kitchen and send everything to you. There is no dining room, but you can collect at checkout.",
+    areaHeading: "Where we cook",
+    deliveriesHeading: "Delivery and fees",
+    collectionHeading: "Collection",
+    collectionBody:
+      "Choose collection at checkout and pick your order up from the kitchen. We will message you when it is ready.",
+    directionsHeading: "Exact location",
+    directionsPending:
+      "Our exact street address is being confirmed. Call the kitchen before travelling if you are collecting.",
+    directionsLink: "Open directions in Maps",
+    cityOnly:
+      "We are based in {city}, {country}. The full street address has not been published yet.",
+    notFound: "This location page does not exist.",
+    startOrder: "Start an order",
+    contactUs: "Contact us",
+  },
+
+  legal: {
+    privacy: {
+      metaTitle: "{brand} privacy policy",
+      metaDescription:
+        "What data {brand} collects when you order, why it is collected, who processes it and how to ask us to delete it.",
+      title: "Privacy policy",
+      updatedLabel: "Last updated",
+      pending:
+        "This policy is being finalised. Until it is published, please contact the kitchen directly with any data question.",
+      contactLink: "Ask a privacy question",
     },
   },
 
