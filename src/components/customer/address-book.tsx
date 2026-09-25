@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, MapPin, Navigation, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { Badge, Button, Spinner } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { LocationMap, type PinCoords } from "@/components/customer/location-map";
-import { useErrorText, useT } from "@/components/i18n-provider";
+import {
+  LocationMap,
+  type PinCoords,
+  type ResolvedAddress,
+} from "@/components/customer/location-map";
+import { useErrorText, useI18n, useT } from "@/components/i18n-provider";
+import { localisedPlace } from "@/lib/i18n/brand";
 import {
   deleteAddressAction,
   saveAddressAction,
@@ -17,6 +22,9 @@ import type { Address } from "@/lib/services/orders";
 
 type Mode = { kind: "closed" } | { kind: "new" } | { kind: "edit"; address: Address };
 
+/** The kitchen's own city; the field is prefilled with it and localised. */
+const DEFAULT_CITY = "Alexandria";
+
 /**
  * Address book. Saving posts a FormData payload to the server action, which
  * re-validates every field with Zod. Location capture is opt-in: the browser
@@ -25,6 +33,7 @@ type Mode = { kind: "closed" } | { kind: "new" } | { kind: "edit"; address: Addr
  */
 export function AddressBook({ addresses }: { addresses: Address[] }) {
   const t = useT();
+  const { locale } = useI18n();
   const errorText = useErrorText();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>({ kind: "closed" });
@@ -41,32 +50,67 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
   // OpenStreetMap knows the street. "Manual" skips the pin entirely.
   const [stage, setStage] = useState<"pin" | "details">("pin");
   const [manual, setManual] = useState(false);
+  // Auto-detection: opening the form asks the browser for the current position
+  // straight away instead of making the customer hunt for a button, and the pin
+  // that comes back is the pin that is saved. This needs the user's permission,
+  // so a refusal is silent — the map is still right there to drop a pin on, and
+  // the typed-address path is untouched.
+  const [autoDetecting, setAutoDetecting] = useState(false);
+  const [autoDetected, setAutoDetected] = useState(false);
+  const autoRan = useRef(false);
+  // The map's reverse lookup reports the street/district/city it found for the
+  // pin. Kept as state rather than a ref so the "use this address" action can
+  // appear only once there is something to apply.
+  const [resolvedAddress, setResolvedAddress] = useState<ResolvedAddress | null>(null);
   const pinConfirmed = coords !== null;
   const showDetails = manual || stage === "details";
 
   // Best-effort reverse lookup: prefill area/address from the pin. The same
-  // event carries district/street, and the form accepts them only when empty. Zero
-  // invented data — values come from OpenStreetMap's address database
+  // event carries district/street/city, and the form accepts them only when
+  // empty. Zero invented data — values come from OpenStreetMap's address
+  // database.
   useEffect(() => {
     const onReverse = (event: Event) => {
-      const detail = (event as CustomEvent<{
-        area: string | null;
-        street: string | null;
-      }>).detail;
+      const detail = (event as CustomEvent<ResolvedAddress>).detail;
       if (!detail) return;
+      setResolvedAddress(detail);
       const areaEl = document.querySelector<HTMLInputElement>('input[name="area"]');
       const streetEl = document.querySelector<HTMLInputElement>('input[name="addressLine"]');
+      const cityEl = document.querySelector<HTMLInputElement>('input[name="city"]');
       if (detail.area && areaEl && !areaEl.value.trim()) {
         setFields((f) => ({ ...f, area: "" }));
-        areaEl.value = detail.area!;
+        areaEl.value = detail.area;
       }
       if (detail.street && streetEl && !streetEl.value.trim()) {
-        streetEl.value = detail.street!;
+        streetEl.value = detail.street;
+      }
+      // The city field ships with a default; only overwrite it when the pin
+      // actually resolves to a different city, so we never silently move a
+      // customer who is ordering into another town.
+      if (detail.city && cityEl && cityEl.value.trim() !== detail.city) {
+        cityEl.value = detail.city;
       }
     };
     window.addEventListener("panda-address-reverse", onReverse);
     return () => window.removeEventListener("panda-address-reverse", onReverse);
   }, []);
+
+  /** Apply whatever the map already resolved for the current pin. */
+  function completeFromMap() {
+    const detail = resolvedAddress;
+    if (!detail) return;
+    for (const [name, value] of [
+      ["area", detail.area],
+      ["addressLine", detail.street],
+      ["city", detail.city],
+    ] as const) {
+      if (!value) continue;
+      const el = document.querySelector<HTMLInputElement>(`input[name="${name}"]`);
+      if (el) el.value = value;
+    }
+    setFields({});
+    setStage("details");
+  }
 
   function resetForm() {
     setMode({ kind: "closed" });
@@ -77,7 +121,41 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
     setMapKey((k) => k + 1);
     setStage("pin");
     setManual(false);
+    setAutoDetecting(false);
+    setAutoDetected(false);
+    autoRan.current = false;
+    setResolvedAddress(null);
   }
+
+  // Fire once, the first time the form is opened for a new address. Editing an
+  // existing address never triggers it: that pin is the customer's own saved
+  // position and must not be overwritten by wherever they happen to be now.
+  useEffect(() => {
+    if (mode.kind !== "new") return;
+    if (autoRan.current) return;
+    autoRan.current = true;
+    if (!("geolocation" in navigator)) return;
+
+    setAutoDetecting(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCoords({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyM: Number.isFinite(position.coords.accuracy)
+            ? Math.round(position.coords.accuracy)
+            : null,
+        });
+        setMapKey((k) => k + 1);
+        setAutoDetecting(false);
+        setAutoDetected(true);
+      },
+      // A refusal or timeout is not an error the customer needs to read: the
+      // map below is still the primary way to set the pin.
+      () => setAutoDetecting(false),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+    );
+  }, [mode.kind]);
 
   function captureLocation() {
     if (!("geolocation" in navigator)) {
@@ -255,6 +333,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                         setLocationError(null);
                         setStage("details");
                         setManual(address.latitude === null);
+                        autoRan.current = true;
                       }}
                       className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-ink-800 hover:bg-rice-200"
                     >

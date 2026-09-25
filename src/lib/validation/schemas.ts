@@ -172,7 +172,7 @@ export const feedbackSchema = z.object({
   orderId: optionalUuid,
   rating: z.coerce.number().int().min(1, "Please pick a rating").max(5),
   category: z
-    .enum(["food_quality", "delivery", "service", "overall", "other"])
+    .enum(["food_quality", "delivery", "service", "overall", "complaint", "suggestion", "other"])
     .default("overall"),
   title: optionalText(120),
   message: z.string().trim().min(5, "Tell us a little more").max(2000),

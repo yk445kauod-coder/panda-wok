@@ -6,7 +6,7 @@ import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-lea
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Button, Spinner } from "@/components/ui/button";
-import { useT } from "@/components/i18n-provider";
+import { useI18n, useT } from "@/components/i18n-provider";
 
 /**
  * Map-based location picker for the address form.
@@ -63,13 +63,20 @@ function cacheKey(lat: number, lng: number): string {
   return `${lat.toFixed(5)},${lng.toFixed(5)}`;
 }
 
-const lookupCache = new Map<string, { area: string | null; street: string | null }>();
+export type ResolvedAddress = {
+  area: string | null;
+  street: string | null;
+  city: string | null;
+};
+
+const lookupCache = new Map<string, ResolvedAddress>();
 
 async function reverseGeocode(
   lat: number,
   lng: number,
   signal: AbortSignal,
-): Promise<{ area: string | null; street: string | null }> {
+  acceptLanguage: string,
+): Promise<ResolvedAddress> {
   const key = cacheKey(lat, lng);
   if (lookupCache.has(key)) return lookupCache.get(key)!;
 
@@ -81,7 +88,10 @@ async function reverseGeocode(
       lon: lng.toFixed(7),
       zoom: "16",
       addressdetails: "1",
-      "accept-language": "en",
+      // Street and district names are looked up in the reader's own language,
+      // so an Arabic customer does not get Arabic labels over English place
+      // names. This is the same address database either way.
+      "accept-language": acceptLanguage,
     }).toString();
 
     const res = await fetch(url, { signal, headers: { "User-Agent": "panda-wok-web" } });
@@ -96,6 +106,10 @@ async function reverseGeocode(
         road?: string;
         pedestrian?: string;
         footway?: string;
+        city?: string;
+        town?: string;
+        village?: string;
+        state?: string;
       };
     } = await res.json();
 
@@ -111,11 +125,17 @@ async function reverseGeocode(
         data.address?.pedestrian ??
         data.address?.footway ??
         null,
+      city:
+        data.address?.city ??
+        data.address?.town ??
+        data.address?.village ??
+        data.address?.state ??
+        null,
     };
     lookupCache.set(key, result);
     return result;
   } catch {
-    return { area: null, street: null };
+    return { area: null, street: null, city: null };
   }
 }
 
@@ -137,6 +157,7 @@ export function LocationMap({
   disabled?: boolean;
 }) {
   const t = useT();
+  const { locale } = useI18n();
   const [searching, setSearching] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -170,7 +191,7 @@ export function LocationMap({
     abortRef.current = controller;
     setSearching(true);
 
-    void reverseGeocode(coords.latitude, coords.longitude, controller.signal)
+    void reverseGeocode(coords.latitude, coords.longitude, controller.signal, locale)
       .then((result) => {
         if (controller.signal.aborted) return;
         if (result.area || result.street) {
@@ -191,7 +212,7 @@ export function LocationMap({
       .finally(() => {
         if (!controller.signal.aborted) setSearching(false);
       });
-  }, [coords, searching, onChange]);
+  }, [coords, searching, onChange, locale]);
 
   return (
     <div

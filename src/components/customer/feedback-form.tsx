@@ -13,6 +13,8 @@ const CATEGORY_KEYS = [
   "food_quality",
   "delivery",
   "service",
+  "complaint",
+  "suggestion",
   "other",
 ] as const;
 

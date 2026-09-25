@@ -55,8 +55,19 @@ describe("identity script marks", () => {
     }
   });
 
-  it("keeps the identity heading parameterised by cuisine", () => {
-    expect(en.home.identityHeading).toContain("{cuisine}");
-    expect(ar.home.identityHeading).toContain("{cuisine}");
+  it("lists cuisine tags as chips rather than concatenating them into the heading", () => {
+    // The heading used to interpolate the whole tag list ("...: Asian ·
+    // Japanese-inspired · Chinese-inspired · Wok · Ramen · Sushi · Cloud
+    // kitchen"), which read like a keyword dump. The tags are shown once, as
+    // chips under the heading, and the heading itself is a plain sentence.
+    const source = readFileSync(
+      new URL("../src/components/customer/identity-band.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(source).toContain('t("home.identityHeading")');
+    expect(source).not.toContain('identityHeading", { cuisine');
+    for (const dict of [en, ar]) {
+      expect(dict.home.identityHeading).not.toContain("{cuisine}");
+    }
   });
 });

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, Clock, Leaf, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import {
   getFeaturedItems,
   getPublicCategories,
@@ -11,10 +11,8 @@ import {
 import { buildMetadata } from "@/lib/seo/metadata";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { menuSchema } from "@/lib/seo/schema";
-import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Reveal } from "@/components/ui/reveal";
-import { formatPrice } from "@/lib/utils/format";
 import { DishCard } from "@/components/customer/dish-card";
 import { FeaturedDishStrip } from "@/components/customer/featured-strip";
 import { IdentityBand } from "@/components/customer/identity-band";
@@ -114,11 +112,7 @@ export default async function HomePage() {
       <Hero
         brand={brand}
         tagline={brandTagline(restaurant, locale, settings.brand.tagline)}
-        cuisine={cuisineIdentity}
-        city={settings.brand.city}
-        etaMinutes={settings.ordering.etaMinutes}
         acceptingOrders={settings.ordering.acceptingOrders}
-        minOrder={settings.ordering.minOrderTotal}
         hasMenu={menu.items.length > 0}
         logoUrl={BRAND_LOGO_URL}
         locale={locale}
@@ -261,11 +255,7 @@ export default async function HomePage() {
 function Hero({
   brand,
   tagline,
-  cuisine,
-  city,
-  etaMinutes,
   acceptingOrders,
-  minOrder,
   hasMenu,
   logoUrl,
   locale,
@@ -273,11 +263,7 @@ function Hero({
 }: {
   brand: string;
   tagline: string;
-  cuisine: string | null;
-  city: string;
-  etaMinutes: number;
   acceptingOrders: boolean;
-  minOrder: number;
   hasMenu: boolean;
   logoUrl: string;
   locale: string;
@@ -301,14 +287,6 @@ function Hero({
               ringed plate on the right carries it instead. */}
           <MobileHeroMark logoUrl={logoUrl} brand={brand} />
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="indigo">{t("home.cloudKitchen")}</Badge>
-            <Badge tone="info">{city}</Badge>
-            <Badge tone={acceptingOrders ? "success" : "warning"}>
-              {acceptingOrders ? t("home.acceptingOrders") : t("home.closedForOrders")}
-            </Badge>
-          </div>
-
           <p
             className="font-kana mt-5 text-sm font-semibold tracking-[0.35em] text-indigo-700"
             aria-hidden="true"
@@ -326,32 +304,12 @@ function Hero({
 
           <span aria-hidden="true" className="ink-rule mt-5 block max-w-xs" />
 
-          {cuisine ? (
-            <p
-              className="mt-4 text-sm font-medium text-indigo-700"
-              aria-label={cuisine}
-            >
-              {cuisine}
+          {!acceptingOrders ? (
+            <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-chili-700">
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-chili-600" />
+              {t("home.closedForOrders")}
             </p>
           ) : null}
-
-          <dl className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-sm text-ink-700/85">
-            <div className="flex items-center gap-1.5">
-              <Clock className="size-4 text-bamboo-600" aria-hidden="true" />
-              <dt className="sr-only">{t("home.srDeliveryTime")}</dt>
-              <dd>{t("home.deliveryTime", { minutes: etaMinutes })}</dd>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="size-4 text-miso-600" aria-hidden="true" />
-              <dt className="sr-only">{t("home.srMinimumOrder")}</dt>
-              <dd>{t("home.minimumOrderValue", { price: formatPrice(minOrder) })}</dd>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Leaf className="size-4 text-jade-600" aria-hidden="true" />
-              <dt className="sr-only">{t("home.srDietaryLabels")}</dt>
-              <dd>{t("home.dietaryLabels")}</dd>
-            </div>
-          </dl>
 
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Link

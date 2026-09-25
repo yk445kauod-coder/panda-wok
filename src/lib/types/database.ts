@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       activity_logs: {
@@ -2310,6 +2335,8 @@ export type Database = {
         | "service"
         | "overall"
         | "other"
+        | "complaint"
+        | "suggestion"
       feedback_status:
         | "new"
         | "reviewed"
@@ -2472,6 +2499,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       backup_kind: [
@@ -2500,6 +2530,8 @@ export const Constants = {
         "service",
         "overall",
         "other",
+        "complaint",
+        "suggestion",
       ],
       feedback_status: ["new", "reviewed", "responded", "resolved", "archived"],
       fulfillment_type: ["delivery", "pickup"],

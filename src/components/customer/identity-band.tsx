@@ -50,7 +50,7 @@ export function IdentityBand({
             id="identity-heading"
             className="mt-3 max-w-2xl text-fluid-h2 font-semibold"
           >
-            {t("home.identityHeading", { cuisine: tags.join(" · ") })}
+            {t("home.identityHeading")}
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-rice-100/85 sm:text-base">
             {t("home.identityBody")}
