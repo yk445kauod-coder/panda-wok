@@ -93,10 +93,10 @@
 }
 
 @keyframes leafFall {
-  0% { transform: translate3d(-6px, -8%, 0); opacity:  ​​0; }
+  0% { transform: translate3d(-6px, -8%, 0); opacity:  0; }
   10% { opacity: 0.55; }
   90% { opacity: 0.35; }
-  100% { transform: translate3d(8px, 108vh, 0); opacity:: ​​0; }
+  100% { transform: translate3d(8px, 108vh, 0); opacity: 0; }
 }
 
 @keyframes leafTumble {
@@ -350,7 +350,7 @@
   }
   .bamboo-leaf-tumble {
     position: absolute;
-    inset:  ​0;
+    inset:  0;
     transform-style: preserve-3d;
     animation-name: leafTumble;
     animation-timing-function: linear;
@@ -359,7 +359,7 @@
   }
   .bamboo-leaf-face, .bamboo-leaf-back {
     position: absolute;
-    inset:  ​​0;
+    inset:  0;
     backface-visibility: hidden;
   }
   .bamboo-leaf-back {
