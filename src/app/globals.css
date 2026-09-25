@@ -268,6 +268,48 @@
   }
 
   .ink-rule {
+    height: 1px;
+    background: linear-gradient(to right, transparent, color-mix(in oklab, var(--color-ink-900) 14%, transparent), transparent);
+  }
+
+  /* Map pin: a soft bamboo teardrop above a tonal ring. */
+  .location-pin {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    filter: drop-shadow(0 2px 3px rgb(0 0 0 / 25%));
+  }
+  .location-pin::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    background: linear-gradient(135deg, var(--color-jade-500), color-mix(in oklab, var(--color-jade-500) 65%, var(--color-bamboo-600)));
+  }
+  .location-pin::after {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border-radius: 9999px;
+    background: var(--color-rice-50);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-jade-600) 45%, transparent);
+  }
+
+  /* Leaflet within the rounded card: keep controls quiet and contained. */
+  .location-map .leaflet-container { border-radius: var(--radius-washi); background: var(--color-rice-100); font: inherit; }
+  .location-map .leaflet-control-attribution {
+    font-size: 10px;
+    color: color-mix(in oklab, var(--color-ink-700) 55%, transparent);
+  }
+  .location-map .leaflet-control-zoom a,
+  .location-map .leaflet-control-zoom span {
+    color: var(--color-ink-800);
+    background: color-mix(in oklab, var(--color-rice-50) 92%, transparent);
+    border-color: color-mix(in oklab, var(--color-ink-900) 10%, transparent);
+  }
+  .location-map .leaflet-control-attribution a { color: var(--color-plum-600); }
+  .ink-rule {
     background: linear-gradient(
       90deg,
       transparent,

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, MapPin, Navigation, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { Badge, Button, Spinner } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LocationMap, LocationSearch, type PinCoords } from "@/components/customer/location-map";
 import { useErrorText, useT } from "@/components/i18n-provider";
 import {
   deleteAddressAction,
@@ -31,13 +32,34 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [coords, setCoords] = useState<{
-    latitude: number;
-    longitude: number;
-    accuracyM: number | null;
-  } | null>(null);
+  const [coords, setCoords] = useState<PinCoords | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [mapKey, setMapKey] = useState(0);
+
+  // Best-effort reverse lookup: prefill area/address from the pin. The same
+  // event carries district/street, and the form accepts them only when empty. Zero
+  // invented data — values come from OpenStreetMap's address database..
+  useEffect(() => {
+    const onReverse = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        area: string | null;
+        street: string | null;
+      }>).detail;
+      if (!detail) return;
+      const areaEl = document.querySelector<HTMLInputElement>('input[name="area"]');
+      const streetEl = document.querySelector<HTMLInputElement>('input[name="addressLine"]');
+      if (detail.area && areaEl && !areaEl.value.trim()) {
+        setFields((f) => ({ ...f, area: "" }));
+        areaEl.value = detail.area!;
+      }
+      if (detail.street && streetEl && !streetEl.value.trim()) {
+        streetEl.value = detail.street!;
+      }
+    };
+    window.addEventListener("panda-address-reverse", onReverse);
+    return () => window.removeEventListener("panda-address-reverse", onReverse);
+  }, []);
 
   function resetForm() {
     setMode({ kind: "closed" });
@@ -45,6 +67,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
     setFields({});
     setCoords(null);
     setLocationError(null);
+    setMapKey((k) => k + 1);
   }
 
   function captureLocation() {
@@ -64,6 +87,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
             ? Math.round(position.coords.accuracy)
             : null,
         });
+        setMapKey((k) => k + 1);
         setLocating(false);
       },
       (geolocationError) => {
@@ -389,8 +413,9 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
             </div>
           </div>
 
-          {/* Opt-in location capture */}
-          <div className="mt-4 rounded-xl border border-ink-900/10 bg-rice-200/40 p-3.5">
+          {/* Opt-in location capture: map + pin + search. The pin is the source
+              of truth for the hidden coordinate fields below. */}
+          <div className="mt-4 space-y-2.5 rounded-xl border border-ink-900/10 bg-rice-200/40 p-3.5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="flex items-center gap-1.5 text-sm font-medium text-ink-900">
@@ -401,16 +426,37 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                   {t("addresses.pinHint")}
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                loading={locating}
-                onClick={captureLocation}
-              >
-                {coords ? t("addresses.updateLocation") : t("addresses.useMyLocation")}
-              </Button>
             </div>
+
+            <LocationSearch
+              disabled={saving}
+              onPick={(lat, lng) => {
+                setCoords({ latitude: lat, longitude: lng, accuracyM: null });
+                setMapKey((k) => k + 1);
+                setLocationError(null);
+              }}
+            />
+
+            <LocationMap
+              key={mapKey}
+              coords={coords}
+              onChange={setCoords}
+              accuracyM={coords?.accuracyM ?? null}
+              locating={locating}
+              onLocate={() => void captureLocation()}
+              locateError={locationError}
+              disabled={saving}
+            />
+
+            {coords ? (
+              <p className="inline-flex items-center gap-1.5 text-xs text-jade-600">
+                <Check className="size-3.5" aria-hidden="true" />
+                {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
+                {coords.accuracyM
+                  ? t("addresses.errors.accuracySuffix", { meters: coords.accuracyM })
+                  : ""}
+              </p>
+            ) : null}
 
             <input
               type="hidden"
@@ -427,23 +473,8 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
               name="accuracyM"
               value={coords?.accuracyM != null ? String(coords.accuracyM) : ""}
             />
-
-            {coords ? (
-              <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-jade-600">
-                <Check className="size-3.5" aria-hidden="true" />
-                {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
-                {coords.accuracyM
-                  ? t("addresses.errors.accuracySuffix", { meters: coords.accuracyM })
-                  : ""}
-              </p>
-            ) : null}
-            {locationError ? (
-              <p role="status" className="mt-2 text-xs text-miso-600">
-                {locationError}
-              </p>
-            ) : null}
             {fields.latitude || fields.longitude ? (
-              <p className="mt-2 text-xs text-chili-600">
+              <p className="text-xs text-chili-600">
                 {fields.latitude ?? fields.longitude}
               </p>
             ) : null}
