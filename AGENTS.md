@@ -480,3 +480,55 @@ These flow into JSON-LD `sameAs` automatically via `restaurantSchema`/`localBusi
   - Deliberately NOT implemented (no public API/auth/payments on the site):
     OAuth/OIDC discovery, auth.md, api-catalog, MCP server card, agent-skills
     index, WebMCP, x402/MPP/UCP/ACP. DNS-AID N/A on pages.dev (no zone).
+
+## Admin access, real data, and CJK typography (2026-09-25)
+
+### Admin gate — single credential, verified live
+The `/admin` front door is **one field** (`name="secret"`,
+`src/components/admin/admin-gate-form.tsx`), resolved by `resolveSecret()` in
+`src/lib/auth/admin-gate.ts`:
+- `Panda2026` (or `ADMIN_PASSCODE`) -> `{ kind: "owner" }`, full console.
+- a staff row's `login_id` -> `{ kind: "staff", role }`, console scoped to that
+  role. The owner issues these ids from Admin -> Team & users -> Create a team
+  account (admin-only; `roles.manage`). No email/password/customer signup is
+  needed for a worker to get in, and no customer is blocked from the site.
+The unlock cookie is `panda-wok.admin`, an HMAC keyed by passcode+salt: rotating
+the passcode revokes every cookie, and only a digest reaches the browser.
+
+**Verified live (throwaway staff row, deleted after):** passcode -> owner;
+`01099988877` -> `{kind:"staff", role:"kitchen"}`; unknown id -> null; and the
+LIKE wildcards `%`, `_`, `*` -> null. The wildcard check is the regression that
+matters: `staffById` matches via `ilike` for case-insensitivity, and before
+`escapeLike()` a secret of `%` matched whichever active row came first and
+unlocked the console for anyone. `escapeLike` (`src/lib/utils/format.ts`) now
+literalises `\ % _ *`, and the input charset is validated against
+`loginIdPattern` on both create and submit. Guards: `tests/login-id.test.ts`.
+
+**To test a staff credential by hand:** create the user with the service-role
+admin API (`auth.admin.createUser({email_confirm:true})`), upsert `profiles`,
+then `staff` with `role` + `login_id`; delete the auth user afterwards (FK
+cascades). A bare `staff` insert fails 23503 unless `auth.users` has the row.
+
+### Fake data removed (verified 0 rows live)
+The placeholder catalogue was a single "Sushi" item at EGP 11 using the brand
+logo as its image, plus its category. Nothing else was fabricated: faqs,
+page_content, announcements, delivery_zones, loyalty_rewards, stock_items,
+upsell_rules, modifier_groups, orders are all 0. Removed by
+`supabase/migrations/20260925120000_remove_placeholder_catalogue.sql` (review
+before applying; the admin CMS is now the only menu source). The stray
+`QA Audit Live` profile/`auth.users` row from an earlier auth test was deleted
+too. Remaining profiles are real accounts (owner, second owner, one more).
+
+### CJK typography: 华 vs 華
+`.font-kana` uses **Shippori Mincho**, a *Japanese* Mincho. Its shipped subset
+(`subsets: ["latin","latin-ext"]` is a misnomer — the woff2 carries 17,516 CJK
+codepoints) covers 日 本 中 華 寿 司 和 鍋 麺 亜 but **not** simplified 华 亚.
+So `identityChineseScript: "中华"` rendered 华 in a different fallback face — a
+half-font badge. Fixed to `中華` (traditional, which the face ships), pinned by
+`tests/identity-script.test.ts`.
+
+Related: in Arabic the badges show country names (`اليابان` / `الصين`), so the
+component now tags them `lang="ar"` and drops `.font-kana` there, instead of
+labelling Arabic text as Japanese. Previously it hardcoded `ja`/`zh-Hans`,
+which would make a screen reader read Arabic with a Japanese voice.
+

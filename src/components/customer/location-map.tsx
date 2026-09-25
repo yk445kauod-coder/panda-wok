@@ -15,15 +15,13 @@ import { useT } from "@/components/i18n-provider";
  * location" to get the browser's GPS fix). The coordinates are written back to
  * hidden fields, so the same addressSchema validation path as the typed form is
  * used — nothing new is invented client-side. Reverse geocoding (Nominatim)
- * is best-effort only: a district streets name MAY prefill the area/address
+ * is best-effort only: a district or street name may prefill the area/address
  * fields, but the customer always reads and confirms the result before saving.
  *
  * Privacy: nothing is sent anywhere until the customer presses "My
- * location" (geolocation API, browser-only); reverse lookup is one POST to
- * OpenStreetMap's Nominatim (no key, no cookies sent by us) and is skipped
- * entirely under `prefers-reduced-motion`… we still render the map, so controls
- * stay meaningful;ther map is purely visual and the customer's typed address
- * stays authoritative.
+ * location" (geolocation API, browser-only); reverse lookup is one request to
+ * OpenStreetMap's Nominatim (no key, no cookies sent by us), and the map itself
+ * is purely visual — the customer's typed address stays authoritative.
  */
 
 export type PinCoords = {
@@ -41,15 +39,11 @@ function MapEvents({
   onDropped: (lat: number, lng: number) => void;
   open: boolean;
 }) {
+  // Only an explicit tap places the pin. Panning and zooming never move it, so
+  // the customer can explore the map without losing the spot they chose.
   useMapEvents({
     click(e) {
       if (open) onDropped(e.latlng.lat, e.latlng.lng);
-    },
-    moveend(e) {
-      if (open) {
-        const c = (e.target as L.Map).getCenter();
-        onDropped(c.lat, c.lng);
-      }
     },
   });
   return null;
@@ -169,7 +163,6 @@ export function LocationMap({
     }
     previous.current = coords;
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (searching) return;
 
     const controller = new AbortController();
@@ -240,7 +233,7 @@ export function LocationMap({
         ) : null}
       </MapContainer>
 
-      {/* Pin hint;zen map interactions only when a pin exists*/}
+      {/* Pin hint; map interactions only when a pin exists */}
       {!coords ? (
         <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center px-3">
           <p className="rounded-full border border-ink-900/10 bg-rice-50/92 px-3 py-1.5 text-[11px] font-medium text-ink-700 shadow-washi backdrop-blur-sm">
@@ -279,7 +272,7 @@ export function LocationMap({
 }
 
 /**
- * An inline "search a place" affordance. Nominatim also does search;this is
+ * An inline "search a place" affordance. Nominatim also does search; this is
  * a keyboard-first alternative to dragging the pin (type a street/area, then
  * tap a result and the pin snaps there).
  */
@@ -307,7 +300,6 @@ export function LocationSearch({
       setResults([]);
       return;
     }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const controller = new AbortController();
     abortRef.current?.abort();
@@ -334,7 +326,7 @@ export function LocationSearch({
         })),
       );
     } catch {
-      // ignore;the map + typed address remain the way in.
+      // ignore; the map + typed address remain the way in.
     } finally {
       if (!controller.signal.aborted) setBusy(false);
     }

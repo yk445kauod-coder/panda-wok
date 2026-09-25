@@ -408,31 +408,31 @@ export async function getWorkersAiBinding(): Promise<{ ai: unknown; envName: str
   try {
     // Async mode works in the worker entrypoint, in `wrangler dev` and — via
     // wrangler's platform proxy — in `next dev`. Sync mode would throw during
-    // static generation, so we never use it here..
+    // static generation, so we never use it here
     const { env } = await getCloudflareContext({ async: true });
     // The binding name is fixed ("AI") by wrangler.jsonc — deliberately not
     // configurable, because the app must fail closed (no key, no back-door
-    // remote calls) if an operator renames it by accident..
+    // remote calls) if an operator renames it by accident
     const binding = (env as Record<string, unknown> | undefined)?.["AI"];
     // Truthy check: bindings are objects in prod and in dev proxy; undefined
-    // in plain Node builds. A falsy but present value also counts as absent..
+    // in plain Node builds. A falsy but present value also counts as absent
     return binding ? { ai: binding, envName: "AI" } : null;
   } catch {
     // getCloudflareContext throws outside the Cloudflare platform (e.g. plain
     // `next build` on a Node server only). That is expected and must not break
-    // the request — the chain continues without this provider..
+    // the request — the chain continues without this provider
     return null;
   }
 }
 
 /**
  * Requests a text-generation completion from the Workers AI REST binding,
- * mapping the message list onto the model's supported prompt shapes..
+ * mapping the message list onto the model's supported prompt shapes
  *
  * The binding route is `<account>/ai/run/<model>` on the internal API, so it
  * never needs a user-side credential (the Worker's own auth is used). It is
  * therefore usable as the primary provider with zero secrets, and is the only
- * remote provider that the platform enables by default..
+ * remote provider that the platform enables by default
  */
 async function runWorkersAi(
   ai: { run(model: string, body: Record<string, unknown>): Promise<unknown> },
@@ -443,7 +443,7 @@ async function runWorkersAi(
 
   // Llama-family models accept the OpenAI chat shape via "messages"; most
   // Workers AI text models do too.The body mirrors what the REST /ai/run
-  // endpoint accepts, so the binding implements the same contract..
+  // endpoint accepts, so the binding implements the same contract
 
   let result: unknown;
   try {
@@ -481,7 +481,7 @@ export class CloudflareBindingProvider implements AiProvider {
 
 
     // "Workers AI (binding)" keeps the admin usage page readable when the
-    // provider has no database row yet..
+    // provider has no database row yet
     this.name = "Workers AI";
   }
 
@@ -557,7 +557,7 @@ export async function getAiProviderUsage(config: { name: string; kind: string })
       .gte("created_at", minuteStart);
 
     // Counting rows counts requests, not tokens; the token figures are summed
-    // via a separate aggregate query because the head:true form cannot sum..
+    // via a separate aggregate query because the head:true form cannot sum
     const { data: sums } = await admin
       .from("ai_requests")
       .select("prompt_tokens,completion_tokens")
@@ -574,7 +574,7 @@ export async function getAiProviderUsage(config: { name: string; kind: string })
     return { monthUsedTokens, minuteRequests: minuteReqs ?? 0 };
   } catch {
     // Quota accounting must never break the assistant: on failure (e.g.
-    // service key missing) we treat usage as zero and let requests proceed..
+    // service key missing) we treat usage as zero and let requests proceed
     return { monthUsedTokens: 0, minuteRequests: 0 };
   }
 }
@@ -616,7 +616,7 @@ export class QuotaEnforcedProvider implements AiProvider {
       (this.opts.monthlyTokenQuota !== null &&
         usage.monthUsedTokens >= this.opts.monthlyTokenQuota)) {
       // Quota exhausted: the caller records the outcome via the normal usage
-      // ledger; here we degrade to the deterministic floor instead of erroring..
+      // ledger; here we degrade to the deterministic floor instead of erroring
       return {
         text: "I've reached my answer limit for now. Please check the menu or contact the kitchen.",
         provider: "deterministic",
@@ -670,7 +670,7 @@ export async function runCompletion(
 /* ------------------------------------------------------------------ */
 
 /** All provider kinds the admin may configure; every other kind was removed
- * from the app (the assistant only speaks Pollinations + Cloudflare Workers AI..
+ * from the app (the assistant only speaks Pollinations + Cloudflare Workers AI
  */
 export const DB_PROVIDER_KINDS = ["cloudflare", "pollinations", "openai_compatible"] as const;
 
@@ -693,7 +693,7 @@ export type DbProviderSelection = {
  *
  * Secret values never ride in the row — only the env-var name in secret_ref,
  * which either the deployed Worker's env or serverEnv provides. Quotas are
- * enforced per-provider by the ai_requests ledger (admin-editable numbers)..
+ * enforced per-provider by the ai_requests ledger (admin-editable numbers)
  */
 export async function resolveDbProvider(
   row: DbProviderRow,
@@ -746,7 +746,7 @@ export async function resolveDbProvider(
 /** Builds a chain where the primary+fallback come from ai_providers rows
  * (configured in the admin AI centre) —the binding is used when the top row
  * references "cloudflare" —and everything falls back to the deterministic
- * grounded floor, so the assistant never fabricates nor dies..
+ * grounded floor, so the assistant never fabricates nor dies
  */
 export async function buildDbProviderChain(
   selection: DbProviderSelection,
@@ -780,7 +780,7 @@ export async function buildDbProviderChain(
 }
 
 /** Loads the ai_providers rows via the service role (RLS restricts the table to
- * admins; server code is where the app reads config,, never the browser..
+ * admins; server code is where the app reads config, never the browser
  */
 export async function loadDbProviders(): Promise<DbProviderRow[]> {
   const admin = tryCreateAdminSupabase();

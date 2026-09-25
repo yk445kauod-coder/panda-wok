@@ -11,7 +11,7 @@ import type { T } from "@/lib/i18n/server";
  * counter"). Nothing here is invented cuisine: the script glyphs are the
  * language names, not a claim about a dish.
  *
- * The circulating wave (`seigaiha`) already used in the hero is reused as the
+ * The asanoha lattice used across the site is reused here as the
  * shared Asian motif, drawn from the design system rather than a new asset.
  */
 export function IdentityBand({
@@ -25,16 +25,21 @@ export function IdentityBand({
   t: T;
   locale?: string;
 }) {
+  // The script card is a language label, so its `lang` must describe the text
+  // actually rendered. In Arabic those strings are the country names in Arabic,
+  // not Japanese/Chinese glyphs — tagging them `ja`/`zh` would make a screen
+  // reader read Arabic with a Japanese voice, and swap the font for no reason.
+  const arabic = locale === "ar";
   const pillars = [
     {
       script: t("home.identityJapaneseScript"),
-      scriptLang: "ja" as const,
+      scriptLang: arabic ? "ar" : "ja",
       label: t("home.identityJapaneseLabel"),
       body: t("home.identityJapaneseBody"),
     },
     {
       script: t("home.identityChineseScript"),
-      scriptLang: "zh-Hans" as const,
+      scriptLang: arabic ? "ar" : "zh-Hant",
       label: t("home.identityChineseLabel"),
       body: t("home.identityChineseBody"),
     },
@@ -48,9 +53,9 @@ export function IdentityBand({
       <div
         aria-hidden="true"
         data-motion="decorative"
-        className="seigaiha pointer-events-none absolute inset-0 opacity-[0.18]"
+        className="asanoha-light pointer-events-none absolute inset-0 opacity-[0.5]"
       />
-      <BambooAmbience locale={locale} density="full" leaves={0} />
+      <BambooAmbience locale={locale} density="full" />
       <div className="relative mx-auto max-w-6xl px-4 py-12 sm:py-16">
         <Reveal>
           <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-miso-300">
@@ -74,7 +79,9 @@ export function IdentityBand({
                 <span
                   lang={pillar.scriptLang}
                   aria-hidden="true"
-                  className="grid size-14 shrink-0 place-items-center rounded-xl bg-miso-300/15 font-display text-2xl font-semibold text-miso-300"
+                  className={`grid size-14 shrink-0 place-items-center rounded-xl bg-miso-300/15 text-2xl font-semibold text-miso-300 ${
+                    arabic ? "font-display" : "font-kana"
+                  }`}
                 >
                   {pillar.script}
                 </span>

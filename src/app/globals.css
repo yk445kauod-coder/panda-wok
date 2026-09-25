@@ -212,6 +212,19 @@
     letter-spacing: 0;
   }
 
+  /* Kanji/CJK display face. Applied only where script glyphs appear (日本,
+     中华, category names), so a Mincho renders them natively instead of the
+     browser substituting a system fallback mid-word. It intentionally wins over
+     the Arabic display override: CJK glyphs are not Arabic copy. */
+  .font-kana {
+    font-family: var(--font-kana), var(--font-display), ui-serif, Georgia, serif;
+    letter-spacing: 0.05em;
+  }
+
+  html[lang="ar"] .font-kana {
+    font-family: var(--font-kana), var(--font-arabic-display), var(--font-display), ui-serif, Georgia, serif;
+  }
+
   /* Numbers and prices stay Latin/numeric in both languages, because Arabic
      customers read Egyptian prices in Western digits. */
   html[lang="ar"] .tabular-nums {
@@ -243,28 +256,41 @@
     box-shadow: var(--shadow-washi);
   }
 
-  .seigaiha {
+
+  /* Asanoha (麻の葉) — the hemp-leaf lattice. Repeating linear gradients draw
+     only the *lines* of the weave, so it reads as an outlined Japanese pattern
+     rather than a filled texture. Tuned for rice paper: ink hairlines. */
+  .asanoha {
     background-image:
-      radial-gradient(
-        circle at 50% 100%,
-        transparent 34%,
-        color-mix(in oklab, var(--color-bamboo-500) 16%, transparent) 35%,
-        transparent 38%
-      ),
-      radial-gradient(
-        circle at 0% 100%,
-        transparent 34%,
-        color-mix(in oklab, var(--color-bamboo-500) 12%, transparent) 35%,
-        transparent 38%
-      ),
-      radial-gradient(
-        circle at 100% 100%,
-        transparent 34%,
-        color-mix(in oklab, var(--color-bamboo-500) 12%, transparent) 35%,
-        transparent 38%
-      );
-    background-size: 42px 21px;
+      repeating-linear-gradient(30deg, color-mix(in oklab, var(--color-ink-900) 7%, transparent) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(-30deg, color-mix(in oklab, var(--color-ink-900) 7%, transparent) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, color-mix(in oklab, var(--color-ink-900) 5%, transparent) 0 1px, transparent 1px 30px);
   }
+
+  /* Same lattice, rice-paper hairlines for use on the ink panels. */
+  .asanoha-light {
+    background-image:
+      repeating-linear-gradient(30deg, color-mix(in oklab, var(--color-rice-100) 12%, transparent) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(-30deg, color-mix(in oklab, var(--color-rice-100) 12%, transparent) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, color-mix(in oklab, var(--color-rice-100) 8%, transparent) 0 1px, transparent 1px 30px);
+  }
+
+  /* A vertical bamboo culm with nodal rings. Height comes from the caller. */
+  .bamboo-frame {
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0 26px,
+        color-mix(in oklab, var(--color-bamboo-700) 55%, transparent) 26px 30px
+      ),
+      linear-gradient(
+        to right,
+        color-mix(in oklab, var(--color-bamboo-600) 30%, transparent),
+        color-mix(in oklab, var(--color-bamboo-500) 55%, transparent) 45%,
+        color-mix(in oklab, var(--color-bamboo-600) 30%, transparent)
+      );
+  }
+
 
   .ink-rule {
     height: 1px;
@@ -341,30 +367,6 @@
     50% { transform: rotate(1.2deg); }
   }
 
-  /* Drifting leaves ride the token `leaf` animation, seeded per-instance. */
-  .bamboo-leaf {
-    animation-name: leafFall;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    will-change: transform, opacity;
-  }
-  .bamboo-leaf-tumble {
-    position: absolute;
-    inset:  0;
-    transform-style: preserve-3d;
-    animation-name: leafTumble;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    will-change: transform;
-  }
-  .bamboo-leaf-face, .bamboo-leaf-back {
-    position: absolute;
-    inset:  0;
-    backface-visibility: hidden;
-  }
-  .bamboo-leaf-back {
-    transform: rotateY(180deg);
-  }
 
   [data-motion="enso"] {
     animation: enso 3.2s ease-in-out infinite;

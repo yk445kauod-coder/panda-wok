@@ -1,10 +1,11 @@
 import type { PublicSettings } from "@/lib/services/catalog";
+import { BRAND_LOGO_URL } from "@/lib/brand";
 
 /**
  * Brand lock-up. When an admin has configured `brand.logo_url` (menu CMS /
  * Settings → brand), their uploaded logo is shown everywhere the brand appears:
- * footer, about, auth, favicon sources and OG image. Fallback is the built-in
- * hand-inked panda mark, so the site never shows a broken image.
+ * navbar, footer, about, auth, favicon sources and OG image. Otherwise the
+ * business's real logo asset is used — never a placeholder drawing.
  */
 export function BrandLogo({
   brand,
@@ -16,20 +17,11 @@ export function BrandLogo({
   >;
   className?: string;
 }) {
-  if (brand.logo_url) {
-    return (
-      <img
-        src={brand.logo_url}
-        alt={`${brand.name} logo`}
-        className={`object-contain ${className ?? "size-9"}`}
-        loading="lazy"
-      />
-    );
-  }
+  const src = brand.logo_url?.trim() || BRAND_LOGO_URL;
 
   return (
     <img
-      src="/icon.svg"
+      src={src}
       alt={`${brand.name} logo`}
       className={`object-contain ${className ?? "size-9"}`}
     />

@@ -61,14 +61,16 @@ export async function SiteHeader({
         {t("common.skipToContent")}
       </a>
       <header className="sticky top-0 z-30 border-b border-ink-900/8 bg-rice-100/85 pt-safe backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
           <Link
             href="/"
-            className="flex items-center gap-2 text-ink-900"
+            className="flex items-center gap-2.5 text-ink-900"
             aria-label={t("nav.brandHome", { brand: brand.name })}
           >
-            <BrandLogo brand={brand} className="size-8" />
-            <span className="font-display text-lg font-semibold tracking-tight">
+            <span className="grid size-10 place-items-center rounded-xl border border-ink-900/10 bg-rice-50 shadow-washi">
+              <BrandLogo brand={brand} className="size-8 rounded-lg" />
+            </span>
+            <span className="font-display text-lg font-semibold tracking-tight sm:text-xl">
               {brand.name}
             </span>
           </Link>

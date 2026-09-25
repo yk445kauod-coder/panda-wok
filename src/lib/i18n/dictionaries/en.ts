@@ -130,7 +130,7 @@ export const en = {
     identityJapaneseBody:
       "Sushi rolled and ramen broth built the Japanese way — clean, precise, and never pre-made.",
     identityChineseLabel: "Chinese wok",
-    identityChineseScript: "中华",
+    identityChineseScript: "中華",
     identityChineseBody:
       "Wok classics seared over high heat with clean seasoning, cooked the moment you order.",
     identitySig: "{brand} · Asian kitchen · {city}",

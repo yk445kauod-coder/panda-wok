@@ -7,11 +7,13 @@ import { useAssistant } from "@/components/panda/assistant-context";
 /**
  * Floating panda companion. Sits above the bottom nav on phones and bottom-right
  * on desktop, turns its face toward the pointer (subtle rotation + translate, rAF
- * throttled),breathes softly, and opens the Panda assistant when tapped. The
- * enso ring behind it hints at the kaligrafi mark without drawing a second logo.
-
- * Pure CSS transitions (no layout thrash);positions track the movement ratio so the
- * panda leans ever so slightly toward the cursor, never jumps or covers content.
+ * throttled), breathes softly, and opens the Panda assistant when tapped. The
+ * enso ring behind it is the only decoration — the panda sprite itself is the
+ * mark, so no second logo is drawn.
+ *
+ * Pure CSS transitions (no layout thrash); positions track the movement ratio
+ * so the panda leans ever so slightly toward the cursor, never jumps or covers
+ * content.
  */
 export function FloatingPanda() {
   const { openAssistant } = useAssistant();

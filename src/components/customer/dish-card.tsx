@@ -59,7 +59,7 @@ export function DishCard({
         ) : (
           <div
             aria-hidden="true"
-            className="seigaiha grid h-full place-items-center bg-rice-200/70 text-sm text-ink-700/50"
+            className="asanoha grid h-full place-items-center bg-rice-200/70 text-sm text-ink-700/50"
           >
             {t("common.photoSoon")}
           </div>

@@ -1,4 +1,5 @@
 import { absoluteUrl, siteUrl } from "@/lib/seo/metadata";
+import { BRAND_LOGO_URL } from "@/lib/brand";
 
 export type JsonLd = Record<string, unknown>;
 
@@ -91,7 +92,7 @@ export function organisationSchema(params: {
     "@id": `${siteUrl()}/#organisation`,
     name: params.name,
     url: siteUrl(),
-    logo: params.logoUrl ?? absoluteUrl("/panda-logo.svg"),
+    logo: absoluteUrl(params.logoUrl ?? BRAND_LOGO_URL),
     ...(sameAs.length > 0 ? { sameAs } : {}),
   };
 }

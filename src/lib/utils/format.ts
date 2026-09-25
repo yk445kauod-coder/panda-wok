@@ -161,3 +161,12 @@ export function safeJson<T>(value: unknown, fallback: T): T {
   if (value === null || value === undefined) return fallback;
   return value as T;
 }
+
+/**
+ * Neutralises LIKE wildcards in a value the user typed, so a `%` is matched as
+ * a literal `%` rather than "anything". PostgREST treats `*` the same way as
+ * `%` in `ilike`, and `\` escapes the escape character itself.
+ */
+export function escapeLike(value: string): string {
+  return value.replace(/([\\%_*])/g, "\\$1");
+}

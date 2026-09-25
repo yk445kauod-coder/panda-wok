@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { serverEnv } from "@/lib/config/env";
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { escapeLike } from "@/lib/utils/format";
 import type { StaffRole } from "@/lib/auth/rbac";
 
 /**
@@ -67,10 +68,17 @@ export function passcodeMatches(submitted: string): boolean {
 /**
  * Resolves a staff `login_id` to an identity. The id is unique
  * case-insensitively; a row must also be active to unlock anything.
+ *
+ * The match is an equality, not a pattern. `login_id` is compared through
+ * `ilike` so case does not matter, which means the submitted secret must be
+ * escaped — otherwise a secret of `%` would match whichever staff row came
+ * first and unlock the console for anyone. The same character set the owner is
+ * allowed to *create* an id with is enforced here, so no control characters or
+ * filter operators can reach PostgREST either.
  */
 export async function staffById(secret: string): Promise<GateIdentity | null> {
   const value = secret.trim();
-  if (!value) return null;
+  if (!value || !/^[A-Za-z0-9._@+\- \u0600-\u06FF]+$/.test(value)) return null;
 
   let admin: ReturnType<typeof createAdminSupabase>;
   try {
@@ -82,7 +90,7 @@ export async function staffById(secret: string): Promise<GateIdentity | null> {
   const { data, error } = await admin
     .from("staff")
     .select("user_id, role, display_name, is_active")
-    .ilike("login_id", value)
+    .ilike("login_id", escapeLike(value))
     .limit(1)
     .maybeSingle();
 

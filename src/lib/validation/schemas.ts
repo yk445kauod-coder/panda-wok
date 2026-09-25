@@ -48,6 +48,24 @@ export const optionalText = (max: number) =>
     .nullable()
     .optional();
 
+/**
+ * A staff `login_id` is a credential typed at /admin, matched case-insensitively
+ * through `ilike`. The character set is deliberately narrow: it excludes LIKE
+ * pattern characters (`%` `_` `*`) and filter syntax, so a worker cannot type a
+ * wildcard to match another staff row, and the owner cannot accidentally create
+ * an id that only ever matches itself.
+ */
+export const loginIdPattern = /^[A-Za-z0-9._@+\- \u0600-\u06FF]+$/;
+
+export const LOGIN_ID_HINT = "Use letters, numbers or . _ @ + - only";
+
+export const loginIdSchema = z
+  .string()
+  .trim()
+  .min(4, "Use at least 4 characters")
+  .max(60, "Keep the login id under 60 characters")
+  .regex(loginIdPattern, LOGIN_ID_HINT);
+
 export const optionalUuid = z
   .string()
   .uuid()
@@ -388,7 +406,10 @@ export const staffSchema = z.object({
   userId: uuidSchema,
   role: z.enum(["owner", "admin", "manager", "kitchen", "support", "marketing"]),
   displayName: optionalText(80),
-  loginId: optionalText(60),
+  loginId: z
+    .union([loginIdSchema, z.literal("")])
+    .optional()
+    .transform((v) => (v ? v : null)),
   isActive: z.coerce.boolean().default(true),
 });
 
@@ -401,12 +422,7 @@ export const staffSchema = z.object({
 export const createStaffSchema = z.object({
   fullName: z.string().trim().min(2, "Enter the team member's name").max(80),
   role: z.enum(["owner", "admin", "manager", "kitchen", "support", "marketing"]),
-  loginId: z
-    .string()
-    .trim()
-    .min(4, "Use at least 4 characters")
-    .max(60, "Keep the login id under 60 characters")
-    .regex(/^[A-Za-z0-9._@+\- \u0600-\u06FF]+$/, "Use letters, numbers or . _ @ + - only"),
+  loginId: loginIdSchema,
   phone: z
     .union([phoneSchema, z.literal("")])
     .optional()

@@ -39,7 +39,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
 
   // Best-effort reverse lookup: prefill area/address from the pin. The same
   // event carries district/street, and the form accepts them only when empty. Zero
-  // invented data — values come from OpenStreetMap's address database..
+  // invented data — values come from OpenStreetMap's address database
   useEffect(() => {
     const onReverse = (event: Event) => {
       const detail = (event as CustomEvent<{

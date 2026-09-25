@@ -76,7 +76,7 @@ export function DishDetail({
             ) : (
               <div
                 aria-hidden="true"
-                className="seigaiha grid h-full place-items-center text-sm text-ink-700/50"
+                className="asanoha grid h-full place-items-center text-sm text-ink-700/50"
               >
                 {t("common.photoSoon")}
               </div>

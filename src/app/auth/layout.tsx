@@ -35,7 +35,7 @@ export default async function AuthLayout({
       <div
         aria-hidden="true"
         data-motion="decorative"
-        className="seigaiha pointer-events-none absolute inset-0 opacity-40"
+        className="asanoha pointer-events-none absolute inset-0 opacity-40"
       />
       <div className="absolute end-4 top-4 z-10">
         <LanguageSwitcher current={locale} />

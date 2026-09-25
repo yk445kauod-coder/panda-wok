@@ -95,7 +95,7 @@ export function CartView({
                   className="absolute inset-0 size-full object-cover"
                 />
               ) : (
-                <span aria-hidden="true" className="seigaiha block h-full w-full" />
+                <span aria-hidden="true" className="asanoha block h-full w-full" />
               )}
             </div>
 

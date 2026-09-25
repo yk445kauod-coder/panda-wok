@@ -212,7 +212,7 @@ export default async function MenuPage({
                       {category.name_ja ? (
                         <span
                           lang="ja"
-                          className="ms-2 align-middle text-sm font-normal text-ink-700/60"
+                          className="font-kana ms-2 align-middle text-sm font-normal text-ink-700/60"
                         >
                           {category.name_ja}
                         </span>

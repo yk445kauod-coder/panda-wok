@@ -39,7 +39,7 @@ import {
   uuidSchema,
 } from "@/lib/validation/schemas";
 import { placeholderEmailFor } from "@/lib/auth/phone";
-import { randomId } from "@/lib/utils/format";
+import { escapeLike, randomId } from "@/lib/utils/format";
 
 /** Narrow guard shared by the single-row mutations. */
 function isUuid(value: string) {
@@ -1134,7 +1134,7 @@ export async function saveStaffAction(
     const { data: clash } = await admin
       .from("staff")
       .select("user_id")
-      .ilike("login_id", loginId)
+      .ilike("login_id", escapeLike(loginId))
       .neq("user_id", parsed.data.userId)
       .limit(1)
       .maybeSingle();
@@ -1223,7 +1223,7 @@ export async function createStaffAccountAction(
   const { data: idClash } = await admin
     .from("staff")
     .select("user_id")
-    .ilike("login_id", loginId)
+    .ilike("login_id", escapeLike(loginId))
     .limit(1)
     .maybeSingle();
   if (idClash) {

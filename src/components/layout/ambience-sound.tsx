@@ -7,12 +7,10 @@ import { useT } from "@/components/i18n-provider";
 const CHIMES = [392.0, 440.0, 523.25, 587.33, 659.25, 783.99];
 
 /**
- * Opt-in garden soundscape,synthesised with WebAudio -- zero audio assets.
-
- * chimes pluck a pentatonic minor scale through a shared soft master;air
- * (filtered noise)and a distant bird sit far back. Only starts after an
- * explicit tap;choice persists in localStorage.
-othing auto-plays..
+ * Opt-in garden soundscape, synthesised with WebAudio — zero audio assets:
+ * chimes pluck a pentatonic minor scale through a shared soft master, air
+ * (filtered noise) and a distant bird sit far back. Only starts after an
+ * explicit tap; the choice persists in localStorage. Nothing auto-plays.
  */
 export function AmbienceToggle({ className }: { className?: string }) {
   const t = useT();
@@ -36,13 +34,21 @@ export function AmbienceToggle({ className }: { className?: string }) {
     if (!Ctx) return;
     const ctx = new Ctx();
     const master = ctx.createGain();
-    master.gain.value =  0.9;
-    master.connect(ctx.destination);
+    master.gain.value = 1.6;
+    // Stay loud without clipping: a gentle limiter between master and output.
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -8;
+    limiter.knee.value = 6;
+    limiter.ratio.value = 12;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.25;
+    master.connect(limiter);
+    limiter.connect(ctx.destination);
     ctxRef.current = ctx;
     masterRef.current = master;
     live.current = true;
 
-    // Air: one-pole lowpassed noise as a soft bed..
+    // Air: one-pole lowpassed noise as a soft bed
     const noise = ctx.createBufferSource();
     const len = Math.floor(ctx.sampleRate * 2);
     const buf = ctx.createBuffer(1, len, ctx.sampleRate);
@@ -59,7 +65,7 @@ export function AmbienceToggle({ className }: { className?: string }) {
     air.type = "lowpass";
     air.frequency.value = 380;
     const airGain = ctx.createGain();
-    airGain.gain.value = 0.016;
+    airGain.gain.value = 0.03;
     noise.connect(air);
     air.connect(airGain);
     airGain.connect(master);
@@ -82,8 +88,8 @@ export function AmbienceToggle({ className }: { className?: string }) {
         osc.frequency.value = f;
         const at = t0 + Math.random() * 0.18;
         g.gain.setValueAtTime(0, at);
-        g.gain.linearRampToValueAtTime(0.025, at + 0.012);
-        g.gain.exponentialRampToValueAtTime(0.0002, at + 0.6 + Math.random() * 1.8);
+        g.gain.linearRampToValueAtTime(0.09, at + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0004, at + 0.6 + Math.random() * 1.8);
         osc.connect(g);
         g.connect(master);
         osc.start(at);
@@ -106,7 +112,7 @@ export function AmbienceToggle({ className }: { className?: string }) {
         osc.frequency.setValueAtTime(f0, t);
         osc.frequency.exponentialRampToValueAtTime(f0 * 1.3, t + 0.07);
         g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.01, t + 0.01);
+        g.gain.linearRampToValueAtTime(0.035, t + 0.01);
         g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
         osc.connect(bp);
         bp.connect(g);
