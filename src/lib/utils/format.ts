@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const DEFAULT_CURRENCY = "EGP";
+export const DEFAULT_CURRENCY = "EGP";
 const formatters = new Map<string, Intl.NumberFormat>();
 
 /**

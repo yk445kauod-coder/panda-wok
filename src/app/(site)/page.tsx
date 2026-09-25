@@ -38,7 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: {
       absolute: t("home.metaTitle", {
         brand: settings.brand.name,
-        city: settings.brand.city,
+        tagline: settings.brand.tagline,
       }),
     },
     description: t("home.metaDescription", {

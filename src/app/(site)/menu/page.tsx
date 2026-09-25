@@ -11,6 +11,7 @@ import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import { getLocale, getT } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/config";
 import { localiseCategory } from "@/lib/i18n/catalog";
+import { DEFAULT_CURRENCY } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,12 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getT(locale);
   const brand = restaurant?.name_en ?? "Panda Wok";
   return buildMetadata({
-    title: t("menu.metaTitle"),
-    description: t("menu.metaDescription", { brand }),
+    title: t("menu.metaTitle", { brand }),
+    description: t("menu.metaDescription", {
+      brand,
+      currency: DEFAULT_CURRENCY,
+      city: restaurant?.city ?? "Alexandria",
+    }),
     path: "/menu",
     keywords:
       locale === "ar"

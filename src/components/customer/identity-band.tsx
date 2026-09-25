@@ -44,7 +44,7 @@ export function IdentityBand({
       <div className="relative mx-auto max-w-6xl px-4 py-12 sm:py-16">
         <Reveal>
           <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-miso-300">
-            {t("home.identitySig", { brand, city })}
+            {t("home.identitySig", { brand, city, cuisine: tags.slice(0, 3).join(" · ") })}
           </p>
           <h2
             id="identity-heading"
