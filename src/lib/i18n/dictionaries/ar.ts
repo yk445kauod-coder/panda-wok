@@ -894,6 +894,11 @@ export const ar: Dictionary = {
     refunded: "مُسترد",
   },
 
+  sound: {
+    on: "الصوت مفعّل — اضغط للكتم",
+    off: "الصوت مكتوم — اضغط للتفعيل",
+  },
+
   flags: {
     new: "جديد",
     bronze: "برونزي",

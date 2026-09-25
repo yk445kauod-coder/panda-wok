@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { SoundToggle } from "@/components/layout/sound-toggle";
 import { MobileFooterSections, FooterSocial } from "@/components/layout/mobile-footer";
 import { sortSocialEntries } from "@/components/icons/social";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -78,6 +79,7 @@ export async function SiteHeader({
           <DesktopNav flags={flags} t={t} />
 
           <div className="flex items-center gap-2">
+            <SoundToggle />
             <LanguageSwitcher current={locale} />
             {flags.ordering !== false ? (
               <Link
@@ -164,6 +166,7 @@ export async function SiteFooter({
           </p>
           <div className="mt-3 flex items-center gap-2">
             <LanguageSwitcher current={locale} variant="labelled" />
+            <SoundToggle />
           </div>
         </div>
 

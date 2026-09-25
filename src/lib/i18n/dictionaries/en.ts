@@ -908,6 +908,11 @@ export const en = {
     refunded: "Refunded",
   },
 
+  sound: {
+    on: "Sound on — tap to mute",
+    off: "Sound off — tap to enable",
+  },
+
   flags: {
     new: "New",
     bronze: "Bronze",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, Minus, Plus, ShoppingBag } from "lucide-react";
 import { Badge, Button } from "@/components/ui/button";
 import { useCart } from "@/components/customer/cart-provider";
+import { useSound } from "@/components/sound-provider";
 import { useT } from "@/components/i18n-provider";
 import { trackEvent } from "@/components/customer/analytics-beacon";
 import { formatPrice } from "@/lib/utils/format";
@@ -31,6 +32,7 @@ export function AddToCartPanel({
 }) {
   const t = useT();
   const { add, lines, hydrated } = useCart();
+  const { play } = useSound();
   const [quantity, setQuantity] = useState(1);
   const [overrides, setOverrides] = useState<Record<string, string[]>>({});
   const [atLimit, setAtLimit] = useState<string | null>(null);
@@ -139,6 +141,7 @@ export function AddToCartPanel({
     setJustAdded(true);
     setQuantity(1);
     setNotes("");
+    play("add");
     setTimeout(() => setJustAdded(false), 2200);
   }
 
