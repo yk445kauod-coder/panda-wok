@@ -109,7 +109,7 @@ export default async function AdminBroadcastPage({
                 </div>
                 <a
                   href={`/admin/broadcast?segment=${segment.segment}`}
-                  className="mt-2 inline-block text-xs font-medium text-plum-600 hover:text-plum-700"
+                  className="mt-2 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-700"
                 >
                   Compose for this segment
                 </a>

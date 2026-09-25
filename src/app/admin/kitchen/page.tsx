@@ -28,8 +28,8 @@ export default async function KitchenPage() {
       title: "New tickets",
       hint: "Accept, then start cooking",
       orders: fresh,
-      accent: "border-t-plum-600",
-      tone: "plum" as const,
+      accent: "border-t-indigo-600",
+      tone: "indigo" as const,
     },
     {
       key: "cooking",
@@ -86,7 +86,7 @@ export default async function KitchenPage() {
           <p
             className={cn(
               "mt-1 font-display text-3xl font-semibold tabular-nums",
-              activeCount > 0 ? "text-plum-600" : "text-ink-900",
+              activeCount > 0 ? "text-indigo-600" : "text-ink-900",
             )}
           >
             {activeCount}
@@ -158,7 +158,7 @@ export default async function KitchenPage() {
                       <div className="flex items-center justify-between gap-2">
                         <Link
                           href={`/admin/orders/${order.id}`}
-                          className="font-display text-sm font-semibold text-ink-900 hover:text-plum-600"
+                          className="font-display text-sm font-semibold text-ink-900 hover:text-indigo-600"
                         >
                           #{order.order_number}
                         </Link>

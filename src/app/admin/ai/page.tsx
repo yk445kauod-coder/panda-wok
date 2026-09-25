@@ -66,7 +66,7 @@ export default async function AdminAiPage() {
           <ChainStep
             step="1"
             title="Primary"
-            tone="plum"
+            tone="indigo"
             name={
               enabledProvider
                 ? `${enabledProvider.name}${enabledProvider.model ? ` · ${enabledProvider.model}` : ""}`
@@ -118,7 +118,7 @@ export default async function AdminAiPage() {
           </div>
           <a
             href="/admin/ai/usage"
-            className="text-xs font-medium text-plum-600 hover:text-plum-700"
+            className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
           >
             Full usage &amp; logs
           </a>
@@ -345,7 +345,7 @@ function ChainStep({
   name: string | null;
   emptyLabel: string;
   note: string;
-  tone: "plum" | "info" | "success";
+  tone: "indigo" | "info" | "success";
   always?: boolean;
 }) {
   return (

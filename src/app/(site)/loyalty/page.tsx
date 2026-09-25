@@ -91,7 +91,7 @@ export default async function LoyaltyPage() {
           <div className="mt-4 flex gap-3">
             <Link
               href="/auth/sign-up?next=%2Floyalty"
-              className="inline-flex h-11 items-center rounded-xl bg-plum-600 px-5 text-sm font-medium text-rice-50 hover:bg-plum-700"
+              className="inline-flex h-11 items-center rounded-xl bg-indigo-600 px-5 text-sm font-medium text-rice-50 hover:bg-indigo-700"
             >
               {t("common.createAccount")}
             </Link>
@@ -126,7 +126,7 @@ export default async function LoyaltyPage() {
                   })}
                 </p>
               </div>
-              <Badge tone="plum">
+              <Badge tone="indigo">
                 <Award className="size-3.5" aria-hidden="true" />
                 {tierLabel(account?.tier ?? "bronze", locale)}
               </Badge>
@@ -170,7 +170,7 @@ export default async function LoyaltyPage() {
                   className="mt-2 h-2.5 overflow-hidden rounded-full bg-ink-900/10"
                 >
                   <div
-                    className="h-full rounded-full bg-plum-600 transition-[width] duration-700"
+                    className="h-full rounded-full bg-indigo-600 transition-[width] duration-700"
                     style={{ width: `${overview.progressPercent}%` }}
                   />
                 </div>
@@ -189,7 +189,7 @@ export default async function LoyaltyPage() {
               id="rewards-heading"
               className="flex items-center gap-1.5 text-lg font-semibold text-ink-900"
             >
-              <Gift className="size-4 text-plum-600" aria-hidden="true" />
+              <Gift className="size-4 text-indigo-600" aria-hidden="true" />
               {t("loyalty.rewardsHeading")}
             </h2>
 

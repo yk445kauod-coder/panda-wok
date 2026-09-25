@@ -151,7 +151,7 @@ export function AddToCartPanel({
         <p className="mt-1 text-xs text-ink-700/80">{t("addToCart.unavailableBody")}</p>
         <Link
           href="/menu"
-          className="mt-3 inline-block text-sm font-medium text-plum-600 hover:text-plum-700"
+          className="mt-3 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700"
         >
           {t("addToCart.browseRest")}
         </Link>
@@ -202,7 +202,7 @@ export function AddToCartPanel({
                         onChange={() =>
                           toggleOption(group.id, option.id, group.max_select)
                         }
-                        className="size-4 accent-plum-600 disabled:opacity-50"
+                        className="size-4 accent-indigo-600 disabled:opacity-50"
                       />
                       <span className="text-sm text-ink-900">{localName(option)}</span>
                     </span>

@@ -123,7 +123,7 @@ export function PageContentList({ rows }: { rows: ContentRow[] }) {
                 <span className="text-sm font-semibold text-ink-900">
                   {row.page_key} · {row.section_key}
                 </span>
-                <Badge tone={row.locale === "ar" ? "plum" : "info"}>
+                <Badge tone={row.locale === "ar" ? "indigo" : "info"}>
                   {row.locale === "ar" ? "AR" : "EN"}
                 </Badge>
                 {row.is_published ? (
@@ -214,7 +214,7 @@ export function FaqList({ rows }: { rows: FaqRow[] }) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-ink-900">{row.question}</span>
-                <Badge tone={row.locale === "ar" ? "plum" : "info"}>
+                <Badge tone={row.locale === "ar" ? "indigo" : "info"}>
                   {row.locale === "ar" ? "AR" : "EN"}
                 </Badge>
                 {row.is_published ? null : <Badge tone="warning">Draft</Badge>}
@@ -315,7 +315,7 @@ export function DeliveryZoneList({ rows }: { rows: ZoneRow[] }) {
                 ) : (
                   <Badge tone="neutral">Off</Badge>
                 )}
-                <Badge tone="plum">Fee {row.fee}</Badge>
+                <Badge tone="indigo">Fee {row.fee}</Badge>
               </div>
               <p className="mt-0.5 text-xs text-ink-700/75">
                 {row.areas.length > 0 ? row.areas.join(" · ") : "No areas listed"}
@@ -384,7 +384,7 @@ export function AnnouncementForm({ row }: { row: AnnouncementRow | null }) {
             <option value="info">Info</option>
             <option value="success">Success</option>
             <option value="warning">Warning</option>
-            <option value="plum">Plum</option>
+            <option value="indigo">Plum</option>
           </select>
         </div>
       </div>
@@ -434,7 +434,7 @@ export function AnnouncementList({ rows }: { rows: AnnouncementRow[] }) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-ink-900">{row.message}</span>
-                <Badge tone={row.locale === "ar" ? "plum" : "info"}>
+                <Badge tone={row.locale === "ar" ? "indigo" : "info"}>
                   {row.locale === "ar" ? "AR" : "EN"}
                 </Badge>
                 <Badge tone="neutral">{row.tone}</Badge>

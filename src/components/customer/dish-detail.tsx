@@ -118,11 +118,11 @@ export function DishDetail({
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/menu/${dish.categories?.slug ?? ""}`}
-              className="text-sm font-medium text-plum-600 hover:text-plum-700"
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
             >
               {categoryName}
             </Link>
-            {dish.is_featured ? <Badge tone="plum">{t("dish.chefPick")}</Badge> : null}
+            {dish.is_featured ? <Badge tone="indigo">{t("dish.chefPick")}</Badge> : null}
             {unavailable ? <Badge tone="danger">{t("dish.soldOut")}</Badge> : null}
           </div>
 

@@ -85,7 +85,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
               </span>
             ) : null}
             {!item.is_available ? <Badge tone="danger">Hidden</Badge> : null}
-            {item.is_featured ? <Badge tone="plum">Featured</Badge> : null}
+            {item.is_featured ? <Badge tone="indigo">Featured</Badge> : null}
             {item.has_transparent_png ? <Badge tone="info">Transparent PNG</Badge> : null}
           </div>
 
@@ -104,7 +104,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
                 checked={item.is_available}
                 disabled={busy !== null}
                 onChange={(event) => toggle("is_available", event.target.checked)}
-                className="size-3.5 accent-plum-600"
+                className="size-3.5 accent-indigo-600"
               />
               {busy === "is_available" ? "Saving…" : "Orderable"}
             </label>
@@ -115,7 +115,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
                 checked={item.is_featured}
                 disabled={busy !== null}
                 onChange={(event) => toggle("is_featured", event.target.checked)}
-                className="size-3.5 accent-plum-600"
+                className="size-3.5 accent-indigo-600"
               />
               <Star className="size-3" aria-hidden="true" />
               {busy === "is_featured" ? "Saving…" : "Featured"}
@@ -127,7 +127,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
                 checked={item.has_transparent_png}
                 disabled={busy !== null}
                 onChange={(event) => toggle("has_transparent_png", event.target.checked)}
-                className="size-3.5 accent-plum-600"
+                className="size-3.5 accent-indigo-600"
               />
               {busy === "has_transparent_png" ? "Saving…" : "Transparent PNG"}
             </label>

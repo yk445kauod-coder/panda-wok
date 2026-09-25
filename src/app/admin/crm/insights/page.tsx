@@ -71,7 +71,7 @@ export default async function AdminInsightsPage({
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-medium",
                   days === option
-                    ? "border-plum-600 bg-plum-600 text-rice-50"
+                    ? "border-indigo-600 bg-indigo-600 text-rice-50"
                     : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
                 )}
               >

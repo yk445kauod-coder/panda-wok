@@ -24,6 +24,7 @@ import { LeafField2D } from "@/components/customer/leaf-field-2d";
 import { BRAND_LOGO_URL, BRAND_SCRIPT_MARK } from "@/lib/brand";
 import { BrandBanner } from "@/components/customer/brand-banner";
 import { getLocale, getT } from "@/lib/i18n/server";
+import { brandDescription, brandTagline } from "@/lib/i18n/brand";
 import type { T } from "@/lib/i18n/server";
 import { localiseCategory } from "@/lib/i18n/catalog";
 
@@ -49,11 +50,9 @@ export async function generateMetadata(): Promise<Metadata> {
     }),
     path: "/",
     keywords: [
-      "Panda Wok",
-      `Asian food ${settings.brand.city}`,
-      `ramen delivery ${settings.brand.city}`,
-      "cloud kitchen Egypt",
-      "sushi Alexandria",
+      settings.brand.name,
+      `food delivery ${settings.brand.city}`,
+      `cloud kitchen ${settings.brand.city}`,
     ],
     siteName: settings.brand.name,
     locale,
@@ -74,6 +73,12 @@ export default async function HomePage() {
   const brand = restaurant?.name_en ?? settings.brand.name;
   const currency = restaurant?.currency ?? "EGP";
   const categoryById = new Map(categories.map((c) => [c.id, c]));
+
+  // A section is only worth a card if it holds at least one dish. Showing empty
+  // sections invites a tap that lands on a blank page, which reads as broken.
+  const visibleCategories = categories.filter((category) =>
+    menu.items.some((item) => item.category_id === category.id),
+  );
 
   // The live cuisine tags are the honest description of the kitchen ("Japanese-
   // inspired", "Chinese-inspired", …). They are shown verbatim rather than
@@ -99,7 +104,7 @@ export default async function HomePage() {
 
   const structured = menuSchema({
     name: `${brand} menu`,
-    description: `${brand} serves Asian-inspired wok, ramen and sushi cooked to order in ${settings.brand.city}.`,
+    description: brandDescription(restaurant, locale, settings.brand.tagline),
     url: "/menu",
     items: menuItems,
   });
@@ -108,7 +113,7 @@ export default async function HomePage() {
     <>
       <Hero
         brand={brand}
-        tagline={restaurant?.tagline_en ?? settings.brand.tagline}
+        tagline={brandTagline(restaurant, locale, settings.brand.tagline)}
         cuisine={cuisineIdentity}
         city={settings.brand.city}
         etaMinutes={settings.ordering.etaMinutes}
@@ -120,7 +125,13 @@ export default async function HomePage() {
         t={t}
       />
 
-      <IdentityBand brand={brand} city={settings.brand.city} locale={locale} t={t} />
+      <IdentityBand
+        brand={brand}
+        city={settings.brand.city}
+        cuisineTags={restaurant?.cuisine_tags ?? []}
+        locale={locale}
+        t={t}
+      />
 
       {featured.length > 0 ? (
         <section aria-labelledby="featured-heading" className="mx-auto max-w-6xl px-4 py-10">
@@ -137,7 +148,7 @@ export default async function HomePage() {
               </div>
               <Link
                 href="/menu"
-                className="hidden shrink-0 items-center gap-1.5 text-sm font-medium text-plum-600 hover:text-plum-700 sm:inline-flex"
+                className="hidden shrink-0 items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 sm:inline-flex"
               >
                 {t("home.fullMenu")} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
               </Link>
@@ -146,20 +157,14 @@ export default async function HomePage() {
           </Reveal>
         </section>
       ) : null}
-      <section aria-labelledby="categories-heading" className="mx-auto max-w-6xl px-4 py-6">
-        <Reveal>
-          <h2 id="categories-heading" className="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">
-            {t("home.browseBySection")}
-          </h2>
-          {categories.length === 0 ? (
-            <EmptyState
-              className="mt-4"
-              title={t("home.sectionEmptyTitle")}
-              description={t("home.sectionEmptyBody")}
-            />
-          ) : (
+      {visibleCategories.length > 0 ? (
+        <section aria-labelledby="categories-heading" className="mx-auto max-w-6xl px-4 py-6">
+          <Reveal>
+            <h2 id="categories-heading" className="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">
+              {t("home.browseBySection")}
+            </h2>
             <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-              {categories.map((category, index) => {
+              {visibleCategories.map((category, index) => {
                 const local = localiseCategory(category, locale);
                 const count = menu.items.filter((i) => i.category_id === category.id).length;
                 return (
@@ -184,9 +189,9 @@ export default async function HomePage() {
                 );
               })}
             </ul>
-          )}
-        </Reveal>
-      </section>
+          </Reveal>
+        </section>
+      ) : null}
 
       {menu.items.length > 0 ? (
         <section aria-labelledby="popular-heading" className="mx-auto max-w-6xl px-4 py-10">
@@ -215,7 +220,7 @@ export default async function HomePage() {
           <div className="mt-6 flex justify-center">
             <Link
               href="/menu"
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-plum-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-plum-700 sm:w-auto"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-indigo-700 sm:w-auto"
             >
               {t("home.seeWholeMenu")} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
             </Link>
@@ -229,7 +234,7 @@ export default async function HomePage() {
             action={
               <Link
                 href="/contact"
-                className="text-sm font-medium text-plum-600 hover:text-plum-700"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
               >
                 {t("common.contactKitchen")}
               </Link>
@@ -241,7 +246,7 @@ export default async function HomePage() {
       <BrandBanner
         brand={brand}
         city={settings.brand.city}
-        tagline={settings.brand.tagline}
+        tagline={brandTagline(restaurant, locale, settings.brand.tagline)}
         cuisine={cuisineIdentity}
         logoUrl={settings.brand.logo_url}
         contact={settings.support}
@@ -290,10 +295,14 @@ function Hero({
         className="pointer-events-none absolute -end-16 -top-20 size-64 rounded-full bg-miso-300/25 blur-2xl"
       />
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
         <div>
+          {/* Phones get the mark first, at the top of the page. On desktop the
+              ringed plate on the right carries it instead. */}
+          <MobileHeroMark logoUrl={logoUrl} brand={brand} />
+
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="plum">{t("home.cloudKitchen")}</Badge>
+            <Badge tone="indigo">{t("home.cloudKitchen")}</Badge>
             <Badge tone="info">{city}</Badge>
             <Badge tone={acceptingOrders ? "success" : "warning"}>
               {acceptingOrders ? t("home.acceptingOrders") : t("home.closedForOrders")}
@@ -301,7 +310,7 @@ function Hero({
           </div>
 
           <p
-            className="font-kana mt-5 text-sm font-semibold tracking-[0.35em] text-plum-700"
+            className="font-kana mt-5 text-sm font-semibold tracking-[0.35em] text-indigo-700"
             aria-hidden="true"
           >
             {BRAND_SCRIPT_MARK}
@@ -319,7 +328,7 @@ function Hero({
 
           {cuisine ? (
             <p
-              className="mt-4 text-sm font-medium text-plum-700"
+              className="mt-4 text-sm font-medium text-indigo-700"
               aria-label={cuisine}
             >
               {cuisine}
@@ -347,7 +356,7 @@ function Hero({
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/menu"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-plum-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-plum-700"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-indigo-700"
             >
               {hasMenu ? t("home.startOrder") : t("home.viewMenu")}
               <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
@@ -364,6 +373,37 @@ function Hero({
         <BambooPlate logoUrl={logoUrl} brand={brand} />
       </div>
     </section>
+  );
+}
+
+/**
+ * The mark at the top of the phone layout.
+ *
+ * On desktop the logo sits in a large ringed plate to the right of the copy; on
+ * a phone there is no room for that, and the logo previously did not appear on
+ * the home page at all. This puts it first, above the badges, at a size that
+ * reads as a brand mark rather than a favicon — with the logo's own colours on
+ * the rice ground, no forced recolouring.
+ */
+function MobileHeroMark({ logoUrl, brand }: { logoUrl: string; brand: string }) {
+  return (
+    <div className="mb-5 flex items-center gap-3 lg:hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`${logoUrl}?tr=w-160,h-160,f-jpg`}
+        alt={brand}
+        width={160}
+        height={160}
+        className="size-14 rounded-2xl object-contain"
+      />
+      <span
+        aria-hidden="true"
+        className="h-10 w-px bg-gradient-to-b from-transparent via-ink-900/20 to-transparent"
+      />
+      <span className="font-display text-xl font-semibold tracking-tight text-ink-900">
+        {brand}
+      </span>
+    </div>
   );
 }
 

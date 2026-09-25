@@ -55,7 +55,7 @@ export default async function AdminChatPage({
           </p>
         </div>
         {unreadTotal > 0 ? (
-          <Badge tone="plum">{unreadTotal} unread across this view</Badge>
+          <Badge tone="indigo">{unreadTotal} unread across this view</Badge>
         ) : (
           <Badge tone="success">Nothing unread here</Badge>
         )}
@@ -72,7 +72,7 @@ export default async function AdminChatPage({
               className={cn(
                 "shrink-0 rounded-full border px-3.5 py-2 text-xs font-medium",
                 active
-                  ? "border-plum-600 bg-plum-600 text-rice-50"
+                  ? "border-indigo-600 bg-indigo-600 text-rice-50"
                   : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
               )}
             >
@@ -97,12 +97,12 @@ export default async function AdminChatPage({
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
                       href={`/admin/chat/${row.id}`}
-                      className="font-display text-base font-semibold text-ink-900 hover:text-plum-600"
+                      className="font-display text-base font-semibold text-ink-900 hover:text-indigo-600"
                     >
                       {row.subject?.trim() || "Conversation"}
                     </Link>
                     {row.staff_unread > 0 ? (
-                      <Badge tone="plum">{row.staff_unread} unread</Badge>
+                      <Badge tone="indigo">{row.staff_unread} unread</Badge>
                     ) : null}
                     <Badge
                       tone={
@@ -142,7 +142,7 @@ export default async function AdminChatPage({
                 <div className="flex shrink-0 flex-col items-end gap-2">
                   <Link
                     href={`/admin/chat/${row.id}`}
-                    className="rounded-lg bg-plum-600 px-3 py-1.5 text-xs font-medium text-rice-50 hover:bg-plum-700"
+                    className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-rice-50 hover:bg-indigo-700"
                   >
                     Open thread
                   </Link>

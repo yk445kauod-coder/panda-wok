@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
-import { AmbienceToggle } from "@/components/layout/ambience-sound";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
-import { socialIcon, socialLabel, sortSocialEntries } from "@/components/icons/social";
+import { MobileFooterSections, FooterSocial } from "@/components/layout/mobile-footer";
+import { sortSocialEntries } from "@/components/icons/social";
 import { getLocale, getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/server";
 
@@ -56,7 +56,7 @@ export async function SiteHeader({
     <>
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-plum-600 focus:px-3 focus:py-2 focus:text-sm focus:text-rice-50"
+        className="sr-only focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-sm focus:text-rice-50"
       >
         {t("common.skipToContent")}
       </a>
@@ -79,11 +79,10 @@ export async function SiteHeader({
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher current={locale} />
-            <AmbienceToggle />
             {flags.ordering !== false ? (
               <Link
                 href="/cart"
-                className="hidden rounded-lg bg-plum-600 px-3.5 py-2 text-sm font-medium text-rice-50 transition-colors hover:bg-plum-700 md:inline-flex"
+                className="hidden rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-rice-50 transition-colors hover:bg-indigo-700 md:inline-flex"
               >
                 {t("nav.basket")}
               </Link>
@@ -126,9 +125,37 @@ export async function SiteFooter({
     ? `https://wa.me/${contact.whatsapp.replace(/\D/g, "").replace(/^0/, "20")}`
     : null;
 
+  // Built once and rendered twice: as an accordion on phones, as plain columns
+  // from `sm` up. The data is identical, only the disclosure differs.
+  const sections = [
+    {
+      key: "explore",
+      heading: t("footer.explore"),
+      links: [
+        { href: "/menu", label: t("nav.menu") },
+        { href: "/about", label: t("nav.about") },
+        { href: "/location", label: t("nav.location") },
+        { href: "/faq", label: t("nav.faq") },
+        { href: "/loyalty", label: t("nav.loyalty") },
+        { href: "/feedback", label: t("nav.feedback") },
+      ],
+    },
+    {
+      key: "account",
+      heading: t("footer.account"),
+      links: [
+        { href: "/account", label: t("nav.account") },
+        { href: "/orders", label: t("nav.orderTracking") },
+        { href: "/cart", label: t("nav.basket") },
+        { href: "/contact", label: t("nav.contact") },
+        { href: "/privacy-policy", label: t("nav.privacy") },
+      ],
+    },
+  ];
+
   return (
     <footer className="mt-12 border-t border-ink-900/10 bg-rice-50/70">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-2 sm:gap-8 sm:py-10 lg:grid-cols-4">
         <div className="sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2">
             <BrandLogo brand={brand} className="size-9" />
@@ -140,32 +167,30 @@ export async function SiteFooter({
           </p>
           <div className="mt-3 flex items-center gap-2">
             <LanguageSwitcher current={locale} variant="labelled" />
-            <AmbienceToggle />
           </div>
         </div>
 
-        <nav aria-label={t("footer.explore")}>
-          <h2 className="text-sm font-semibold text-ink-900">{t("footer.explore")}</h2>
-          <ul className="mt-3 space-y-2 text-sm text-ink-700/85">
-            <li><Link className="hover:text-ink-900" href="/menu">{t("nav.menu")}</Link></li>
-            <li><Link className="hover:text-ink-900" href="/about">{t("nav.about")}</Link></li>
-            <li><Link className="hover:text-ink-900" href="/location">{t("nav.location")}</Link></li>
-            <li><Link className="hover:text-ink-900" href="/faq">{t("nav.faq")}</Link></li>
-            <li><Link className="hover:text-ink-900" href="/loyalty">{t("nav.loyalty")}</Link></li>
-            <li><Link className="hover:text-ink-900" href="/feedback">{t("nav.feedback")}</Link></li>
-          </ul>
-        </nav>
+        {/* Phones: collapsible. Desktop: the two columns as before. */}
+        <MobileFooterSections
+          sections={sections}
+          brandName={brand.name}
+          className="sm:hidden"
+        />
 
-        <nav aria-label={t("footer.account")}>
-          <h2 className="text-sm font-semibold text-ink-900">{t("footer.account")}</h2>
-          <ul className="mt-3 space-y-2 text-sm text-ink-700/85">
-            <li><Link className="hover:text-ink-900" href="/account">{t("nav.account")}</Link></li>
-            <li><Link className="hover:text-ink-900" href="/orders">{t("nav.orderTracking")}</Link></li>
-            <li><Link className="hover:text-ink-900" href="/cart">{t("nav.basket")}</Link></li>
-            <li><Link className="hover:text-ink-900" href="/contact">{t("nav.contact")}</Link></li>
-            <li><Link className="hover:text-ink-900" href="/privacy-policy">{t("nav.privacy")}</Link></li>
-          </ul>
-        </nav>
+        {sections.map((section) => (
+          <nav key={section.key} aria-label={section.heading} className="hidden sm:block">
+            <h2 className="text-sm font-semibold text-ink-900">{section.heading}</h2>
+            <ul className="mt-3 space-y-2 text-sm text-ink-700/85">
+              {section.links.map((link) => (
+                <li key={link.href}>
+                  <Link className="hover:text-ink-900" href={link.href}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
 
         <div>
           <h2 className="text-sm font-semibold text-ink-900">{t("footer.reachKitchen")}</h2>
@@ -201,26 +226,7 @@ export async function SiteFooter({
           {socialEntries.length > 0 ? (
             <div className="mt-4">
               <h2 className="text-sm font-semibold text-ink-900">{t("footer.followUs")}</h2>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {socialEntries.map(([key, url]) => {
-                  const Icon = socialIcon(key);
-                  const label = socialLabel(t, key);
-                  return (
-                    <li key={key}>
-                      <a
-                        href={url}
-                        rel="noopener noreferrer me"
-                        target="_blank"
-                        aria-label={label}
-                        title={label}
-                        className="inline-flex size-9 items-center justify-center rounded-lg border border-ink-900/12 text-ink-700 transition-colors hover:border-plum-600/40 hover:bg-plum-600/8 hover:text-plum-700"
-                      >
-                        <Icon className="size-4" />
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
+              <FooterSocial social={contact.social} className="mt-3 flex flex-wrap gap-2" />
             </div>
           ) : null}
 

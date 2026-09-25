@@ -25,12 +25,11 @@ export async function generateMetadata(): Promise<Metadata> {
     path: "/menu",
     keywords:
       locale === "ar"
-        ? ["قائمة باندا ووك", "طعام آسيوي الإسكندرية", "سوشي الإسكندرية", "رامن توصيل"]
+        ? ["قائمة باندا ووك", "مطبخ سحابي الإسكندرية", "توصيل طعام الإسكندرية"]
         : [
             "Panda Wok menu",
-            "Alexandria Asian menu",
-            "ramen price Egypt",
-            "sushi delivery Alexandria",
+            "cloud kitchen Alexandria",
+            "food delivery Alexandria",
           ],
     siteName: brand,
     locale,
@@ -166,7 +165,7 @@ export default async function MenuPage({
             isFiltered ? (
               <Link
                 href="/menu"
-                className="text-sm font-medium text-plum-600 hover:text-plum-700"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
               >
                 {t("menu.clearFilters")}
               </Link>
@@ -226,7 +225,7 @@ export default async function MenuPage({
                   </div>
                   <Link
                     href={`/menu/${category.slug}`}
-                    className="shrink-0 text-sm font-medium text-plum-600 hover:text-plum-700"
+                    className="shrink-0 text-sm font-medium text-indigo-600 hover:text-indigo-700"
                   >
                     {t("menu.sectionPage")}
                   </Link>

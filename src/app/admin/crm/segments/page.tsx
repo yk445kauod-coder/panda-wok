@@ -83,7 +83,7 @@ export default async function AdminSegmentsPage() {
                 <div className="mt-2">
                   <div className="h-1.5 overflow-hidden rounded-full bg-rice-200">
                     <div
-                      className="h-full rounded-full bg-plum-500"
+                      className="h-full rounded-full bg-indigo-500"
                       style={{ width: `${Math.max(1, share)}%` }}
                     />
                   </div>

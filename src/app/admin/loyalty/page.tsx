@@ -81,7 +81,7 @@ export default async function AdminLoyaltyPage({
             programme can be retuned without a deployment.
           </p>
         </div>
-        <Badge tone="plum">{formatNumber(pointsOutstanding)} points outstanding</Badge>
+        <Badge tone="indigo">{formatNumber(pointsOutstanding)} points outstanding</Badge>
       </header>
 
       <section aria-label="Loyalty summary" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -128,7 +128,7 @@ export default async function AdminLoyaltyPage({
         </h2>
         <p className="mt-1 text-xs text-ink-700/70">
           These are the live values the order pipeline reads. Edit them in{" "}
-          <a href="/admin/settings" className="font-medium text-plum-600 hover:text-plum-700">
+          <a href="/admin/settings" className="font-medium text-indigo-600 hover:text-indigo-700">
             Settings
           </a>
           .
@@ -186,7 +186,7 @@ export default async function AdminLoyaltyPage({
                     ) : (
                       <Badge tone="neutral">Disabled</Badge>
                     )}
-                    <Badge tone="plum">{formatNumber(reward.points_cost)} pts</Badge>
+                    <Badge tone="indigo">{formatNumber(reward.points_cost)} pts</Badge>
                   </div>
                   <p className="mt-1 text-xs text-ink-700/70">
                     {humanise(reward.kind)} · value {reward.value}

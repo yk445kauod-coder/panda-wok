@@ -89,7 +89,7 @@ export function ForgotPasswordForm() {
           placeholder={t("auth.signIn.identifierPlaceholder")}
           required
           aria-invalid={Boolean(fields.identifier)}
-          className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3.5 text-base text-ink-900 outline-none transition focus:border-plum-500 focus:ring-2 focus:ring-plum-500/20"
+          className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3.5 text-base text-ink-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
         />
         {fields.identifier ? (
           <p className="mt-1 text-xs text-chili-600">{fields.identifier}</p>
@@ -103,7 +103,7 @@ export function ForgotPasswordForm() {
       <p className="text-center text-sm text-ink-700/70">
         <Link
           href="/auth/sign-in"
-          className="font-medium text-plum-600 hover:text-plum-700"
+          className="font-medium text-indigo-600 hover:text-indigo-700"
         >
           {t("auth.forgot.backToSignIn")}
         </Link>

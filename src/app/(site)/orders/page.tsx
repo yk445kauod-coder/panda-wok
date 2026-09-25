@@ -61,7 +61,7 @@ export default async function OrdersPage() {
           action={
             <Link
               href="/menu"
-              className="inline-flex h-11 items-center rounded-xl bg-plum-600 px-5 text-sm font-medium text-rice-50 hover:bg-plum-700"
+              className="inline-flex h-11 items-center rounded-xl bg-indigo-600 px-5 text-sm font-medium text-rice-50 hover:bg-indigo-700"
             >
               {t("common.browseMenu")}
             </Link>

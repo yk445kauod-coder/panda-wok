@@ -120,12 +120,12 @@ export function SignInForm({ next }: { next: string }) {
       </Button>
 
       <div className="mt-4 flex items-center justify-between text-xs">
-        <Link href="/auth/forgot-password" className="text-plum-600 hover:text-plum-700">
+        <Link href="/auth/forgot-password" className="text-indigo-600 hover:text-indigo-700">
           {t("auth.signIn.forgot")}
         </Link>
         <Link
           href={`/auth/sign-up${next !== "/account" ? `?next=${encodeURIComponent(next)}` : ""}`}
-          className="font-medium text-ink-900 hover:text-plum-600"
+          className="font-medium text-ink-900 hover:text-indigo-600"
         >
           {t("auth.signIn.noAccount")}
         </Link>

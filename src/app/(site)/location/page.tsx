@@ -85,7 +85,7 @@ export default async function LocationPage() {
           id="area-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
         >
-          <MapPin className="size-4 text-plum-600" aria-hidden="true" />
+          <MapPin className="size-4 text-indigo-600" aria-hidden="true" />
           {t("location.areaHeading")}
         </h2>
         <p className="mt-2 text-sm text-ink-700/85">
@@ -124,7 +124,7 @@ export default async function LocationPage() {
           id="delivery-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
         >
-          <Truck className="size-4 text-plum-600" aria-hidden="true" />
+          <Truck className="size-4 text-indigo-600" aria-hidden="true" />
           {t("location.deliveriesHeading")}
         </h2>
         <dl className="mt-3 space-y-1.5 text-sm">
@@ -160,7 +160,7 @@ export default async function LocationPage() {
           id="collection-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
         >
-          <Store className="size-4 text-plum-600" aria-hidden="true" />
+          <Store className="size-4 text-indigo-600" aria-hidden="true" />
           {t("location.collectionHeading")}
         </h2>
         <p className="mt-2 text-sm text-ink-700/85">{t("location.collectionBody")}</p>
@@ -169,7 +169,7 @@ export default async function LocationPage() {
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
         <Link
           href="/menu"
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-plum-600 px-6 font-medium text-rice-50 hover:bg-plum-700 sm:flex-1"
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 hover:bg-indigo-700 sm:flex-1"
         >
           {t("location.startOrder")}
         </Link>

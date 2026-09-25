@@ -56,7 +56,7 @@ export default async function AdminCrmPage({
             </Link>
             <Link
               href="/admin/crm/insights"
-              className="inline-flex h-11 items-center rounded-xl bg-plum-600 px-4 text-sm text-rice-50 hover:bg-plum-700"
+              className="inline-flex h-11 items-center rounded-xl bg-indigo-600 px-4 text-sm text-rice-50 hover:bg-indigo-700"
             >
               AI insights
             </Link>
@@ -142,7 +142,7 @@ export default async function AdminCrmPage({
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
                         href={`/admin/crm/${customer.user_id}`}
-                        className="font-display text-base font-semibold text-ink-900 hover:text-plum-600"
+                        className="font-display text-base font-semibold text-ink-900 hover:text-indigo-600"
                       >
                         {customer.full_name ?? "Unnamed customer"}
                       </Link>
@@ -152,7 +152,7 @@ export default async function AdminCrmPage({
                         <Badge tone="info">Opted in</Badge>
                       ) : null}
                       {customer.points_balance > 0 ? (
-                        <Badge tone="plum">
+                        <Badge tone="indigo">
                           {humanise(customer.tier)} · {formatNumber(customer.points_balance)} pts
                         </Badge>
                       ) : null}

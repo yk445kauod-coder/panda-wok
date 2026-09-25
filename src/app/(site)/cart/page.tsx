@@ -36,7 +36,7 @@ export default async function CartPage() {
           title={t("cart.paused")}
           description={t("cart.pausedBody")}
           action={
-            <Link href="/contact" className="text-sm font-medium text-plum-600 hover:text-plum-700">
+            <Link href="/contact" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
               {t("common.contactKitchen")}
             </Link>
           }

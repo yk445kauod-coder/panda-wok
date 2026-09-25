@@ -43,12 +43,12 @@ export default async function AdminOverviewPage() {
         <div className="flex items-center gap-2">
           {unread > 0 ? (
             <Link href="/admin/chat">
-              <Badge tone="plum">{unread} unread message{unread === 1 ? "" : "s"}</Badge>
+              <Badge tone="indigo">{unread} unread message{unread === 1 ? "" : "s"}</Badge>
             </Link>
           ) : null}
           <Link
             href="/admin/orders?status=new"
-            className="inline-flex h-10 items-center rounded-xl bg-plum-600 px-4 text-sm font-medium text-rice-50 hover:bg-plum-700"
+            className="inline-flex h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-medium text-rice-50 hover:bg-indigo-700"
           >
             Open the order queue
           </Link>
@@ -60,7 +60,7 @@ export default async function AdminOverviewPage() {
           title="No orders yet in this window"
           description="This is a live view of the database, so it stays empty until real orders arrive. Seed data is never invented for you."
           action={
-            <Link href="/menu" className="text-sm font-medium text-plum-600 hover:text-plum-700">
+            <Link href="/menu" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
               Check the customer site
             </Link>
           }
@@ -117,7 +117,7 @@ export default async function AdminOverviewPage() {
                 <li key={row.status} className="flex items-center justify-between text-sm">
                   <Link
                     href={`/admin/orders?status=${row.status}`}
-                    className="text-ink-800 hover:text-plum-600"
+                    className="text-ink-800 hover:text-indigo-600"
                   >
                     {humanise(row.status)}
                   </Link>
@@ -160,7 +160,7 @@ export default async function AdminOverviewPage() {
               : "Everything is above threshold"
           }
           action={
-            <Link href="/admin/stock" className="text-xs font-medium text-plum-600">
+            <Link href="/admin/stock" className="text-xs font-medium text-indigo-600">
               Manage stock
             </Link>
           }
@@ -245,7 +245,7 @@ export default async function AdminOverviewPage() {
           title="Loyalty"
           subtitle={`${formatNumber(metrics.loyalty.members)} members`}
           action={
-            <Link href="/admin/loyalty" className="text-xs font-medium text-plum-600">
+            <Link href="/admin/loyalty" className="text-xs font-medium text-indigo-600">
               Open loyalty
             </Link>
           }

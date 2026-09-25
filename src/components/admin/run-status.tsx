@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/button";
 import { humanise } from "@/lib/utils/format";
 
-type Tone = "neutral" | "success" | "warning" | "danger" | "info" | "plum";
+type Tone = "neutral" | "success" | "warning" | "danger" | "info";
 
 /**
  * One vocabulary for the long-running job lifecycles (exports, backups,

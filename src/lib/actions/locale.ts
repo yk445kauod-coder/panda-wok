@@ -27,13 +27,24 @@ export async function setLocaleAction(
 
   const session = await getSession();
   if (session) {
-    const supabase = await createServerSupabase();
-    await supabase
-      .from("profiles")
-      .update({ locale })
-      .eq("id", session.user.id);
+    // Mirrored onto the profile so the choice follows the customer to another
+    // device. A failure here must not break the switch: the cookie is already
+    // set and is what actually drives the render.
+    try {
+      const supabase = await createServerSupabase();
+      await supabase.from("profiles").update({ locale }).eq("id", session.user.id);
+    } catch {
+      // Non-fatal: the cookie is authoritative for this browser.
+    }
   }
 
-  revalidatePath("/", "layout");
+  // Clears the server cache for the whole tree. `revalidatePath` only accepts
+  // "/" with the "layout" scope; any other argument throws and would surface as
+  // a failed switch, so the call is guarded.
+  try {
+    revalidatePath("/", "layout");
+  } catch {
+    // The client calls router.refresh() after this action regardless.
+  }
   return actionOk({ locale });
 }

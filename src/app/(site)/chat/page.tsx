@@ -37,7 +37,7 @@ export default async function ChatPage({
           title="Messaging is switched off"
           description="Direct messaging is not available right now. Please use the contact page instead."
           action={
-            <Link href="/contact" className="text-sm font-medium text-plum-600">
+            <Link href="/contact" className="text-sm font-medium text-indigo-600">
               Contact the kitchen
             </Link>
           }
@@ -87,7 +87,7 @@ export default async function ChatPage({
               aria-current={active?.id === conversation.id ? "true" : undefined}
               className={
                 active?.id === conversation.id
-                  ? "shrink-0 rounded-full border border-plum-600 bg-plum-600 px-3.5 py-2 text-xs font-medium text-rice-50"
+                  ? "shrink-0 rounded-full border border-indigo-600 bg-indigo-600 px-3.5 py-2 text-xs font-medium text-rice-50"
                   : "shrink-0 rounded-full border border-ink-900/12 bg-rice-50 px-3.5 py-2 text-xs font-medium text-ink-800 hover:bg-rice-200"
               }
             >
@@ -126,7 +126,7 @@ export default async function ChatPage({
             {active.related_order_id ? (
               <Link
                 href={`/orders/${active.related_order_id}`}
-                className="mt-1 inline-block text-xs font-medium text-plum-600 hover:text-plum-700"
+                className="mt-1 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-700"
               >
                 About an order
               </Link>
@@ -154,7 +154,7 @@ export default async function ChatPage({
           action={
             <Link
               href="/chat?new=1"
-              className="text-sm font-medium text-plum-600 hover:text-plum-700"
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
             >
               Start a conversation
             </Link>

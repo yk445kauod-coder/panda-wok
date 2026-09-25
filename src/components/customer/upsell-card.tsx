@@ -91,7 +91,7 @@ export function UpsellCard({
       <button
         type="button"
         onClick={handleAdd}
-        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-plum-600/25 bg-plum-600/8 px-3 text-xs font-semibold text-plum-600 transition-colors hover:bg-plum-600/15"
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-indigo-600/25 bg-indigo-600/8 px-3 text-xs font-semibold text-indigo-600 transition-colors hover:bg-indigo-600/15"
       >
         {added || inCart ? (
           <>

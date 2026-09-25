@@ -5,41 +5,22 @@ import { ar } from "@/lib/i18n/dictionaries/ar";
 import { BRAND_SCRIPT_MARK } from "@/lib/brand";
 
 /**
- * The script badges on the identity band render 日本 / 中華 in the Shippori
- * Mincho face, which is a Japanese Mincho: it ships Japanese glyph forms. A
- * simplified-Chinese-only character (华, 亚) is absent from its subset, so the
- * browser substitutes a different font for that one glyph and the badge renders
- * half in one typeface and half in another.
+ * The identity band used to render 日本 / 中華 badges from hardcoded dictionary
+ * keys. It is now driven by the kitchen's live `cuisine_tags`, so the script
+ * marks that remain are the shared BRAND_SCRIPT_MARK used by the hero plate and
+ * the closing brand banner.
+ *
+ * The mark renders in the Shippori Mincho face, which is a Japanese Mincho: it
+ * ships Japanese glyph forms. A simplified-Chinese-only character (华, 亚) is
+ * absent from its subset, so the browser substitutes a different font for that
+ * one glyph and the mark renders half in one typeface and half in another.
  *
  * These assertions pin the copy to characters the chosen face actually covers,
  * so the mismatch cannot come back unnoticed.
  */
 const COVERED_BY_MINCHO = new Set(["日", "本", "中", "華"]);
 
-describe("identity script badges", () => {
-  it("renders only glyphs the Japanese display face covers", () => {
-    for (const script of [en.home.identityJapaneseScript, en.home.identityChineseScript]) {
-      const uncovered = [...script].filter((ch) => !COVERED_BY_MINCHO.has(ch));
-      expect(uncovered, `${script} contains glyphs outside the font subset`).toEqual([]);
-    }
-  });
-
-  it("keeps the Japanese badge as the country name in Japanese", () => {
-    expect(en.home.identityJapaneseScript).toBe("日本");
-  });
-
-  it("uses the traditional Chinese form the face ships, not the simplified one", () => {
-    expect(en.home.identityChineseScript).toBe("中華");
-    expect(en.home.identityChineseScript).not.toContain("华");
-  });
-
-  it("uses Arabic country names for the Arabic locale", () => {
-    // Arabic copy is the country name in Arabic; the component tags its `lang`
-    // accordingly so it is not read aloud with a Japanese voice.
-    expect(ar.home.identityJapaneseScript).toBe("اليابان");
-    expect(ar.home.identityChineseScript).toBe("الصين");
-  });
-
+describe("identity script marks", () => {
   it("keeps the hero/banner script mark inside the covered glyph set", () => {
     const uncovered = [...BRAND_SCRIPT_MARK].filter(
       (ch) => !COVERED_BY_MINCHO.has(ch) && ch !== "·" && ch !== " ",
@@ -59,5 +40,23 @@ describe("identity script badges", () => {
       const hardcoded = source.match(/font-kana[^>]*>\s*[\u3000-\u9fff]/);
       expect(hardcoded, `${file} hardcodes a CJK string instead of BRAND_SCRIPT_MARK`).toBeNull();
     }
+  });
+
+  it("drives the identity band from live cuisine tags, not invented copy", () => {
+    const source = readFileSync(
+      new URL("../src/components/customer/identity-band.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(source).toContain("cuisineTags");
+    expect(source).toContain("BRAND_SCRIPT_MARK");
+    // The old hardcoded cuisine claims must not survive in either dictionary.
+    for (const dict of [en, ar]) {
+      expect(dict.home.identityBody).not.toMatch(/sushi counter|Chinese wok|منصة سوشي|الووك الصيني/);
+    }
+  });
+
+  it("keeps the identity heading parameterised by cuisine", () => {
+    expect(en.home.identityHeading).toContain("{cuisine}");
+    expect(ar.home.identityHeading).toContain("{cuisine}");
   });
 });

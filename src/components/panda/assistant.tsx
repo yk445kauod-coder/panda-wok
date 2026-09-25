@@ -220,7 +220,7 @@ export function PandaAssistant({
                   className={cn(
                     "max-w-[85%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
                     turn.role === "user"
-                      ? "ml-auto bg-plum-600 text-rice-50"
+                      ? "ml-auto bg-indigo-600 text-rice-50"
                       : "border border-ink-900/8 bg-rice-100 text-ink-900",
                   )}
                 >

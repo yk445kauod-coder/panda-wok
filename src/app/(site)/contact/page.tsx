@@ -152,7 +152,7 @@ export default async function ContactPage() {
           id="hours-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
         >
-          <Clock className="size-4 text-plum-600" aria-hidden="true" />
+          <Clock className="size-4 text-indigo-600" aria-hidden="true" />
           Opening hours
         </h2>
         {hoursEntries.length === 0 ? (
@@ -179,7 +179,7 @@ export default async function ContactPage() {
           id="area-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
         >
-          <MapPin className="size-4 text-plum-600" aria-hidden="true" />
+          <MapPin className="size-4 text-indigo-600" aria-hidden="true" />
           Where we cook
         </h2>
         <p className="mt-2 text-sm text-ink-700/85">
@@ -239,7 +239,7 @@ export default async function ContactPage() {
             </div>
           ))}
         </dl>
-        <Link href="/faq" className="mt-3 inline-block text-sm font-medium text-plum-700 hover:text-plum-800">
+        <Link href="/faq" className="mt-3 inline-block text-sm font-medium text-indigo-700 hover:text-indigo-800">
           {t("faq.title")} →
         </Link>
       </section>
@@ -247,7 +247,7 @@ export default async function ContactPage() {
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
         <Link
           href="/menu"
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-plum-600 px-6 font-medium text-rice-50 hover:bg-plum-700 sm:flex-1"
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 hover:bg-indigo-700 sm:flex-1"
         >
           Start an order
         </Link>
@@ -286,7 +286,7 @@ function ContactRow({
         {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         className="washi-panel flex items-start gap-3 p-4 transition-shadow hover:shadow-washi-lg"
       >
-        <Icon className="mt-0.5 size-5 shrink-0 text-plum-600" aria-hidden="true" />
+        <Icon className="mt-0.5 size-5 shrink-0 text-indigo-600" aria-hidden="true" />
         <span className="min-w-0">
           <span className="block text-xs font-medium uppercase tracking-wide text-ink-700/70">
             {label}

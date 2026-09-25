@@ -96,7 +96,7 @@ export function SignUpForm({ next }: { next: string }) {
         </p>
         <Link
           href="/auth/sign-in"
-          className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-plum-600 text-sm font-medium text-rice-50 hover:bg-plum-700"
+          className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-indigo-600 text-sm font-medium text-rice-50 hover:bg-indigo-700"
         >
           {t("auth.forgot.backToSignIn")}
         </Link>
@@ -199,7 +199,7 @@ export function SignUpForm({ next }: { next: string }) {
                   className={cn(
                     "rounded-xl border p-3 text-start text-sm font-medium transition-colors",
                     active
-                      ? "border-plum-600 bg-plum-600/8 text-ink-900"
+                      ? "border-indigo-600 bg-indigo-600/8 text-ink-900"
                       : "border-ink-900/12 text-ink-800 hover:bg-rice-200/60",
                   )}
                 >
@@ -221,7 +221,7 @@ export function SignUpForm({ next }: { next: string }) {
         {t("auth.signUp.haveAccount")}{" "}
         <Link
           href={`/auth/sign-in${next !== "/account" ? `?next=${encodeURIComponent(next)}` : ""}`}
-          className="font-medium text-plum-600 hover:text-plum-700"
+          className="font-medium text-indigo-600 hover:text-indigo-700"
         >
           {t("auth.signUp.signIn")}
         </Link>

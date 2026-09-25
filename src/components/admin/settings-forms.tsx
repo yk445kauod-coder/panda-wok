@@ -84,7 +84,7 @@ export function FeatureFlagToggle({ flag }: { flag: FeatureFlagRow }) {
             checked={enabled}
             disabled={pending}
             onChange={(event) => apply(event.target.checked)}
-            className="size-4 accent-plum-600"
+            className="size-4 accent-indigo-600"
           />
           {pending ? "Saving…" : enabled ? "On" : "Off"}
         </label>
@@ -219,7 +219,7 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
                               [setting.key]: event.target.checked ? "true" : "false",
                             }))
                           }
-                          className="size-4 accent-plum-600"
+                          className="size-4 accent-indigo-600"
                         />
                         <span className="text-sm text-ink-800">
                           {value === "true" ? "Enabled" : "Disabled"}

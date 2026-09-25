@@ -166,7 +166,7 @@ export default async function AdminOrderDetailPage({
             {order.customer_phone ? (
               <a
                 href={`tel:${order.customer_phone}`}
-                className="mt-0.5 inline-flex items-center gap-1.5 text-sm text-plum-600 hover:text-plum-700"
+                className="mt-0.5 inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700"
               >
                 <Phone className="size-3.5" aria-hidden="true" />
                 {order.customer_phone}
@@ -248,7 +248,7 @@ export default async function AdminOrderDetailPage({
                   <li key={entry.id} className="flex gap-3 text-sm">
                     <span
                       aria-hidden="true"
-                      className="mt-1.5 size-2 shrink-0 rounded-full bg-plum-600"
+                      className="mt-1.5 size-2 shrink-0 rounded-full bg-indigo-600"
                     />
                     <div>
                       <p className="text-ink-900">

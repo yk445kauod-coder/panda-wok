@@ -2,41 +2,51 @@
 
 /*
  * Panda Wok design tokens.
- * Palette: warm rice paper, aged bamboo, ink, miso glaze, plum, jade.
+ *
+ * The scheme is built from the materials of an Asian kitchen rather than a
+ * generic "warm restaurant" palette:
+ *   - rice paper   (rice-*)  the page ground, warm and slightly grey
+ *   - sumi ink     (ink-*)   the deep neutral for text and dark surfaces
+ *   - také bamboo  (bamboo-*) the living green of the stems
+ *   - shoyu / miso (miso-*)  the caramel of soy and fermented bean
+ *   - ai indigo    (indigo-*) the dye blue of 藍 — the primary action colour
+ *   - jade         (jade-*)  a cooled, glazed green for success
+ *   - chili        (chili-*) the only red, kept for danger and spice
  * Deliberately avoids neon, generic purple gradients and glassmorphism.
  */
 @theme {
   --color-rice-50: #fdfbf5;
-  --color-rice-100: #f8f4e9;
-  --color-rice-200: #efe7d4;
-  --color-rice-300: #e2d5b8;
-  --color-rice-400: #cdb894;
+  --color-rice-100: #f7f3e8;
+  --color-rice-200: #ece5d3;
+  --color-rice-300: #ddd2b6;
+  --color-rice-400: #c4b48e;
 
-  --color-ink-500: #6b6259;
-  --color-ink-600: #4f4840;
-  --color-ink-700: #3a332c;
-  --color-ink-800: #292420;
-  --color-ink-900: #1b1815;
-  --color-ink-950: #121010;
+  --color-ink-500: #6d655c;
+  --color-ink-600: #4d463f;
+  --color-ink-700: #37312b;
+  --color-ink-800: #241f1c;
+  --color-ink-900: #17130f;
+  --color-ink-950: #0e0b09;
 
-  --color-bamboo-300: #b9c39a;
-  --color-bamboo-500: #7d8f5c;
-  --color-bamboo-600: #63734a;
-  --color-bamboo-700: #4c5938;
+  --color-bamboo-300: #bcc7a0;
+  --color-bamboo-500: #7f9159;
+  --color-bamboo-600: #617244;
+  --color-bamboo-700: #455233;
 
-  --color-miso-300: #e8bf83;
-  --color-miso-500: #c8853c;
-  --color-miso-600: #a96a29;
+  --color-miso-300: #e7c182;
+  --color-miso-500: #c2863a;
+  --color-miso-600: #9d6620;
 
-  --color-plum-500: #a94455;
-  --color-plum-600: #8f3a4c;
-  --color-plum-700: #732f3e;
+  /* 藍 indigo dye — the primary. Reads as dyed cloth, not as a tech blue. */
+  --color-indigo-500: #35566b;
+  --color-indigo-600: #274559;
+  --color-indigo-700: #1c3446;
 
-  --color-jade-500: #4a8b76;
-  --color-jade-600: #3a6f5e;
+  --color-jade-500: #3f8874;
+  --color-jade-600: #2f6a5a;
 
-  --color-chili-500: #c4472f;
-  --color-chili-600: #a2371f;
+  --color-chili-500: #bb4130;
+  --color-chili-600: #982e1f;
 
   /* Text scale. The 2xs/3xs steps exist because labels and badges were
      previously written as text-[11px]/text-[10px] literals. */
@@ -66,8 +76,8 @@
   --border-subtle: color-mix(in oklab, var(--color-rice-400) 55%, transparent);
   --text-primary: var(--color-ink-900);
   --text-muted: var(--color-ink-500);
-  --accent: var(--color-plum-600);
-  --accent-strong: var(--color-plum-700);
+  --accent: var(--color-indigo-600);
+  --accent-strong: var(--color-indigo-700);
   --accent-contrast: var(--color-rice-50);
 
   --animate-rise: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -78,8 +88,8 @@
 }
 
 @keyframes pulse-soft {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-plum-600) 45%, transparent); }
-  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-plum-600) 0%, transparent); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-indigo-600) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-indigo-600) 0%, transparent); }
 }
 
 @keyframes rise {
@@ -322,6 +332,13 @@
   }
 
   /* Leaflet within the rounded card: keep controls quiet and contained. */
+  /* Leaflet's own panes carry large z-indexes (up to 1000) and are absolutely
+     positioned. Without a containing stacking context they painted over the
+     form's submit button and the search menu. `isolate` on the wrapper creates
+     that context; this rule is the belt-and-braces guard so no Leaflet layer can
+     ever escape it, whatever version ships next. */
+  .location-map { contain: paint; }
+
   .location-map .leaflet-container { border-radius: var(--radius-washi); background: var(--color-rice-100); font: inherit; }
   .location-map .leaflet-control-attribution {
     font-size: 10px;
@@ -333,7 +350,7 @@
     background: color-mix(in oklab, var(--color-rice-50) 92%, transparent);
     border-color: color-mix(in oklab, var(--color-ink-900) 10%, transparent);
   }
-  .location-map .leaflet-control-attribution a { color: var(--color-plum-600); }
+  .location-map .leaflet-control-attribution a { color: var(--color-indigo-600); }
   .ink-rule {
     background: linear-gradient(
       90deg,

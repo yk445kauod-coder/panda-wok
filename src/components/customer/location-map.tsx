@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MapPin, Navigation, RefreshCw, Search, X } from "lucide-react";
+import { MapPin, Navigation, RefreshCw } from "lucide-react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -195,7 +195,7 @@ export function LocationMap({
 
   return (
     <div
-      className="location-map relative h-56 w-full overflow-hidden rounded-xl border border-ink-900/12"
+      className="location-map isolate relative z-0 h-56 w-full overflow-hidden rounded-xl border border-ink-900/12"
       data-reduced-motion="protected"
     >
       <MapContainer
@@ -237,7 +237,7 @@ export function LocationMap({
       {!coords ? (
         <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center px-3">
           <p className="rounded-full border border-ink-900/10 bg-rice-50/92 px-3 py-1.5 text-[11px] font-medium text-ink-700 shadow-washi backdrop-blur-sm">
-            <MapPin className="me-1 inline size-3.5 text-plum-600" aria-hidden="true" />
+            <MapPin className="me-1 inline size-3.5 text-indigo-600" aria-hidden="true" />
             {t("addresses.map.dropPinHint")}
           </p>
         </div>
@@ -267,133 +267,6 @@ export function LocationMap({
           {t("addresses.useMyLocation")}
         </Button>
       </div>
-    </div>
-  );
-}
-
-/**
- * An inline "search a place" affordance. Nominatim also does search; this is
- * a keyboard-first alternative to dragging the pin (type a street/area, then
- * tap a result and the pin snaps there).
- */
-export function LocationSearch({
-  onPick,
-  disabled,
-}: {
-  onPick: (lat: number, lng: number) => void;
-  disabled?: boolean;
-}) {
-  const t = useT();
-  const [q, setQ] = useState("");
-  const [results, setResults] = useState<{ lat: number; lon: number; name: string }[]>([]);
-  const [busy, setBusy] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-    abortRef.current?.abort();
-  }, []);
-
-  async function run(q: string) {
-    if (q.trim().length < 3) {
-      setResults([]);
-      return;
-    }
-
-    const controller = new AbortController();
-    abortRef.current?.abort();
-    abortRef.current = controller;
-    setBusy(true);
-
-    try {
-      const url = new URL("https://nominatim.openstreetmap.org/search");
-      url.search = new URLSearchParams({
-        format: "jsonv2",
-        q: q.trim(),
-        countrycodes: "eg",
-        limit: "5",
-        "accept-language": "en",
-      }).toString();
-      const res = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "panda-wok-web" } });
-      if (!res.ok) throw new Error("search failed");
-      const data: { lat: string; lon: string; display_name: string }[] = await res.json();
-      setResults(
-        data.map((d) => ({
-          lat: parseFloat(d.lat),
-          lon: parseFloat(d.lon),
-          name: d.display_name,
-        })),
-      );
-    } catch {
-      // ignore; the map + typed address remain the way in.
-    } finally {
-      if (!controller.signal.aborted) setBusy(false);
-    }
-  }
-
-  function onInput(value: string) {
-    setQ(value);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => void run(value), 450);
-  }
-
-  return (
-    <div className="relative">
-      <div className="relative">
-        <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ink-700/60" aria-hidden="true" />
-        <input
-          type="text"
-          inputMode="search"
-          value={q}
-          onChange={(e) => onInput(e.target.value)}
-          disabled={disabled}
-          placeholder={t("addresses.map.searchPlaceholder")}
-          aria-label={t("addresses.map.searchPlaceholder")}
-          className="h-10 w-full rounded-xl border border-ink-900/12 bg-rice-50 pe-3 ps-9 text-sm outline-none focus:border-miso-500 disabled:opacity-60"
-        />
-        {q ? (
-          <button
-            type="button"
-            aria-label={t("addresses.clearSearch")}
-            onClick={() => {
-              setQ("");
-              setResults([]);
-            }}
-            className="absolute end-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-ink-700/60 hover:bg-rice-200"
-          >
-            <X className="size-3.5" />
-          </button>
-        ) : null}
-      </div>
-
-      {busy ? (
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-ink-700/70">
-          <Spinner className="size-3" />
-          {t("addresses.map.searching")}
-        </p>
-      ) : null}
-
-      {results.length > 0 ? (
-        <ul className="absolute inset-x-0 z-10 mt-1 overflow-hidden rounded-xl border border-ink-900/10 bg-rice-50 shadow-washi-lg">
-          {results.map((r, i) => (
-            <li key={`${r.lat},${r.lon}-${i}`}>
-              <button
-                type="button"
-                className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm text-ink-800 hover:bg-rice-200"
-                onClick={() => {
-                  onPick(r.lat, r.lon);
-                  setQ(r.name.split(",")[0]?.trim() ?? r.name);
-                  setResults([]);
-                }}
-              >
-                <MapPin className="mt-0.5 size-3.5 shrink-0 text-plum-600" aria-hidden="true" />
-                <span className="line-clamp-2">{r.name}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </div>
   );
 }

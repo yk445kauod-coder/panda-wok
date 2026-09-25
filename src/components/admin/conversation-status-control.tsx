@@ -75,9 +75,9 @@ export function ConversationStatusControl({
               title={HINTS[status]}
               className={cn(
                 "rounded-lg border px-2.5 py-1.5 text-xs font-medium outline-none transition-colors",
-                "focus-visible:ring-2 focus-visible:ring-plum-600/40 disabled:cursor-default",
+                "focus-visible:ring-2 focus-visible:ring-indigo-600/40 disabled:cursor-default",
                 active
-                  ? "border-plum-600 bg-plum-600 text-rice-50"
+                  ? "border-indigo-600 bg-indigo-600 text-rice-50"
                   : "border-ink-900/15 bg-rice-50 text-ink-800 hover:bg-rice-100 disabled:opacity-60",
               )}
             >

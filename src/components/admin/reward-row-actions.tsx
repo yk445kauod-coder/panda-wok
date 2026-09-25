@@ -61,7 +61,7 @@ export function RewardRowActions({ reward }: { reward: Reward }) {
       <Badge tone={reward.is_enabled ? "success" : "neutral"}>
         {reward.is_enabled ? "Live" : "Hidden"}
       </Badge>
-      <Badge tone="plum">{formatNumber(reward.points_cost)} pts</Badge>
+      <Badge tone="indigo">{formatNumber(reward.points_cost)} pts</Badge>
       <Badge tone="info">{humanise(reward.kind)}</Badge>
     </div>
   );

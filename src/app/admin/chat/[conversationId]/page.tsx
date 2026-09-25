@@ -47,7 +47,7 @@ export default async function AdminConversationPage({
                 {" · "}
                 <a
                   href={`tel:${conversation.customer.phone}`}
-                  className="inline-flex items-center gap-1 text-plum-600 hover:text-plum-700"
+                  className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700"
                 >
                   <Phone className="size-3.5" aria-hidden="true" />
                   {conversation.customer.phone}
@@ -72,7 +72,7 @@ export default async function AdminConversationPage({
               {humanise(conversation.status)}
             </Badge>
             {conversation.staff_unread > 0 ? (
-              <Badge tone="plum">{conversation.staff_unread} unread</Badge>
+              <Badge tone="indigo">{conversation.staff_unread} unread</Badge>
             ) : null}
             {conversation.related_order_id ? (
               <Link href={`/admin/orders/${conversation.related_order_id}`}>

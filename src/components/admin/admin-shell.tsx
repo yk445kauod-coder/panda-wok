@@ -90,7 +90,7 @@ export function AdminShell({
       {/* Mobile top bar */}
       <div className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-ink-900/10 bg-rice-100/90 px-4 pt-safe backdrop-blur lg:hidden">
         <Link href="/admin" className="flex h-14 items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-lg bg-plum-600 font-display text-sm font-semibold text-rice-50">
+          <span className="grid size-8 place-items-center rounded-lg bg-indigo-600 font-display text-sm font-semibold text-rice-50">
             PW
           </span>
           <span className="font-display text-base font-semibold text-ink-900">
@@ -118,7 +118,7 @@ export function AdminShell({
         )}
       >
         <div className="hidden items-center gap-2.5 px-4 pt-5 lg:flex">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-plum-600 font-display text-sm font-semibold text-rice-50">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-indigo-600 font-display text-sm font-semibold text-rice-50">
             PW
           </span>
           <span className="min-w-0">
@@ -161,7 +161,7 @@ export function AdminShell({
                           className={cn(
                             "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors",
                             active
-                              ? "bg-plum-600 font-medium text-rice-50"
+                              ? "bg-indigo-600 font-medium text-rice-50"
                               : "text-rice-200/85 hover:bg-rice-100/8 hover:text-rice-50",
                           )}
                         >

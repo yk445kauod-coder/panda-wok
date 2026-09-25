@@ -72,10 +72,6 @@ export const en = {
     privacy: "Privacy",
   },
 
-  ambience: {
-    soundOn: "Play garden sounds",
-    soundOff: "Stop garden sounds",
-  },
 
   footer: {
     explore: "Explore",
@@ -95,7 +91,7 @@ export const en = {
   },
 
   home: {
-    metaTitle: "{brand} — wok, ramen and sushi delivered in {city}",
+    metaTitle: "{brand} — {tagline}",
     metaDescription:
       "{tagline}. Browse the full {brand} menu, order for delivery across {city} and track your food from the kitchen to your door.",
     cloudKitchen: "Cloud kitchen",
@@ -107,13 +103,10 @@ export const en = {
     startOrder: "Start your order",
     viewMenu: "View the menu",
     ourStory: "Our story",
-    featuredHeading: "What the kitchen is proud of",
-    featuredSubheading: "Hand-picked dishes, cooked when you order.",
+    featuredHeading: "From the kitchen",
+    featuredSubheading: "Dishes the kitchen has marked as featured.",
     fullMenu: "Full menu",
     browseBySection: "Browse by section",
-    sectionEmptyTitle: "The menu is being prepared",
-    sectionEmptyBody:
-      "Our sections will appear here as soon as the kitchen publishes them.",
     availableNow: "Available right now",
     seeWholeMenu: "See the whole menu",
     noDishesTitle: "No dishes published yet",
@@ -122,24 +115,16 @@ export const en = {
     srDeliveryTime: "Typical delivery time",
     srMinimumOrder: "Minimum order",
     srDietaryLabels: "Dietary labels",
-    identityHeading: "Two kitchens, one wok and one counter",
+    identitySig: "{brand} · {cuisine} · {city}",
+    identityHeading: "What the kitchen cooks: {cuisine}",
     identityBody:
-      "The menu crosses Asia: Japanese technique at the sushi counter, Chinese fire in the wok. Same kitchen, same made-to-order discipline.",
-    identityJapaneseLabel: "Japanese counter",
-    identityJapaneseScript: "日本",
-    identityJapaneseBody:
-      "Sushi rolled and ramen broth built the Japanese way — clean, precise, and never pre-made.",
-    identityChineseLabel: "Chinese wok",
-    identityChineseScript: "中華",
-    identityChineseBody:
-      "Wok classics seared over high heat with clean seasoning, cooked the moment you order.",
-    identitySig: "{brand} · Asian kitchen · {city}",
+      "These are the kitchen's own cuisine tags, taken from the live kitchen record rather than written into the page. The menu underneath is the authoritative list of what is actually available.",
   },
 
   menu: {
-    metaTitle: "Menu — Asian wok, ramen and sushi",
+    metaTitle: "Menu — {brand}",
     metaDescription:
-      "The full {brand} menu with prices in EGP: wok dishes, ramen, sushi and izakaya plates, cooked to order and delivered across Alexandria.",
+      "The full {brand} menu with prices in {currency}, cooked to order and delivered across {city}.",
     title: "Menu",
     summary: "{total} dishes, {available} available right now. Everything is cooked to order.",
     sections: "Menu sections",
@@ -457,16 +442,18 @@ export const en = {
     accuracy: " (±{meters} m)",
     ariaCoords: "{lat}, {lng}",
     pinHeading: "Pin your exact spot",
-    pinHint: "Optional. Helps the rider find you in busy streets.",
+    pinHint: "Drop the pin where the rider should arrive — the doorway, not the street.",
+    pinRequiredHint: "Drop a pin, or tap “Use my location”, to continue.",
+    confirmPin: "Confirm this spot",
+    clearPin: "Clear pin",
+    enterManually: "Type address instead",
+    useMapInstead: "Use the map instead",
     useMyLocation: "Use my location",
     updateLocation: "Update",
     map: {
       dropPinHint: "Tap the map or drag the pin to set your exact spot",
       locateButton: "My location",
       locating: "Finding you…",
-      searchPlaceholder: "Search a street or area…",
-      searching: "Searching…",
-      clearSearch: "Clear search",
       accuracy: "±{meters} m from this pin",
     },
     setDefault: "Use this as my default delivery address",
@@ -605,14 +592,17 @@ export const en = {
   about: {
     metaTitle: "About {brand}",
     metaDescription:
-      "The story behind {brand}, an Asian cloud kitchen cooking wok, ramen and sushi to order in {city}, {country}.",
+      "The story behind {brand}, a cloud kitchen cooking {cuisine} to order in {city}, {country}.",
     title: "About {brand}",
     cloudKitchenHeading: "A cloud kitchen, not a dining room",
     cloudKitchenBody:
       "We cook in a dedicated kitchen and send everything straight to you. That means no tables, no queues and no waiting room — just food made when you order it, and a smaller operation that can pay attention to detail.",
     howWeCookHeading: "How we cook",
     howWeCookBody:
-      "Wok dishes are cooked over high heat to order, broth is made ahead and held hot, and sushi is rolled as the order comes in. Nothing sits under a lamp waiting to be chosen. Because everything is made to order, our prep times are honest rather than instant, and a busy night affects everyone equally.",
+      "Dishes are cooked to order and nothing is held under a lamp waiting to be chosen. Because everything is made to order, our prep times are honest rather than instant, and a busy night affects everyone equally.",
+    identityHeading: "What the kitchen cooks",
+    identityBody:
+      "The tags below are the kitchen's own record of the cuisines it cooks — they are read from the live kitchen record, not written into this page. The menu is the authoritative list of what is actually available.",
     allergensHeading: "Allergens and honest labelling",
     allergensBody:
       "Every dish page lists the allergens the kitchen has recorded, along with vegetarian, vegan and spicy markers. That information is what we know about our own preparation; it is not a guarantee, because suppliers and shared equipment can introduce traces. If you have a serious allergy, please speak to us directly before ordering.",
@@ -621,8 +611,9 @@ export const en = {
       "We cook in {area}{city}, {country}, and deliver across the city. Delivery fees, minimums and typical timings are listed on each order as you check out, and they are set by the kitchen rather than fixed in the code.",
     seeMenu: "See the menu",
     contactUs: "Contact us",
+    fallbackTagline: "A cloud kitchen, cooking to order.",
     fallbackDescription:
-      "{brand} is an Asian-inspired cloud kitchen in {city}, cooking wok, ramen and izakaya plates to order.",
+      "{brand} is a cloud kitchen in {city}, cooking to order.",
   },
 
   contact: {
@@ -702,7 +693,7 @@ export const en = {
       },
       cuisine: {
         q: "What kind of food does {brand} serve?",
-        a: "{brand} cooks {cuisine} to order, drawing on two traditions: a Japanese sushi counter for sushi and ramen broth, and a Chinese wok for high-heat wok dishes. Everything is made in one kitchen when you order it.",
+        a: "{brand} cooks {cuisine} to order. The current menu is always the authoritative list of what is available.",
       },
       vegetarian: {
         q: "Are there vegetarian or vegan options?",

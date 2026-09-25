@@ -66,7 +66,7 @@ export function DishCard({
         )}
 
         <div className="absolute start-2 top-2 flex flex-wrap gap-1">
-          {item.is_featured ? <Badge tone="plum">{t("dish.chefPick")}</Badge> : null}
+          {item.is_featured ? <Badge tone="indigo">{t("dish.chefPick")}</Badge> : null}
           {unavailable ? <Badge tone="danger">{t("dish.soldOut")}</Badge> : null}
         </div>
       </div>

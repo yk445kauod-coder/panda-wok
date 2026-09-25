@@ -11,8 +11,21 @@ import { siteUrl } from "@/lib/seo/metadata";
 import { ToastProvider } from "@/components/ui/toast";
 import { I18nProvider } from "@/components/i18n-provider";
 import { getDictionary, getLocale, getT } from "@/lib/i18n/server";
+import { getPublicSettings } from "@/lib/services/catalog";
 import { dirFor } from "@/lib/i18n/config";
 
+/**
+ * Fonts are the site's heaviest resource. Google's Arabic and CJK faces are
+ * split into many unicode-range chunks, and `next/font` emits a <link
+ * rel=preload> for every chunk of every weight — five families produced 327
+ * preload tags on the home page, so the browser raced to download hundreds of
+ * files before first paint.
+ *
+ * Only the Latin body face is preloaded now. The rest set `preload: false`:
+ * they keep their @font-face and unicode-range, so a face still loads the
+ * moment copy actually uses it, but nothing is fetched up front. Weights are
+ * trimmed to the ones the design system asks for.
+ */
 const bodyFont = Plus_Jakarta_Sans({
   variable: "--font-body",
   subsets: ["latin"],
@@ -22,16 +35,18 @@ const bodyFont = Plus_Jakarta_Sans({
 const displayFont = Playfair_Display({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "600", "700"],
   display: "swap",
+  preload: false,
 });
 
 /** Arabic needs a typeface with real Arabic coverage; Inter has none. */
 const arabicFont = IBM_Plex_Sans_Arabic({
   variable: "--font-arabic",
-  subsets: ["arabic", "latin"],
-  weight: ["400", "500", "600", "700"],
+  subsets: ["arabic"],
+  weight: ["400", "500", "600"],
   display: "swap",
+  preload: false,
 });
 
 /**
@@ -43,8 +58,9 @@ const arabicFont = IBM_Plex_Sans_Arabic({
 const arabicDisplayFont = Noto_Kufi_Arabic({
   variable: "--font-arabic-display",
   subsets: ["arabic"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "600"],
   display: "swap",
+  preload: false,
 });
 
 /**
@@ -57,27 +73,30 @@ const arabicDisplayFont = Noto_Kufi_Arabic({
 const kanaDisplayFont = Shippori_Mincho({
   variable: "--font-kana",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "600"],
   display: "swap",
+  preload: false,
 });
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const t = await getT(locale);
+  const settings = await getPublicSettings().catch(() => null);
+  const brandName = settings?.brand.name ?? "Panda Wok";
+  const brandCity = settings?.brand.city ?? "Alexandria";
 
   return {
     metadataBase: new URL(siteUrl()),
     title: {
-      default: t("home.metaTitle", { brand: "Panda Wok", city: "Alexandria" }),
-      template: "%s | Panda Wok",
+      default: t("home.metaTitle", { brand: brandName, city: brandCity }),
+      template: `%s | ${brandName}`,
     },
     description: t("home.metaDescription", {
-      tagline:
-        "Panda Wok is a cloud kitchen in Alexandria, Egypt, cooking Asian-inspired wok, ramen and sushi to order.",
-      brand: "Panda Wok",
-      city: "Alexandria",
+      tagline: settings?.brand.tagline ?? "",
+      brand: brandName,
+      city: brandCity,
     }),
-    applicationName: "Panda Wok",
+    applicationName: brandName,
     manifest: "/manifest.webmanifest",
     formatDetection: { telephone: true, address: false, email: true },
     alternates: { canonical: "/" },

@@ -60,7 +60,7 @@ export function UpsellRuleList({
                   ) : (
                     <Badge tone="neutral">Off</Badge>
                   )}
-                  <Badge tone="plum">Priority {rule.priority}</Badge>
+                  <Badge tone="indigo">Priority {rule.priority}</Badge>
                   {triggerMissing || suggestMissing ? (
                     <Badge tone="danger">Missing target</Badge>
                   ) : null}

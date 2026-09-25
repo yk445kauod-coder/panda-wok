@@ -66,7 +66,7 @@ export function ExportRequestForm({ datasets }: { datasets: DatasetOption[] }) {
                 aria-pressed={format === option}
                 className={
                   format === option
-                    ? "h-11 flex-1 rounded-xl border border-plum-600 bg-plum-600/8 text-sm font-medium text-ink-900"
+                    ? "h-11 flex-1 rounded-xl border border-indigo-600 bg-indigo-600/8 text-sm font-medium text-ink-900"
                     : "h-11 flex-1 rounded-xl border border-ink-900/12 bg-rice-50 text-sm text-ink-800 hover:bg-rice-100"
                 }
               >
@@ -79,7 +79,7 @@ export function ExportRequestForm({ datasets }: { datasets: DatasetOption[] }) {
 
       {selected ? (
         <p className="flex items-start gap-2 rounded-xl bg-rice-100/70 p-3 text-xs text-ink-700/80">
-          <FileDown className="mt-0.5 size-3.5 shrink-0 text-plum-600" aria-hidden="true" />
+          <FileDown className="mt-0.5 size-3.5 shrink-0 text-indigo-600" aria-hidden="true" />
           <span>
             {selected.description}
             {selected.sensitivity === "personal" ? (

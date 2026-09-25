@@ -511,7 +511,7 @@ export const announcementSchema = z.object({
   locale: localeSchema,
   message: z.string().trim().min(4, "Write the announcement").max(300),
   href: optionalText(500),
-  tone: z.enum(["info", "success", "warning", "plum"]).default("info"),
+  tone: z.enum(["info", "success", "warning", "indigo"]).default("info"),
   startsAt: optionalText(40),
   endsAt: optionalText(40),
   isActive: z.coerce.boolean().default(true),

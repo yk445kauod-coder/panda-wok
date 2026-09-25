@@ -311,7 +311,7 @@ export function FeedbackReplyControl({
 }) {
   return (
     <details className="mt-2">
-      <summary className="cursor-pointer text-xs font-medium text-plum-600 hover:text-plum-700">
+      <summary className="cursor-pointer text-xs font-medium text-indigo-600 hover:text-indigo-700">
         {existingResponse ? "Edit the reply" : "Reply"}
         {currentStatus !== "resolved" ? (
           <Badge tone="warning" className="ml-2">

@@ -53,7 +53,7 @@ export function OrderTimeline({
                 "relative z-10 grid size-8 shrink-0 place-items-center rounded-full border-2",
                 step.state === "done" && "border-jade-500 bg-jade-500 text-rice-50",
                 step.state === "current" &&
-                  "border-plum-600 bg-plum-600 text-rice-50 animate-pulse-soft",
+                  "border-indigo-600 bg-indigo-600 text-rice-50 animate-pulse-soft",
                 step.state === "upcoming" &&
                   "border-ink-900/15 bg-rice-50 text-ink-700/40",
                 step.state === "failed" && "border-chili-500 bg-chili-500 text-rice-50",
@@ -71,7 +71,7 @@ export function OrderTimeline({
               >
                 {statusLabel(step.status, locale)}
                 {step.state === "current" ? (
-                  <span className="ms-2 text-xs font-normal text-plum-600">
+                  <span className="ms-2 text-xs font-normal text-indigo-600">
                     {locale === "ar" ? "الآن" : "now"}
                   </span>
                 ) : null}

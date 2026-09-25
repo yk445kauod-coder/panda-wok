@@ -71,7 +71,7 @@ export function CategorySection({
                     aria-current={active ? "page" : undefined}
                     className={
                       active
-                        ? "inline-flex whitespace-nowrap rounded-full border border-plum-600 bg-plum-600 px-3.5 py-2 text-sm text-rice-50"
+                        ? "inline-flex whitespace-nowrap rounded-full border border-indigo-600 bg-indigo-600 px-3.5 py-2 text-sm text-rice-50"
                         : "inline-flex whitespace-nowrap rounded-full border border-ink-900/12 bg-rice-50 px-3.5 py-2 text-sm text-ink-800 transition-colors hover:bg-rice-200"
                     }
                   >
@@ -92,7 +92,7 @@ export function CategorySection({
           action={
             <Link
               href="/menu"
-              className="text-sm font-medium text-plum-600 hover:text-plum-700"
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
             >
               {t("home.fullMenu")}
             </Link>

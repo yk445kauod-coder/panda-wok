@@ -12,6 +12,12 @@ import { buildMetadata } from "@/lib/seo/metadata";
 import { restaurantSchema, websiteSchema, organisationSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { getLocale, getT } from "@/lib/i18n/server";
+import {
+  brandDescription,
+  brandName,
+  brandTagline,
+  localisedPlace,
+} from "@/lib/i18n/brand";
 
 /**
  * Public catalogue metadata is DB-driven, so update it on a short interval
@@ -50,16 +56,10 @@ export default async function SiteLayout({
   ]);
 
   const brand = {
-    name:
-      locale === "ar" && restaurant?.name_ar?.trim()
-        ? restaurant.name_ar
-        : restaurant?.name_en ?? settings.brand.name,
-    city: restaurant?.city ?? settings.brand.city,
-    country: restaurant?.country ?? settings.brand.country,
-    tagline:
-      locale === "ar" && restaurant?.tagline_ar?.trim()
-        ? restaurant.tagline_ar
-        : restaurant?.tagline_en ?? settings.brand.tagline,
+    name: brandName(restaurant, locale, settings.brand.name),
+    city: localisedPlace(restaurant?.city ?? settings.brand.city, locale),
+    country: localisedPlace(restaurant?.country ?? settings.brand.country, locale),
+    tagline: brandTagline(restaurant, locale, settings.brand.tagline),
     logo_url: settings.brand.logo_url,
   };
 
@@ -74,12 +74,11 @@ export default async function SiteLayout({
     }),
     restaurantSchema({
       name: brand.name,
-      description:
-        restaurant?.description_en ?? null,
-      tagline: restaurant?.tagline_en ?? null,
+      description: brandDescription(restaurant, locale, "") || null,
+      tagline: brand.tagline,
       cuisineTags: restaurant?.cuisine_tags ?? [],
-      city: restaurant?.city ?? null,
-      country: restaurant?.country ?? null,
+      city: restaurant?.city ?? settings.brand.city,
+      country: restaurant?.country ?? settings.brand.country,
       area: restaurant?.area ?? null,
       latitude: restaurant?.latitude ?? null,
       longitude: restaurant?.longitude ?? null,

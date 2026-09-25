@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, MapPin, Navigation, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { Badge, Button, Spinner } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { LocationMap, LocationSearch, type PinCoords } from "@/components/customer/location-map";
+import { LocationMap, type PinCoords } from "@/components/customer/location-map";
 import { useErrorText, useT } from "@/components/i18n-provider";
 import {
   deleteAddressAction,
@@ -36,6 +36,13 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [mapKey, setMapKey] = useState(0);
+  // Pin-first flow: the customer drops or accepts a pin, confirms it, and only
+  // then does the written address appear — prefilled from the pin where
+  // OpenStreetMap knows the street. "Manual" skips the pin entirely.
+  const [stage, setStage] = useState<"pin" | "details">("pin");
+  const [manual, setManual] = useState(false);
+  const pinConfirmed = coords !== null;
+  const showDetails = manual || stage === "details";
 
   // Best-effort reverse lookup: prefill area/address from the pin. The same
   // event carries district/street, and the form accepts them only when empty. Zero
@@ -68,6 +75,8 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
     setCoords(null);
     setLocationError(null);
     setMapKey((k) => k + 1);
+    setStage("pin");
+    setManual(false);
   }
 
   function captureLocation() {
@@ -244,6 +253,8 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                             : null,
                         );
                         setLocationError(null);
+                        setStage("details");
+                        setManual(address.latitude === null);
                       }}
                       className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-ink-800 hover:bg-rice-200"
                     >
@@ -255,7 +266,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                         type="button"
                         disabled={pendingId === address.id}
                         onClick={() => void onMakeDefault(address.id)}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-plum-600 hover:bg-plum-600/8 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-600/8 disabled:opacity-50"
                       >
                         {pendingId === address.id ? (
                           <Spinner className="size-3.5" />
@@ -313,149 +324,82 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
             <input type="hidden" name="id" value={mode.address.id} />
           ) : null}
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <FormField
-              name="label"
-              label={t("addresses.fields.label")}
-              placeholder={t("addresses.fields.labelPlaceholder")}
-              defaultValue={mode.kind === "edit" ? mode.address.label : ""}
-              error={fields.label}
-              required
-            />
-            <FormField
-              name="contactName"
-              label={t("addresses.fields.contactName")}
-              defaultValue={mode.kind === "edit" ? (mode.address.contact_name ?? "") : ""}
-              error={fields.contactName}
-              autoComplete="name"
-              required
-            />
-            <FormField
-              name="contactPhone"
-              label={t("addresses.fields.contactPhone")}
-              type="tel"
-              inputMode="tel"
-              defaultValue={mode.kind === "edit" ? (mode.address.contact_phone ?? "") : ""}
-              error={fields.contactPhone}
-              autoComplete="tel"
-              required
-            />
-            <FormField
-              name="area"
-              label={t("addresses.fields.area")}
-              placeholder={t("addresses.fields.areaPlaceholder")}
-              defaultValue={mode.kind === "edit" ? (mode.address.area ?? "") : ""}
-              error={fields.area}
-            />
-            <div className="sm:col-span-2">
-              <FormField
-                name="addressLine"
-                label={t("addresses.fields.addressLine")}
-                defaultValue={mode.kind === "edit" ? mode.address.address_line : ""}
-                error={fields.addressLine}
-                autoComplete="street-address"
-                required
-              />
-            </div>
-            <FormField
-              name="building"
-              label={t("addresses.fields.building")}
-              defaultValue={mode.kind === "edit" ? (mode.address.building ?? "") : ""}
-              error={fields.building}
-            />
-            <FormField
-              name="floor"
-              label={t("addresses.fields.floor")}
-              defaultValue={mode.kind === "edit" ? (mode.address.floor ?? "") : ""}
-              error={fields.floor}
-            />
-            <FormField
-              name="apartment"
-              label={t("addresses.fields.apartment")}
-              defaultValue={mode.kind === "edit" ? (mode.address.apartment ?? "") : ""}
-              error={fields.apartment}
-            />
-            <FormField
-              name="city"
-              label={t("addresses.fields.city")}
-              defaultValue={mode.kind === "edit" ? (mode.address.city ?? "") : "Alexandria"}
-              error={fields.city}
-              autoComplete="address-level2"
-            />
-            <div className="sm:col-span-2">
-              <FormField
-                name="landmark"
-                label={t("addresses.fields.landmark")}
-                placeholder={t("addresses.fields.landmarkPlaceholder")}
-                defaultValue={mode.kind === "edit" ? (mode.address.landmark ?? "") : ""}
-                error={fields.landmark}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label
-                htmlFor="address-notes"
-                className="block text-sm font-medium text-ink-900"
-              >
-                {t("addresses.fields.notes")}
-              </label>
-              <textarea
-                id="address-notes"
-                name="notes"
-                rows={2}
-                maxLength={300}
-                defaultValue={mode.kind === "edit" ? (mode.address.notes ?? "") : ""}
-                placeholder={t("addresses.fields.notesPlaceholder")}
-                className="mt-1.5 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 py-2 text-sm outline-none focus:border-miso-500"
-              />
-              {fields.notes ? (
-                <p className="mt-1 text-xs text-chili-600">{fields.notes}</p>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Opt-in location capture: map + pin + search. The pin is the source
-              of truth for the hidden coordinate fields below. */}
-          <div className="mt-4 space-y-2.5 rounded-xl border border-ink-900/10 bg-rice-200/40 p-3.5">
-            <div className="flex items-center justify-between gap-3">
+          {/* Pin first. The map, the GPS button and the confirmation all live
+              above the fold of this card, and the written address only appears
+              once the pin is confirmed (or the customer opts to type it). */}
+          <div className="mt-4 rounded-xl border border-ink-900/10 bg-rice-200/40 p-3.5">
+            <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="flex items-center gap-1.5 text-sm font-medium text-ink-900">
-                  <MapPin className="size-4 text-plum-600" aria-hidden="true" />
+                  <MapPin className="size-4 text-indigo-600" aria-hidden="true" />
                   {t("addresses.pinHeading")}
                 </p>
                 <p className="mt-0.5 text-xs text-ink-700/75">
                   {t("addresses.pinHint")}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setManual((m) => !m);
+                  setStage("details");
+                }}
+                className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-600/8"
+              >
+                {manual ? t("addresses.useMapInstead") : t("addresses.enterManually")}
+              </button>
             </div>
 
-            <LocationSearch
-              disabled={saving}
-              onPick={(lat, lng) => {
-                setCoords({ latitude: lat, longitude: lng, accuracyM: null });
-                setMapKey((k) => k + 1);
-                setLocationError(null);
-              }}
-            />
+            {!manual ? (
+              <div className="mt-3 space-y-2.5">
+                <LocationMap
+                  key={mapKey}
+                  coords={coords}
+                  onChange={setCoords}
+                  accuracyM={coords?.accuracyM ?? null}
+                  locating={locating}
+                  onLocate={() => void captureLocation()}
+                  locateError={locationError}
+                  disabled={saving}
+                />
 
-            <LocationMap
-              key={mapKey}
-              coords={coords}
-              onChange={setCoords}
-              accuracyM={coords?.accuracyM ?? null}
-              locating={locating}
-              onLocate={() => void captureLocation()}
-              locateError={locationError}
-              disabled={saving}
-            />
+                {coords ? (
+                  <p className="inline-flex items-center gap-1.5 text-xs text-jade-600">
+                    <Check className="size-3.5" aria-hidden="true" />
+                    {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
+                    {coords.accuracyM
+                      ? t("addresses.errors.accuracySuffix", { meters: coords.accuracyM })
+                      : ""}
+                  </p>
+                ) : (
+                  <p className="text-xs text-ink-700/75">
+                    {t("addresses.pinRequiredHint")}
+                  </p>
+                )}
 
-            {coords ? (
-              <p className="inline-flex items-center gap-1.5 text-xs text-jade-600">
-                <Check className="size-3.5" aria-hidden="true" />
-                {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
-                {coords.accuracyM
-                  ? t("addresses.errors.accuracySuffix", { meters: coords.accuracyM })
-                  : ""}
-              </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!pinConfirmed || saving}
+                    onClick={() => setStage("details")}
+                  >
+                    <Check className="size-3.5" aria-hidden="true" />
+                    {t("addresses.confirmPin")}
+                  </Button>
+                  {coords ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setCoords(null)}
+                      disabled={saving}
+                    >
+                      {t("addresses.clearPin")}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
             ) : null}
 
             <input
@@ -474,24 +418,131 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
               value={coords?.accuracyM != null ? String(coords.accuracyM) : ""}
             />
             {fields.latitude || fields.longitude ? (
-              <p className="text-xs text-chili-600">
+              <p className="mt-2 text-xs text-chili-600">
                 {fields.latitude ?? fields.longitude}
               </p>
             ) : null}
           </div>
 
-          <label className="mt-4 flex cursor-pointer items-center gap-2.5">
-            <input
-              type="checkbox"
-              name="isDefault"
-              defaultChecked={mode.kind === "edit" ? mode.address.is_default : true}
-              className="size-4 accent-plum-600"
-            />
-            <span className="text-sm text-ink-800">{t("addresses.setDefault")}</span>
-          </label>
+          {/* Details appear once the location step is settled. Without a
+              confirmed pin we require the written address instead, so a delivery
+              is never left with no way to find the door. */}
+          {showDetails ? (
+            <>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <FormField
+                  name="label"
+                  label={t("addresses.fields.label")}
+                  placeholder={t("addresses.fields.labelPlaceholder")}
+                  defaultValue={mode.kind === "edit" ? mode.address.label : ""}
+                  error={fields.label}
+                  required
+                />
+                <FormField
+                  name="contactName"
+                  label={t("addresses.fields.contactName")}
+                  defaultValue={mode.kind === "edit" ? (mode.address.contact_name ?? "") : ""}
+                  error={fields.contactName}
+                  autoComplete="name"
+                  required
+                />
+                <FormField
+                  name="contactPhone"
+                  label={t("addresses.fields.contactPhone")}
+                  type="tel"
+                  inputMode="tel"
+                  defaultValue={mode.kind === "edit" ? (mode.address.contact_phone ?? "") : ""}
+                  error={fields.contactPhone}
+                  autoComplete="tel"
+                  required
+                />
+                <FormField
+                  name="area"
+                  label={t("addresses.fields.area")}
+                  placeholder={t("addresses.fields.areaPlaceholder")}
+                  defaultValue={mode.kind === "edit" ? (mode.address.area ?? "") : ""}
+                  error={fields.area}
+                />
+                <div className="sm:col-span-2">
+                  <FormField
+                    name="addressLine"
+                    label={t("addresses.fields.addressLine")}
+                    defaultValue={mode.kind === "edit" ? mode.address.address_line : ""}
+                    error={fields.addressLine}
+                    autoComplete="street-address"
+                    required
+                  />
+                </div>
+                <FormField
+                  name="building"
+                  label={t("addresses.fields.building")}
+                  defaultValue={mode.kind === "edit" ? (mode.address.building ?? "") : ""}
+                  error={fields.building}
+                />
+                <FormField
+                  name="floor"
+                  label={t("addresses.fields.floor")}
+                  defaultValue={mode.kind === "edit" ? (mode.address.floor ?? "") : ""}
+                  error={fields.floor}
+                />
+                <FormField
+                  name="apartment"
+                  label={t("addresses.fields.apartment")}
+                  defaultValue={mode.kind === "edit" ? (mode.address.apartment ?? "") : ""}
+                  error={fields.apartment}
+                />
+                <FormField
+                  name="city"
+                  label={t("addresses.fields.city")}
+                  defaultValue={mode.kind === "edit" ? (mode.address.city ?? "") : "Alexandria"}
+                  error={fields.city}
+                  autoComplete="address-level2"
+                />
+                <div className="sm:col-span-2">
+                  <FormField
+                    name="landmark"
+                    label={t("addresses.fields.landmark")}
+                    placeholder={t("addresses.fields.landmarkPlaceholder")}
+                    defaultValue={mode.kind === "edit" ? (mode.address.landmark ?? "") : ""}
+                    error={fields.landmark}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label
+                    htmlFor="address-notes"
+                    className="block text-sm font-medium text-ink-900"
+                  >
+                    {t("addresses.fields.notes")}
+                  </label>
+                  <textarea
+                    id="address-notes"
+                    name="notes"
+                    rows={2}
+                    maxLength={300}
+                    defaultValue={mode.kind === "edit" ? (mode.address.notes ?? "") : ""}
+                    placeholder={t("addresses.fields.notesPlaceholder")}
+                    className="mt-1.5 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 py-2 text-sm outline-none focus:border-miso-500"
+                  />
+                  {fields.notes ? (
+                    <p className="mt-1 text-xs text-chili-600">{fields.notes}</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <label className="mt-4 flex cursor-pointer items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  name="isDefault"
+                  defaultChecked={mode.kind === "edit" ? mode.address.is_default : true}
+                  className="size-4 accent-indigo-600"
+                />
+                <span className="text-sm text-ink-800">{t("addresses.setDefault")}</span>
+              </label>
+            </>
+          ) : null}
 
           <div className="mt-4 flex gap-2">
-            <Button type="submit" loading={saving}>
+            <Button type="submit" loading={saving} disabled={!showDetails}>
               {mode.kind === "edit" ? t("addresses.saveAddress") : t("addresses.addAddress")}
             </Button>
             <Button type="button" variant="ghost" onClick={resetForm} disabled={saving}>

@@ -90,7 +90,7 @@ export function BroadcastComposer({
                 aria-pressed={channel === option.key}
                 className={
                   channel === option.key
-                    ? "rounded-xl border border-plum-600 bg-plum-600/8 p-3 text-left"
+                    ? "rounded-xl border border-indigo-600 bg-indigo-600/8 p-3 text-left"
                     : "rounded-xl border border-ink-900/12 bg-rice-50 p-3 text-left hover:bg-rice-100"
                 }
               >
@@ -163,7 +163,7 @@ export function BroadcastComposer({
 
       <aside className="washi-panel h-fit space-y-4 p-4 lg:sticky lg:top-6">
         <div className="flex items-center gap-2">
-          <Megaphone className="size-4 text-plum-600" aria-hidden="true" />
+          <Megaphone className="size-4 text-indigo-600" aria-hidden="true" />
           <h2 className="font-display text-base font-semibold text-ink-900">Audience preview</h2>
         </div>
 

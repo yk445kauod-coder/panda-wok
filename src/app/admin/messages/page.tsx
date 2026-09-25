@@ -37,7 +37,7 @@ export default async function AdminMessagesPage() {
           </p>
         </div>
         {unread > 0 ? (
-          <Badge tone="plum">{unread} unread</Badge>
+          <Badge tone="indigo">{unread} unread</Badge>
         ) : (
           <Badge tone="success">Nothing waiting</Badge>
         )}
@@ -50,7 +50,7 @@ export default async function AdminMessagesPage() {
           </h2>
           <Link
             href="/admin/chat"
-            className="text-xs font-medium text-plum-600 hover:text-plum-700"
+            className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
           >
             Open full inbox
           </Link>
@@ -83,7 +83,7 @@ export default async function AdminMessagesPage() {
                     </p>
                   </div>
                   {row.staff_unread > 0 ? (
-                    <Badge tone="plum">{row.staff_unread}</Badge>
+                    <Badge tone="indigo">{row.staff_unread}</Badge>
                   ) : (
                     <Badge tone="info">{humanise(row.status)}</Badge>
                   )}
@@ -132,7 +132,7 @@ export default async function AdminMessagesPage() {
                       <>
                         <Link
                           href={`/admin/chat/${message.conversation.id}`}
-                          className="rounded-lg bg-plum-600 px-3 py-1.5 text-xs font-medium text-rice-50 hover:bg-plum-700"
+                          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-rice-50 hover:bg-indigo-700"
                         >
                           Reply
                         </Link>

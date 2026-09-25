@@ -55,7 +55,7 @@ export default async function AddressesPage({
       {backTo ? (
         <p className="mt-3 rounded-xl bg-rice-200/70 px-3.5 py-2.5 text-xs text-ink-800">
           {t("addresses.cameFromCheckout")}{" "}
-          <Link href={backTo} className="font-medium text-plum-600 hover:text-plum-700">
+          <Link href={backTo} className="font-medium text-indigo-600 hover:text-indigo-700">
             {t("addresses.backToCheckout")}
           </Link>
           .

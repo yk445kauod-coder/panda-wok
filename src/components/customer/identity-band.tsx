@@ -1,49 +1,34 @@
 import { Reveal } from "@/components/ui/reveal";
 import { BambooAmbience } from "@/components/customer/bamboo-ambience";
+import { BRAND_SCRIPT_MARK } from "@/lib/brand";
 import type { T } from "@/lib/i18n/server";
 
 /**
  * The Asian-identity band on the home page.
  *
- * It names the two traditions the kitchen actually cooks from — a Japanese
- * sushi counter and a Chinese wok — because the menu elements are real (the
- * categories carry `name_ja`, the story mentions "one wok station and one sushi
- * counter"). Nothing here is invented cuisine: the script glyphs are the
- * language names, not a claim about a dish.
+ * Every word here comes from the database. `cuisineTags` is the kitchen's own
+ * description of what it cooks, so the band renders those tags verbatim instead
+ * of a slogan the code invented — if the kitchen changes its tags, this section
+ * changes with it, and it can never claim a cuisine the menu does not carry.
  *
- * The asanoha lattice used across the site is reused here as the
- * shared Asian motif, drawn from the design system rather than a new asset.
+ * The script mark is the same glyph the rest of the brand surfaces use, so the
+ * band stays on-brand without a separate artistic claim.
  */
 export function IdentityBand({
   brand,
   city,
+  cuisineTags,
   t,
   locale,
 }: {
   brand: string;
   city: string;
+  cuisineTags: string[];
   t: T;
   locale?: string;
 }) {
-  // The script card is a language label, so its `lang` must describe the text
-  // actually rendered. In Arabic those strings are the country names in Arabic,
-  // not Japanese/Chinese glyphs — tagging them `ja`/`zh` would make a screen
-  // reader read Arabic with a Japanese voice, and swap the font for no reason.
-  const arabic = locale === "ar";
-  const pillars = [
-    {
-      script: t("home.identityJapaneseScript"),
-      scriptLang: arabic ? "ar" : "ja",
-      label: t("home.identityJapaneseLabel"),
-      body: t("home.identityJapaneseBody"),
-    },
-    {
-      script: t("home.identityChineseScript"),
-      scriptLang: arabic ? "ar" : "zh-Hant",
-      label: t("home.identityChineseLabel"),
-      body: t("home.identityChineseBody"),
-    },
-  ];
+  const tags = cuisineTags.filter((tag) => tag.trim().length > 0);
+  if (tags.length === 0) return null;
 
   return (
     <section
@@ -65,38 +50,33 @@ export function IdentityBand({
             id="identity-heading"
             className="mt-3 max-w-2xl text-fluid-h2 font-semibold"
           >
-            {t("home.identityHeading")}
+            {t("home.identityHeading", { cuisine: tags.join(" · ") })}
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-rice-100/85 sm:text-base">
             {t("home.identityBody")}
           </p>
         </Reveal>
 
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-          {pillars.map((pillar, index) => (
-            <Reveal as="li" key={pillar.label} delay={index * 80}>
-              <div className="flex h-full items-start gap-4 rounded-2xl border border-rice-50/12 bg-rice-50/5 p-5 backdrop-blur-sm">
+        <ul className="mt-8 flex flex-wrap gap-2">
+          {tags.map((tag, index) => (
+            <Reveal as="li" key={tag} delay={Math.min(index, 8) * 60}>
+              <span className="inline-flex items-center gap-2 rounded-full border border-rice-50/12 bg-rice-50/5 px-4 py-2 text-sm text-rice-100/90">
                 <span
-                  lang={pillar.scriptLang}
                   aria-hidden="true"
-                  className={`grid size-14 shrink-0 place-items-center rounded-xl bg-miso-300/15 text-2xl font-semibold text-miso-300 ${
-                    arabic ? "font-display" : "font-kana"
-                  }`}
-                >
-                  {pillar.script}
-                </span>
-                <div className="min-w-0">
-                  <h3 className="font-display text-base font-semibold text-rice-50">
-                    {pillar.label}
-                  </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-rice-100/80">
-                    {pillar.body}
-                  </p>
-                </div>
-              </div>
+                  className="size-1.5 rounded-full bg-miso-300"
+                />
+                {tag}
+              </span>
             </Reveal>
           ))}
         </ul>
+
+        <p
+          aria-hidden="true"
+          className="mt-8 font-kana text-2xl tracking-[0.4em] text-rice-50/25"
+        >
+          {BRAND_SCRIPT_MARK}
+        </p>
       </div>
     </section>
   );

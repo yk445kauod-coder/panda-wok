@@ -104,7 +104,7 @@ export default async function AdminOrdersPage({
               className={cn(
                 "flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-medium",
                 active
-                  ? "border-plum-600 bg-plum-600 text-rice-50"
+                  ? "border-indigo-600 bg-indigo-600 text-rice-50"
                   : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
               )}
             >
@@ -140,7 +140,7 @@ export default async function AdminOrdersPage({
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
                       href={`/admin/orders/${order.id}`}
-                      className="font-display text-base font-semibold text-ink-900 hover:text-plum-600"
+                      className="font-display text-base font-semibold text-ink-900 hover:text-indigo-600"
                     >
                       #{order.order_number}
                     </Link>
@@ -153,7 +153,7 @@ export default async function AdminOrdersPage({
                               )
                             ? "danger"
                             : order.status === "new"
-                              ? "plum"
+                              ? "indigo"
                               : "info"
                       }
                     >
@@ -191,7 +191,7 @@ export default async function AdminOrdersPage({
                   <OrderStatusControl orderId={order.id} current={order.status} compact />
                   <Link
                     href={`/admin/orders/${order.id}`}
-                    className="text-xs font-medium text-plum-600 hover:text-plum-700"
+                    className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
                   >
                     Open order
                   </Link>

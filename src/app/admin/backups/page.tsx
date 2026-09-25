@@ -167,7 +167,7 @@ export default async function AdminBackupsPage() {
                       downloadUrls[record.storage_path ?? ""] ? (
                         <a
                           href={downloadUrls[record.storage_path as string]}
-                          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-plum-600 px-3 text-xs font-medium text-rice-50 hover:bg-plum-700"
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-medium text-rice-50 hover:bg-indigo-700"
                         >
                           <Download className="size-3.5" aria-hidden="true" />
                           Download

@@ -5,7 +5,7 @@ type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    "bg-plum-600 text-rice-50 hover:bg-plum-700 active:bg-plum-700 shadow-washi",
+    "bg-indigo-600 text-rice-50 hover:bg-indigo-700 active:bg-indigo-700 shadow-washi",
   secondary:
     "bg-bamboo-600 text-rice-50 hover:bg-bamboo-700 active:bg-bamboo-700 shadow-washi",
   outline:
@@ -85,7 +85,7 @@ export function Badge({
   className,
 }: {
   children: React.ReactNode;
-  tone?: "neutral" | "success" | "warning" | "danger" | "info" | "plum";
+  tone?: "neutral" | "success" | "warning" | "danger" | "info" | "indigo";
   className?: string;
 }) {
   const tones = {
@@ -94,7 +94,7 @@ export function Badge({
     warning: "bg-miso-500/20 text-miso-600",
     danger: "bg-chili-500/15 text-chili-600",
     info: "bg-bamboo-500/18 text-bamboo-700",
-    plum: "bg-plum-600/12 text-plum-600",
+    indigo: "bg-indigo-600/12 text-indigo-600",
   } as const;
 
   return (

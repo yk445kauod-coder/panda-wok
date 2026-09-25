@@ -9,19 +9,33 @@ import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { Badge } from "@/components/ui/button";
 import { getLocale, getT } from "@/lib/i18n/server";
+import {
+  brandDescription,
+  brandName,
+  brandTagline,
+  localisedPlace,
+} from "@/lib/i18n/brand";
 
 export const dynamic = "force-dynamic";
 
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [settings, locale] = await Promise.all([getPublicSettings(), getLocale()]);
+  const [settings, restaurant, locale] = await Promise.all([
+    getPublicSettings(),
+    getRestaurant(),
+    getLocale(),
+  ]);
   const t = await getT(locale);
+  const cuisine = (restaurant?.cuisine_tags ?? []).filter(
+    (tag): tag is string => typeof tag === "string",
+  );
   return buildMetadata({
     title: t("about.metaTitle", { brand: settings.brand.name }),
     description: t("about.metaDescription", {
       brand: settings.brand.name,
-      city: settings.brand.city,
-      country: settings.brand.country,
+      cuisine: cuisine.slice(0, 3).join(", ") || settings.brand.cuisine,
+      city: localisedPlace(settings.brand.city, locale),
+      country: localisedPlace(settings.brand.country, locale),
     }),
     path: "/about",
     siteName: settings.brand.name,
@@ -49,12 +63,16 @@ export default async function AboutPage() {
   const body = (key: string, fallback: string) =>
     copy.get(key)?.body?.trim() || fallback;
 
-  const brand = restaurant?.name_en ?? settings.brand.name;
-  const description =
-    restaurant?.description_en ?? t("about.fallbackDescription", {
+  const brand = brandName(restaurant, locale, settings.brand.name);
+  const tagline = brandTagline(restaurant, locale, t("about.fallbackTagline"));
+  const description = brandDescription(
+    restaurant,
+    locale,
+    t("about.fallbackDescription", {
       brand,
-      city: settings.brand.city,
-    });
+      city: localisedPlace(settings.brand.city, locale),
+    }),
+  );
 
   const cuisine = (restaurant?.cuisine_tags ?? []).filter(
     (tag): tag is string => typeof tag === "string",
@@ -87,13 +105,13 @@ export default async function AboutPage() {
             {t("about.title", { brand })}
           </h1>
           <p className="mt-1.5 text-sm text-ink-700/85">
-            {restaurant?.tagline_en ?? settings.brand.tagline}
+            {tagline}
           </p>
           {cuisine.length > 0 ? (
             <ul className="mt-3 flex flex-wrap gap-2">
               {cuisine.map((tag) => (
                 <li key={tag}>
-                  <Badge tone="plum">{tag}</Badge>
+                  <Badge tone="indigo">{tag}</Badge>
                 </li>
               ))}
             </ul>
@@ -115,41 +133,18 @@ export default async function AboutPage() {
         <p>{body("how_we_cook", t("about.howWeCookBody"))}</p>
 
         <h2 className="font-display text-lg font-semibold text-ink-900">
-          {heading("identity", t("home.identityHeading"))}
+          {heading("identity", t("about.identityHeading"))}
         </h2>
-        <p>{body("identity", t("home.identityBody"))}</p>
-        <dl className="grid gap-3 sm:grid-cols-2">
-          <div className="washi-panel p-4">
-            <dt className="flex items-center gap-2 text-sm font-semibold text-ink-900">
-              <span
-                lang="ja"
-                aria-hidden="true"
-                className="grid size-8 place-items-center rounded-lg bg-plum-600/10 font-display text-sm font-semibold text-plum-700"
-              >
-                {t("home.identityJapaneseScript")}
-              </span>
-              {t("home.identityJapaneseLabel")}
-            </dt>
-            <dd className="mt-2 text-sm text-ink-700/85">
-              {t("home.identityJapaneseBody")}
-            </dd>
-          </div>
-          <div className="washi-panel p-4">
-            <dt className="flex items-center gap-2 text-sm font-semibold text-ink-900">
-              <span
-                lang="zh-Hans"
-                aria-hidden="true"
-                className="grid size-8 place-items-center rounded-lg bg-chili-500/10 font-display text-sm font-semibold text-chili-600"
-              >
-                {t("home.identityChineseScript")}
-              </span>
-              {t("home.identityChineseLabel")}
-            </dt>
-            <dd className="mt-2 text-sm text-ink-700/85">
-              {t("home.identityChineseBody")}
-            </dd>
-          </div>
-        </dl>
+        <p>{body("identity", t("about.identityBody"))}</p>
+        {cuisine.length > 0 ? (
+          <ul className="flex flex-wrap gap-2">
+            {cuisine.map((tag) => (
+              <li key={tag}>
+                <Badge tone="info">{tag}</Badge>
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
         <h2 className="font-display text-lg font-semibold text-ink-900">
           {heading("allergens", t("about.allergensHeading"))}
@@ -161,9 +156,14 @@ export default async function AboutPage() {
         </h2>
         <p>
           {t("about.whereBody", {
-            area: restaurant?.area ? `${restaurant.area}, ` : "",
-            city: restaurant?.city ?? settings.brand.city,
-            country: restaurant?.country ?? settings.brand.country,
+            area: restaurant?.area
+              ? `${localisedPlace(restaurant.area, locale)}, `
+              : "",
+            city: localisedPlace(restaurant?.city ?? settings.brand.city, locale),
+            country: localisedPlace(
+              restaurant?.country ?? settings.brand.country,
+              locale,
+            ),
           })}
         </p>
       </section>
@@ -171,7 +171,7 @@ export default async function AboutPage() {
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Link
           href="/menu"
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-plum-600 px-6 font-medium text-rice-50 hover:bg-plum-700 sm:flex-1"
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 hover:bg-indigo-700 sm:flex-1"
         >
           {t("about.seeMenu")}
         </Link>
