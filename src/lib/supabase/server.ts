@@ -2,17 +2,42 @@ import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { Database } from "@/lib/types/database";
-import { publicEnv, serverEnv, serviceRoleAvailable } from "@/lib/config/env";
+import { publicEnv, serviceRoleAvailable } from "@/lib/config/env";
+import { gateIdentity } from "@/lib/auth/admin-gate";
+import {
+  createAdminSupabase,
+  tryCreateAdminSupabase,
+} from "@/lib/supabase/service";
 
 export type SupabaseServerClient = ReturnType<typeof createServerClient<Database>>;
+
+/** Re-exported so privileged call sites keep importing from one place. */
+export { createAdminSupabase, tryCreateAdminSupabase };
 
 /**
  * Request-scoped client bound to the caller's cookies. All queries run as the
  * signed-in user, so RLS is the enforcement point, not application code.
+ *
+ * One exception: a request to the ops surface itself (`/admin`, flagged by the
+ * middleware with `x-pw-path`) that carries a valid gate cookie runs with the
+ * service role. The ops console is opened with the passcode/login-id gate rather
+ * than a Supabase auth session, so without this the staff RLS policies — which
+ * resolve through `auth.uid()` — would authorise nothing and every admin screen
+ * would silently render empty. The elevation is scoped to the admin path, so an
+ * owner browsing the customer site still reads through their own session.
  */
 export async function createServerSupabase(): Promise<SupabaseServerClient> {
+  const headerList = await headers();
+  const path = headerList.get("x-pw-path") ?? "";
+  if (path.startsWith("/admin")) {
+    const identity = await gateIdentity();
+    if (identity && serviceRoleAvailable()) {
+      return createAdminSupabase() as unknown as SupabaseServerClient;
+    }
+  }
+
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
@@ -51,33 +76,4 @@ export function createPublicSupabase() {
     publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
-}
-
-let adminClient: ReturnType<typeof createSupabaseClient<Database>> | undefined;
-
-/**
- * Service-role client for privileged server work: exports, backups, analytics
- * rollups, AI usage accounting. Bypasses RLS, so every call site must perform
- * its own authorization check first. Never imported into client code.
- */
-export function createAdminSupabase() {
-  if (!serviceRoleAvailable()) {
-    throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is not configured; privileged operations are unavailable.",
-    );
-  }
-  if (!adminClient) {
-    adminClient = createSupabaseClient<Database>(
-      publicEnv.NEXT_PUBLIC_SUPABASE_URL,
-      serverEnv.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: { persistSession: false, autoRefreshToken: false },
-      },
-    );
-  }
-  return adminClient;
-}
-
-export function tryCreateAdminSupabase() {
-  return serviceRoleAvailable() ? createAdminSupabase() : null;
 }

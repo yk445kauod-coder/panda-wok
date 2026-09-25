@@ -74,7 +74,7 @@ export async function savePageContentAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: parsed.data.id ? "content.section_updated" : "content.section_created",
     entity: "page_content",
@@ -98,7 +98,7 @@ export async function deletePageContentAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "content.section_deleted",
     entity: "page_content",
@@ -147,7 +147,7 @@ export async function saveFaqAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: parsed.data.id ? "content.faq_updated" : "content.faq_created",
     entity: "faqs",
@@ -171,7 +171,7 @@ export async function deleteFaqAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "content.faq_deleted",
     entity: "faqs",
@@ -226,7 +226,7 @@ export async function saveDeliveryZoneAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: parsed.data.id ? "content.zone_updated" : "content.zone_created",
     entity: "delivery_zones",
@@ -250,7 +250,7 @@ export async function deleteDeliveryZoneAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "content.zone_deleted",
     entity: "delivery_zones",
@@ -305,7 +305,7 @@ export async function saveAnnouncementAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: parsed.data.id
       ? "content.announcement_updated"
@@ -331,7 +331,7 @@ export async function deleteAnnouncementAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "content.announcement_deleted",
     entity: "announcements",
@@ -380,7 +380,7 @@ export async function savePageSeoAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "content.seo_updated",
     entity: "page_seo",
@@ -404,7 +404,7 @@ export async function deletePageSeoAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "content.seo_deleted",
     entity: "page_seo",

@@ -56,7 +56,7 @@ export async function logActivity(
 export async function logAudit(
   supabase: SupabaseClient<Database>,
   params: {
-    actorId: string;
+    actorId: string | null;
     actorRole: Database["public"]["Enums"]["staff_role"] | null;
     action: string;
     entity: string;

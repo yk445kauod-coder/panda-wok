@@ -388,6 +388,37 @@ export const staffSchema = z.object({
   userId: uuidSchema,
   role: z.enum(["owner", "admin", "manager", "kitchen", "support", "marketing"]),
   displayName: optionalText(80),
+  loginId: optionalText(60),
+  isActive: z.coerce.boolean().default(true),
+});
+
+/**
+ * Owner-created account. The owner issues a team member an account with a role
+ * and a `loginId` — whatever identifier the worker will type at /admin (a phone
+ * number, a short code, an employee number). The worker uses that same value to
+ * open the ops console, so they never need a customer login.
+ */
+export const createStaffSchema = z.object({
+  fullName: z.string().trim().min(2, "Enter the team member's name").max(80),
+  role: z.enum(["owner", "admin", "manager", "kitchen", "support", "marketing"]),
+  loginId: z
+    .string()
+    .trim()
+    .min(4, "Use at least 4 characters")
+    .max(60, "Keep the login id under 60 characters")
+    .regex(/^[A-Za-z0-9._@+\- \u0600-\u06FF]+$/, "Use letters, numbers or . _ @ + - only"),
+  phone: z
+    .union([phoneSchema, z.literal("")])
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  email: z
+    .union([z.string().trim().email("Enter a valid email address"), z.literal("")])
+    .optional()
+    .transform((v) => {
+      const value = typeof v === "string" ? v.trim() : "";
+      return value ? value : undefined;
+    }),
+  displayName: optionalText(80),
   isActive: z.coerce.boolean().default(true),
 });
 

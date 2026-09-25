@@ -22,7 +22,8 @@ export default async function CrmCustomerPage({
   params: Promise<{ userId: string }>;
 }) {
   const { userId } = await params;
-  await requireCapability("crm.view");
+  const session = await requireCapability("crm.view");
+  const canGrantPrivileged = session.role === "owner";
 
   const customer = await getCrmCustomer(userId);
   if (!customer) notFound();
@@ -230,8 +231,10 @@ export default async function CrmCustomerPage({
           <StaffRoleForm
             userId={customer.user_id}
             currentRole={staffRow?.role ?? null}
+            currentLoginId={staffRow?.login_id ?? null}
             isActive={staffRow?.is_active ?? true}
             displayName={staffRow?.display_name ?? customer.full_name}
+            canGrantPrivileged={canGrantPrivileged}
           />
         </div>
       </section>

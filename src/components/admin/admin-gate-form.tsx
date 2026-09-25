@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, ShieldCheck } from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { unlockAdminAction } from "@/lib/actions/admin-gate";
@@ -9,19 +9,18 @@ import { useErrorText } from "@/components/i18n-provider";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 
 /**
- * Shared-passcode prompt shown ahead of the staff-role check on /admin. Kept
- * intentionally terse: anyone who does not already know the passcode — or that
- * the ops console exists — learns nothing from this screen.
+ * The single ops credential prompt. One field: the shared passcode opens the
+ * console as the owner, a staff login id opens it with that member's role.
+ * Nothing here reveals which credential a visitor holds or that the console
+ * exists to anyone who does not already know the passcode.
  */
 export function AdminGateForm({
-  scope = "admin",
   brand,
 }: {
-  scope?: "admin" | "drops";
   brand?: { name: string; logo_url: string | null };
 }) {
   const errorText = useErrorText();
-  const [passcode, setPasscode] = useState("");
+  const [secret, setSecret] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
@@ -32,8 +31,7 @@ export function AdminGateForm({
 
     try {
       const formData = new FormData();
-      formData.set("passcode", passcode);
-      formData.set("scope", scope);
+      formData.set("secret", secret);
       const result = await unlockAdminAction(formData);
       if (!result.ok) {
         setError(result.error);
@@ -71,10 +69,11 @@ export function AdminGateForm({
           <KeyRound className="size-5" />
         </div>
         <h1 className="mt-3 font-display text-lg font-semibold text-ink-900">
-          Enter ops passcode
+          Enter your access code
         </h1>
         <p className="mt-1 text-sm text-ink-700/80">
-          This console is restricted. Ask the owner for the passcode.
+          Owners use the ops passcode. Team members use the id the owner issued
+          them.
         </p>
 
         {error ? (
@@ -83,17 +82,17 @@ export function AdminGateForm({
           </p>
         ) : null}
 
-        <label htmlFor="passcode" className="sr-only">
-          Ops passcode
+        <label htmlFor="secret" className="sr-only">
+          Access code
         </label>
         <input
-          id="passcode"
-          name="passcode"
+          id="secret"
+          name="secret"
           type="password"
-          value={passcode}
+          value={secret}
           autoComplete="off"
           autoFocus
-          onChange={(event) => setPasscode(event.target.value)}
+          onChange={(event) => setSecret(event.target.value)}
           aria-invalid={error ? true : undefined}
           className="mt-4 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-center text-sm tracking-[0.3em] outline-none focus:border-miso-500"
         />
@@ -101,11 +100,6 @@ export function AdminGateForm({
         <Button type="submit" size="lg" className="mt-4 w-full" loading={pending}>
           {pending ? "Checking…" : "Unlock"}
         </Button>
-
-        <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-ink-700/60">
-          <ShieldCheck className="size-3.5" aria-hidden="true" />
-          Staff sign-in is still required after unlocking.
-        </p>
       </form>
     </div>
   );

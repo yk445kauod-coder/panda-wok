@@ -33,10 +33,13 @@ import {
   aiProviderSchema,
   aiPromptSchema,
   staffSchema,
+  createStaffSchema,
   feedbackResponseSchema,
   conversationStatusSchema,
   uuidSchema,
 } from "@/lib/validation/schemas";
+import { placeholderEmailFor } from "@/lib/auth/phone";
+import { randomId } from "@/lib/utils/format";
 
 /** Narrow guard shared by the single-row mutations. */
 function isUuid(value: string) {
@@ -123,7 +126,7 @@ export async function updateOrderStatusAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "order.status_changed",
     entity: "orders",
@@ -231,7 +234,7 @@ export async function saveMenuItemAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: parsed.data.id ? "menu_item.updated" : "menu_item.created",
     entity: "menu_items",
@@ -261,7 +264,7 @@ export async function deleteMenuItemAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "menu_item.archived",
     entity: "menu_items",
@@ -306,7 +309,7 @@ export async function duplicateMenuItemAction(
   if (error || !data) return actionError(error ?? new Error("Copy failed"));
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "menu_item.duplicated",
     entity: "menu_items",
@@ -339,7 +342,7 @@ export async function toggleMenuItemAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: `menu_item.${field}`,
     entity: "menu_items",
@@ -409,7 +412,7 @@ export async function saveCategoryAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: parsed.data.id ? "category.updated" : "category.created",
     entity: "categories",
@@ -448,7 +451,7 @@ export async function deleteCategoryAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "category.deleted",
     entity: "categories",
@@ -475,7 +478,7 @@ export async function reorderCategoryAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "category.reordered",
     entity: "categories",
@@ -537,7 +540,7 @@ export async function saveStockItemAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: parsed.data.id ? "stock_item.updated" : "stock_item.created",
     entity: "stock_items",
@@ -570,13 +573,13 @@ export async function recordStockMovementAction(
     direction: parsed.data.direction,
     quantity: parsed.data.quantity,
     reason: parsed.data.reason ?? null,
-    created_by: session.user.id,
+    created_by: session.actorId,
   });
 
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "stock.movement",
     entity: "stock_items",
@@ -646,7 +649,7 @@ export async function saveRewardAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: parsed.data.id ? "reward.updated" : "reward.created",
     entity: "loyalty_rewards",
@@ -675,7 +678,7 @@ export async function deleteRewardAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "reward.deleted",
     entity: "loyalty_rewards",
@@ -713,7 +716,7 @@ export async function toggleRewardAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: enabled ? "reward.enabled" : "reward.disabled",
     entity: "loyalty_rewards",
@@ -752,13 +755,13 @@ export async function adjustLoyaltyPointsAction(
     points,
     type: points > 0 ? "bonus" : "adjust",
     reason,
-    created_by: session.user.id,
+    created_by: session.actorId,
   });
 
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "loyalty.adjusted",
     entity: "loyalty_accounts",
@@ -792,7 +795,7 @@ export async function respondToFeedbackAction(
     .update({
       admin_response: parsed.data.response,
       responded_at: new Date().toISOString(),
-      responded_by: session.user.id,
+      responded_by: session.actorId,
       status: parsed.data.status,
     })
     .eq("id", parsed.data.feedbackId);
@@ -800,7 +803,7 @@ export async function respondToFeedbackAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "feedback.responded",
     entity: "feedback",
@@ -840,7 +843,7 @@ export async function setConversationStatusAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "conversation.status",
     entity: "conversations",
@@ -897,7 +900,7 @@ export async function createBroadcastAction(
   const row = Array.isArray(data) ? data[0] : data;
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "broadcast.sent",
     entity: "broadcasts",
@@ -968,7 +971,7 @@ export async function saveUpsellRuleAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: parsed.data.id ? "upsell_rule.updated" : "upsell_rule.created",
     entity: "upsell_rules",
@@ -989,7 +992,7 @@ export async function deleteUpsellRuleAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "upsell_rule.deleted",
     entity: "upsell_rules",
@@ -1027,7 +1030,7 @@ export async function updateSettingsAction(
   for (const entry of parsed.data.values) {
     const { error } = await supabase
       .from("settings")
-      .update({ value: entry.value as never, updated_by: session.user.id })
+      .update({ value: entry.value as never, updated_by: session.actorId })
       .eq("key", entry.key);
 
     if (error) {
@@ -1036,7 +1039,7 @@ export async function updateSettingsAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "settings.updated",
     entity: "settings",
@@ -1070,7 +1073,7 @@ export async function toggleFeatureFlagAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "feature_flag.updated",
     entity: "feature_flags",
@@ -1094,11 +1097,12 @@ export async function saveStaffAction(
     userId: formData.get("userId"),
     role: formData.get("role"),
     displayName: formData.get("displayName") ?? undefined,
+    loginId: formData.get("loginId") ?? undefined,
     isActive: formData.get("isActive") === "on",
   });
   if (!parsed.success) return toFormError(parsed.error);
 
-  if (parsed.data.userId === session.user.id && parsed.data.role !== "owner") {
+  if (session.actorId && parsed.data.userId === session.actorId && parsed.data.role !== "owner") {
     return {
       ok: false,
       error: {
@@ -1109,12 +1113,49 @@ export async function saveStaffAction(
   }
 
   const supabase = await createServerSupabase();
+  const admin = tryCreateAdminSupabase();
+
+  // Duty separation: `roles.manage` (owner) is required to hand out the two
+  // privileged roles, so an admin/manager cannot quietly promote themselves or
+  // a colleague to owner/admin.
+  if (parsed.data.role === "owner" || parsed.data.role === "admin") {
+    if (session.role !== "owner") {
+      return actionFail(
+        "FORBIDDEN",
+        "Only an owner can grant the owner or admin role.",
+      );
+    }
+  }
+
+  // A login id is a credential, so it must be unique case-insensitively and
+  // cannot be blanked by accident once set.
+  const loginId = parsed.data.loginId?.trim() || null;
+  if (loginId && admin) {
+    const { data: clash } = await admin
+      .from("staff")
+      .select("user_id")
+      .ilike("login_id", loginId)
+      .neq("user_id", parsed.data.userId)
+      .limit(1)
+      .maybeSingle();
+    if (clash) {
+      return {
+        ok: false,
+        error: {
+          code: "VALIDATION",
+          message: "That login id is already used by another team member.",
+        },
+        fields: { loginId: "This login id is taken" },
+      };
+    }
+  }
 
   const { error } = await supabase.from("staff").upsert(
     {
       user_id: parsed.data.userId,
       role: parsed.data.role,
       display_name: parsed.data.displayName ?? null,
+      login_id: loginId,
       is_active: parsed.data.isActive,
     },
     { onConflict: "user_id" },
@@ -1123,16 +1164,150 @@ export async function saveStaffAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "staff.upserted",
     entity: "staff",
     entityId: parsed.data.userId,
-    after: { role: parsed.data.role, is_active: parsed.data.isActive },
+    after: {
+      role: parsed.data.role,
+      is_active: parsed.data.isActive,
+      login_id_set: Boolean(loginId),
+    },
   });
 
   revalidatePath("/admin/users");
   return actionOk();
+}
+
+/**
+ * Owner-created staff account. The owner issues a team member a role and a
+ * login id in one step; the account is created confirmed (like customer
+ * signup) so the worker can open /admin with that id immediately — no email,
+ * no password reset, no customer login. The staff row is written with the
+ * service role so it is not silently dropped by the staff-write RLS policy.
+ */
+export async function createStaffAccountAction(
+  formData: FormData,
+): Promise<FormActionResult<{ userId: string }>> {
+  const session = await assertCapability("roles.manage");
+
+  const parsed = createStaffSchema.safeParse({
+    fullName: formData.get("fullName"),
+    role: formData.get("role"),
+    loginId: formData.get("loginId"),
+    phone: formData.get("phone") ?? undefined,
+    email: formData.get("email") ?? undefined,
+    displayName: formData.get("displayName") ?? undefined,
+    isActive: formData.get("isActive") !== "off",
+  });
+  if (!parsed.success) return toFormError(parsed.error);
+
+  if (parsed.data.role === "owner" && session.role !== "owner") {
+    return actionFail("FORBIDDEN", "Only an owner can create another owner.");
+  }
+
+  const admin = tryCreateAdminSupabase();
+  if (!admin) {
+    return actionFail(
+      "UNKNOWN",
+      "Creating team accounts needs the service-role key on the server.",
+    );
+  }
+
+  const loginId = parsed.data.loginId.trim();
+  const email = parsed.data.email ?? placeholderEmailFor(loginId);
+
+  // Both the login id and the email identity must be unique before we touch the
+  // auth provider, so the owner gets a clear message instead of a 500.
+  const { data: idClash } = await admin
+    .from("staff")
+    .select("user_id")
+    .ilike("login_id", loginId)
+    .limit(1)
+    .maybeSingle();
+  if (idClash) {
+    return {
+      ok: false,
+      error: { code: "VALIDATION", message: "That login id is already in use." },
+      fields: { loginId: "This login id is taken" },
+    };
+  }
+
+  const { data: emailClash } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .limit(1)
+    .maybeSingle();
+  if (emailClash) {
+    return {
+      ok: false,
+      error: { code: "EMAIL_ALREADY_EXISTS", message: "That email is already registered." },
+      fields: { email: "This email is already registered" },
+    };
+  }
+
+  // A random password is set (and never surfaced): the account is opened at
+  // /admin with the login id, not with this credential.
+  const password = `pw-${randomId("staff")}-${Math.random().toString(36).slice(2)}`;
+
+  const created = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: {
+      full_name: parsed.data.fullName,
+      phone: parsed.data.phone ?? null,
+      locale: "en",
+    },
+  });
+
+  const userId = created.data.user?.id;
+  if (created.error || !userId) {
+    return actionError(created.error ?? new Error("Could not create the account."));
+  }
+
+  // Repair/ensure the profile row (the handle_new_user trigger should have made
+  // one, but a race or a pre-existing row is handled here), then the staff row.
+  await admin.from("profiles").upsert(
+    {
+      id: userId,
+      full_name: parsed.data.fullName,
+      phone: parsed.data.phone ?? null,
+      email,
+    },
+    { onConflict: "id" },
+  );
+
+  const { error: staffError } = await admin.from("staff").upsert(
+    {
+      user_id: userId,
+      role: parsed.data.role,
+      display_name: parsed.data.displayName ?? parsed.data.fullName,
+      login_id: loginId,
+      is_active: parsed.data.isActive,
+    },
+    { onConflict: "user_id" },
+  );
+
+  if (staffError) {
+    // Do not leave a half-created account behind if the staff row failed.
+    await admin.auth.admin.deleteUser(userId).catch(() => {});
+    return actionError(staffError);
+  }
+
+  await logAudit(admin, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "staff.created",
+    entity: "staff",
+    entityId: userId,
+    after: { role: parsed.data.role, login_id_set: true },
+  });
+
+  revalidatePath("/admin/users");
+  return actionOk({ userId });
 }
 
 export async function setUserBlockedAction(
@@ -1146,7 +1321,7 @@ export async function setUserBlockedAction(
   if (!userId) {
     return { ok: false, error: { code: "UNKNOWN", message: "Missing customer." } };
   }
-  if (userId === session.user.id) {
+  if (userId === session.actorId) {
     return {
       ok: false,
       error: { code: "UNKNOWN", message: "You cannot block your own account." },
@@ -1162,7 +1337,7 @@ export async function setUserBlockedAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: blocked ? "customer.blocked" : "customer.unblocked",
     entity: "profiles",
@@ -1206,7 +1381,7 @@ export async function requestExportAction(
       dataset: parsed.data.dataset,
       format: parsed.data.format,
       status: "running",
-      requested_by: session.user.id,
+      requested_by: session.actorId,
     })
     .select("id")
     .single();
@@ -1245,7 +1420,7 @@ export async function requestExportAction(
     if (finishError) throw new Error(finishError.message);
 
     await logAudit(admin, {
-      actorId: session.user.id,
+      actorId: session.actorId,
       actorRole: session.role,
       action: "export.created",
       entity: "exports",
@@ -1306,7 +1481,7 @@ export async function requestBackupAction(
       kind: parsed.data.kind,
       status: "running",
       label: parsed.data.label ?? null,
-      created_by: session.user.id,
+      created_by: session.actorId,
     })
     .select("id")
     .single();
@@ -1340,7 +1515,7 @@ export async function requestBackupAction(
     if (finishError) throw new Error(finishError.message);
 
     await logAudit(admin, {
-      actorId: session.user.id,
+      actorId: session.actorId,
       actorRole: session.role,
       action: "backup.created",
       entity: "backup_records",
@@ -1415,7 +1590,7 @@ export async function saveAiProviderAction(
   }
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: parsed.data.id ? "ai_provider.updated" : "ai_provider.created",
     entity: "ai_providers",
@@ -1452,7 +1627,7 @@ export async function saveAiPromptAction(
       max_tokens: parsed.data.maxTokens,
       is_active: parsed.data.isActive,
       name: parsed.data.key,
-      updated_by: session.user.id,
+      updated_by: session.actorId,
     },
     { onConflict: "key" },
   );
@@ -1460,7 +1635,7 @@ export async function saveAiPromptAction(
   if (error) return actionError(error);
 
   await logAudit(supabase, {
-    actorId: session.user.id,
+    actorId: session.actorId,
     actorRole: session.role,
     action: "ai_prompt.updated",
     entity: "ai_prompts",

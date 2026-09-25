@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { DEFAULT_PAGE_SIZE, Pagination, resolvePage } from "@/components/ui/pagination";
-import { BlockUserControl, StaffRoleForm } from "@/components/admin/customer-controls";
+import { BlockUserControl, CreateStaffForm, StaffRoleForm } from "@/components/admin/customer-controls";
 import { formatDate, formatDateTime, formatNumber, formatPrice, humanise } from "@/lib/utils/format";
 import type { StaffRole } from "@/lib/auth/rbac";
 
@@ -22,7 +22,8 @@ export default async function AdminUsersPage({
 }: {
   searchParams: Promise<{ q?: string; role?: string; page?: string }>;
 }) {
-  await requireCapability("users.manage");
+  const session = await requireCapability("users.manage");
+  const canGrantPrivileged = session.role === "owner";
   const params = await searchParams;
 
   const page = resolvePage(params.page);
@@ -123,6 +124,19 @@ export default async function AdminUsersPage({
         ) : null}
       </form>
 
+      <details className="washi-panel p-4">
+        <summary className="cursor-pointer font-display text-base font-semibold text-ink-900">
+          Create a team account
+        </summary>
+        <p className="mt-1 text-xs text-ink-700/70">
+          Issues a role and an ops login id in one step. The person opens /admin
+          with that id — no email, password or customer signup required.
+        </p>
+        <div className="mt-4 max-w-md">
+          <CreateStaffForm canGrantPrivileged={canGrantPrivileged} />
+        </div>
+      </details>
+
       {filtered.length === 0 ? (
         <EmptyState
           title={
@@ -182,8 +196,10 @@ export default async function AdminUsersPage({
                         <StaffRoleForm
                           userId={customer.user_id}
                           currentRole={staffRow?.role ?? null}
+                          currentLoginId={staffRow?.login_id ?? null}
                           isActive={staffRow?.is_active ?? true}
                           displayName={staffRow?.display_name ?? customer.full_name}
+                          canGrantPrivileged={canGrantPrivileged}
                         />
                       </div>
                     </details>

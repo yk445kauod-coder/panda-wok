@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { Badge, Button } from "@/components/ui/button";
 import { cn, humanise } from "@/lib/utils/format";
-import { setUserBlockedAction, saveStaffAction, adjustLoyaltyPointsAction } from "@/lib/actions/admin";
+import { setUserBlockedAction, saveStaffAction, createStaffAccountAction, adjustLoyaltyPointsAction } from "@/lib/actions/admin";
 import { AdminForm, Field, Toggle } from "@/components/admin/form-kit";
 import type { StaffRole } from "@/lib/auth/rbac";
 
@@ -103,15 +103,24 @@ export function BlockUserControl({
 export function StaffRoleForm({
   userId,
   currentRole,
+  currentLoginId,
   isActive,
   displayName,
+  canGrantPrivileged,
 }: {
   userId: string;
   currentRole: StaffRole | null;
+  currentLoginId?: string | null;
   isActive: boolean;
   displayName: string | null;
+  /** Owner-only: whether owner/admin may be chosen in the role picker. */
+  canGrantPrivileged: boolean;
 }) {
   const [role, setRole] = useState<StaffRole>(currentRole ?? "kitchen");
+  const grantable = ROLES.filter(
+    (option) =>
+      canGrantPrivileged || (option !== "owner" && option !== "admin"),
+  );
 
   return (
     <AdminForm
@@ -127,6 +136,13 @@ export function StaffRoleForm({
         defaultValue={displayName ?? ""}
       />
 
+      <Field
+        name="loginId"
+        label="Ops login id"
+        hint="What this person types at /admin to open the console with this role. A phone number works well. Leave blank to use the shared passcode only."
+        defaultValue={currentLoginId ?? ""}
+      />
+
       <div>
         <label htmlFor={`role-${userId}`} className="block text-sm font-medium text-ink-900">
           Role
@@ -138,7 +154,7 @@ export function StaffRoleForm({
           onChange={(event) => setRole(event.target.value as StaffRole)}
           className="mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
         >
-          {ROLES.map((option) => (
+          {grantable.map((option) => (
             <option key={option} value={option}>
               {humanise(option)}
             </option>
@@ -152,6 +168,71 @@ export function StaffRoleForm({
         label="Active"
         defaultChecked={isActive}
         hint="Inactive staff keep their history but lose access."
+      />
+    </AdminForm>
+  );
+}
+
+/**
+ * Owner-created team account. One step creates the account, sets its role, and
+ * issues the login id the worker will use at /admin. No email, password, or
+ * customer signup is involved — the login id *is* the credential.
+ */
+export function CreateStaffForm({ canGrantPrivileged }: { canGrantPrivileged: boolean }) {
+  const [role, setRole] = useState<StaffRole>("kitchen");
+  const grantable = ROLES.filter(
+    (option) => canGrantPrivileged || (option !== "owner" && option !== "admin"),
+  );
+
+  return (
+    <AdminForm
+      action={createStaffAccountAction}
+      submitLabel="Create team account"
+      options={{ successMessage: "Team account created — share the ops login id." }}
+    >
+      <Field
+        name="fullName"
+        label="Full name"
+        placeholder="Mona Adel"
+        required
+      />
+      <Field
+        name="loginId"
+        label="Ops login id"
+        hint="The credential they type at /admin. Use a mobile number or a short code."
+        placeholder="01001234567"
+        required
+      />
+      <div>
+        <label htmlFor="new-staff-role" className="block text-sm font-medium text-ink-900">
+          Role
+        </label>
+        <select
+          id="new-staff-role"
+          name="role"
+          value={role}
+          onChange={(event) => setRole(event.target.value as StaffRole)}
+          className="mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
+        >
+          {grantable.map((option) => (
+            <option key={option} value={option}>
+              {humanise(option)}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-ink-700/65">{ROLE_HINTS[role]}</p>
+      </div>
+      <Field
+        name="phone"
+        label="Phone (optional)"
+        hint="Stored on the profile for contact. Not used to sign in."
+        placeholder="01001234567"
+      />
+      <Field
+        name="email"
+        label="Email (optional)"
+        hint="Recovery contact only. Leave blank to keep the account fully phone-first."
+        placeholder="mona@example.com"
       />
     </AdminForm>
   );

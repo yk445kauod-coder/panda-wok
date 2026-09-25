@@ -127,6 +127,7 @@ export function Field({
   defaultValue,
   placeholder,
   dir,
+  required,
 }: {
   name: string;
   label: string;
@@ -138,6 +139,7 @@ export function Field({
   defaultValue?: string;
   placeholder?: string;
   dir?: "ltr" | "rtl";
+  required?: boolean;
 }) {
   return (
     <div className={className}>
@@ -152,6 +154,7 @@ export function Field({
             name={name}
             type={type}
             dir={dir}
+            required={required}
             defaultValue={defaultValue}
             placeholder={placeholder}
             className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"

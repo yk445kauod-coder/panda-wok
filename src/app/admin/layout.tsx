@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { requireCapability } from "@/lib/auth/session";
-import { isUnlocked } from "@/lib/auth/admin-gate";
+import { getAdminSession, requireCapability } from "@/lib/auth/session";
 import { getPublicSettings } from "@/lib/services/catalog";
 import { capabilitiesFor, ROLE_LABELS } from "@/lib/auth/rbac";
 import { AdminShell } from "@/components/admin/admin-shell";
@@ -20,17 +19,19 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Layer 1: the shared ops passcode. Checked first so an unauthenticated
-  // visitor sees a passcode prompt rather than being bounced to the customer
-  // sign-in page.
-  if (!(await isUnlocked())) {
+  // The ops credential is the whole door. No customer login is required, and
+  // nobody is bounced to the customer sign-in: an unauthenticated visitor sees
+  // a single passcode field. The role then comes from the credential itself —
+  // the passcode is the owner, a staff login id is that member's role.
+  const session = await getAdminSession();
+  if (!session) {
     const settings = await getPublicSettings().catch(() => null);
-    return <AdminGateForm scope="admin" brand={settings?.brand} />;
+    return <AdminGateForm brand={settings?.brand} />;
   }
 
-  // Layer 2: a signed-in staff member holding at least the loosest capability.
-  // Individual pages check the capability their own data requires.
-  const session = await requireCapability("orders.view");
+  // Defensive: the loosest capability every role holds. A role without even
+  // this cannot render the console at all.
+  await requireCapability("orders.view");
 
   return (
     <AdminShell

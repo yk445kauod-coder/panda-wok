@@ -1944,6 +1944,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           is_active: boolean
+          login_id: string | null
           role: Database["public"]["Enums"]["staff_role"]
           user_id: string
         }
@@ -1951,6 +1952,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           is_active?: boolean
+          login_id?: string | null
           role?: Database["public"]["Enums"]["staff_role"]
           user_id: string
         }
@@ -1958,6 +1960,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           is_active?: boolean
+          login_id?: string | null
           role?: Database["public"]["Enums"]["staff_role"]
           user_id?: string
         }

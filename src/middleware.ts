@@ -25,7 +25,8 @@ const PROTECTED_PREFIXES = [
 const MARKDOWN_PAGES = new Set(["/", "/menu", "/about", "/contact", "/faq", "/location", "/privacy-policy"]);
 
 export async function middleware(request: NextRequest) {
-  const { response, userId } = await updateSession(request);
+  const { response: sessionResponse, userId } = await updateSession(request);
+  let response = sessionResponse;
   const { pathname, search } = request.nextUrl;
 
   // Markdown for Agents (RFC: Accept: text/markdown). Honest AI agents request
@@ -58,9 +59,25 @@ export async function middleware(request: NextRequest) {
 
   // Admin routes are dynamic and personal: keep them out of every cache and
   // out of search indexes even if a page-level directive is ever missed.
+  //
+  // `/admin` is deliberately NOT in PROTECTED_PREFIXES: it is opened with the
+  // ops passcode / staff login id (checked in AdminLayout), not a customer
+  // session, so nobody is blocked at the door. The `x-pw-path` request header
+  // lets createServerSupabase() elevate that request to the service role, which
+  // the gate — not `auth.uid()` — has already authorised.
   if (pathname.startsWith("/admin")) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pw-path", pathname);
+    response = NextResponse.next({ request: { headers: requestHeaders } });
     response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
     response.headers.set("Cache-Control", "no-store, max-age=0");
+  } else if (request.headers.has("x-pw-path")) {
+    // Stripped on every non-admin path: the header is what lets
+    // createServerSupabase() elevate a request to the service role, so a client
+    // must never be able to inject it for a page the gate does not cover.
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.delete("x-pw-path");
+    response = NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   applySecurityHeaders(response);

@@ -103,7 +103,7 @@ export default async function AdminConversationPage({
           senderKind: message.sender_kind,
           isInternalNote: message.is_internal_note,
           createdAt: message.created_at,
-          mine: message.sender_id === session.user.id,
+          mine: message.sender_id === session.actorId,
           senderLabel:
             message.sender_kind === "customer"
               ? (conversation.customer?.full_name ?? "Customer")

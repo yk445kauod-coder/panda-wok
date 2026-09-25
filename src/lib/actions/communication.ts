@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerSupabase } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/auth/session";
+import { createServerSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
+import { requireUser, assertCapability, getSession } from "@/lib/auth/session";
 import {
   conversationCreateSchema,
   feedbackSchema,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/validation/schemas";
 import {
   actionError,
+  actionFail,
   actionOk,
   toFormError,
   type FormActionResult,
@@ -154,8 +155,6 @@ export async function createConversationAction(
 export async function sendMessageAction(
   formData: FormData,
 ): Promise<FormActionResult<undefined>> {
-  const session = await requireUser("/chat");
-
   const parsed = messageSchema.safeParse({
     conversationId: formData.get("conversationId"),
     body: formData.get("body"),
@@ -163,8 +162,6 @@ export async function sendMessageAction(
   });
 
   if (!parsed.success) return toFormError(parsed.error);
-
-  const supabase = await createServerSupabase();
   const v = parsed.data;
 
   if (!v.conversationId) {
@@ -174,46 +171,90 @@ export async function sendMessageAction(
     };
   }
 
-  const { data: conversation } = await supabase
-    .from("conversations")
-    .select("id, user_id")
-    .eq("id", v.conversationId)
-    .maybeSingle();
+  // Two ways a message can be sent: as the signed-in customer, or as an
+  // operator who opened the ops console with the gate. The customer path keeps
+  // using the RLS-scoped client; the operator path is authorised by capability
+  // and writes through the service role, because a gate session has no Supabase
+  // auth id to satisfy messages_self_insert.
+  const customer = await getSession().catch(() => null);
 
-  if (!conversation) {
-    return { ok: false, error: { code: "FORBIDDEN", message: "Conversation not found." } };
+  if (customer) {
+    const supabase = await createServerSupabase();
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("id, user_id")
+      .eq("id", v.conversationId)
+      .maybeSingle();
+
+    if (!conversation) {
+      return { ok: false, error: { code: "FORBIDDEN", message: "Conversation not found." } };
+    }
+
+    const isOwner = conversation.user_id === customer.user.id;
+    const isStaff = customer.isStaff;
+    if (!isOwner && !isStaff) {
+      return { ok: false, error: { code: "FORBIDDEN", message: "Not your conversation." } };
+    }
+    if (v.isInternalNote && !isStaff) {
+      return {
+        ok: false,
+        error: { code: "FORBIDDEN", message: "Internal notes are staff-only." },
+      };
+    }
+
+    const { error } = await supabase.from("messages").insert({
+      conversation_id: v.conversationId,
+      sender_id: customer.user.id,
+      sender_kind: isOwner ? "customer" : "staff",
+      body: v.body,
+      is_internal_note: v.isInternalNote,
+    });
+
+    if (error) return actionError(error);
+
+    await logActivity(supabase, {
+      userId: customer.user.id,
+      event: "MESSAGE_SENT",
+      entity: "conversations",
+      entityId: v.conversationId,
+    });
+
+    revalidatePath("/chat");
+    revalidatePath(`/admin/chat/${v.conversationId}`);
+    return actionOk();
   }
 
-  const isOwner = conversation.user_id === session.user.id;
-  const isStaff = session.isStaff;
-
-  if (!isOwner && !isStaff) {
-    return { ok: false, error: { code: "FORBIDDEN", message: "Not your conversation." } };
+  // Operator path. Requires the gate to be unlocked and the role to hold
+  // chat.manage; this is the same capability that guards the admin chat page.
+  let opsSession;
+  try {
+    opsSession = await assertCapability("chat.manage");
+  } catch {
+    return { ok: false, error: { code: "FORBIDDEN", message: "Unlock the ops console first." } };
   }
 
-  // Internal notes are staff-only; the database enforces this too.
-  if (v.isInternalNote && !isStaff) {
-    return { ok: false, error: { code: "FORBIDDEN", message: "Internal notes are staff-only." } };
+  const admin = tryCreateAdminSupabase();
+  if (!admin) {
+    return actionFail("UNKNOWN", "Replying needs the service-role key on the server.");
   }
 
-  const { error } = await supabase.from("messages").insert({
+  // Attribute the reply to the operator's own auth user, falling back to the
+  // gate's staff id so the thread shows who wrote what.
+  const senderId = opsSession.actorId;
+  if (!senderId) {
+    return actionFail("UNKNOWN", "This ops session cannot be attributed to a staff member.");
+  }
+
+  const { error } = await admin.from("messages").insert({
     conversation_id: v.conversationId,
-    sender_id: session.user.id,
-    sender_kind: isOwner ? "customer" : "staff",
+    sender_id: senderId,
+    sender_kind: "staff",
     body: v.body,
     is_internal_note: v.isInternalNote,
   });
 
   if (error) return actionError(error);
 
-  await logActivity(supabase, {
-    userId: session.user.id,
-    event: "MESSAGE_SENT",
-    entity: "conversations",
-    entityId: v.conversationId,
-  });
-
-  revalidatePath("/chat");
   revalidatePath(`/admin/chat/${v.conversationId}`);
   return actionOk();
 }
