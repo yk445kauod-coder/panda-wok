@@ -18,6 +18,7 @@ import { formatPrice } from "@/lib/utils/format";
 import { DishCard } from "@/components/customer/dish-card";
 import { FeaturedDishStrip } from "@/components/customer/featured-strip";
 import { IdentityBand } from "@/components/customer/identity-band";
+import { BambooAmbience } from "@/components/customer/bamboo-ambience";
 import { getLocale, getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/server";
 import { localiseCategory } from "@/lib/i18n/catalog";
@@ -110,10 +111,11 @@ export default async function HomePage() {
         acceptingOrders={settings.ordering.acceptingOrders}
         minOrder={settings.ordering.minOrderTotal}
         hasMenu={menu.items.length > 0}
+        locale={locale}
         t={t}
       />
 
-      <IdentityBand brand={brand} city={settings.brand.city} t={t} />
+      <IdentityBand brand={brand} city={settings.brand.city} locale={locale} t={t} />
 
       {featured.length > 0 ? (
         <section aria-labelledby="featured-heading" className="mx-auto max-w-6xl px-4 py-10">
@@ -244,6 +246,7 @@ function Hero({
   acceptingOrders,
   minOrder,
   hasMenu,
+  locale,
   t,
 }: {
   brand: string;
@@ -254,6 +257,7 @@ function Hero({
   acceptingOrders: boolean;
   minOrder: number;
   hasMenu: boolean;
+  locale: string;
   t: T;
 }) {
   return (
@@ -263,6 +267,7 @@ function Hero({
         data-motion="decorative"
         className="seigaiha pointer-events-none absolute inset-0 opacity-45"
       />
+      <BambooAmbience locale={locale} leaves={7} />
       <div
         aria-hidden="true"
         data-motion="decorative"

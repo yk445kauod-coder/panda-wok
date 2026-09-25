@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { AmbienceToggle } from "@/components/layout/ambience-sound";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { socialIcon, socialLabel, sortSocialEntries } from "@/components/icons/social";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -76,6 +77,7 @@ export async function SiteHeader({
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher current={locale} />
+            <AmbienceToggle />
             {flags.ordering !== false ? (
               <Link
                 href="/cart"
@@ -134,8 +136,9 @@ export async function SiteFooter({
           <p className="mt-2 text-sm text-ink-700/70">
             {brand.city}, {brand.country}
           </p>
-          <div className="mt-3">
+          <div className="mt-3 flex items-center gap-2">
             <LanguageSwitcher current={locale} variant="labelled" />
+            <AmbienceToggle />
           </div>
         </div>
 

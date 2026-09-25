@@ -74,6 +74,11 @@ export const ar: Dictionary = {
     privacy: "الخصوصية",
   },
 
+  ambience: {
+    soundOn: "تشغيل أصوات الحديقة",
+    soundOff: "إيقاف أصوات الحديقة",
+  },
+
   footer: {
     explore: "استكشف",
     account: "حسابك",

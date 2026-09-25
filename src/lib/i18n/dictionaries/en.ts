@@ -72,6 +72,11 @@ export const en = {
     privacy: "Privacy",
   },
 
+  ambience: {
+    soundOn: "Play garden sounds",
+    soundOff: "Stop garden sounds",
+  },
+
   footer: {
     explore: "Explore",
     account: "Your account",

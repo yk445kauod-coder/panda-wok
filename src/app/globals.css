@@ -318,6 +318,38 @@
     );
   }
 
+  /* Bamboo culm drawn with repeating gradients: internode bands + a thin
+     highlight so it reads cylindrical;canes sway very slowly at their tips. */
+  .bamboo-culm {
+    width: 5px;
+    border-radius: 9999px;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--color-bamboo-600) 0,
+      var(--color-bamboo-600) 2px,
+      var(--color-bamboo-500) 2.5px,
+      var(--color-bamboo-500) 34px,
+      var(--color-bamboo-700) 36px,
+      var(--color-bamboo-700) 40px
+    );
+    box-shadow: inset -1px 0 0 color-mix(in oklab, var(--color-bamboo-300) 40%, transparent);
+    transform-origin: bottom center;
+    animation: bamboo-sway 6.5s ease-in-out infinite;
+  }
+
+  @keyframes bamboo-sway {
+    0%, 100% { transform: rotate(-1deg); }
+    50% { transform: rotate(1.2deg); }
+  }
+
+  /* Drifting leaves ride the token `leaf` animation, seeded per-instance. */
+  .bamboo-leaf {
+    animation-name: leaf;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
   [data-motion="enso"] {
     animation: enso 3.2s ease-in-out infinite;
   }

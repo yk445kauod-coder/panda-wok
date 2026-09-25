@@ -1,4 +1,5 @@
 import { Reveal } from "@/components/ui/reveal";
+import { BambooAmbience } from "@/components/customer/bamboo-ambience";
 import type { T } from "@/lib/i18n/server";
 
 /**
@@ -17,10 +18,12 @@ export function IdentityBand({
   brand,
   city,
   t,
+  locale,
 }: {
   brand: string;
   city: string;
   t: T;
+  locale?: string;
 }) {
   const pillars = [
     {
@@ -47,6 +50,7 @@ export function IdentityBand({
         data-motion="decorative"
         className="seigaiha pointer-events-none absolute inset-0 opacity-[0.18]"
       />
+      <BambooAmbience locale={locale} density="full" leaves={0} />
       <div className="relative mx-auto max-w-6xl px-4 py-12 sm:py-16">
         <Reveal>
           <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-miso-300">
