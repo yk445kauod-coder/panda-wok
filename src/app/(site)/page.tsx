@@ -21,7 +21,7 @@ import { IdentityBand } from "@/components/customer/identity-band";
 import { BambooAmbience } from "@/components/customer/bamboo-ambience";
 import { AsanohaPanel, BambooRails } from "@/components/customer/asian-frames";
 import { LeafField2D } from "@/components/customer/leaf-field-2d";
-import { BRAND_LOGO_URL } from "@/lib/brand";
+import { BRAND_LOGO_URL, BRAND_SCRIPT_MARK } from "@/lib/brand";
 import { BrandBanner } from "@/components/customer/brand-banner";
 import { getLocale, getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/server";
@@ -304,7 +304,7 @@ function Hero({
             className="font-kana mt-5 text-sm font-semibold tracking-[0.35em] text-plum-700"
             aria-hidden="true"
           >
-            日本 · 中华
+            {BRAND_SCRIPT_MARK}
           </p>
 
           <h1 className="mt-3 max-w-2xl font-display text-4xl leading-[1.05] font-bold text-ink-900 text-balance sm:text-6xl lg:text-7xl">

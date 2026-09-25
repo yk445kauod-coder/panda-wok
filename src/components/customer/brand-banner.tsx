@@ -3,6 +3,7 @@ import { Phone } from "lucide-react";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { socialIcon, socialLabel, sortSocialEntries } from "@/components/icons/social";
 import { AsanohaPanel, BambooRails } from "@/components/customer/asian-frames";
+import { BRAND_SCRIPT_MARK } from "@/lib/brand";
 import type { T } from "@/lib/i18n/server";
 
 /**
@@ -52,7 +53,7 @@ export function BrandBanner({
           {brand}
         </h2>
         <p aria-hidden="true" className="font-kana mt-2 text-sm font-semibold tracking-[0.35em] text-plum-700">
-          日本 · 中华
+          {BRAND_SCRIPT_MARK}
         </p>
         <p className="mx-auto mt-4 max-w-xl text-base text-ink-700/90">{tagline}</p>
         {cuisine ? <p className="mt-2 text-sm text-ink-700/70">{cuisine} · {city}</p> : null}

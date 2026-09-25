@@ -12,3 +12,13 @@ export const BRAND_LOGO_URL = "/panda-logo.svg";
 
 /** SVG scales cleanly, so the icon is the same asset. */
 export const BRAND_ICON_URL = BRAND_LOGO_URL;
+
+/**
+ * The two-script mark that heads the hero and the brand banner: the sushi
+ * counter labelled in Japanese, the wok in Chinese. It is decorative
+ * (`aria-hidden`) and rendered in `.font-kana`, which is a *Japanese* Mincho —
+ * so each glyph must be one that face actually ships. 華 (traditional) is;
+ * 华 (simplified) is not, and would fall back to a second font mid-mark. The
+ * Arabic locale shows country names instead, so it does not use this string.
+ */
+export const BRAND_SCRIPT_MARK = "日本 · 中華";

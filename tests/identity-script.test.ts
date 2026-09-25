@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { en } from "@/lib/i18n/dictionaries/en";
 import { ar } from "@/lib/i18n/dictionaries/ar";
+import { BRAND_SCRIPT_MARK } from "@/lib/brand";
 
 /**
  * The script badges on the identity band render 日本 / 中華 in the Shippori
@@ -36,5 +38,26 @@ describe("identity script badges", () => {
     // accordingly so it is not read aloud with a Japanese voice.
     expect(ar.home.identityJapaneseScript).toBe("اليابان");
     expect(ar.home.identityChineseScript).toBe("الصين");
+  });
+
+  it("keeps the hero/banner script mark inside the covered glyph set", () => {
+    const uncovered = [...BRAND_SCRIPT_MARK].filter(
+      (ch) => !COVERED_BY_MINCHO.has(ch) && ch !== "·" && ch !== " ",
+    );
+    expect(uncovered, `${BRAND_SCRIPT_MARK} contains glyphs outside the subset`).toEqual([]);
+    expect(BRAND_SCRIPT_MARK).not.toContain("华");
+  });
+
+  it("sources every .font-kana script mark from the shared constant", () => {
+    // Both the hero plate and the closing brand banner used to hardcode their
+    // own copy, so one was fixed and the other kept the broken glyph.
+    for (const file of [
+      "src/app/(site)/page.tsx",
+      "src/components/customer/brand-banner.tsx",
+    ]) {
+      const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+      const hardcoded = source.match(/font-kana[^>]*>\s*[\u3000-\u9fff]/);
+      expect(hardcoded, `${file} hardcodes a CJK string instead of BRAND_SCRIPT_MARK`).toBeNull();
+    }
   });
 });
