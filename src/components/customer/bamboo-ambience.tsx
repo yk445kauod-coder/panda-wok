@@ -83,7 +83,10 @@ export function BambooAmbience({
                 transform: `scale(${leaf.scale}) rotate(${leaf.tilt}deg)`,
               }}
             >
-              <LeafSvg tone={i % 3} />
+              <span className="bamboo-leaf-tumble">
+                <LeafSvg tone={i % 3} face />
+                <LeafSvg tone={i % 3} face={false} />
+              </span>
             </span>
           ))}
         </div>
@@ -92,14 +95,14 @@ export function BambooAmbience({
   );
 }
 
-function LeafSvg({ tone }: { tone: number }) {
-  const hue = ["#63734a", "#8f3a4c", "#4a8b76"][tone % 3];
+function LeafSvg({ tone, face = true }: { tone: number; face?: boolean }) {
+  const hue = face ? ["#63734a", "#8f3a4c", "#4a8b76"][tone % 3] : ["#4c5938", "#732f3e", "#3a6f5e"][tone % 3];
   return (
-    <svg viewBox="0 0 12 16" width="12" height="16" className="drop-shadow-sm">
+    <svg viewBox="0 0 12 16" width="12" height="16" className={face ? "bamboo-leaf-face" : "bamboo-leaf-back"}>
       <path
         d="M1 1c3.5 1.5 6 4.5 7.5 9.5C.2 9 1 7.5 1 6.5 5.5 1 4 1 1 1Z"
         fill={hue}
-        opacity="0.55"
+        opacity={face ? "0.6" : "0.45"}
       />
     </svg>
   );
