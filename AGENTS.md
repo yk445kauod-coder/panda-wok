@@ -532,3 +532,48 @@ component now tags them `lang="ar"` and drops `.font-kana` there, instead of
 labelling Arabic text as Japanese. Previously it hardcoded `ja`/`zh-Hans`,
 which would make a screen reader read Arabic with a Japanese voice.
 
+## Design, ambience and the address map (2026-09-25)
+
+### The address picker already does what was asked
+`src/components/customer/location-map.tsx` (committed `1626154`) is the
+OpenStreetMap/Leaflet picker: tap or drag a pin, "My location" for the browser
+GPS fix (with accuracy shown), a Nominatim search box, and a confirm step before
+saving. It writes hidden `latitude`/`longitude`/`accuracyM` fields so the same
+`addressSchema` path as the typed form is used. It is wired into
+`/account/addresses`; `/checkout` sends customers there with `?next=/checkout`
+when they have no address. So "the existing sterile system" the brief complained
+about is superseded — verify before rebuilding it.
+
+### Ambient layer (no binary assets)
+- `src/components/layout/ambience-sound.tsx` — opt-in WebAudio garden
+  soundscape: pentatonic chimes through a soft limiter, filtered-noise air and a
+  distant bird. Synthesised, so there are **no audio files** in `public/`.
+  Starts only on an explicit tap; the choice persists in localStorage.
+- `src/components/customer/leaf-field-2d.tsx` — Canvas2D drifting leaves (the
+  only falling-leaf effect on the site; chosen over WebGL deliberately).
+- `src/components/customer/bamboo-ambience.tsx` — pure-CSS bamboo culms.
+- `src/components/customer/asian-frames.tsx` — asanoha / bamboo frame motifs.
+- All are decorative and honour reduced-motion.
+
+### Brand mark
+`public/panda-logo.svg` is the one canonical mark (`src/lib/brand.ts`), used by
+the navbar, footer, auth, favicon, PWA manifest, OG image and hero plate. No
+code-drawn mascot substitutes for it.
+
+### Deliberately NOT invented
+`support.email` is `null` and `support.opening_hours` is `{}` in the DB, so
+contact and the footer render empty states rather than fake channels. Live
+values are the real ones: phones `01095052232` / WhatsApp `01500988196`,
+TikTok/Instagram/Facebook under `support.social`, brand
+`Panda Wok` / `Asian kitchen, crafted to order` / `Alexandria`, `brand.cuisine`
+`Asian cuisine`, delivery fee 30 / free over 250 / ETA 35, min order 80,
+tax 14%, loyalty points 1:1.
+
+### Two questions only the owner can answer
+1. **Delivery fee policy.** Live: EGP 30 flat, free over EGP 250. The earlier
+   brief said "delivery 100" — if that was the intended fee, change
+   `delivery.fee` in Admin -> Settings rather than in code.
+2. **Opening hours.** `support.opening_hours` is empty, so no hours are shown
+   anywhere (including the assistant's grounding). Fill it to publish them.
+
+
