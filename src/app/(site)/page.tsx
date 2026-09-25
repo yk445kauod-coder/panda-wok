@@ -17,9 +17,8 @@ import { DishCard } from "@/components/customer/dish-card";
 import { FeaturedDishStrip } from "@/components/customer/featured-strip";
 import { IdentityBand } from "@/components/customer/identity-band";
 import { BambooAmbience } from "@/components/customer/bamboo-ambience";
-import { AsanohaPanel, BambooRails } from "@/components/customer/asian-frames";
+import { AsanohaPanel } from "@/components/customer/asian-frames";
 import { SakuraField } from "@/components/customer/sakura-field";
-import { LeafField2D } from "@/components/customer/leaf-field-2d";
 import { BRAND_LOGO_URL, BRAND_SCRIPT_MARK } from "@/lib/brand";
 import { BrandBanner } from "@/components/customer/brand-banner";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -275,14 +274,8 @@ function Hero({
       <AsanohaPanel className="opacity-[0.55]" />
       <BambooAmbience locale={locale} />
       {/* Cherry blossom for the Japanese half of the kitchen; the Chinese wok
-          half is carried by the bamboo and asanoha lattice around it. */}
+          half is carried by the bamboo standing behind the copy. */}
       <SakuraField density={1} />
-      <BambooRails />
-      <div
-        aria-hidden="true"
-        data-motion="decorative"
-        className="pointer-events-none absolute -end-16 -top-20 size-64 rounded-full bg-miso-300/25 blur-2xl"
-      />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
         <div>
@@ -349,12 +342,15 @@ function Hero({
 function MobileHeroMark({ logoUrl, brand }: { logoUrl: string; brand: string }) {
   return (
     <div className="mb-5 flex items-center gap-3 lg:hidden">
+      {/* The mark is a vector asset served from this origin, so it needs no
+          resize transform and no CDN query — those only forced a raster round
+          trip. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`${logoUrl}?tr=w-160,h-160,f-jpg`}
+        src={logoUrl}
         alt={brand}
-        width={160}
-        height={160}
+        width={180}
+        height={180}
         className="size-14 rounded-2xl object-contain"
       />
       <span
@@ -382,11 +378,11 @@ function BambooPlate({ logoUrl, brand }: { logoUrl: string; brand: string }) {
       <span className="absolute inset-16 rounded-full bg-rice-50/80 shadow-washi-lg" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`${logoUrl}?tr=w-512,h-512,f-jpg`}
-        alt=""
-        width={512}
-        height={512}
-        className="relative size-40 rounded-2xl object-contain shadow-washi-lg"
+        src={logoUrl}
+        alt={brand}
+        width={180}
+        height={180}
+        className="relative size-40 object-contain"
       />
     </div>
   );

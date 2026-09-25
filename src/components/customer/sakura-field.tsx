@@ -163,6 +163,17 @@ export function SakuraField({ density = 1 }: { density?: number }) {
     };
     document.addEventListener("visibilitychange", onVisibility);
 
+    // Pause once the hero has scrolled away: the field is decorative, so
+    // animating it off-screen is pure battery drain on a phone.
+    let visible = true;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        visible = entries[0]?.isIntersecting ?? true;
+      },
+      { rootMargin: "80px" },
+    );
+    observer.observe(canvas);
+
     canvas.dataset.sakuraField = "ready";
 
     const draw = (petal: Petal, elapsed: number) => {
@@ -182,6 +193,7 @@ export function SakuraField({ density = 1 }: { density?: number }) {
     if (reduced) {
       for (const petal of petals) draw(petal, 0);
       return () => {
+        observer.disconnect();
         window.removeEventListener("resize", onResize);
         document.removeEventListener("visibilitychange", onVisibility);
       };
@@ -194,7 +206,9 @@ export function SakuraField({ density = 1 }: { density?: number }) {
     const frame = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      if (hidden) {
+      // Off-screen or backgrounded: keep the loop alive but do no work, and
+      // reset `last` above so resuming does not integrate the whole pause.
+      if (hidden || !visible) {
         raf = requestAnimationFrame(frame);
         return;
       }
@@ -223,6 +237,7 @@ export function SakuraField({ density = 1 }: { density?: number }) {
 
     return () => {
       cancelAnimationFrame(raf);
+      observer.disconnect();
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
     };

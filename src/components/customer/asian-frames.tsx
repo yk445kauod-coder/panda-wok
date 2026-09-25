@@ -8,19 +8,15 @@
  * Every piece is pure CSS (see globals.css), so it costs no image request and
  * disappears cleanly under `prefers-reduced-motion` (motion is ambient only).
  */
-export function BambooRails({ flip = false }: { flip?: boolean }) {
+export function BambooRails() {
   return (
     <div
       aria-hidden="true"
       data-motion="decorative"
-      className="pointer-events-none absolute inset-y-0 hidden lg:block"
-      style={{ [flip ? "insetInlineStart" : "insetInlineEnd"]: "1.5rem" } as React.CSSProperties}
+      className="pointer-events-none absolute inset-y-0 end-6 hidden lg:block"
     >
       <span className="bamboo-frame block h-full w-2.5 rounded-full opacity-60" />
-      <span
-        className="bamboo-frame absolute top-16 block h-[78%] w-1.5 rounded-full opacity-35"
-        style={{ [flip ? "insetInlineStart" : "insetInlineEnd"]: "-14px" } as React.CSSProperties}
-      />
+      <span className="bamboo-frame absolute end-[-14px] top-16 block h-[78%] w-1.5 rounded-full opacity-35" />
     </div>
   );
 }

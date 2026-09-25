@@ -94,6 +94,22 @@ export function LeafField2D({ count = 26 }: { count?: number }) {
     const onVis = () => { hidden = document.hidden; };
     document.addEventListener("visibilitychange", onVis);
 
+    // Pause the banner's drift once it scrolls out of view. `prog` is derived
+    // from absolute time, so resuming continues from the right position.
+    let visible = true;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        visible = entries[0]?.isIntersecting ?? true;
+      },
+      { rootMargin: "80px" },
+    );
+    observer.observe(host);
+
+    // ResizeObserver, not just `window.resize`: the canvas sits in a section
+    // whose width can change without the window doing so.
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(host);
+
     canvas.dataset.leaffield = "ready";
     host.classList.add("has-canvas-leaves");
 
@@ -116,7 +132,7 @@ export function LeafField2D({ count = 26 }: { count?: number }) {
 
     const start = performance.now();
     const frame = (now: number) => {
-      if (hidden) { raf = requestAnimationFrame(frame); return; }
+      if (hidden || !visible) { raf = requestAnimationFrame(frame); return; }
       const t = (now - start) / 1000;
       const w = host.clientWidth || window.innerWidth;
       const h = host.clientHeight || window.innerHeight;
@@ -138,6 +154,8 @@ export function LeafField2D({ count = 26 }: { count?: number }) {
 
     return () => {
       cancelAnimationFrame(raf);
+      observer.disconnect();
+      resizeObserver.disconnect();
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVis);
     };

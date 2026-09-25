@@ -41,7 +41,6 @@ export function BrandBanner({
     <section className="relative overflow-hidden border-y border-ink-900/10 bg-gradient-to-b from-rice-100 via-rice-50 to-rice-200">
       <AsanohaPanel className="opacity-60" />
       <BambooRails />
-      <BambooRails flip />
       <LeafField2D count={16} />
       <div className="relative mx-auto max-w-3xl px-4 py-14 text-center sm:py-20">
         <div className="mx-auto flex size-24 items-center justify-center rounded-full border border-bamboo-600/25 bg-rice-50 shadow-washi-lg">
