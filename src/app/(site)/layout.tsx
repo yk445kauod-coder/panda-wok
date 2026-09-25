@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getFeatureFlagMap, getPublicSettings, getRestaurant } from "@/lib/services/catalog";
 import { CartProvider } from "@/components/customer/cart-provider";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { PageEnter } from "@/components/layout/page-enter";
 import { SiteFooter, SiteHeader } from "@/components/layout/site-shell";
 import { FloatingPanda } from "@/components/layout/floating-panda";
 import { PandaAssistant } from "@/components/panda/assistant";
@@ -96,7 +97,7 @@ export default async function SiteLayout({
         <div className="flex min-h-dvh flex-col">
           <SiteHeader brand={brand} flags={flags} />
           <main id="main" className="flex-1 pb-24 md:pb-0">
-            {children}
+            <PageEnter>{children}</PageEnter>
           </main>
           <SiteFooter brand={brand} contact={settings.support} />
           {flags["nav.bottom"] !== false ? <BottomNav flags={flags} /> : null}
