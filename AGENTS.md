@@ -577,3 +577,67 @@ tax 14%, loyalty points 1:1.
    anywhere (including the assistant's grounding). Fill it to publish them.
 
 
+
+## Sound removal, About page repair and locale-aware brand copy (2026-09-25)
+
+Deployed to production from `ec31675` (CI run 36185261883, success).
+
+**Sound is gone for good.** The user asked for "الغي الصوت" after an earlier
+session added a garden-ambience toggle. `AmbienceToggle`
+(`src/components/layout/ambience-sound.tsx`), its two call sites in
+`site-shell.tsx` (header + footer) and the `ambience.soundOn/soundOff` keys in
+both dictionaries are deleted. There is now no `AudioContext`, oscillator or
+`new Audio()` anywhere in `src/`. Do not reintroduce background audio: the site
+is meant to be silent, and the visual ambience carries the identity instead.
+`BambooAmbience` (CSS culms) and `LeafField2D` (Canvas2D drifting leaves) are
+visual only and stay.
+
+**The "our story" page was never missing.** `/about` existed and returned 200
+the whole time. What the user saw was two real defects on it:
+
+1. Its identity section still called `home.identityJapaneseScript` and friends —
+   keys that an earlier session removed — so the raw key strings rendered as
+   visible text. This is the same failure mode as the `{cuisine}` placeholder
+   below: a `t()` lookup for a deleted key returns the key path. It now reads
+   `about.identityHeading` / `about.identityBody` and renders the kitchen's live
+   `cuisine_tags` as badges.
+2. `generateMetadata` interpolated a literal `{cuisine}`, so the placeholder
+   appeared verbatim in the meta description. It now passes the live cuisine
+   tags, or `settings.brand.cuisine` when there are none.
+
+**Lesson worth keeping: when you delete a dictionary key, grep for it.** `tsc`
+cannot catch a `t("some.key")` call whose key is gone, because the dictionary is
+typed as a whole and the lookup accepts any string. Deleting keys is therefore a
+silent, deploy-time-only break. Always `grep -rn "<deleted.key>" src/ tests/`
+after trimming a dictionary, and render-check the affected page in both locales.
+
+**Arabic pages no longer show English kitchen copy.** `restaurants.description_ar`,
+`tagline_ar` and `name_ar` are all null in the live DB while their `_en`
+counterparts are filled, and the About page and site layout read the English
+column unconditionally. An Arabic reader got Arabic headings wrapped around an
+English sentence. New `src/lib/i18n/brand.ts` centralises the resolution order:
+the kitchen's Arabic column, then the caller's translated fallback, then English
+as a last resort. `brandName` / `brandTagline` / `brandDescription` are used by
+`(site)/layout.tsx`, `(site)/page.tsx` and `(site)/about/page.tsx`.
+`about.fallbackTagline` was added to both dictionaries for this.
+
+**Place names are localised for display, not for structured data.**
+`localisedPlace` in the same module maps the proper nouns stored in English on
+the restaurant row (Alexandria -> الإسكندرية, Egypt -> مصر, plus Cairo, Giza and
+two Gulf states) for rendered copy. The `restaurantSchema` JSON-LD deliberately
+keeps the canonical English names, because search engines read that graph rather
+than the reader's language.
+
+**Verified live after deploy:** `/`, `/about`, `/menu`, `/contact`, `/faq`,
+`/location`, `/cart`, `/privacy-policy` all 200; Arabic `/about` renders Arabic
+copy with الإسكندرية / مصر; no `AmbienceToggle` or "garden sounds" string in the
+served HTML; `tsc` clean; 60 tests pass.
+
+**Data cleanup is complete.** `categories`, `menu_items`, `modifier_groups`,
+`modifier_options`, `orders`, `faqs`, `page_content`, `page_seo`,
+`loyalty_rewards`, `delivery_zones`, `announcements` and `stock_items` are all
+empty (0 rows) — every mock item, category, policy, offer and FAQ is gone, and
+the Admin CMS is the only source for the menu. The 28 `settings` rows are
+deliberately kept: they are operational configuration (contact numbers, tax
+rate, delivery fee, ETA), not fabricated content, and deleting them would break
+checkout.
