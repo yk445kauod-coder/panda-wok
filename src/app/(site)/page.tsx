@@ -18,6 +18,7 @@ import { FeaturedDishStrip } from "@/components/customer/featured-strip";
 import { IdentityBand } from "@/components/customer/identity-band";
 import { BambooAmbience } from "@/components/customer/bamboo-ambience";
 import { AsanohaPanel, BambooRails } from "@/components/customer/asian-frames";
+import { SakuraField } from "@/components/customer/sakura-field";
 import { LeafField2D } from "@/components/customer/leaf-field-2d";
 import { BRAND_LOGO_URL, BRAND_SCRIPT_MARK } from "@/lib/brand";
 import { BrandBanner } from "@/components/customer/brand-banner";
@@ -273,7 +274,9 @@ function Hero({
     <section className="relative overflow-hidden border-b border-ink-900/8 bg-gradient-to-b from-rice-100 via-rice-50 to-rice-100">
       <AsanohaPanel className="opacity-[0.55]" />
       <BambooAmbience locale={locale} />
-      <LeafField2D count={30} />
+      {/* Cherry blossom for the Japanese half of the kitchen; the Chinese wok
+          half is carried by the bamboo and asanoha lattice around it. */}
+      <SakuraField density={1} />
       <BambooRails />
       <div
         aria-hidden="true"

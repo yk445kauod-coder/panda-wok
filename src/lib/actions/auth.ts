@@ -495,7 +495,7 @@ export async function requestPasswordResetAction(
       data: {
         channel: "phone",
         message: supportPhone
-          ? `Phone-first account recognized. Call or WhatsApp us on ${supportPhone} and we will verify your identity and reset your password.`
+          ? `Phone-first account recognized. Call us on ${supportPhone} and we will verify your identity and reset your password.`
           : "Phone-first account recognized. Contact the kitchen and we will verify your identity and reset your password.",
       },
     };

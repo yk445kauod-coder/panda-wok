@@ -113,7 +113,7 @@ export async function SiteFooter({
   };
   contact: {
     phone: string | null;
-    whatsapp: string | null;
+    phoneSecondary: string | null;
     email: string | null;
     social: Record<string, string>;
   };
@@ -121,9 +121,6 @@ export async function SiteFooter({
   const locale = await getLocale();
   const t = await getT(locale);
   const socialEntries = sortSocialEntries(contact.social);
-  const whatsappHref = contact.whatsapp
-    ? `https://wa.me/${contact.whatsapp.replace(/\D/g, "").replace(/^0/, "20")}`
-    : null;
 
   // Built once and rendered twice: as an accordion on phones, as plain columns
   // from `sm` up. The data is identical, only the disclosure differs.
@@ -202,15 +199,10 @@ export async function SiteFooter({
                 </a>
               </li>
             ) : null}
-            {whatsappHref ? (
+            {contact.phoneSecondary ? (
               <li>
-                <a
-                  href={whatsappHref}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  className="hover:text-ink-900"
-                >
-                  {t("social.whatsapp")}
+                <a href={`tel:${contact.phoneSecondary}`} className="hover:text-ink-900">
+                  {contact.phoneSecondary}
                 </a>
               </li>
             ) : null}
@@ -230,7 +222,7 @@ export async function SiteFooter({
             </div>
           ) : null}
 
-          {!contact.phone && !whatsappHref && !contact.email && socialEntries.length === 0 ? (
+          {!contact.phone && !contact.phoneSecondary && !contact.email && socialEntries.length === 0 ? (
             <p className="mt-3 text-ink-700/60">{t("footer.contactPending")}</p>
           ) : null}
         </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, MapPin, Navigation, Pencil, Plus, Star, Trash2, X } from "lucide-react";
+import { Check, Loader2, MapPin, Navigation, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { Badge, Button, Spinner } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -10,14 +10,19 @@ import {
   type PinCoords,
   type ResolvedAddress,
 } from "@/components/customer/location-map";
-import { useErrorText, useI18n, useT } from "@/components/i18n-provider";
-import { localisedPlace } from "@/lib/i18n/brand";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import {
   deleteAddressAction,
   saveAddressAction,
   setDefaultAddressAction,
 } from "@/lib/actions/account";
 import { cn } from "@/lib/utils/format";
+import {
+  formatDetectedAddress,
+  mergeDetectedAddress,
+  type EditedFields,
+  type ResolvedFields,
+} from "@/lib/utils/address-fill";
 import type { Address } from "@/lib/services/orders";
 
 type Mode = { kind: "closed" } | { kind: "new" } | { kind: "edit"; address: Address };
@@ -33,7 +38,6 @@ const DEFAULT_CITY = "Alexandria";
  */
 export function AddressBook({ addresses }: { addresses: Address[] }) {
   const t = useT();
-  const { locale } = useI18n();
   const errorText = useErrorText();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>({ kind: "closed" });
@@ -55,61 +59,76 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
   // that comes back is the pin that is saved. This needs the user's permission,
   // so a refusal is silent — the map is still right there to drop a pin on, and
   // the typed-address path is untouched.
-  const [autoDetecting, setAutoDetecting] = useState(false);
-  const [autoDetected, setAutoDetected] = useState(false);
+  const [detectState, setDetectState] = useState<"idle" | "detecting" | "done">("idle");
   const autoRan = useRef(false);
   // The map's reverse lookup reports the street/district/city it found for the
-  // pin. Kept as state rather than a ref so the "use this address" action can
-  // appear only once there is something to apply.
+  // pin, which is shown beside the map so the customer can confirm it.
   const [resolvedAddress, setResolvedAddress] = useState<ResolvedAddress | null>(null);
+
+  // The three fields the map can fill are controlled, not `defaultValue`.
+  // The details step is not mounted while the customer is placing the pin, so a
+  // lookup that wrote to `input[name=...]` wrote to nothing and every detected
+  // address was discarded — the customer then had to retype it by hand. Holding
+  // the values in state means the detected address is already in the fields the
+  // moment they appear, and a pin moved while the details are open updates what
+  // the customer is looking at.
+  const [geo, setGeo] = useState<ResolvedFields>({ area: "", addressLine: "", city: "" });
+  // Which of those fields the customer has typed in themselves. A pin moved
+  // after that must not overwrite their own wording.
+  const [edited, setEdited] = useState<EditedFields>({
+    area: false,
+    addressLine: false,
+    city: false,
+  });
+
   const pinConfirmed = coords !== null;
   const showDetails = manual || stage === "details";
 
-  // Best-effort reverse lookup: prefill area/address from the pin. The same
-  // event carries district/street/city, and the form accepts them only when
-  // empty. Zero invented data — values come from OpenStreetMap's address
-  // database.
+  // Seed the fillable fields from the address being edited, or from the
+  // kitchen's own city for a new one. Keyed on the mode so switching from one
+  // address to another re-seeds, and adjusted during render (React's documented
+  // "storing information from previous renders" pattern) rather than in an
+  // effect, which avoids a second render pass and a flash of the previous
+  // address. Everything else comes from OpenStreetMap — nothing is invented.
+  const [seededMode, setSeededMode] = useState<Mode | null>(null);
+  if (seededMode !== mode) {
+    setSeededMode(mode);
+    setEdited({ area: false, addressLine: false, city: false });
+    setGeo({
+      area: mode.kind === "edit" ? (mode.address.area ?? "") : "",
+      addressLine: mode.kind === "edit" ? mode.address.address_line : "",
+      city: mode.kind === "edit" ? (mode.address.city ?? DEFAULT_CITY) : DEFAULT_CITY,
+    });
+  }
+
+  // The map resolves a pin to street/district/city. Write those into the fields
+  // the customer is about to confirm, unless they have typed their own.
   useEffect(() => {
     const onReverse = (event: Event) => {
       const detail = (event as CustomEvent<ResolvedAddress>).detail;
       if (!detail) return;
       setResolvedAddress(detail);
-      const areaEl = document.querySelector<HTMLInputElement>('input[name="area"]');
-      const streetEl = document.querySelector<HTMLInputElement>('input[name="addressLine"]');
-      const cityEl = document.querySelector<HTMLInputElement>('input[name="city"]');
-      if (detail.area && areaEl && !areaEl.value.trim()) {
-        setFields((f) => ({ ...f, area: "" }));
-        areaEl.value = detail.area;
-      }
-      if (detail.street && streetEl && !streetEl.value.trim()) {
-        streetEl.value = detail.street;
-      }
-      // The city field ships with a default; only overwrite it when the pin
-      // actually resolves to a different city, so we never silently move a
-      // customer who is ordering into another town.
-      if (detail.city && cityEl && cityEl.value.trim() !== detail.city) {
-        cityEl.value = detail.city;
-      }
+      setGeo((prev) =>
+        mergeDetectedAddress(
+          prev,
+          { area: detail.area, street: detail.street, city: detail.city },
+          edited,
+        ),
+      );
     };
     window.addEventListener("panda-address-reverse", onReverse);
     return () => window.removeEventListener("panda-address-reverse", onReverse);
-  }, []);
+  }, [edited]);
 
-  /** Apply whatever the map already resolved for the current pin. */
-  function completeFromMap() {
-    const detail = resolvedAddress;
-    if (!detail) return;
-    for (const [name, value] of [
-      ["area", detail.area],
-      ["addressLine", detail.street],
-      ["city", detail.city],
-    ] as const) {
-      if (!value) continue;
-      const el = document.querySelector<HTMLInputElement>(`input[name="${name}"]`);
-      if (el) el.value = value;
-    }
-    setFields({});
-    setStage("details");
+  /**
+   * Open the form for a brand-new address and start the location lookup. The
+   * "detecting" status is set here, in the click handler, rather than in the
+   * geolocation effect — that effect exists to subscribe to the browser API, and
+   * a synchronous setState in its body would cascade renders.
+   */
+  function startNewAddress() {
+    setDetectState("detecting");
+    setMode({ kind: "new" });
   }
 
   function resetForm() {
@@ -121,22 +140,27 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
     setMapKey((k) => k + 1);
     setStage("pin");
     setManual(false);
-    setAutoDetecting(false);
-    setAutoDetected(false);
+    setDetectState("idle");
     autoRan.current = false;
     setResolvedAddress(null);
+    setGeo({ area: "", addressLine: "", city: DEFAULT_CITY });
+    setEdited({ area: false, addressLine: false, city: false });
   }
 
   // Fire once, the first time the form is opened for a new address. Editing an
   // existing address never triggers it: that pin is the customer's own saved
   // position and must not be overwritten by wherever they happen to be now.
+  //
+  // `detectState` starts as "detecting" because the form only mounts this way
+  // for a new address; the async callbacks then move it to "done" or "idle".
+  // Setting it from the effect body would be a synchronous setState in an
+  // effect, so the initial value carries that state instead.
   useEffect(() => {
     if (mode.kind !== "new") return;
     if (autoRan.current) return;
     autoRan.current = true;
     if (!("geolocation" in navigator)) return;
 
-    setAutoDetecting(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setCoords({
@@ -147,12 +171,11 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
             : null,
         });
         setMapKey((k) => k + 1);
-        setAutoDetecting(false);
-        setAutoDetected(true);
+        setDetectState("done");
       },
       // A refusal or timeout is not an error the customer needs to read: the
       // map below is still the primary way to set the pin.
-      () => setAutoDetecting(false),
+      () => setDetectState("idle"),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
     );
   }, [mode.kind]);
@@ -250,7 +273,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
           title={t("addresses.emptyTitle")}
           description={t("addresses.emptyBody")}
           action={
-            <Button onClick={() => setMode({ kind: "new" })}>
+            <Button onClick={startNewAddress}>
               <Plus className="size-4" aria-hidden="true" />
               {t("addresses.addAddress")}
             </Button>
@@ -371,7 +394,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
           </ul>
 
           {mode.kind === "closed" ? (
-            <Button className="mt-4" onClick={() => setMode({ kind: "new" })}>
+            <Button className="mt-4" onClick={startNewAddress}>
               <Plus className="size-4" aria-hidden="true" />
               {t("addresses.addAnother")}
             </Button>
@@ -450,11 +473,29 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                       ? t("addresses.errors.accuracySuffix", { meters: coords.accuracyM })
                       : ""}
                   </p>
+                ) : detectState === "detecting" ? (
+                  <p
+                    role="status"
+                    className="inline-flex items-center gap-1.5 text-xs text-ink-700/75"
+                  >
+                    <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                    {t("addresses.autoDetecting")}
+                  </p>
                 ) : (
                   <p className="text-xs text-ink-700/75">
                     {t("addresses.pinRequiredHint")}
                   </p>
                 )}
+
+                {/* What OpenStreetMap resolved the pin to, shown before the
+                    customer confirms so the address they are about to save is
+                    visible on the same screen as the pin. */}
+                {coords && resolvedAddress && formatDetectedAddress(resolvedAddress) ? (
+                  <p className="inline-flex items-start gap-1.5 text-xs text-ink-700/85">
+                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-indigo-600" aria-hidden="true" />
+                    <span>{formatDetectedAddress(resolvedAddress)}</span>
+                  </p>
+                ) : null}
 
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -539,14 +580,22 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                   name="area"
                   label={t("addresses.fields.area")}
                   placeholder={t("addresses.fields.areaPlaceholder")}
-                  defaultValue={mode.kind === "edit" ? (mode.address.area ?? "") : ""}
+                  value={geo.area}
+                  onValueChange={(next) => {
+                    setEdited((e) => ({ ...e, area: true }));
+                    setGeo((g) => ({ ...g, area: next }));
+                  }}
                   error={fields.area}
                 />
                 <div className="sm:col-span-2">
                   <FormField
                     name="addressLine"
                     label={t("addresses.fields.addressLine")}
-                    defaultValue={mode.kind === "edit" ? mode.address.address_line : ""}
+                    value={geo.addressLine}
+                    onValueChange={(next) => {
+                      setEdited((e) => ({ ...e, addressLine: true }));
+                      setGeo((g) => ({ ...g, addressLine: next }));
+                    }}
                     error={fields.addressLine}
                     autoComplete="street-address"
                     required
@@ -573,7 +622,11 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                 <FormField
                   name="city"
                   label={t("addresses.fields.city")}
-                  defaultValue={mode.kind === "edit" ? (mode.address.city ?? "") : "Alexandria"}
+                  value={geo.city}
+                  onValueChange={(next) => {
+                    setEdited((e) => ({ ...e, city: true }));
+                    setGeo((g) => ({ ...g, city: next }));
+                  }}
                   error={fields.city}
                   autoComplete="address-level2"
                 />
@@ -644,6 +697,8 @@ function FormField({
   placeholder,
   autoComplete,
   inputMode,
+  value,
+  onValueChange,
 }: {
   name: string;
   label: string;
@@ -654,7 +709,12 @@ function FormField({
   placeholder?: string;
   autoComplete?: string;
   inputMode?: "tel" | "text";
+  /** Supplying `value` makes the field controlled, which is how the map's
+   *  reverse lookup lands in the form before the field is ever mounted. */
+  value?: string;
+  onValueChange?: (next: string) => void;
 }) {
+  const controlled = value !== undefined;
   return (
     <div>
       <label htmlFor={`address-${name}`} className="block text-sm font-medium text-ink-900">
@@ -666,7 +726,9 @@ function FormField({
         type={type}
         inputMode={inputMode}
         required={required}
-        defaultValue={defaultValue}
+        {...(controlled
+          ? { value, onChange: (e) => onValueChange?.(e.target.value) }
+          : { defaultValue })}
         placeholder={placeholder}
         autoComplete={autoComplete}
         aria-invalid={error ? true : undefined}

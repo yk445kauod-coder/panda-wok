@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MapPin, Navigation, RefreshCw } from "lucide-react";
+import { MapPin, Navigation } from "lucide-react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -172,20 +172,19 @@ export function LocationMap({
     [onChange],
   );
 
-  // Best-effort reverse lookup to prefill area/district/street. Only runs when
-  // the pin moves, never automatically at mount, and is cancellable if the
-  // customer keeps dragging.
-
-  const previous = useRef<PinCoords | null>(null);
+  // Best-effort reverse lookup to prefill area/district/street. Runs whenever
+  // the pin settles somewhere new, and is cancellable so a customer dragging the
+  // pin does not queue up lookups.
+  const previous = useRef<string | null>(null);
   useEffect(() => {
     if (!coords) return;
-    if (previous.current && previous.current.latitude === coords.latitude && previous.current.longitude === coords.longitude) {
-      return;
-    }
-    previous.current = coords;
+    const key = `${coords.latitude},${coords.longitude}`;
+    if (previous.current === key) return;
+    previous.current = key;
 
-    if (searching) return;
-
+    // Supersede any in-flight lookup rather than skipping this one: an earlier
+    // `if (searching) return` recorded the position as seen but never fetched
+    // it, so a pin moved mid-lookup was never resolved at all.
     const controller = new AbortController();
     abortRef.current?.abort();
     abortRef.current = controller;
@@ -194,15 +193,7 @@ export function LocationMap({
     void reverseGeocode(coords.latitude, coords.longitude, controller.signal, locale)
       .then((result) => {
         if (controller.signal.aborted) return;
-        if (result.area || result.street) {
-          onChange({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            accuracyM: coords.accuracyM,
-          });
-        }
-        // The parent fills the area/address fields from a small event; full
-        // population is done by the form via the onReverse callback.
+        // The parent fills the area/address/city fields from this event.
         window.dispatchEvent(
           new CustomEvent("panda-address-reverse", {
             detail: { ...result, latitude: coords.latitude, longitude: coords.longitude },
@@ -212,7 +203,7 @@ export function LocationMap({
       .finally(() => {
         if (!controller.signal.aborted) setSearching(false);
       });
-  }, [coords, searching, onChange, locale]);
+  }, [coords, locale]);
 
   return (
     <div
@@ -264,8 +255,24 @@ export function LocationMap({
         </div>
       ) : null}
 
+      {/* How sure the device is about the pin it just reported. Shown only for a
+          located pin — a hand-dropped pin has no accuracy to speak of. */}
+      {coords && accuracyM ? (
+        <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center px-3">
+          <p className="rounded-full border border-ink-900/10 bg-rice-50/92 px-3 py-1.5 text-[11px] font-medium text-ink-700 shadow-washi backdrop-blur-sm">
+            <MapPin className="me-1 inline size-3.5 text-jade-600" aria-hidden="true" />
+            {t("addresses.map.accuracy", { meters: accuracyM })}
+          </p>
+        </div>
+      ) : null}
+
       <div className="absolute bottom-2 end-2 flex flex-col items-end gap-1.5">
-        {locating ? (
+        {searching ? (
+          <div className="flex items-center gap-1.5 rounded-full border border-ink-900/10 bg-rice-50/92 px-2.5 py-1.5 text-[11px] text-ink-700 shadow-washi backdrop-blur-sm">
+            <Spinner className="size-3.5" />
+            {t("addresses.map.resolving")}
+          </div>
+        ) : locating ? (
           <div className="flex items-center gap-1.5 rounded-full border border-ink-900/10 bg-rice-50/92 px-2.5 py-1.5 text-[11px] text-ink-700 shadow-washi backdrop-blur-sm">
             <Spinner className="size-3.5" />
             {t("addresses.map.locating")}

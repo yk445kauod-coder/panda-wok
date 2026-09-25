@@ -14,7 +14,7 @@ export type GroundingSnapshot = {
   };
   contact: {
     phone: string | null;
-    whatsapp: string | null;
+    phoneSecondary: string | null;
     email: string | null;
     social: Record<string, string>;
   };
@@ -73,7 +73,7 @@ export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
     },
     contact: {
       phone: settings.support.phone,
-      whatsapp: settings.support.whatsapp,
+      phoneSecondary: settings.support.phoneSecondary,
       email: settings.support.email,
       social: settings.support.social,
     },
@@ -124,11 +124,13 @@ export function renderSnapshot(snapshot: GroundingSnapshot): string {
     "Contact: " +
       [
         snapshot.contact.phone ? `phone ${snapshot.contact.phone}` : "phone not published yet",
-        snapshot.contact.whatsapp
-          ? `WhatsApp ${snapshot.contact.whatsapp}`
-          : "WhatsApp not published yet",
+        snapshot.contact.phoneSecondary
+          ? `second phone line ${snapshot.contact.phoneSecondary}`
+          : null,
         snapshot.contact.email ? `email ${snapshot.contact.email}` : "email not published yet",
-      ].join(", "),
+      ]
+        .filter(Boolean)
+        .join(", "),
   );
   const socialEntries = Object.entries(snapshot.contact.social);
   if (socialEntries.length > 0) {

@@ -3,6 +3,7 @@ import { Phone } from "lucide-react";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { socialIcon, socialLabel, sortSocialEntries } from "@/components/icons/social";
 import { AsanohaPanel, BambooRails } from "@/components/customer/asian-frames";
+import { LeafField2D } from "@/components/customer/leaf-field-2d";
 import { BRAND_SCRIPT_MARK } from "@/lib/brand";
 import type { T } from "@/lib/i18n/server";
 
@@ -29,21 +30,19 @@ export function BrandBanner({
   logoUrl: string | null;
   contact: {
     phone: string | null;
-    whatsapp: string | null;
+    phoneSecondary: string | null;
     social: Record<string, string>;
   };
   t: T;
 }) {
   const socialEntries = sortSocialEntries(contact.social);
-  const whatsappHref = contact.whatsapp
-    ? `https://wa.me/${contact.whatsapp.replace(/\D/g, "").replace(/^0/, "20")}`
-    : null;
 
   return (
     <section className="relative overflow-hidden border-y border-ink-900/10 bg-gradient-to-b from-rice-100 via-rice-50 to-rice-200">
       <AsanohaPanel className="opacity-60" />
       <BambooRails />
       <BambooRails flip />
+      <LeafField2D count={16} />
       <div className="relative mx-auto max-w-3xl px-4 py-14 text-center sm:py-20">
         <div className="mx-auto flex size-24 items-center justify-center rounded-full border border-bamboo-600/25 bg-rice-50 shadow-washi-lg">
           <BrandLogo brand={{ name: brand, logo_url: logoUrl }} className="size-20 rounded-full" />
@@ -74,14 +73,13 @@ export function BrandBanner({
               <span dir="ltr">{contact.phone}</span>
             </a>
           ) : null}
-          {whatsappHref ? (
+          {contact.phoneSecondary ? (
             <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`tel:${contact.phoneSecondary.replace(/\s+/g, "")}`}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-jade-600/30 bg-jade-500/10 px-5 font-medium text-jade-600 transition-colors hover:bg-jade-500/20"
             >
-              <span dir="ltr">{contact.whatsapp}</span>
+              <Phone className="size-4" aria-hidden="true" />
+              <span dir="ltr">{contact.phoneSecondary}</span>
             </a>
           ) : null}
         </div>

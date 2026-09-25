@@ -248,7 +248,7 @@ export type PublicSettings = {
   };
   support: {
     phone: string | null;
-    whatsapp: string | null;
+    phoneSecondary: string | null;
     email: string | null;
     social: Record<string, string>;
     openingHours: Json;
@@ -325,7 +325,7 @@ export async function getPublicSettings(): Promise<PublicSettings> {
     },
     support: {
       phone: toNullableText(map.get("support.phone")),
-      whatsapp: toNullableText(map.get("support.whatsapp")),
+      phoneSecondary: toNullableText(map.get("support.phone_secondary")),
       email: toNullableText(map.get("support.email")),
       social,
       openingHours: map.get("support.opening_hours") ?? {},

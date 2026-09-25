@@ -48,6 +48,19 @@
   --color-chili-500: #bb4130;
   --color-chili-600: #982e1f;
 
+  /* 桜 sakura — the blossom pink. Values ported from the Sakura.js plugin
+     (MIT, jhammann/sakura), whose default petal gradient is
+     rgba(255,183,197,.9) -> rgba(255,197,208,.9). The pale and deep steps
+     exist so a falling field can hold depth without every petal being the
+     same pink, which is what makes it read as confetti. */
+  --color-sakura-100: #fff3f6;
+  --color-sakura-200: #ffe9ef;
+  --color-sakura-300: #ffd7e0;
+  --color-sakura-400: #ffc5d0;
+  --color-sakura-500: #ffb7c5;
+  --color-sakura-600: #f8a0b8;
+  --color-sakura-700: #e07f9c;
+
   /* Text scale. The 2xs/3xs steps exist because labels and badges were
      previously written as text-[11px]/text-[10px] literals. */
   --text-2xs: 0.6875rem;

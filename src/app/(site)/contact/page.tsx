@@ -8,7 +8,7 @@ import { breadcrumbSchema, faqPageSchema } from "@/lib/seo/schema";
 import { buildFaq } from "@/lib/seo/faq";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
-import { socialIcon, socialLabel, sortSocialEntries, WhatsAppIcon } from "@/components/icons/social";
+import { socialIcon, socialLabel, sortSocialEntries } from "@/components/icons/social";
 import { getLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -50,19 +50,19 @@ export default async function ContactPage() {
   const faqs = buildFaq(t, settings, restaurant);
 
   const brand = restaurant?.name_en ?? settings.brand.name;
-  const { phone, whatsapp, email, social, openingHours } = settings.support;
+  const { phone, phoneSecondary, email, social, openingHours } = settings.support;
 
   const hoursEntries = Object.entries(
     (openingHours ?? {}) as Record<string, unknown>,
   ).filter(([, value]) => typeof value === "string" && value.trim());
 
   const socialEntries = sortSocialEntries(social);
-  const whatsappHref = whatsapp
-    ? `https://wa.me/${whatsapp.replace(/\D/g, "").replace(/^0/, "20")}`
-    : null;
 
   const hasAnyChannel =
-    Boolean(phone) || Boolean(whatsappHref) || Boolean(email) || socialEntries.length > 0;
+    Boolean(phone) ||
+    Boolean(phoneSecondary) ||
+    Boolean(email) ||
+    socialEntries.length > 0;
 
   // The (site) layout already emits the Restaurant/LocalBusiness node for every
   // public page, so this page only adds what is unique to it: the breadcrumb and
@@ -86,50 +86,44 @@ export default async function ContactPage() {
 
       <header className="mt-4">
         <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
-          Contact {brand}
+          {t("contact.title", { brand })}
         </h1>
-        <p className="mt-1.5 text-sm text-ink-700/85">
-          Questions about an order, an allergen or delivery to your area — reach us
-          directly. We are a small kitchen, so a phone call usually gets the fastest
-          answer.
-        </p>
+        <p className="mt-1.5 text-sm text-ink-700/85">{t("contact.subtitle")}</p>
       </header>
 
       {!hasAnyChannel ? (
         <p className="mt-5 rounded-xl border border-miso-500/30 bg-miso-300/15 p-4 text-sm text-ink-800">
-          Our contact details are being updated. Please check back shortly, or use the
-          assistant if you have a question about the menu.
+          {t("contact.pending")}
         </p>
       ) : (
         <ul className="mt-5 space-y-3">
           {phone ? (
             <ContactRow
               icon={Phone}
-              label="Phone"
+              label={t("contact.labelPhone")}
               value={phone}
               href={`tel:${phone.replace(/\s+/g, "")}`}
-              note="Best for order changes and urgent questions."
+              note={t("contact.notePhone")}
             />
           ) : null}
 
-          {whatsappHref ? (
+          {phoneSecondary ? (
             <ContactRow
-              icon={WhatsAppIcon}
-              label={t("social.whatsapp")}
-              value={whatsapp as string}
-              href={whatsappHref}
-              note="Send us a message and a photo of your location if helpful."
-              external
+              icon={Phone}
+              label={t("contact.labelPhoneSecondary")}
+              value={phoneSecondary}
+              href={`tel:${phoneSecondary.replace(/\s+/g, "")}`}
+              note={t("contact.notePhoneSecondary")}
             />
           ) : null}
 
           {email ? (
             <ContactRow
               icon={Mail}
-              label="Email"
+              label={t("contact.labelEmail")}
               value={email}
               href={`mailto:${email}`}
-              note="Good for feedback or anything that is not urgent."
+              note={t("contact.noteEmail")}
             />
           ) : null}
 
@@ -140,7 +134,7 @@ export default async function ContactPage() {
               label={socialLabel(t, key)}
               value={url.replace(/^https?:\/\//, "")}
               href={url}
-              note="Follow us for new dishes and announcements."
+              note={t("contact.noteSocial")}
               external
             />
           ))}
@@ -153,13 +147,10 @@ export default async function ContactPage() {
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
         >
           <Clock className="size-4 text-indigo-600" aria-hidden="true" />
-          Opening hours
+          {t("contact.hoursHeading")}
         </h2>
         {hoursEntries.length === 0 ? (
-          <p className="mt-2 text-sm text-ink-700/80">
-            Our opening hours are being confirmed. Please call before ordering outside
-            usual mealtimes.
-          </p>
+          <p className="mt-2 text-sm text-ink-700/80">{t("contact.hoursPending")}</p>
         ) : (
           <dl className="mt-3 space-y-1.5 text-sm">
             {hoursEntries.map(([day, value]) => (

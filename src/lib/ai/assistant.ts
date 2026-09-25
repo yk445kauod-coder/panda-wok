@@ -70,7 +70,7 @@ export function renderDeterministicAnswer(
   if (matchesContact) {
     const parts: string[] = [];
     if (snapshot.contact.phone) parts.push(`phone ${snapshot.contact.phone}`);
-    if (snapshot.contact.whatsapp) parts.push(`WhatsApp ${snapshot.contact.whatsapp}`);
+    if (snapshot.contact.phoneSecondary) parts.push(`a second line ${snapshot.contact.phoneSecondary}`);
     if (snapshot.contact.email) parts.push(`email ${snapshot.contact.email}`);
     lines.push(
       parts.length > 0
