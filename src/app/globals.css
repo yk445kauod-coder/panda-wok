@@ -193,17 +193,17 @@
     scroll-behavior: smooth;
   }
 
-  body {
+    body {
     background-color: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
-    /* Sumi-ink night with a faint warm horizon: an ember glow low behind
-       the page and a bamboo-tinged gradient up high, so the dark reads as
-       a lantern-lit kitchen rather than a flat void. */
+    /* Sumi-ink night with a crisp lantern-lit horizon: the low ember grace
+       is fuller and the bamboo/indigo casts are held just mellow enough that
+       copy stays readable on the ink — depth wirhout murk. */
     background-image:
-      radial-gradient(120% 80% at 50% 108%, color-mix(in oklab, var(--color-bamboo-600) 30%, transparent), transparent 60%),
-      radial-gradient(90% 60% at 85% -10%, color-mix(in oklab, var(--color-indigo-700) 35%, transparent), transparent 55%),
-      radial-gradient(70% 50% at 8% 0%, color-mix(in oklab, var(--color-miso-600) 22%, transparent), transparent 50%);
+      radial-gradient(125% 85% at 50% 110%, color-mix(in oklab, var(--color-bamboo-600) 55%, transparent), transparent  62%),
+      radial-gradient(95% 65% at 86% -12%, color-mix(in oklab, var(--color-indigo-700) 48%, transparent), transparent  58%),
+      radial-gradient(75% 55% at 6% -4%, color-mix(in oklab, var(--color-miso-700) 30%, transparent), transparent  52%);
     background-attachment: fixed;
     overscroll-behavior-y: none;
     text-rendering: optimizeLegibility;
@@ -371,22 +371,25 @@
 
   /* Bamboo culm drawn with repeating gradients: internode bands + a thin
      highlight so it reads cylindrical;canes sway very slowly at their tips. */
-  .bamboo-culm {
-    width: 5px;
-    border-radius: 9999px;
-    background: repeating-linear-gradient(
-      to bottom,
-      var(--color-bamboo-600) 0,
-      var(--color-bamboo-600) 2px,
-      var(--color-bamboo-500) 2.5px,
-      var(--color-bamboo-500) 34px,
-      var(--color-bamboo-700) 36px,
-      var(--color-bamboo-700) 40px
-    );
-    box-shadow: inset -1px 0 0 color-mix(in oklab, var(--color-bamboo-300) 40%, transparent);
-    transform-origin: bottom center;
-    animation: bamboo-sway 6.5s ease-in-out infinite;
-  }
+.bamboo-culm {
+  width: 7px;
+  border-radius: 9999px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--color-bamboo-600) 0,
+    var(--color-bamboo-600)  ​2px,
+    var(--color-bamboo-500)  ​2.5px,
+    var(--color-bamboo-500)  ​30px,
+    var(--color-bamboo-700)  ​32px,
+    var(--color-bamboo-700)  ​36px
+  );
+  box-shadow:
+    inset -1px 0 0 color-mix(in oklab, var(--color-bamboo-400) 60%, transparent),
+    inset  ​1px 0 0 rgb(0 0 0 / 0.25),
+    0 14px 24px -16px rgb(0 0 0 / 0.6);
+  transform-origin: bottom center;
+  animation: bamboo-sway 6s ease-in-out infinite;
+}
 
   @keyframes bamboo-sway {
     0%, 100% { transform: rotate(-1deg); }
@@ -438,28 +441,30 @@
      banner) while body copy keeps the warm paper read. The sheet is a soft
      paper gradient, not a card: no outer padding, content columns size
      themselves inside. */
-  .page-sheet {
+  *.page-sheet {
     color: var(--color-ink-900);
-    background-color: color-mix(in oklab, var(--color-rice-100) 94%, white);
+    background-color: color-mix(in oklab, var(--color-rice-50) 97%, white);
     background-image:
-      radial-gradient(120% 100% at 18% 0%, color-mix(in oklab, var(--color-miso-300) 12%, transparent), transparent 50%),
-      radial-gradient(130% 110% at 92% 8%, color-mix(in oklab, var(--color-bamboo-300) 16%, transparent), transparent 58%);
-    border-top: 1px solid color-mix(in oklab, var(--color-rice-300) 60%, transparent);
+      radial-gradient(110% 90% at 16% 0%, color-mix(in oklab, var(--color-miso-300) 14%, transparent), transparent  52%),
+      radial-gradient(125% 105% at 95% 6%, color-mix(in oklab, var(--color-bamboo-300) 18%, transparent), transparent  58%);
+    border-top: 2px solid color-mix(in oklab, var(--color-rice-400) 45%, var(--color-ink-900));
     box-shadow:
-      inset 0 1px 0 white,
-      inset 0 -1px 0 color-mix(in oklab, var(--color-ink-900) 7%, transparent);
+      inset   0 1px 0 white,
+      inset   0 -6px 18px -10px color-mix(in oklab, var(--color-ink-900) 12%, transparent),
+      0 2px 0 -1px var(--color-ink-900);
   }
 
  
   /* The home hero is a night vault laid *over* the paper sheet: an opaque
      sumi-ink band(with the same lantern glow language as the body ground) so
      the deep, lamp-lit kitchen leads the page arid the paper sheets frame it. */
-  .hero-night {
+  *.hero-night {
     background-color: var(--color-ink-950);
     background-image:
-      radial-gradient(120% 80% at 50% 108%, color-mix(in oklab, var(--color-bamboo-600) 30%, transparent), transparent  60%),
-      radial-gradient(90% 60% at 85% -10%, color-mix(in oklab, var(--color-indigo-700) 35%, transparent), transparent 55%),
-      radial-gradient(70% 50% at 8% 0%, color-mix(in oklab, var(--color-miso-600) 22%, transparent), transparent 50%);
+      radial-gradient(120% 80% at 50% 108%, color-mix(in oklab, var(--color-bamboo-600) 45%, transparent), transparent  62%),
+      radial-gradient(90% 60% at 85% -10%, color-mix(in oklab, var(--color-indigo-700) 50%, transparent), transparent  58%),
+      radial-gradient(70% 50% at 8% 0%, color-mix(in oklab, var(--color-miso-600) 32%, transparent), transparent  52%);
+    box-shadow: inset   0 3px 0 var(--color-miso-500);
   }
 
  /* ---- Washi paper band (header / bottom nav) -----------------------
@@ -470,21 +475,21 @@
      fractions of a degree so it never feels printed-flat. Motion is muted to
      the point of calm: two very long, overlapping animations, each under
      6% amplitude. */
-  .washi-paper {
+  *.washi-paper {
     color: var(--color-ink-900);
-    background-color: color-mix(in oklab, var(--color-rice-100) 88%, white);
+    background-color: color-mix(in oklab, var(--color-rice-50) 94%, white);
     background-image:
       /* Fibre grain: faint mottled dots so it reads as handmade washi, not a
          plain cream rectangle. */
-      radial-gradient(120% 100% at 20% 0%, color-mix(in oklab, var(--color-miso-300) 14%, transparent), transparent 55%),
-      radial-gradient(140% 120% at 95% 12%, color-mix(in oklab, var(--color-bamboo-300) 18%, transparent), transparent 60%),
-      linear-gradient(115deg, transparent 20%, color-mix(in oklab, white 70%, transparent) 48%, transparent 76%);
-    background-size: 140% 160%, 180% 140%, 260% 260%;
+      radial-gradient(120% 100% at 20% 0%, color-mix(in oklab, var(--color-miso-300) 18%, transparent), transparent  55%),
+      radial-gradient(140% 120% at 95% 12%, color-mix(in oklab, var(--color-bamboo-300) 22%, transparent), transparent  60%),
+      linear-gradient(115deg, transparent  20%, color-mix(in oklab, white 80%, transparent) 48%, transparent  76%);
+    background-size:  140% 160%, 180% 140%, 260% 260%;
     box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 80%, transparent),
-      inset 0 -1px 0 color-mix(in oklab, var(--color-ink-900) 8%, transparent),
-      0 10px 30px -18px rgb(0 0 0 / 0.55);
-    border-bottom: 1px solid color-mix(in oklab, var(--color-rice-400) 55%, transparent);
+      inset   0 1px 0 white,
+      inset   0 -2px 0 color-mix(in oklab, var(--color-ink-900) 12%, transparent),
+      0 12px 34px -16px rgb(0 0 0 / 0.7);
+    border-bottom: 2px solid color-mix(in oklab, var(--color-rice-500) 40%, var(--color-ink-900));
     animation: washi-sheen 9.5s ease-in-out infinite, washi-sway 12s ease-in-out infinite;
     transform-origin: top center;
   }
@@ -500,18 +505,18 @@
   }
 
   /* Rice-paper sheet for the brand banner, mounted flush on the ink ground. */
-  .washi-banner {
+  *.washi-banner {
     color: var(--color-ink-900);
-    background-color: color-mix(in oklab, var(--color-rice-50) 96%, white);
+    background-color: color-mix(in oklab, var(--color-rice-50) 98%, white);
     background-image:
-      radial-gradient(110% 90% at 16% 0%, color-mix(in oklab, var(--color-miso-300) 16%, transparent), transparent 50%),
-      radial-gradient(130% 110% at 92% 8%, color-mix(in oklab, var(--color-bamboo-300) 20%, transparent), transparent 58%);
+      radial-gradient(110% 90% at 16% 0%, color-mix(in oklab, var(--color-miso-300) 16%, transparent), transparent  50%),
+      radial-gradient(130% 110% at 92% 8%, color-mix(in oklab, var(--color-bamboo-300) 20%, transparent), transparent  58%);
     box-shadow:
-      inset 0 1px 0 white,
-      inset 0 -1px 0 color-mix(in oklab, var(--color-ink-900) 10%, transparent),
+      inset   0 1px 0 white,
+      inset   0 -1px 0 color-mix(in oklab, var(--color-ink-900) 10%, transparent),
       0 -18px 60px -30px rgb(229 177 112 / 0.35),
       0 30px 70px -34px rgb(0 0 0 / 0.8);
-    border-block: 1px solid color-mix(in oklab, var(--color-rice-300) 70%, var(--color-miso-400));
+    border-block: 2px solid color-mix(in oklab, var(--color-rice-500) 35%, var(--color-miso-500));
     animation: washi-sheen 12s ease-in-out infinite, washi-sway 14s ease-in-out infinite;
   }
 
@@ -519,24 +524,26 @@
      For the floating bits that must sit *over* the ink ground without owning a
      solid card: the bottom nav, the assistant bubble, quick pills. A true
      backdrop blur behind a translucent paper tint reads as lacquered glass. */
-  .glass-bar {
+  *.glass-bar {
     color: var(--color-rice-50);
-    background: linear-gradient(to bottom, color-mix(in oklab, var(--color-rice-100) 10%, transparent), color-mix(in oklab, var(--color-rice-50) 6%, transparent));
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    backdrop-filter: blur(18px) saturate(140%);
-    border-top: 1px solid color-mix(in oklab, var(--color-rice-100) 22%, transparent);
-    box-shadow: 0 -12px 30px -18px rgb(0 0 0 / 0.6);
+    background: linear-gradient(to bottom, color-mix(in oklab, var(--color-ink-800) 86%, var(--color-rice-100)), color-mix(in oklab, var(--color-ink-950) 92%, var(--color-bamboo-700)));
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+    border-top: 1px solid color-mix(in oklab, var(--color-miso-400) 45%, var(--color-rice-100));
+    box-shadow:
+      inset   0 1px 0 color-mix(in oklab, var(--color-rice-100) 25%, transparent),
+      0 -14px 34px -18px rgb(0 0 0 / 0.85);
   }
 
-  .glass-card {
+  *.glass-card {
     color: var(--color-rice-50);
-    background: linear-gradient(to bottom right, color-mix(in oklab, var(--color-rice-50) 14%, transparent), color-mix(in oklab, var(--color-ink-800) 22%, transparent));
-    -webkit-backdrop-filter: blur(16px) saturate(150%);
-    backdrop-filter: blur(16px) saturate(150%);
-    border: 1px solid color-mix(in oklab, var(--color-rice-100) 26%, transparent);
+    background: linear-gradient(145deg, color-mix(in oklab, var(--color-ink-800) 88%, var(--color-miso-500)), color-mix(in oklab, var(--color-ink-950) 94%, var(--color-bamboo-600)));
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid color-mix(in oklab, var(--color-rice-100) 30%, transparent);
     box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 45%, transparent),
-      0 18px 40px -22px rgb(0 0 0 / 0.6);
+      inset   0 1px 0 color-mix(in oklab, var(--color-rice-100) 22%, transparent),
+      0 18px 40px -20px rgb(0 0 0 / 0.8);
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -19,7 +19,7 @@ export function BambooAmbience({
   density?: "light" | "full";
 }) {
   const rtl = locale === "ar";
-  const culms = density === "full" ? 5 : 3;
+  const culms = density === "full" ? 7 : 4;
 
   return (
     <div
@@ -28,11 +28,11 @@ export function BambooAmbience({
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
       <div
-        className="absolute inset-y-0 end-2 hidden w-16 sm:block"
+        className="absolute inset-y-0 end-2 hidden w-24 sm:block"
         style={{ direction: rtl ? "rtl" : "ltr" }}
       >
         {Array.from({ length: culms }, (_, i) => {
-          const h = 38 + ((i * 13) % 22);
+          const h = 44 + ((i * 13) % 26);
           const delay = i * 0.7;
           return (
             <span

@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { ADMIN_NAV, ROLE_LABELS, type Capability, type StaffRole } from "@/lib/auth/rbac";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { useI18n } from "@/components/i18n-provider";
 import { cn } from "@/lib/utils/format";
 
 /**
@@ -85,6 +87,7 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { locale } = useI18n();
 
   // A destination with no capability is shown to every unlocked member (the
   // guide); otherwise the role must actually hold the capability.
@@ -108,7 +111,9 @@ export function AdminShell({
             Ops
           </span>
         </Link>
-        <button
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher current={locale} variant="compact" />
+          <button
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
@@ -118,6 +123,7 @@ export function AdminShell({
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
+        </div>
       </div>
 
       <nav
@@ -141,6 +147,10 @@ export function AdminShell({
               {staffName}
             </span>
           </span>
+        </div>
+
+        <div className="hidden px-4 pt-3 lg:block">
+          <LanguageSwitcher current={locale} variant="compact" />
         </div>
 
         <div className="px-4 pt-3 lg:pb-1">

@@ -19,6 +19,7 @@ import { IdentityBand } from "@/components/customer/identity-band";
 import { BambooAmbience } from "@/components/customer/bamboo-ambience";
 import { AsanohaPanel } from "@/components/customer/asian-frames";
 import { SakuraField } from "@/components/customer/sakura-field";
+import { LeafField2D } from "@/components/customer/leaf-field-2d";
 import { BRAND_LOGO_URL, BRAND_SCRIPT_MARK } from "@/lib/brand";
 import { BrandBanner } from "@/components/customer/brand-banner";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -276,6 +277,9 @@ function Hero({
       {/* Cherry blossom for the Japanese half of the kitchen; the Chinese wok
           half is carried by the bamboo standing behind the copy. */}
       <SakuraField density={1} />
+      {/* Bamboo-green maple and sakura leaves drift over the ink, so the
+          Japanese half carries motion and the wok half carries bamboo. */}
+      <LeafField2D count={16} />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 animate-hero-rise sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
         <div>
