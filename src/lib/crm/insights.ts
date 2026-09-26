@@ -90,7 +90,7 @@ export async function getDashboardMetrics(days = 30): Promise<DashboardMetrics> 
         .limit(2000),
       admin
         .from("order_items")
-        .select("name_snapshot, quantity, line_total, order_id, orders!inner (created_at, status, menu_item_id), menu_item_id")
+        .select("name_snapshot, quantity, line_total, order_id, menu_item_id, orders!inner (created_at, status)")
         .gte("orders.created_at", windowStart.toISOString())
         .limit(5000),
       admin
