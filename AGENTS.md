@@ -642,19 +642,3 @@ deliberately kept: they are operational configuration (contact numbers, tax
 rate, delivery fee, ETA), not fabricated content, and deleting them would break
 checkout.
 
-## Interaction sound — opt-in, default off (2026-09-25)
-- The earlier "remove all audio" note refers to *ambience* (background loop, no
-  gesture, played on load). That stays removed. What exists now is
-  `src/lib/sound/engine.ts`: short Web Audio cues on a deliberate tap only.
-- Default is **off** per device, persisted in `panda-wok.sound`. No AudioContext
-  is constructed until the visitor turns it on from `SoundToggle` (header +
-  footer), and that click is the gesture the browser needs to allow audio.
-- Cues fire on real state changes only: add-to-cart, cart qty up/down, line
-  removal, confirmed order. Turning sound on confirms itself; turning off is
-  silent. Never autoplay, never loop, never on navigation.
-- Preference is read through `useSyncExternalStore` with a `false` server
-  snapshot — reading localStorage during render breaks hydration.
-- `tests/sound-engine.test.ts` locks the invariant (silent before opt-in).
-- `ADMIN_PASSCODE` (default `Panda2026`) is now documented in `.env.example`.
-  It fronts `/admin`; a team member types the `login_id` the owner issued them
-  instead, and gets only that member role.

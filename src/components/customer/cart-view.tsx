@@ -5,7 +5,6 @@ import { AlertTriangle, Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCart } from "@/components/customer/cart-provider";
-import { useSound } from "@/components/sound-provider";
 import { dishImageSrc } from "@/lib/images/responsive";
 import { useT } from "@/components/i18n-provider";
 import { computeTotals, type CheckoutConfig } from "@/lib/services/checkout-math";
@@ -28,7 +27,6 @@ export function CartView({
 }) {
   const t = useT();
   const { lines, hydrated, setQuantity, remove, subtotal, itemCount, priceOf } = useCart();
-  const { play } = useSound();
 
   if (!hydrated) {
     return (
@@ -145,7 +143,6 @@ export function CartView({
                     type="button"
                     onClick={() => {
                       setQuantity(line.menuItemId, line.quantity - 1);
-                      play("remove");
                     }}
                     aria-label={t("cart.reduceQuantity", { name: line.name })}
                     className="grid size-9 place-items-center text-ink-800"
@@ -159,7 +156,6 @@ export function CartView({
                     type="button"
                     onClick={() => {
                       setQuantity(line.menuItemId, line.quantity + 1);
-                      play("tap");
                     }}
                     disabled={line.quantity >= Math.min(line.maxQuantity || 20, 20)}
                     aria-label={t("cart.increaseQuantity", { name: line.name })}
@@ -173,7 +169,6 @@ export function CartView({
                   type="button"
                   onClick={() => {
                     remove(line.menuItemId);
-                    play("remove");
                   }}
                   className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-chili-600 hover:bg-chili-500/8"
                 >

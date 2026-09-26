@@ -8,7 +8,6 @@ import { FloatingPanda } from "@/components/layout/floating-panda";
 import { PandaAssistant } from "@/components/panda/assistant";
 import { AssistantProvider } from "@/components/panda/assistant-context";
 import { AnalyticsBeacon } from "@/components/customer/analytics-beacon";
-import { SoundProvider } from "@/components/sound-provider";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { restaurantSchema, websiteSchema, organisationSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
@@ -94,7 +93,6 @@ export default async function SiteLayout({
   return (
     <AssistantProvider>
       <CartProvider>
-        <SoundProvider>
           <div className="flex min-h-dvh flex-col">
             <SiteHeader brand={brand} flags={flags} />
             <main id="main" className="flex-1 pb-24 md:pb-0">
@@ -110,7 +108,6 @@ export default async function SiteLayout({
             ) : null}
             <AnalyticsBeacon enabled={flags.analytics !== false} />
           </div>
-        </SoundProvider>
         <JsonLdScript data={structuredData} />
       </CartProvider>
     </AssistantProvider>

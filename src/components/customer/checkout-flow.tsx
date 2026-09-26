@@ -16,7 +16,6 @@ import {
 import { Badge, Button, Spinner } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCart } from "@/components/customer/cart-provider";
-import { useSound } from "@/components/sound-provider";
 import { useErrorText, useT } from "@/components/i18n-provider";
 import { trackEvent } from "@/components/customer/analytics-beacon";
 import { placeOrderAction } from "@/lib/actions/checkout";
@@ -62,7 +61,6 @@ export function CheckoutFlow({
   const errorText = useErrorText();
   const router = useRouter();
   const { lines, hydrated, subtotal, itemCount, clear } = useCart();
-  const { play } = useSound();
 
   const [fulfillment, setFulfillment] = useState<Fulfillment>("delivery");
   const [addressId, setAddressId] = useState<string | null>(defaultAddressId);
@@ -164,7 +162,6 @@ export function CheckoutFlow({
 
       // Only clear the basket once the server confirms the order exists.
       clear();
-      play("success");
       router.replace(`/orders/${result.data.orderId}?placed=1`);
     } catch (caught) {
       setError(toAppError(caught));
