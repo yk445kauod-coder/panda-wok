@@ -25,6 +25,7 @@ import { BambooAmbience } from "@/components/customer/bamboo-ambience";
 import { AsanohaPanel } from "@/components/customer/asian-frames";
 import { SakuraField } from "@/components/customer/sakura-field";
 import { LeafField2D } from "@/components/customer/leaf-field-2d";
+import { HeroGallery } from "@/components/customer/hero-gallery";
 import { BRAND_LOGO_URL, BRAND_SCRIPT_MARK } from "@/lib/brand";
 import { BrandBanner } from "@/components/customer/brand-banner";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -452,6 +453,16 @@ function Hero({
 }) {
   return (
     <section className="hero-night relative overflow-hidden border-b border-rice-100/10">
+      {/* The Riso Sweep plate is the hero's ground. It is inert to the pointer
+          on touch devices so the page still scrolls and the copy still taps
+          through; on a fine pointer it takes hover, which is what drives the
+          ring's authored orbit. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 pointer-fine:pointer-events-auto"
+      >
+        <HeroGallery />
+      </div>
       <AsanohaPanel className="asanoha-light opacity-[0.28]" />
       <BambooAmbience locale={locale} />
       {/* Cherry blossom for the Japanese half of the kitchen; the Chinese wok

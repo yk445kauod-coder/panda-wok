@@ -16,6 +16,21 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  /**
+   * The ThreeUI effects are authored as standalone HTML documents and imported
+   * with Vite's `?raw` suffix, which returns the file's text. Turbopack has no
+   * built-in `?raw` query, so `raw-loader` supplies it. The `condition` scopes
+   * the rule to that query, so every other `.html` import stays untouched.
+   */
+  turbopack: {
+    rules: {
+      "*.html": {
+        condition: { query: /[?&]raw(?:&|$)/ },
+        loaders: ["raw-loader"],
+        as: "*.js",
+      },
+    },
+  },
   images: {
     unoptimized: true,
     formats: ["image/avif", "image/webp"],
