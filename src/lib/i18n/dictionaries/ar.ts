@@ -113,6 +113,36 @@ export const ar: Dictionary = {
     identityHeading: "ما يطبخه المطبخ",
     identityBody:
       "هذه هي وسوم المطبخ نفسها لما يطبخه، مأخوذة من سجل المطبخ الحقيقى لا مكتوبة داخل الصفحة. والقائمة أدناه هي المرجع الموثوق لما هو متاح فعلاً.",
+
+    heroEyebrow: "مطبخ آسيوي · {city}",
+    heroOrder: "اطلب الآن",
+    heroHowTo: "كيف يعمل الطلب",
+    heroStatsDishes: "طبقاً في القائمة",
+    heroStatsEta: "دقيقة للتوصيل",
+    heroStatsFee: "رسوم التوصيل",
+    heroStatsFreeOver: "مجاناً فوق {amount}",
+    heroStatRating: "تقييم العملاء",
+
+    eyebrowLabel: "يُطبخ عند الطلب",
+    popularHeading: "الأكثر طلباً الآن",
+    popularSubheading: "الأطباق التي يفتخر بها المطبخ هذا الأسبوع.",
+    popularFilterAll: "الكل",
+    popularExplore: "تصفّح القائمة كاملة",
+
+    editorialEyebrow: "الأكثر رواجاً",
+    editorialDiscover: "اكتشف",
+    editorialKitchenTitle: "مطبخان، ومنصة واحدة",
+    editorialKitchenBody:
+      "منصة سوشي بطابع ياباني وووك بطابع صيني، يُطبخان في الغرفة نفسها ويُرسَلان معاً. كل شيء يُحضَّر لحظة طلبك — لا شيء يُحفظ تحت مصباح التسخين.",
+    editorialLearnMore: "المزيد عن المطبخ",
+    editorialEmptyList: "لم ينشر المطبخ أطباقاً في هذا القسم بعد.",
+
+    closingTitle: "جعت؟",
+    closingBody:
+      "القائمة تُطبخ عند الطلب وتُوصَّل في {city}. تصفّحها، وابنِ سلّتك، ونحن نتولّى الباقي.",
+    closingCta: "تصفّح القائمة",
+    closingCall: "اتصل بالمطبخ",
+    closingWhatsapp: "راسلنا على واتساب",
   },
 
   menu: {
@@ -168,6 +198,12 @@ export const ar: Dictionary = {
     moreFrom: "المزيد من {category}",
     imageAltView: "{name} — عرض {index}",
     featured: "أطباق مميّزة",
+    offer: "عرض",
+    viewDish: "شاهد الطبق",
+    ratingLabel: "{rating} من 5",
+    ratingCount: "{count} تقييمات",
+    ratingCountOne: "تقييم واحد",
+    ratedBy: "قيّمه {count} عميلاً",
   },
 
   addToCart: {

@@ -89,7 +89,7 @@ export default async function AdminMenuPage({
               title="No categories yet"
               description="A dish must belong to a category. Create one, then come back here."
               action={
-                <Link href="/admin/categories" className="text-sm font-medium text-indigo-600">
+                <Link href="/admin/categories" className="text-sm font-medium text-vermilion-600">
                   Create a category
                 </Link>
               }
@@ -115,7 +115,7 @@ export default async function AdminMenuPage({
           </h2>
           <Link
             href="/admin/categories"
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+            className="text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
           >
             Reorder categories
           </Link>

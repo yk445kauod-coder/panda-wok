@@ -111,7 +111,7 @@ export function FooterSocial({
               target="_blank"
               aria-label={label}
               title={label}
-              className="inline-flex size-10 items-center justify-center rounded-xl border border-ink-900/12 text-ink-700 transition-colors hover:border-indigo-600/40 hover:bg-indigo-600/8 hover:text-indigo-700"
+              className="inline-flex size-10 items-center justify-center rounded-xl border border-ink-900/12 text-ink-700 transition-colors hover:border-vermilion-600/40 hover:bg-vermilion-600/8 hover:text-vermilion-700"
             >
               <Icon className="size-4" />
             </a>

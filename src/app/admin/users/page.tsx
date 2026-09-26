@@ -110,7 +110,7 @@ export default async function AdminUsersPage({
         </div>
         <button
           type="submit"
-          className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-medium text-rice-50 hover:bg-indigo-700"
+          className="h-10 rounded-xl bg-vermilion-600 px-4 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
         >
           Apply
         </button>
@@ -159,7 +159,7 @@ export default async function AdminUsersPage({
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
                         href={`/admin/crm/${customer.user_id}`}
-                        className="font-display text-base font-semibold text-ink-900 hover:text-indigo-600"
+                        className="font-display text-base font-semibold text-ink-900 hover:text-vermilion-600"
                       >
                         {customer.full_name ?? "Unnamed user"}
                       </Link>
@@ -189,7 +189,7 @@ export default async function AdminUsersPage({
                     </p>
 
                     <details className="mt-3">
-                      <summary className="cursor-pointer text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                      <summary className="cursor-pointer text-xs font-medium text-vermilion-600 hover:text-vermilion-700">
                         {staffRow ? "Change staff role" : "Grant staff access"}
                       </summary>
                       <div className="mt-3 max-w-md">

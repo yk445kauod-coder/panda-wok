@@ -118,7 +118,7 @@ export default async function AdminAiPage() {
           </div>
           <a
             href="/admin/ai/usage"
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+            className="text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
           >
             Full usage &amp; logs
           </a>

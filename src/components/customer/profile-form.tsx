@@ -108,7 +108,7 @@ export function ProfileForm({
                 notificationsOptIn: event.target.checked,
               }))
             }
-            className="mt-0.5 size-4 accent-indigo-600"
+            className="mt-0.5 size-4 accent-vermilion-600"
           />
           <span className="text-sm text-ink-800">
             {t("account.profile.orderUpdates")}
@@ -127,7 +127,7 @@ export function ProfileForm({
                 marketingOptIn: event.target.checked,
               }))
             }
-            className="mt-0.5 size-4 accent-indigo-600"
+            className="mt-0.5 size-4 accent-vermilion-600"
           />
           <span className="text-sm text-ink-800">
             {t("account.profile.offers")}

@@ -132,7 +132,7 @@ export function StaffConversationThread({
                   message.isInternalNote
                     ? "rounded-bl-sm border border-miso-500/40 bg-miso-300/25 text-ink-900"
                     : message.mine
-                      ? "rounded-br-sm bg-indigo-600 text-rice-50"
+                      ? "rounded-br-sm bg-vermilion-600 text-rice-50"
                       : "rounded-bl-sm bg-rice-200 text-ink-900",
                 )}
               >

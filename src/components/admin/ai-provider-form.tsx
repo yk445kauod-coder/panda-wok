@@ -128,7 +128,7 @@ export function AiProviderForm({ provider }: { provider: Provider | null }) {
             type="checkbox"
             checked={isEnabled}
             onChange={(event) => setIsEnabled(event.target.checked)}
-            className="mt-0.5 size-4 shrink-0 accent-indigo-600"
+            className="mt-0.5 size-4 shrink-0 accent-vermilion-600"
           />
           <span>
             <span className="block text-sm font-medium text-ink-900">Enabled</span>
@@ -142,7 +142,7 @@ export function AiProviderForm({ provider }: { provider: Provider | null }) {
             type="checkbox"
             checked={isFallback}
             onChange={(event) => setIsFallback(event.target.checked)}
-            className="mt-0.5 size-4 shrink-0 accent-indigo-600"
+            className="mt-0.5 size-4 shrink-0 accent-vermilion-600"
           />
           <span>
             <span className="block text-sm font-medium text-ink-900">Fallback</span>

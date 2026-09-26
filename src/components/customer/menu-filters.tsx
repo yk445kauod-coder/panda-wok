@@ -99,7 +99,7 @@ export function MenuFilters({
               className={cn(
                 "whitespace-nowrap rounded-full border px-3.5 py-2 text-sm transition-colors",
                 active
-                  ? "border-indigo-600 bg-indigo-600 text-rice-50"
+                  ? "border-vermilion-600 bg-vermilion-600 text-rice-50"
                   : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
               )}
             >

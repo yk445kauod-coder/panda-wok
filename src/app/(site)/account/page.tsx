@@ -164,12 +164,12 @@ export default async function AccountPage() {
             id="addresses-heading"
             className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
           >
-            <MapPin className="size-4 text-indigo-600" aria-hidden="true" />
+            <MapPin className="size-4 text-vermilion-600" aria-hidden="true" />
             {t("account.addressesHeading")}
           </h2>
           <Link
             href="/account/addresses"
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+            className="text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
           >
             {t("common.manage")}
           </Link>
@@ -264,7 +264,7 @@ function ShortcutLink({
       href={href}
       className="washi-panel flex items-center gap-2.5 p-3.5 text-sm font-medium text-ink-900 transition-shadow hover:shadow-washi-lg"
     >
-      <Icon className="size-4 text-indigo-600" aria-hidden="true" />
+      <Icon className="size-4 text-vermilion-600" aria-hidden="true" />
       {label}
     </Link>
   );

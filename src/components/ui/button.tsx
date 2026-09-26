@@ -5,7 +5,7 @@ type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    "bg-indigo-600 text-rice-50 hover:bg-indigo-700 active:bg-indigo-700 shadow-washi",
+    "bg-vermilion-600 text-rice-50 hover:bg-vermilion-700 active:bg-vermilion-700 shadow-washi",
   secondary:
     "bg-bamboo-600 text-rice-50 hover:bg-bamboo-700 active:bg-bamboo-700 shadow-washi",
   outline:
@@ -94,7 +94,7 @@ export function Badge({
     warning: "bg-miso-500/20 text-miso-600",
     danger: "bg-chili-500/15 text-chili-600",
     info: "bg-bamboo-500/18 text-bamboo-700",
-    indigo: "bg-indigo-600/12 text-indigo-600",
+    indigo: "bg-vermilion-600/12 text-vermilion-600",
   } as const;
 
   return (

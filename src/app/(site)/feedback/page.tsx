@@ -50,7 +50,7 @@ export default async function FeedbackPage({
           title={t("feedback.offTitle")}
           description={t("feedback.offBody")}
           action={
-            <Link href="/contact" className="text-sm font-medium text-indigo-600">
+            <Link href="/contact" className="text-sm font-medium text-vermilion-600">
               {t("common.contactKitchen")}
             </Link>
           }
@@ -91,7 +91,7 @@ export default async function FeedbackPage({
           <div className="mt-4 flex gap-3">
             <Link
               href="/auth/sign-in?next=%2Ffeedback"
-              className="inline-flex h-11 items-center rounded-xl bg-indigo-600 px-5 text-sm font-medium text-rice-50 hover:bg-indigo-700"
+              className="inline-flex h-11 items-center rounded-xl bg-vermilion-600 px-5 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
             >
               {t("feedback.signInCta")}
             </Link>
@@ -104,7 +104,7 @@ export default async function FeedbackPage({
           </div>
           <p className="mt-3 text-xs text-ink-700/70">
             {t("feedback.preferNot")}
-            <Link href="/contact" className="font-medium text-indigo-600">
+            <Link href="/contact" className="font-medium text-vermilion-600">
               {t("feedback.contactPage")}
             </Link>
             .
@@ -167,8 +167,8 @@ export default async function FeedbackPage({
                     <p className="mt-1.5 text-sm text-ink-800">{entry.message}</p>
 
                     {entry.admin_response ? (
-                      <div className="mt-3 rounded-xl border-s-2 border-indigo-600 bg-rice-200/60 p-3">
-                        <p className="text-xs font-medium text-indigo-600">
+                      <div className="mt-3 rounded-xl border-s-2 border-vermilion-600 bg-rice-200/60 p-3">
+                        <p className="text-xs font-medium text-vermilion-600">
                           {t("feedback.replyFromKitchen")}
                         </p>
                         <p className="mt-1 text-sm text-ink-800">{entry.admin_response}</p>
@@ -178,7 +178,7 @@ export default async function FeedbackPage({
                     {entry.order_id ? (
                       <Link
                         href={`/orders/${entry.order_id}`}
-                        className="mt-3 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                        className="mt-3 inline-block text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
                       >
                         {t("feedback.viewOrder")}
                       </Link>

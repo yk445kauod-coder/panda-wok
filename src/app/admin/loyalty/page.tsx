@@ -128,7 +128,7 @@ export default async function AdminLoyaltyPage({
         </h2>
         <p className="mt-1 text-xs text-ink-700/70">
           These are the live values the order pipeline reads. Edit them in{" "}
-          <a href="/admin/settings" className="font-medium text-indigo-600 hover:text-indigo-700">
+          <a href="/admin/settings" className="font-medium text-vermilion-600 hover:text-vermilion-700">
             Settings
           </a>
           .

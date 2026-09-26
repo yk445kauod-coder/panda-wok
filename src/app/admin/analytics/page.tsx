@@ -178,7 +178,7 @@ export default async function AdminAnalyticsPage() {
             title="Loyalty"
             subtitle={`${formatNumber(metrics.loyalty.members)} members`}
             action={
-              <Link href="/admin/loyalty" className="text-xs font-medium text-indigo-600">
+              <Link href="/admin/loyalty" className="text-xs font-medium text-vermilion-600">
                 Manage
               </Link>
             }
@@ -216,7 +216,7 @@ export default async function AdminAnalyticsPage() {
             title="Feedback"
             subtitle={`${metrics.feedbackSummary.count} responses`}
             action={
-              <Link href="/admin/feedback" className="text-xs font-medium text-indigo-600">
+              <Link href="/admin/feedback" className="text-xs font-medium text-vermilion-600">
                 Open inbox
               </Link>
             }
@@ -247,7 +247,7 @@ export default async function AdminAnalyticsPage() {
             title="Stock warnings"
             subtitle={`${metrics.stockWarnings.length} need attention`}
             action={
-              <Link href="/admin/stock" className="text-xs font-medium text-indigo-600">
+              <Link href="/admin/stock" className="text-xs font-medium text-vermilion-600">
                 Manage stock
               </Link>
             }

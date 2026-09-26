@@ -2247,7 +2247,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      menu_item_ratings: {
+        Row: {
+          average_rating: number | null
+          menu_item_id: string | null
+          rating_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_backup: { Args: never; Returns: boolean }

@@ -78,7 +78,7 @@ export function FloatingPanda() {
             openAssistant();
           }
         }}
-        className="glass-card group relative grid size-16 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60"
+        className="glass-card group relative grid size-16 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-vermilion-500/60"
       >
         <span
           aria-hidden="true"
@@ -87,7 +87,7 @@ export function FloatingPanda() {
         />
         <span
           aria-hidden="true"
-          className="absolute inset-1 rounded-full bg-indigo-500/10 blur-sm"
+          className="absolute inset-1 rounded-full bg-vermilion-500/10 blur-sm"
         />
         <div ref={face} className="relative will-change-transform">
           <div className="transition-transform duration-300 ease-out group-hover:scale-105 group-active:scale-95 motion-reduce:transition-none">

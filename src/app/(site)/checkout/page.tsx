@@ -36,7 +36,7 @@ export default async function CheckoutPage() {
           title={t("cart.paused")}
           description={t("checkout.errors.closed")}
           action={
-            <Link href="/contact" className="text-sm font-medium text-indigo-600">
+            <Link href="/contact" className="text-sm font-medium text-vermilion-600">
               {t("common.contactKitchen")}
             </Link>
           }

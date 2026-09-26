@@ -183,7 +183,7 @@ export function AdminShell({
                           className={cn(
                             "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors",
                             active
-                              ? "bg-indigo-600 font-medium text-rice-50"
+                              ? "bg-vermilion-600 font-medium text-rice-50"
                               : "text-rice-200/85 hover:bg-rice-100/8 hover:text-rice-50",
                           )}
                         >
@@ -211,7 +211,7 @@ export function AdminShell({
       <main id="main" className="min-w-0 flex-1">
         <div className="hidden items-center justify-between gap-3 border-b border-ink-900/10 bg-rice-100/60 px-6 py-2.5 lg:flex">
           <div className="flex items-center gap-2 text-xs text-ink-700/75">
-            <span className="inline-flex h-6 items-center rounded-full bg-indigo-600/10 px-2.5 font-semibold tracking-wide text-indigo-700 uppercase">
+            <span className="inline-flex h-6 items-center rounded-full bg-vermilion-600/10 px-2.5 font-semibold tracking-wide text-vermilion-700 uppercase">
               {ROLE_LABELS[role]}
             </span>
             <span className="truncate">{staffName}</span>

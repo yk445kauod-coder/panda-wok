@@ -175,7 +175,7 @@ export default async function AboutPage() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Link
           href="/menu"
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 hover:bg-indigo-700 sm:flex-1"
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-vermilion-600 px-6 font-medium text-rice-50 hover:bg-vermilion-700 sm:flex-1"
         >
           {t("about.seeMenu")}
         </Link>

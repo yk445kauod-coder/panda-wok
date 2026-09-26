@@ -101,7 +101,7 @@ export default async function AdminActivityPage({
         </div>
         <button
           type="submit"
-          className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-medium text-rice-50 hover:bg-indigo-700"
+          className="h-10 rounded-xl bg-vermilion-600 px-4 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
         >
           Filter
         </button>
@@ -125,7 +125,7 @@ export default async function AdminActivityPage({
               className={cn(
                 "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium",
                 params.event === event
-                  ? "border-indigo-600 bg-indigo-600 text-rice-50"
+                  ? "border-vermilion-600 bg-vermilion-600 text-rice-50"
                   : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
               )}
             >
@@ -175,7 +175,7 @@ export default async function AdminActivityPage({
                         entry.user_id ? (
                           <Link
                             href={`/admin/crm/${entry.user_id}`}
-                            className="text-indigo-600 hover:text-indigo-700"
+                            className="text-vermilion-600 hover:text-vermilion-700"
                           >
                             {entry.customer_name}
                           </Link>

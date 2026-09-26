@@ -196,7 +196,7 @@ export function CheckoutFlow({
           action={
             <Link
               href="/menu"
-              className="inline-flex h-11 items-center rounded-xl bg-indigo-600 px-5 text-sm font-medium text-rice-50 hover:bg-indigo-700"
+              className="inline-flex h-11 items-center rounded-xl bg-vermilion-600 px-5 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
             >
               {t("common.browseMenu")}
             </Link>
@@ -270,7 +270,7 @@ export function CheckoutFlow({
                 onClick={() => setFulfillment(option.key)}
                 className={
                   active
-                    ? "rounded-xl border border-indigo-600 bg-indigo-600/8 p-3 text-start"
+                    ? "rounded-xl border border-vermilion-600 bg-vermilion-600/8 p-3 text-start"
                     : "rounded-xl border border-ink-900/12 p-3 text-start hover:bg-rice-200/60"
                 }
               >
@@ -290,12 +290,12 @@ export function CheckoutFlow({
         <Reveal as="section" className="washi-panel mt-3 p-4" delay={100}>
           <div className="flex items-center justify-between gap-3">
             <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink-900">
-              <MapPin className="size-4 text-indigo-600" aria-hidden="true" />
+              <MapPin className="size-4 text-vermilion-600" aria-hidden="true" />
               {t("checkout.addressHeading")}
             </h2>
             <Link
               href="/account/addresses?next=%2Fcheckout"
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+              className="text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
             >
               {t("common.manage")}
             </Link>
@@ -309,7 +309,7 @@ export function CheckoutFlow({
                 action={
                   <Link
                     href="/account/addresses?next=%2Fcheckout"
-                    className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-indigo-600 px-4 text-sm font-medium text-rice-50 hover:bg-indigo-700"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-vermilion-600 px-4 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
                   >
                     <Plus className="size-4" aria-hidden="true" />
                     {t("checkout.addAddress")}
@@ -326,7 +326,7 @@ export function CheckoutFlow({
                     <label
                       className={
                         active
-                          ? "flex cursor-pointer gap-3 rounded-xl border border-indigo-600 bg-indigo-600/6 p-3"
+                          ? "flex cursor-pointer gap-3 rounded-xl border border-vermilion-600 bg-vermilion-600/6 p-3"
                           : "flex cursor-pointer gap-3 rounded-xl border border-ink-900/12 p-3 hover:bg-rice-200/50"
                       }
                     >
@@ -335,7 +335,7 @@ export function CheckoutFlow({
                         name="address"
                         checked={active}
                         onChange={() => setAddressId(address.id)}
-                        className="mt-1 size-4 accent-indigo-600"
+                        className="mt-1 size-4 accent-vermilion-600"
                       />
                       <span className="min-w-0 flex-1 text-sm">
                         <span className="flex flex-wrap items-center gap-2">
@@ -400,7 +400,7 @@ export function CheckoutFlow({
       {/* Payment */}
       <Reveal as="section" className="washi-panel mt-3 p-4" delay={140}>
         <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink-900">
-          <Wallet className="size-4 text-indigo-600" aria-hidden="true" />
+          <Wallet className="size-4 text-vermilion-600" aria-hidden="true" />
           {t("checkout.paymentHeading")}
         </h2>
         <p className="mt-1 text-xs text-ink-700/70">{t("checkout.paymentNotice")}</p>
@@ -429,7 +429,7 @@ export function CheckoutFlow({
                 <label
                   className={
                     active
-                      ? "flex cursor-pointer items-center gap-3 rounded-xl border border-indigo-600 bg-indigo-600/6 p-3"
+                      ? "flex cursor-pointer items-center gap-3 rounded-xl border border-vermilion-600 bg-vermilion-600/6 p-3"
                       : "flex cursor-pointer items-center gap-3 rounded-xl border border-ink-900/12 p-3 hover:bg-rice-200/50"
                   }
                 >
@@ -438,7 +438,7 @@ export function CheckoutFlow({
                     name="payment"
                     checked={active}
                     onChange={() => setPayment(option.key)}
-                    className="size-4 accent-indigo-600"
+                    className="size-4 accent-vermilion-600"
                   />
                   <span className="text-sm text-ink-900">{option.label}</span>
                 </label>
@@ -470,7 +470,7 @@ export function CheckoutFlow({
               type="checkbox"
               checked={usePoints}
               onChange={(event) => setUsePoints(event.target.checked)}
-              className="size-4 accent-indigo-600"
+              className="size-4 accent-vermilion-600"
             />
           </label>
         </Reveal>

@@ -111,6 +111,43 @@ export const en = {
     identityHeading: "What the kitchen cooks",
     identityBody:
       "These are the kitchen's own cuisine tags, taken from the live kitchen record rather than written into the page. The menu underneath is the authoritative list of what is actually available.",
+
+    /* Hero. Every number here is a live figure read from the database, so the
+       hero never claims a stat the kitchen cannot back up. */
+    heroEyebrow: "Asian kitchen · {city}",
+    heroOrder: "Order now",
+    heroHowTo: "How ordering works",
+    heroStatsDishes: "dishes on the menu",
+    heroStatsEta: "minute delivery",
+    heroStatsFee: "delivery fee",
+    heroStatsFreeOver: "free over {amount}",
+    heroStatRating: "customer rating",
+
+    /* Popular band. */
+    eyebrowLabel: "Cooked to order",
+    popularHeading: "Popular right now",
+    popularSubheading: "The dishes the kitchen is proudest of this week.",
+    popularFilterAll: "All",
+    popularExplore: "Explore the full menu",
+
+    /* Editorial section on the home page. The two rows are built from the
+       kitchen's own published categories — whichever sections the admin fills
+       are the ones that appear — so there is no hardcoded dish copy here. */
+    editorialEyebrow: "What's trending",
+    editorialDiscover: "Discover",
+    editorialKitchenTitle: "Two kitchens, one pass",
+    editorialKitchenBody:
+      "A Japanese-inspired sushi counter and a Chinese-inspired wok, cooked in the same room and sent out together. Everything is made when you order it — nothing is held under a lamp.",
+    editorialLearnMore: "More about the kitchen",
+    editorialEmptyList: "The kitchen has not published dishes in this section yet.",
+
+    /* Closing call to action. */
+    closingTitle: "Hungry yet?",
+    closingBody:
+      "The menu is cooked to order and delivered across {city}. Browse it, build your basket and we will take it from there.",
+    closingCta: "Browse the menu",
+    closingCall: "Call the kitchen",
+    closingWhatsapp: "Chat on WhatsApp",
   },
 
   menu: {
@@ -166,6 +203,12 @@ export const en = {
     moreFrom: "More from {category}",
     imageAltView: "{name} view {index}",
     featured: "Featured dishes",
+    offer: "Offer",
+    viewDish: "View dish",
+    ratingLabel: "{rating} out of 5",
+    ratingCount: "{count} ratings",
+    ratingCountOne: "1 rating",
+    ratedBy: "Rated by {count} customers",
   },
 
   addToCart: {

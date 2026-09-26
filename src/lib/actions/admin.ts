@@ -35,6 +35,7 @@ import {
   staffSchema,
   createStaffSchema,
   feedbackResponseSchema,
+  feedbackPublishSchema,
   conversationStatusSchema,
   uuidSchema,
 } from "@/lib/validation/schemas";
@@ -813,6 +814,49 @@ export async function respondToFeedbackAction(
 
   revalidatePath("/admin/feedback");
   revalidatePath("/feedback");
+  return actionOk();
+}
+
+/**
+ * Toggles whether a rating counts toward the public per-dish average.
+ *
+ * Kept separate from `respondToFeedbackAction` on purpose: replying to a
+ * customer and publishing their score are different decisions, and an admin
+ * should be able to do one without the other.
+ */
+export async function setFeedbackPublishedAction(
+  formData: FormData,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("feedback.manage");
+
+  const parsed = feedbackPublishSchema.safeParse({
+    feedbackId: formData.get("feedbackId"),
+    isPublic: formData.get("isPublic"),
+  });
+  if (!parsed.success) return toFormError(parsed.error);
+
+  const supabase = await createServerSupabase();
+
+  const { error } = await supabase
+    .from("feedback")
+    .update({ is_public: parsed.data.isPublic })
+    .eq("id", parsed.data.feedbackId);
+
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: parsed.data.isPublic ? "feedback.published" : "feedback.unpublished",
+    entity: "feedback",
+    entityId: parsed.data.feedbackId,
+    after: { is_public: parsed.data.isPublic },
+  });
+
+  revalidatePath("/admin/feedback");
+  // The average is read by the public menu, so the cached menu must drop too.
+  revalidatePath("/menu");
+  revalidatePath("/");
   return actionOk();
 }
 

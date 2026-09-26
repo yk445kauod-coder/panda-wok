@@ -124,7 +124,7 @@ export function ConversationThread({
                 className={cn(
                   "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm",
                   message.mine
-                    ? "rounded-br-sm bg-indigo-600 text-rice-50"
+                    ? "rounded-br-sm bg-vermilion-600 text-rice-50"
                     : "rounded-bl-sm bg-rice-200 text-ink-900",
                 )}
               >

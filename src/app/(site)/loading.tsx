@@ -5,7 +5,7 @@ export default function Loading() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-6" aria-busy="true" aria-live="polite">
       <span className="sr-only">Loading…</span>
-      <EnsoMark className="mx-auto size-14 animate-sway text-indigo-600/50" />
+      <EnsoMark className="mx-auto size-14 animate-sway text-vermilion-600/50" />
 
       <div className="mt-6 space-y-3">
         <div className="h-7 w-48 animate-pulse rounded-lg bg-rice-300/60" />

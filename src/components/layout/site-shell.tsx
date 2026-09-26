@@ -56,7 +56,7 @@ export async function SiteHeader({
     <>
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-sm focus:text-rice-50"
+        className="sr-only focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-vermilion-600 focus:px-3 focus:py-2 focus:text-sm focus:text-rice-50"
       >
         {t("common.skipToContent")}
       </a>
@@ -82,7 +82,7 @@ export async function SiteHeader({
             {flags.ordering !== false ? (
               <Link
                 href="/cart"
-                className="hidden rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-rice-50 transition-colors hover:bg-indigo-700 md:inline-flex"
+                className="hidden rounded-lg bg-vermilion-600 px-3.5 py-2 text-sm font-medium text-rice-50 transition-colors hover:bg-vermilion-700 md:inline-flex"
               >
                 {t("nav.basket")}
               </Link>

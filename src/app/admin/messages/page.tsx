@@ -50,7 +50,7 @@ export default async function AdminMessagesPage() {
           </h2>
           <Link
             href="/admin/chat"
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+            className="text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
           >
             Open full inbox
           </Link>
@@ -132,7 +132,7 @@ export default async function AdminMessagesPage() {
                       <>
                         <Link
                           href={`/admin/chat/${message.conversation.id}`}
-                          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-rice-50 hover:bg-indigo-700"
+                          className="rounded-lg bg-vermilion-600 px-3 py-1.5 text-xs font-medium text-rice-50 hover:bg-vermilion-700"
                         >
                           Reply
                         </Link>

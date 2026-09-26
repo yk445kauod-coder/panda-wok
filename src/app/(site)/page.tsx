@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Clock, MapPin, Star, Wallet } from "lucide-react";
 import {
   getFeaturedItems,
+  getMenuRatings,
   getPublicCategories,
   getPublicMenu,
   getPublicSettings,
@@ -13,9 +14,13 @@ import { JsonLdScript } from "@/components/seo/json-ld";
 import { menuSchema } from "@/lib/seo/schema";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Reveal } from "@/components/ui/reveal";
-import { DishCard } from "@/components/customer/dish-card";
 import { FeaturedDishStrip } from "@/components/customer/featured-strip";
 import { IdentityBand } from "@/components/customer/identity-band";
+import { PopularMenu } from "@/components/customer/popular-menu";
+import {
+  DiscoverSeal,
+  EditorialSections,
+} from "@/components/customer/editorial-sections";
 import { BambooAmbience } from "@/components/customer/bamboo-ambience";
 import { AsanohaPanel } from "@/components/customer/asian-frames";
 import { SakuraField } from "@/components/customer/sakura-field";
@@ -26,6 +31,7 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { brandDescription, brandTagline } from "@/lib/i18n/brand";
 import type { T } from "@/lib/i18n/server";
 import { localiseCategory } from "@/lib/i18n/catalog";
+import { formatPrice } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
@@ -59,19 +65,22 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [featured, categories, menu, settings, restaurant, locale] = await Promise.all([
-    getFeaturedItems(6),
-    getPublicCategories(),
-    getPublicMenu(),
-    getPublicSettings(),
-    getRestaurant(),
-    getLocale(),
-  ]);
+  const [featured, categories, menu, settings, restaurant, locale, ratings] =
+    await Promise.all([
+      getFeaturedItems(6),
+      getPublicCategories(),
+      getPublicMenu(),
+      getPublicSettings(),
+      getRestaurant(),
+      getLocale(),
+      getMenuRatings(),
+    ]);
   const t = await getT(locale);
 
   const brand = restaurant?.name_en ?? settings.brand.name;
   const currency = restaurant?.currency ?? "EGP";
   const categoryById = new Map(categories.map((c) => [c.id, c]));
+  const ratingRecord = Object.fromEntries(ratings);
 
   // A section is only worth a card if it holds at least one dish. Showing empty
   // sections invites a tap that lands on a blank page, which reads as broken.
@@ -108,6 +117,55 @@ export default async function HomePage() {
     items: menuItems,
   });
 
+  // "Popular" is a real ordering, not a hand-picked list: the kitchen's featured
+  // flag first, then everything else in the order the admin set. The band shows
+  // the full published menu so the category filters have something to filter.
+  const popularItems = [...menu.items]
+    .filter((item) => item.is_available)
+    .sort((a, b) => Number(b.is_featured) - Number(a.is_featured))
+    .slice(0, 12)
+    .map((item) => {
+      const category = categoryById.get(item.category_id);
+      return {
+        item,
+        categoryId: item.category_id,
+        categoryName: category
+          ? localiseCategory(category, locale).name
+          : t("menu.categoryFallback"),
+      };
+    });
+
+  const popularCategoryIds = new Set(popularItems.map((entry) => entry.categoryId));
+  const popularCategories = visibleCategories
+    .filter((category) => popularCategoryIds.has(category.id))
+    .map((category) => ({
+      id: category.id,
+      name: localiseCategory(category, locale).name,
+    }));
+
+  // Editorial rows are built from the kitchen's own category records, so
+  // whichever sections the admin has published are exactly the ones shown.
+  const editorialSections = visibleCategories
+    .map((category) => {
+      const items = menu.items.filter((item) => item.category_id === category.id);
+      const localised = localiseCategory(category, locale);
+      return {
+        categoryId: category.id,
+        slug: category.slug,
+        name: localised.name,
+        nameJa: category.name_ja ?? null,
+        description:
+          locale === "ar" && category.description_ar?.trim()
+            ? category.description_ar
+            : (category.description_en ?? null),
+        items,
+      };
+    })
+    .filter((section) => section.items.length > 1)
+    .slice(0, 3);
+
+  const avgRating = computeAverageRating(ratings);
+
   return (
     <>
       <Hero
@@ -118,6 +176,15 @@ export default async function HomePage() {
         logoUrl={BRAND_LOGO_URL}
         locale={locale}
         t={t}
+        stats={{
+          dishCount: menu.items.length,
+          etaMinutes: settings.ordering.etaMinutes,
+          deliveryFee: settings.ordering.deliveryFee,
+          freeOver: settings.ordering.freeDeliveryOver,
+          currency,
+          rating: avgRating,
+          city: settings.brand.city,
+        }}
       />
 
       <IdentityBand
@@ -129,44 +196,61 @@ export default async function HomePage() {
       />
 
       {featured.length > 0 ? (
-        <section aria-labelledby="featured-heading" className="mx-auto max-w-6xl px-4 py-10">
+        <section
+          aria-labelledby="featured-heading"
+          className="mx-auto max-w-6xl px-4 py-10"
+        >
           <Reveal>
             <div className="flex items-end justify-between gap-4">
               <div>
-                <h2 id="featured-heading" className="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">
+                <h2
+                  id="featured-heading"
+                  className="font-display text-fluid-h2 font-semibold text-ink-900"
+                >
                   {t("home.featuredHeading")}
                 </h2>
-                <span aria-hidden="true" className="ink-rule mt-3 block max-w-[5rem]" />
+                <span aria-hidden="true" className="eyebrow-rule mt-3" />
                 <p className="mt-3 text-sm text-ink-700/80">
                   {t("home.featuredSubheading")}
                 </p>
               </div>
               <Link
                 href="/menu"
-                className="hidden shrink-0 items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 sm:inline-flex"
+                className="hidden shrink-0 items-center gap-1.5 text-sm font-medium text-vermilion-600 hover:text-vermilion-700 sm:inline-flex"
               >
-                {t("home.fullMenu")} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+                {t("home.fullMenu")}{" "}
+                <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
               </Link>
             </div>
             <FeaturedDishStrip items={featured} currency={currency} locale={locale} />
           </Reveal>
         </section>
       ) : null}
+
       {visibleCategories.length > 0 ? (
-        <section aria-labelledby="categories-heading" className="mx-auto max-w-6xl px-4 py-6">
+        <section
+          aria-labelledby="categories-heading"
+          className="mx-auto max-w-6xl px-4 py-6"
+        >
           <Reveal>
-            <h2 id="categories-heading" className="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">
+            <h2
+              id="categories-heading"
+              className="font-display text-fluid-h2 font-semibold text-ink-900"
+            >
               {t("home.browseBySection")}
             </h2>
-            <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <span aria-hidden="true" className="eyebrow-rule mt-3" />
+            <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {visibleCategories.map((category, index) => {
                 const local = localiseCategory(category, locale);
-                const count = menu.items.filter((i) => i.category_id === category.id).length;
+                const count = menu.items.filter(
+                  (i) => i.category_id === category.id,
+                ).length;
                 return (
                   <Reveal as="li" key={category.id} delay={Math.min(index, 8) * 40}>
                     <Link
                       href={`/menu/${category.slug}`}
-                      className="washi-panel group flex h-full flex-col justify-between p-4 transition-shadow hover:shadow-washi-lg"
+                      className="dish-card group flex h-full flex-col justify-between p-4"
                     >
                       <span className="font-display text-base font-semibold text-ink-900">
                         {local.name}
@@ -188,37 +272,57 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {menu.items.length > 0 ? (
-        <section aria-labelledby="popular-heading" className="mx-auto max-w-6xl px-4 py-10">
-          <h2 id="popular-heading" className="font-display text-2xl font-semibold text-ink-900 sm:text-3xl">
-            {t("home.availableNow")}
-          </h2>
-          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {menu.items
-              .filter((item) => item.is_available)
-              .slice(0, 9)
-              .map((item, index) => (
-                <Reveal as="li" key={item.id} delay={Math.min(index, 9) * 45}>
-                  <DishCard
-                    item={item}
-                    currency={currency}
-                    locale={locale}
-                    categoryName={
-                      categoryById.get(item.category_id)
-                        ? localiseCategory(categoryById.get(item.category_id)!, locale).name
-                        : t("menu.categoryFallback")
-                    }
+      {popularItems.length > 0 ? (
+        /* The popular band. It is a coloured full-bleed section so the eye gets
+           a change of material between the paper pages around it; the cards
+           inside use the on-band treatment. */
+        <section
+          aria-labelledby="popular-heading"
+          className="relative isolate mt-16 overflow-x-clip pb-14"
+        >
+          {/* One background layer carries both the band colour and the curved
+              top edge, so the gradient runs across the curve instead of
+              restarting under it. `isolate` keeps the -z-10 layer inside this
+              section rather than behind the page ground. */}
+          <div
+            aria-hidden="true"
+            className="band-vermilion band-layer band-layer-curve-top"
+          />
+          <AsanohaPanel className="pointer-events-none absolute inset-0 text-rice-50 opacity-[0.07]" />
+          <div className="relative mx-auto max-w-6xl px-4 pt-10">
+            <Reveal>
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold tracking-[0.28em] text-rice-100/80 uppercase">
+                    {t("home.eyebrowLabel")}
+                  </p>
+                  <h2
+                    id="popular-heading"
+                    className="mt-2 font-display text-fluid-h2 font-semibold text-rice-50"
+                  >
+                    {t("home.popularHeading")}
+                  </h2>
+                  <span
+                    aria-hidden="true"
+                    className="mt-3 block h-[3px] w-10 rounded-full bg-rice-50"
                   />
-                </Reveal>
-              ))}
-          </ul>
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/menu"
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-indigo-700 sm:w-auto"
-            >
-              {t("home.seeWholeMenu")} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
-            </Link>
+                  <p className="mt-3 text-sm text-rice-100/85">
+                    {t("home.popularSubheading")}
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+
+            <div className="mt-8">
+              <PopularMenu
+                items={popularItems}
+                categories={popularCategories}
+                currency={currency}
+                locale={locale}
+                ratings={ratingRecord}
+                onBand
+              />
+            </div>
           </div>
         </section>
       ) : (
@@ -229,7 +333,7 @@ export default async function HomePage() {
             action={
               <Link
                 href="/contact"
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
               >
                 {t("common.contactKitchen")}
               </Link>
@@ -237,6 +341,61 @@ export default async function HomePage() {
           />
         </Reveal>
       )}
+
+      {editorialSections.length > 0 ? (
+        <section
+          aria-labelledby="editorial-heading"
+          /* `overflow-x-clip` because the rows below enter with a horizontal
+             slide: a transformed box still counts toward the document's
+             scrollable overflow, so on a phone (where this section spans the
+             full viewport) the pending transform widened the page by ~17px.
+             Clipping the host contains it without changing the animation. */
+          className="relative mx-auto max-w-6xl overflow-x-clip px-4 py-16"
+        >
+          <Reveal>
+            <div className="max-w-2xl">
+              <p className="text-xs font-semibold tracking-[0.28em] text-vermilion-600 uppercase">
+                {t("home.editorialEyebrow")}
+              </p>
+              <h2
+                id="editorial-heading"
+                className="mt-2 font-display text-fluid-h2 font-semibold text-ink-900"
+              >
+                {t("home.editorialKitchenTitle")}
+              </h2>
+              <span aria-hidden="true" className="eyebrow-rule mt-3" />
+              <p className="mt-4 text-sm leading-relaxed text-ink-700/85">
+                {t("home.editorialKitchenBody")}
+              </p>
+              <Link
+                href="/about"
+                className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
+              >
+                {t("home.editorialLearnMore")}
+                <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+              </Link>
+            </div>
+          </Reveal>
+
+          {/* The seal sits on the section junction, the way the reference
+              threads its spreads together. Decorative, so it is hidden from
+              assistive tech. */}
+          <DiscoverSeal
+            label={t("home.editorialDiscover")}
+            className="mx-auto my-12 hidden lg:grid"
+          />
+
+          <EditorialSections sections={editorialSections} locale={locale} />
+        </section>
+      ) : null}
+
+      <ClosingCta
+        brand={brand}
+        city={settings.brand.city}
+        phone={settings.support.phone}
+        whatsapp={settings.support.social?.whatsapp ?? settings.support.phone}
+        t={t}
+      />
 
       <BrandBanner
         brand={brand}
@@ -253,6 +412,26 @@ export default async function HomePage() {
   );
 }
 
+/**
+ * Average of the per-dish averages, weighted by each dish's rating count.
+ *
+ * Weighted rather than a flat mean of means: a dish with one rating must not
+ * pull the headline number as hard as a dish with fifty. Returns null when
+ * nothing has been rated, and the hero then shows no rating at all.
+ */
+function computeAverageRating(
+  ratings: Map<string, { average: number; count: number }>,
+): { average: number; count: number } | null {
+  let weighted = 0;
+  let count = 0;
+  for (const rating of ratings.values()) {
+    weighted += rating.average * rating.count;
+    count += rating.count;
+  }
+  if (count === 0) return null;
+  return { average: Math.round((weighted / count) * 10) / 10, count };
+}
+
 function Hero({
   brand,
   tagline,
@@ -261,6 +440,7 @@ function Hero({
   logoUrl,
   locale,
   t,
+  stats,
 }: {
   brand: string;
   tagline: string;
@@ -269,6 +449,15 @@ function Hero({
   logoUrl: string;
   locale: string;
   t: T;
+  stats: {
+    dishCount: number;
+    etaMinutes: number;
+    deliveryFee: number;
+    freeOver: number;
+    currency: string;
+    rating: { average: number; count: number } | null;
+    city: string;
+  };
 }) {
   return (
     <section className="hero-night relative overflow-hidden border-b border-rice-100/10">
@@ -281,20 +470,27 @@ function Hero({
           Japanese half carries motion and the wok half carries bamboo. */}
       <LeafField2D count={9} />
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 animate-hero-rise sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 animate-hero-rise sm:py-20 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <div>
           {/* Phones get the mark first, at the top of the page. On desktop the
               ringed plate on the right carries it instead. */}
           <MobileHeroMark logoUrl={logoUrl} brand={brand} />
 
           <p
-            className="font-kana mt-5 text-sm font-semibold tracking-[0.35em] text-indigo-300"
+            className="mt-5 inline-flex items-center gap-2 rounded-full border border-rice-100/20 bg-rice-100/8 px-3.5 py-1.5 text-xs font-medium tracking-wide text-rice-100/90"
+          >
+            <MapPin className="size-3.5 text-vermilion-300" aria-hidden="true" />
+            {t("home.heroEyebrow", { city: stats.city })}
+          </p>
+
+          <p
+            className="font-kana mt-5 text-sm font-semibold tracking-[0.35em] text-vermilion-300"
             aria-hidden="true"
           >
             {BRAND_SCRIPT_MARK}
           </p>
 
-          <h1 className="mt-3 max-w-2xl font-display text-4xl leading-[1.05] font-bold text-rice-50 text-balance sm:text-6xl lg:text-7xl">
+          <h1 className="mt-3 max-w-2xl font-display text-fluid-display font-bold text-rice-50 text-balance">
             {brand}
           </h1>
 
@@ -314,21 +510,177 @@ function Hero({
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/menu"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-indigo-700"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-vermilion-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-vermilion-700"
             >
-              {hasMenu ? t("home.startOrder") : t("home.viewMenu")}
+              {hasMenu ? t("home.heroOrder") : t("home.viewMenu")}
               <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
             </Link>
             <Link
               href="/about"
               className="glass-card inline-flex h-12 items-center justify-center rounded-xl border border-rice-100/25 px-6 font-medium text-rice-50 transition-colors hover:bg-rice-100/15"
             >
-              {t("home.ourStory")}
+              {t("home.heroHowTo")}
             </Link>
           </div>
+
+          <HeroStats stats={stats} t={t} />
         </div>
 
         <BambooPlate logoUrl={logoUrl} brand={brand} />
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The hero's proof strip: four live figures read from the database.
+ *
+ * Every value is real — the dish count is the published menu, the ETA and fee
+ * come from `settings.ordering`, and the rating only appears when customers
+ * have actually rated something. The strip is omitted entirely rather than
+ * padded out when a value is missing, so it never asserts a number the kitchen
+ * cannot stand behind.
+ */
+function HeroStats({
+  stats,
+  t,
+}: {
+  stats: {
+    dishCount: number;
+    etaMinutes: number;
+    deliveryFee: number;
+    freeOver: number;
+    currency: string;
+    rating: { average: number; count: number } | null;
+  };
+  t: T;
+}) {
+  const entries: { icon: typeof Clock; value: string; label: string }[] = [];
+
+  if (stats.dishCount > 0) {
+    entries.push({
+      icon: Star,
+      value: String(stats.dishCount),
+      label: t("home.heroStatsDishes"),
+    });
+  }
+  entries.push({
+    icon: Clock,
+    value: String(stats.etaMinutes),
+    label: t("home.heroStatsEta"),
+  });
+  entries.push({
+    icon: Wallet,
+    value: formatPrice(stats.deliveryFee, stats.currency),
+    label: t("home.heroStatsFreeOver", {
+      amount: formatPrice(stats.freeOver, stats.currency),
+    }),
+  });
+  if (stats.rating) {
+    entries.push({
+      icon: Star,
+      value: stats.rating.average.toFixed(1),
+      label: t("home.heroStatRating"),
+    });
+  }
+
+  return (
+    <dl className="mt-9 grid max-w-xl grid-cols-2 gap-x-6 gap-y-4 border-t border-rice-100/15 pt-6 sm:grid-cols-3">
+      {entries.map((entry) => (
+        <div key={entry.label} className="flex items-start gap-2.5">
+          <entry.icon
+            className="mt-0.5 size-4 shrink-0 text-vermilion-300"
+            aria-hidden="true"
+          />
+          <div>
+            <dt className="sr-only">{entry.label}</dt>
+            <dd className="font-display text-xl font-semibold text-rice-50 tabular-nums">
+              {entry.value}
+            </dd>
+            <p className="text-2xs text-rice-200/70">{entry.label}</p>
+          </div>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/**
+ * The closing band above the footer.
+ *
+ * `band-rose` rather than the vermilion band: it is the last thing before the
+ * footer, and a second saturated red field would compete with the popular band
+ * instead of settling the page. Contact affordances are rendered only for
+ * channels the kitchen has actually filled in.
+ */
+function ClosingCta({
+  brand,
+  city,
+  phone,
+  whatsapp,
+  t,
+}: {
+  brand: string;
+  city: string;
+  phone: string | null;
+  whatsapp: string | null;
+  t: T;
+}) {
+  const waHref = whatsapp
+    ? `https://wa.me/${whatsapp.replace(/\D/g, "").replace(/^0/, "20")}`
+    : null;
+
+  return (
+    <section
+      aria-labelledby="closing-heading"
+      className="relative isolate mt-6 overflow-x-clip pb-16"
+    >
+      <div
+        aria-hidden="true"
+        className="band-rose band-layer band-layer-curve-top"
+      />
+      <div className="relative mx-auto max-w-6xl px-4 pt-14 text-center">
+        <Reveal variant="zoom">
+          <h2
+            id="closing-heading"
+            className="font-display text-fluid-h2 font-semibold text-ink-900"
+          >
+            {t("home.closingTitle")}
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-ink-700/85">
+            {t("home.closingBody", { city })}
+          </p>
+
+          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/menu"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vermilion-600 px-7 font-medium text-rice-50 shadow-washi transition-colors hover:bg-vermilion-700 sm:w-auto"
+            >
+              {t("home.closingCta")}
+              <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+            </Link>
+
+            {phone ? (
+              <a
+                href={`tel:${phone.replace(/\s+/g, "")}`}
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-ink-900/15 bg-white/70 px-7 font-medium text-ink-900 transition-colors hover:border-vermilion-600/40 hover:bg-white sm:w-auto"
+              >
+                {t("home.closingCall")}
+              </a>
+            ) : null}
+
+            {waHref ? (
+              <a
+                href={waHref}
+                rel="noopener noreferrer"
+                target="_blank"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-ink-900/15 bg-white/70 px-7 font-medium text-ink-900 transition-colors hover:border-vermilion-600/40 hover:bg-white sm:w-auto"
+              >
+                {t("home.closingWhatsapp")}
+              </a>
+            ) : null}
+          </div>
+        </Reveal>
       </div>
     </section>
   );

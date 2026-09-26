@@ -56,13 +56,13 @@ export function BottomNav({ flags }: { flags: Record<string, boolean> }) {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium transition-colors",
-                  active ? "text-indigo-300 drop-shadow-sm" : "text-rice-100/75 hover:text-rice-50",
+                  active ? "text-vermilion-300 drop-shadow-sm" : "text-rice-100/75 hover:text-rice-50",
                 )}
               >
                 <span className="relative">
                   <Icon className="size-5" aria-hidden="true" />
                   {showBadge ? (
-                    <span className="absolute -end-2 -top-1.5 grid min-w-4 place-items-center rounded-full bg-indigo-600 px-1 text-[10px] font-bold leading-4 text-rice-50">
+                    <span className="absolute -end-2 -top-1.5 grid min-w-4 place-items-center rounded-full bg-vermilion-600 px-1 text-[10px] font-bold leading-4 text-rice-50">
                       {itemCount > 99 ? "99+" : itemCount}
                     </span>
                   ) : null}
@@ -71,7 +71,7 @@ export function BottomNav({ flags }: { flags: Record<string, boolean> }) {
                 {active ? (
                   <span
                     aria-hidden="true"
-                    className="absolute -top-px h-0.5 w-8 rounded-full bg-indigo-600"
+                    className="absolute -top-px h-0.5 w-8 rounded-full bg-vermilion-600"
                   />
                 ) : null}
               </Link>

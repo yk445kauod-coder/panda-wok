@@ -122,7 +122,7 @@ export function DishDetail({
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/menu/${dish.categories?.slug ?? ""}`}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+              className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
             >
               {categoryName}
             </Link>

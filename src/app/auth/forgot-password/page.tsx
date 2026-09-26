@@ -26,7 +26,7 @@ export default async function ForgotPasswordPage() {
       <ForgotPasswordForm />
       <Link
         href="/auth/sign-in"
-        className="mt-6 inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-700"
+        className="mt-6 inline-flex items-center text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
       >
         {t("auth.forgot.backToSignIn")}
       </Link>

@@ -18,6 +18,7 @@ export function Reveal({
   className,
   delay = 0,
   as: Tag = "div",
+  variant = "up",
   "aria-labelledby": ariaLabelledby,
 }: {
   children: ReactNode;
@@ -25,6 +26,11 @@ export function Reveal({
   /** Stagger in ms, for lists of cards. */
   delay?: number;
   as?: "div" | "section" | "li" | "article" | "header";
+  /**
+   * Entry direction. `left`/`right` are mirrored under RTL by CSS, so they mean
+   * "from the start edge" and "from the end edge" rather than a screen side.
+   */
+  variant?: "up" | "left" | "right" | "zoom" | "flip";
   /** Forwarded to the tag when `as="section"` keeps section semantics intact. */
   "aria-labelledby"?: string;
 }) {
@@ -59,6 +65,7 @@ export function Reveal({
     <Tag
       ref={ref as never}
       data-reveal={state}
+      data-reveal-variant={variant}
       aria-labelledby={ariaLabelledby}
       style={state === "shown" && delay ? { transitionDelay: `${delay}ms` } : undefined}
       className={cn(className)}

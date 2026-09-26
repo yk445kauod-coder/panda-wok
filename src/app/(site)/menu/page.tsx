@@ -1,6 +1,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getPublicCategories, getPublicMenu, getRestaurant } from "@/lib/services/catalog";
+import {
+  getMenuRatings,
+  getPublicCategories,
+  getPublicMenu,
+  getRestaurant,
+} from "@/lib/services/catalog";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { breadcrumbSchema, menuSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
@@ -49,11 +54,12 @@ export default async function MenuPage({
   searchParams: Promise<{ q?: string; diet?: string }>;
 }) {
   const params = await searchParams;
-  const [categories, menu, restaurant, locale] = await Promise.all([
+  const [categories, menu, restaurant, locale, ratings] = await Promise.all([
     getPublicCategories(),
     getPublicMenu(),
     getRestaurant(),
     getLocale(),
+    getMenuRatings(),
   ]);
   const t = await getT(locale);
 
@@ -175,7 +181,7 @@ export default async function MenuPage({
             isFiltered ? (
               <Link
                 href="/menu"
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
               >
                 {t("menu.clearFilters")}
               </Link>
@@ -199,6 +205,7 @@ export default async function MenuPage({
                   locale={locale}
                   categoryName={categoryName(item.category_id)}
                   priority={index < 3}
+                  rating={ratings.get(item.id) ?? null}
                 />
               </li>
             ))}
@@ -216,7 +223,7 @@ export default async function MenuPage({
                   <div>
                     <h2
                       id={`cat-${category.slug}`}
-                      className="text-xl font-semibold text-ink-900"
+                      className="font-display text-fluid-h3 font-semibold text-ink-900"
                     >
                       {category.name}
                       {category.name_ja ? (
@@ -236,7 +243,7 @@ export default async function MenuPage({
                   </div>
                   <Link
                     href={`/menu/${category.slug}`}
-                    className="shrink-0 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                    className="shrink-0 text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
                   >
                     {t("menu.sectionPage")}
                   </Link>
@@ -250,6 +257,7 @@ export default async function MenuPage({
                         currency={currency}
                         locale={locale}
                         categoryName={category.name}
+                        rating={ratings.get(item.id) ?? null}
                       />
                     </li>
                   ))}

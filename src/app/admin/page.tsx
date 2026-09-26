@@ -34,7 +34,7 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-6">
       <header className="relative overflow-hidden rounded-2xl border border-ink-900/10 bg-ink-950 p-5 text-rice-100 sm:p-6">
-        <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-indigo-600/30 to-transparent" aria-hidden="true" />
+        <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-vermilion-600/30 to-transparent" aria-hidden="true" />
         <div className="relative flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-3xs font-semibold tracking-widest text-rice-300/70 uppercase">
@@ -57,7 +57,7 @@ export default async function AdminOverviewPage() {
             ) : null}
             <Link
               href="/admin/orders?status=new"
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-medium text-rice-50 transition-colors hover:bg-indigo-700"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-vermilion-600 px-4 text-sm font-medium text-rice-50 transition-colors hover:bg-vermilion-700"
             >
               Open the order queue
             </Link>
@@ -70,7 +70,7 @@ export default async function AdminOverviewPage() {
           title="No orders yet in this window"
           description="This is a live view of the database, so it stays empty until real orders arrive. Seed data is never invented for you."
           action={
-            <Link href="/menu" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
+            <Link href="/menu" className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700">
               Check the customer site
             </Link>
           }
@@ -127,7 +127,7 @@ export default async function AdminOverviewPage() {
                 <li key={row.status} className="flex items-center justify-between text-sm">
                   <Link
                     href={`/admin/orders?status=${row.status}`}
-                    className="text-ink-800 hover:text-indigo-600"
+                    className="text-ink-800 hover:text-vermilion-600"
                   >
                     {humanise(row.status)}
                   </Link>
@@ -170,7 +170,7 @@ export default async function AdminOverviewPage() {
               : "Everything is above threshold"
           }
           action={
-            <Link href="/admin/stock" className="text-xs font-medium text-indigo-600">
+            <Link href="/admin/stock" className="text-xs font-medium text-vermilion-600">
               Manage stock
             </Link>
           }
@@ -255,7 +255,7 @@ export default async function AdminOverviewPage() {
           title="Loyalty"
           subtitle={`${formatNumber(metrics.loyalty.members)} members`}
           action={
-            <Link href="/admin/loyalty" className="text-xs font-medium text-indigo-600">
+            <Link href="/admin/loyalty" className="text-xs font-medium text-vermilion-600">
               Open loyalty
             </Link>
           }
@@ -316,7 +316,7 @@ function StatCard({
           className={
             tone === "warning"
               ? "grid size-8 place-items-center rounded-xl bg-chili-500/12 text-chili-600"
-              : "grid size-8 place-items-center rounded-xl bg-indigo-600/10 text-indigo-600"
+              : "grid size-8 place-items-center rounded-xl bg-vermilion-600/10 text-vermilion-600"
           }
         >
           {icon}

@@ -249,7 +249,7 @@ export function LocationMap({
       {!coords ? (
         <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center px-3">
           <p className="rounded-full border border-ink-900/10 bg-rice-50/92 px-3 py-1.5 text-[11px] font-medium text-ink-700 shadow-washi backdrop-blur-sm">
-            <MapPin className="me-1 inline size-3.5 text-indigo-600" aria-hidden="true" />
+            <MapPin className="me-1 inline size-3.5 text-vermilion-600" aria-hidden="true" />
             {t("addresses.map.dropPinHint")}
           </p>
         </div>

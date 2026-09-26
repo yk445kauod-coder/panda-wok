@@ -78,6 +78,19 @@ export type MenuItemDetail = MenuItemWithCategory & {
   menu_images: MenuImage[];
 };
 
+/**
+ * A dish's public star average, aggregated in the database from
+ * customer-consented feedback (`public.menu_item_ratings`).
+ *
+ * It is deliberately a separate read rather than a column on `menu_items`: the
+ * average is derived from orders and feedback, and denormalising it onto the
+ * item would let the two drift.
+ */
+export type MenuRating = {
+  average: number;
+  count: number;
+};
+
 const PUBLIC_CATEGORY_COLUMNS =
   "id, name_en, name_ar, name_ja, slug, description_en, description_ar, image_url, seo_title, seo_description, sort_order, is_enabled";
 
@@ -389,4 +402,40 @@ export async function getFeaturedItems(limit = 6): Promise<MenuItem[]> {
 
   if (error) throw new Error(`Failed to load featured items: ${error.message}`);
   return data ?? [];
+}
+
+/**
+ * Star averages for every dish that has consented feedback, keyed by item id.
+ *
+ * Returns an empty map when nothing has been rated, which is the honest state
+ * for a new kitchen: the cards then render no stars at all rather than a
+ * fabricated score. A failure here is swallowed to an empty map on purpose —
+ * a rating is decoration on top of the menu, and losing it must never take the
+ * menu down with it.
+ */
+export async function getMenuRatings(): Promise<Map<string, MenuRating>> {
+  const supabase = createPublicSupabase();
+  const { data, error } = await supabase
+    .from("menu_item_ratings")
+    .select("menu_item_id, average_rating, rating_count");
+
+  if (error) {
+    console.warn(`[catalog] ratings unavailable: ${error.message}`);
+    return new Map();
+  }
+
+  const ratings = new Map<string, MenuRating>();
+  for (const row of data ?? []) {
+    // The view's columns are nullable in the generated types because SQL cannot
+    // prove the group key is present. A row without an item id is not usable,
+    // so it is skipped rather than coerced into an empty-string key.
+    if (!row.menu_item_id) continue;
+    const count = Number(row.rating_count ?? 0);
+    if (count < 1) continue;
+    ratings.set(row.menu_item_id, {
+      average: Number(row.average_rating ?? 0),
+      count,
+    });
+  }
+  return ratings;
 }

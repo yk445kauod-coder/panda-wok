@@ -10,7 +10,7 @@ import {
   Pagination,
   resolvePage,
 } from "@/components/ui/pagination";
-import { FeedbackReplyControl } from "@/components/admin/customer-controls";
+import { FeedbackReplyControl, FeedbackPublishControl } from "@/components/admin/customer-controls";
 import { cn, formatDateTime, humanise } from "@/lib/utils/format";
 import type { Database } from "@/lib/types/database";
 
@@ -146,7 +146,7 @@ export default async function AdminFeedbackPage({
         </div>
         <button
           type="submit"
-          className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-medium text-rice-50 hover:bg-indigo-700"
+          className="h-10 rounded-xl bg-vermilion-600 px-4 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
         >
           Filter
         </button>
@@ -169,7 +169,7 @@ export default async function AdminFeedbackPage({
             className={cn(
               "rounded-full border px-3 py-1.5 text-xs font-medium",
               status === option
-                ? "border-indigo-600 bg-indigo-600 text-rice-50"
+                ? "border-vermilion-600 bg-vermilion-600 text-rice-50"
                 : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
             )}
           >
@@ -231,7 +231,7 @@ export default async function AdminFeedbackPage({
                         <a
                           key={url}
                           href={url}
-                          className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                          className="text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
                         >
                           Attached image {index + 1}
                         </a>
@@ -261,7 +261,7 @@ export default async function AdminFeedbackPage({
                         {" · "}
                         <Link
                           href={`/admin/crm/${row.customer.id}`}
-                          className="text-indigo-600 hover:text-indigo-700"
+                          className="text-vermilion-600 hover:text-vermilion-700"
                         >
                           Customer profile
                         </Link>
@@ -276,6 +276,13 @@ export default async function AdminFeedbackPage({
                     currentStatus={row.status}
                     existingResponse={row.admin_response}
                   />
+
+                  {row.order_id ? (
+                    <FeedbackPublishControl
+                      feedbackId={row.id}
+                      isPublic={row.is_public}
+                    />
+                  ) : null}
                 </div>
               </div>
             </li>

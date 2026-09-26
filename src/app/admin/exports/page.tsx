@@ -176,7 +176,7 @@ export default async function AdminExportsPage() {
                     ) : href ? (
                       <a
                         href={href}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-medium text-rice-50 hover:bg-indigo-700"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-vermilion-600 px-3 text-xs font-medium text-rice-50 hover:bg-vermilion-700"
                       >
                         <Download className="size-3.5" aria-hidden="true" />
                         Download

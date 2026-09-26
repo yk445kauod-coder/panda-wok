@@ -371,7 +371,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                         type="button"
                         disabled={pendingId === address.id}
                         onClick={() => void onMakeDefault(address.id)}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-600/8 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-vermilion-600 hover:bg-vermilion-600/8 disabled:opacity-50"
                       >
                         {pendingId === address.id ? (
                           <Spinner className="size-3.5" />
@@ -436,7 +436,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="flex items-center gap-1.5 text-sm font-medium text-ink-900">
-                  <MapPin className="size-4 text-indigo-600" aria-hidden="true" />
+                  <MapPin className="size-4 text-vermilion-600" aria-hidden="true" />
                   {t("addresses.pinHeading")}
                 </p>
                 <p className="mt-0.5 text-xs text-ink-700/75">
@@ -449,7 +449,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                   setManual((m) => !m);
                   setStage("details");
                 }}
-                className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-600/8"
+                className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-vermilion-600 hover:bg-vermilion-600/8"
               >
                 {manual ? t("addresses.useMapInstead") : t("addresses.enterManually")}
               </button>
@@ -495,7 +495,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                     visible on the same screen as the pin. */}
                 {coords && resolvedAddress && formatDetectedAddress(resolvedAddress) ? (
                   <p className="inline-flex items-start gap-1.5 text-xs text-ink-700/85">
-                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-indigo-600" aria-hidden="true" />
+                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-vermilion-600" aria-hidden="true" />
                     <span>{formatDetectedAddress(resolvedAddress)}</span>
                   </p>
                 ) : null}
@@ -669,7 +669,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
                   type="checkbox"
                   name="isDefault"
                   defaultChecked={mode.kind === "edit" ? mode.address.is_default : true}
-                  className="size-4 accent-indigo-600"
+                  className="size-4 accent-vermilion-600"
                 />
                 <span className="text-sm text-ink-800">{t("addresses.setDefault")}</span>
               </label>

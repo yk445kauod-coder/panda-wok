@@ -64,7 +64,7 @@ export function AdminGateForm({
 
         <div
           aria-hidden="true"
-          className="mx-auto mt-5 grid size-11 place-items-center rounded-full bg-indigo-600/10 text-indigo-600"
+          className="mx-auto mt-5 grid size-11 place-items-center rounded-full bg-vermilion-600/10 text-vermilion-600"
         >
           <KeyRound className="size-5" />
         </div>

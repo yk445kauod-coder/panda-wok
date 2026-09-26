@@ -56,7 +56,7 @@ export function LanguageSwitcher({
             className={cn(
               "rounded-full px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-60",
               active
-                ? "bg-indigo-600 text-rice-50"
+                ? "bg-vermilion-600 text-rice-50"
                 : "text-ink-700 hover:bg-ink-900/5",
             )}
           >

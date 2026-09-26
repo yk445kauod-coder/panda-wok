@@ -86,7 +86,7 @@ export function GuideBrowser({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search — refunds, loyalty, stock, a role…"
-            className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 ps-10 pe-3 text-sm text-ink-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+            className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 ps-10 pe-3 text-sm text-ink-900 outline-none focus:border-vermilion-500 focus:ring-2 focus:ring-vermilion-500/20"
           />
         </label>
         <p className="mt-1.5 text-xs text-ink-700/70" aria-live="polite">
@@ -152,7 +152,7 @@ function TopicCard({
     <article
       className={cn(
         "overflow-hidden rounded-xl border bg-rice-50 transition-colors",
-        open ? "border-indigo-500/40" : "border-ink-900/10",
+        open ? "border-vermilion-500/40" : "border-ink-900/10",
       )}
     >
       <button
@@ -166,7 +166,7 @@ function TopicCard({
           aria-hidden="true"
           className={cn(
             "grid size-10 shrink-0 place-items-center rounded-xl",
-            open ? "bg-indigo-600 text-rice-50" : "bg-rice-200 text-ink-700",
+            open ? "bg-vermilion-600 text-rice-50" : "bg-rice-200 text-ink-700",
           )}
         >
           <Icon className="size-5" />
@@ -200,7 +200,7 @@ function TopicCard({
               <li key={step.title} className="flex gap-3">
                 <span
                   aria-hidden="true"
-                  className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-indigo-600/12 font-display text-xs font-semibold text-indigo-700"
+                  className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-vermilion-600/12 font-display text-xs font-semibold text-vermilion-700"
                 >
                   {index + 1}
                 </span>

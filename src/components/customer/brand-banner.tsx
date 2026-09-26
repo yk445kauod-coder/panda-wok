@@ -50,7 +50,7 @@ export function BrandBanner({
         <h2 className="mt-6 font-display text-3xl font-bold text-ink-900 sm:text-4xl">
           {brand}
         </h2>
-        <p aria-hidden="true" className="font-kana mt-2 text-sm font-semibold tracking-[0.35em] text-indigo-700">
+        <p aria-hidden="true" className="font-kana mt-2 text-sm font-semibold tracking-[0.35em] text-vermilion-700">
           {BRAND_SCRIPT_MARK}
         </p>
         <p className="mx-auto mt-4 max-w-xl text-base text-ink-700/90">{tagline}</p>
@@ -59,7 +59,7 @@ export function BrandBanner({
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/menu"
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-indigo-700"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-vermilion-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-vermilion-700"
           >
             {t("home.viewMenu")}
           </Link>
@@ -98,7 +98,7 @@ export function BrandBanner({
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={socialLabel(t, key)}
-                      className="inline-flex size-10 items-center justify-center rounded-full border border-ink-900/12 bg-rice-50 text-ink-700 transition-colors hover:text-indigo-600"
+                      className="inline-flex size-10 items-center justify-center rounded-full border border-ink-900/12 bg-rice-50 text-ink-700 transition-colors hover:text-vermilion-600"
                     >
                       <Icon className="size-5" aria-hidden="true" />
                     </a>

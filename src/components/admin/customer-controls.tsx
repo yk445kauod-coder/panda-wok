@@ -311,7 +311,7 @@ export function FeedbackReplyControl({
 }) {
   return (
     <details className="mt-2">
-      <summary className="cursor-pointer text-xs font-medium text-indigo-600 hover:text-indigo-700">
+      <summary className="cursor-pointer text-xs font-medium text-vermilion-600 hover:text-vermilion-700">
         {existingResponse ? "Edit the reply" : "Reply"}
         {currentStatus !== "resolved" ? (
           <Badge tone="warning" className="ml-2">
@@ -359,5 +359,72 @@ export function FeedbackReplyControl({
         </AdminForm>
       </div>
     </details>
+  );
+}
+
+/**
+ * Publish / unpublish a rating.
+ *
+ * `feedback.is_public` is what allows a score to enter the public per-dish
+ * average shown on the menu, so it is a one-tap, reversible decision with its
+ * own confirmation — not a checkbox buried in the reply form. The label says
+ * exactly what publishing does, because "public" alone does not tell an admin
+ * that the number will appear next to a dish.
+ */
+export function FeedbackPublishControl({
+  feedbackId,
+  isPublic,
+}: {
+  feedbackId: string;
+  isPublic: boolean;
+}) {
+  const router = useRouter();
+  const errorText = useErrorText();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run(nextPublic: boolean) {
+    setPending(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.set("feedbackId", feedbackId);
+    formData.set("isPublic", String(nextPublic));
+
+    const { setFeedbackPublishedAction } = await import("@/lib/actions/admin");
+    const result = await setFeedbackPublishedAction(formData);
+
+    if (!result.ok) {
+      setError(errorText(result.error));
+      setPending(false);
+      return;
+    }
+
+    setPending(false);
+    router.refresh();
+  }
+
+  return (
+    <div className="mt-2 flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant={isPublic ? "outline" : "secondary"}
+          size="sm"
+          loading={pending}
+          onClick={() => run(!isPublic)}
+        >
+          {isPublic ? "Hide rating from the menu" : "Show rating on the menu"}
+        </Button>
+        <Badge tone={isPublic ? "success" : "neutral"}>
+          {isPublic ? "Counts toward the menu rating" : "Not shown on the menu"}
+        </Badge>
+      </div>
+      {error ? (
+        <span role="alert" className="text-[11px] text-chili-600">
+          {error}
+        </span>
+      ) : null}
+    </div>
   );
 }

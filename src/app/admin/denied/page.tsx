@@ -61,7 +61,7 @@ export default async function AdminDeniedPage() {
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           <Link
             href="/admin"
-            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-rice-50 hover:bg-indigo-700"
+            className="rounded-xl bg-vermilion-600 px-4 py-2.5 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
           >
             Back to the dashboard
           </Link>

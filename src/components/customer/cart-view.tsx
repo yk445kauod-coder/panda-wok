@@ -53,7 +53,7 @@ export function CartView({
           action={
             <Link
               href="/menu"
-              className="inline-flex h-11 items-center rounded-xl bg-indigo-600 px-5 text-sm font-medium text-rice-50 hover:bg-indigo-700"
+              className="inline-flex h-11 items-center rounded-xl bg-vermilion-600 px-5 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
             >
               {t("common.browseMenu")}
             </Link>
@@ -104,7 +104,7 @@ export function CartView({
                 <div className="min-w-0">
                   <Link
                     href={`/menu/${line.slug}`}
-                    className="block truncate font-medium text-ink-900 hover:text-indigo-600"
+                    className="block truncate font-medium text-ink-900 hover:text-vermilion-600"
                   >
                     {line.name}
                   </Link>
@@ -251,7 +251,7 @@ export function CartView({
         ) : (
           <Link
             href="/checkout"
-            className="mt-4 inline-flex h-13 w-full items-center justify-center rounded-xl bg-indigo-600 font-medium text-rice-50 shadow-washi transition-colors hover:bg-indigo-700"
+            className="mt-4 inline-flex h-13 w-full items-center justify-center rounded-xl bg-vermilion-600 font-medium text-rice-50 shadow-washi transition-colors hover:bg-vermilion-700"
           >
             {t("cart.goToCheckout")}
           </Link>
@@ -263,7 +263,7 @@ export function CartView({
       </section>
 
       <div className="mt-4 flex justify-center">
-        <Link href="/menu" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
+        <Link href="/menu" className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700">
           {t("cart.addMore")}
         </Link>
       </div>

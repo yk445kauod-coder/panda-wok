@@ -154,7 +154,7 @@ export default async function OrderTrackingPage({
           id="items-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
         >
-          <Receipt className="size-4 text-indigo-600" aria-hidden="true" />
+          <Receipt className="size-4 text-vermilion-600" aria-hidden="true" />
           {t("orders.whatYouOrdered")}
         </h2>
         <ul className="mt-3 space-y-2 text-sm">
@@ -245,9 +245,9 @@ export default async function OrderTrackingPage({
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
         >
           {isPickup ? (
-            <Store className="size-4 text-indigo-600" aria-hidden="true" />
+            <Store className="size-4 text-vermilion-600" aria-hidden="true" />
           ) : (
-            <Truck className="size-4 text-indigo-600" aria-hidden="true" />
+            <Truck className="size-4 text-vermilion-600" aria-hidden="true" />
           )}
           {isPickup ? t("orders.pickupHeading") : t("orders.deliveryDetails")}
         </h2>
@@ -255,7 +255,7 @@ export default async function OrderTrackingPage({
         {isPickup ? (
           <p className="mt-2 text-sm text-ink-700/85">
             {t("orders.pickupBodyBefore")}
-            <Link href="/contact" className="font-medium text-indigo-600">
+            <Link href="/contact" className="font-medium text-vermilion-600">
               {t("orders.contactDetailsLink")}
             </Link>
             {t("orders.pickupBodyAfter")}

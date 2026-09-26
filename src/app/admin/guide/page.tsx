@@ -66,7 +66,7 @@ export default async function AdminGuidePage() {
       />
 
       <div className="flex items-center gap-2 rounded-xl border border-ink-900/10 bg-rice-50 p-3 text-sm text-ink-700">
-        <BookOpen className="size-4 shrink-0 text-indigo-600" aria-hidden="true" />
+        <BookOpen className="size-4 shrink-0 text-vermilion-600" aria-hidden="true" />
         <span>
           {GUIDE_TOPICS.length} topics. You are currently{" "}
           <strong className="font-medium text-ink-900">
@@ -101,7 +101,7 @@ export default async function AdminGuidePage() {
                     scope="col"
                     className={cn(
                       "p-3 text-center text-xs font-semibold uppercase tracking-wide",
-                      role === activeRole ? "text-indigo-700" : "text-ink-600",
+                      role === activeRole ? "text-vermilion-700" : "text-ink-600",
                     )}
                   >
                     {ROLE_LABELS[role]}
@@ -120,7 +120,7 @@ export default async function AdminGuidePage() {
                     return (
                       <td
                         key={role}
-                        className={cn("p-3 text-center", role === activeRole ? "bg-indigo-600/4" : "")}
+                        className={cn("p-3 text-center", role === activeRole ? "bg-vermilion-600/4" : "")}
                       >
                         {allowed ? (
                           <Check className="mx-auto size-4 text-jade-600" aria-label="Allowed" />

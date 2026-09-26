@@ -47,7 +47,7 @@ export default async function AdminConversationPage({
                 {" · "}
                 <a
                   href={`tel:${conversation.customer.phone}`}
-                  className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700"
+                  className="inline-flex items-center gap-1 text-vermilion-600 hover:text-vermilion-700"
                 >
                   <Phone className="size-3.5" aria-hidden="true" />
                   {conversation.customer.phone}

@@ -73,7 +73,7 @@ export function OrderStatusControl({
             type="button"
             onClick={() => apply(status)}
             disabled={pending !== null}
-            className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-rice-50 hover:bg-indigo-700 disabled:opacity-60"
+            className="rounded-lg bg-vermilion-600 px-2.5 py-1.5 text-xs font-medium text-rice-50 hover:bg-vermilion-700 disabled:opacity-60"
           >
             {pending === status ? "…" : `→ ${ORDER_STATUS_LABELS[status]}`}
           </button>
@@ -127,7 +127,7 @@ export function OrderStatusControl({
                   className={
                     destructive
                       ? "rounded-lg border border-chili-500/40 px-3 py-2 text-xs font-medium text-chili-600 hover:bg-chili-500/10 disabled:opacity-60"
-                      : "rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-rice-50 hover:bg-indigo-700 disabled:opacity-60"
+                      : "rounded-lg bg-vermilion-600 px-3 py-2 text-xs font-medium text-rice-50 hover:bg-vermilion-700 disabled:opacity-60"
                   }
                 >
                   {pending === status ? "Updating…" : ORDER_STATUS_LABELS[status]}

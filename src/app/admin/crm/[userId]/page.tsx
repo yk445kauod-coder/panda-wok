@@ -58,7 +58,7 @@ export default async function CrmCustomerPage({
             {customer.phone ? (
               <a
                 href={`tel:${customer.phone}`}
-                className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700"
+                className="inline-flex items-center gap-1.5 text-vermilion-600 hover:text-vermilion-700"
               >
                 <Phone className="size-3.5" aria-hidden="true" />
                 {customer.phone}
@@ -67,7 +67,7 @@ export default async function CrmCustomerPage({
             {customer.email ? (
               <a
                 href={`mailto:${customer.email}`}
-                className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700"
+                className="inline-flex items-center gap-1.5 text-vermilion-600 hover:text-vermilion-700"
               >
                 <Mail className="size-3.5" aria-hidden="true" />
                 {customer.email}
@@ -130,7 +130,7 @@ export default async function CrmCustomerPage({
         <section className="washi-panel p-4" aria-label="Orders">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-base font-semibold text-ink-900">Recent orders</h2>
-            <Link href="/admin/orders" className="text-xs font-medium text-indigo-600">
+            <Link href="/admin/orders" className="text-xs font-medium text-vermilion-600">
               Order queue
             </Link>
           </div>
@@ -144,7 +144,7 @@ export default async function CrmCustomerPage({
                   <div className="min-w-0">
                     <Link
                       href={`/admin/orders/${order.id}`}
-                      className="text-sm font-medium text-ink-900 hover:text-indigo-600"
+                      className="text-sm font-medium text-ink-900 hover:text-vermilion-600"
                     >
                       #{order.order_number}
                     </Link>

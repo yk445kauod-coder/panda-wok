@@ -8,7 +8,7 @@ import { EnsoMark } from "@/components/ui/empty-state";
 export default function NotFound() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-lg flex-col items-center justify-center px-6 text-center">
-      <EnsoMark className="size-20 text-indigo-600/70" />
+      <EnsoMark className="size-20 text-vermilion-600/70" />
 
       <h1 className="mt-6 font-display text-2xl font-semibold text-ink-900">
         That page is not on the menu
@@ -21,7 +21,7 @@ export default function NotFound() {
       <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row">
         <Link
           href="/menu"
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 hover:bg-indigo-700 sm:flex-1"
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-vermilion-600 px-6 font-medium text-rice-50 hover:bg-vermilion-700 sm:flex-1"
         >
           Browse the menu
         </Link>
@@ -35,7 +35,7 @@ export default function NotFound() {
 
       <p className="mt-5 text-xs text-ink-700/65">
         Looking for an order?{" "}
-        <Link href="/orders" className="font-medium text-indigo-600 hover:text-indigo-700">
+        <Link href="/orders" className="font-medium text-vermilion-600 hover:text-vermilion-700">
           Track it here
         </Link>
       </p>

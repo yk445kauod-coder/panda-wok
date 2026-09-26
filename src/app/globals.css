@@ -5,14 +5,21 @@
  *
  * The scheme is built from the materials of an Asian kitchen rather than a
  * generic "warm restaurant" palette:
- *   - rice paper   (rice-*)  the page ground, warm and slightly grey
- *   - sumi ink     (ink-*)   the deep neutral for text and dark surfaces
- *   - také bamboo  (bamboo-*) the living green of the stems
- *   - shoyu / miso (miso-*)  the caramel of soy and fermented bean
- *   - ai indigo    (indigo-*) the dye blue of 藍 — the primary action colour
- *   - jade         (jade-*)  a cooled, glazed green for success
- *   - chili        (chili-*) the only red, kept for danger and spice
+ *   - rice paper   (rice-*)       the page ground, warm and slightly grey
+ *   - sumi ink     (ink-*)        the deep neutral for text and dark surfaces
+ *   - také bamboo  (bamboo-*)     the living green of the stems
+ *   - shoyu / miso (miso-*)       the caramel of soy and fermented bean
+ *   - shu vermilion (vermilion-*) the lacquered red of a noodle-bar lantern —
+ *                                the primary action colour
+ *   - jade         (jade-*)       a cooled, glazed green for success
+ *   - chili        (chili-*)      a deeper red kept for danger and spice
+ *   - rose         (rose-*)       a warm blush for full-bleed section bands
  * Deliberately avoids neon, generic purple gradients and glassmorphism.
+ *
+ * The action colour is a warm vermilion rather than a blue: the customer
+ * surface is a food page, and a dyed-blue button reads as software chrome
+ * next to rice paper and lacquer. `vermilion-600` clears 5.4:1 against white
+ * text and `vermilion-700` 8.1:1, so every button label is AA at body size.
  */
 @theme {
   --color-rice-50: #fdfbf5;
@@ -21,6 +28,7 @@
   --color-rice-300: #ddd2b6;
   --color-rice-400: #c4b48e;
 
+  --color-ink-400: #8a8078;
   --color-ink-500: #6d655c;
   --color-ink-600: #4d463f;
   --color-ink-700: #37312b;
@@ -37,14 +45,28 @@
   --color-miso-500: #c2863a;
   --color-miso-600: #9d6620;
 
-  /* 藍 indigo dye — the primary. Reads as dyed cloth, not as a tech blue. */
-  --color-indigo-500: #35566b;
-  --color-indigo-600: #274559;
-  --color-indigo-700: #1c3446;
+  /* 朱 shu vermilion — the primary. A lacquered lantern red, not a tech blue. */
+  --color-vermilion-300: #f4c4ac;
+  --color-vermilion-400: #e79b78;
+  --color-vermilion-500: #d0694a;
+  --color-vermilion-600: #b1454a;
+  --color-vermilion-700: #8c2f39;
+  --color-vermilion-800: #6d2029;
+
+  /* Warm blush used as a full-bleed band behind light copy. */
+  --color-rose-50: #fdf2ef;
+  --color-rose-100: #fbe3dc;
+  --color-rose-200: #f6cdc2;
 
   --color-jade-500: #3f8874;
   --color-jade-600: #2f6a5a;
+  --color-jade-700: #235247;
+  --color-jade-800: #193c34;
 
+  /* Chili carries both spice and danger. 500/600 are the UI pair; 300/400 are
+     the tints that stay legible on the ink ground. */
+  --color-chili-300: #e7a194;
+  --color-chili-400: #cf7263;
   --color-chili-500: #bb4130;
   --color-chili-600: #982e1f;
 
@@ -91,8 +113,8 @@
   --border-ink: color-mix(in oklab, var(--color-ink-700) 65%, transparent);
   --text-primary: var(--color-ink-900);
   --text-muted: var(--color-ink-500);
-  --accent: var(--color-indigo-600);
-  --accent-strong: var(--color-indigo-700);
+  --accent: var(--color-vermilion-600);
+  --accent-strong: var(--color-vermilion-700);
   --accent-contrast: var(--color-rice-50);
 
   --animate-rise: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -103,8 +125,8 @@
 }
 
 @keyframes pulse-soft {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-indigo-600) 45%, transparent); }
-  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-indigo-600) 0%, transparent); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-vermilion-600) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-vermilion-600) 0%, transparent); }
 }
 
 @keyframes rise {
@@ -198,12 +220,12 @@
     color: var(--foreground);
     font-family: var(--font-sans);
     /* Sumi-ink night with a crisp lantern-lit horizon: the low ember grace
-       is fuller and the bamboo/indigo casts are held just mellow enough that
-       copy stays readable on the ink — depth wirhout murk. */
+       is fuller and the bamboo/vermilion casts are held just mellow enough
+       that copy stays readable on the ink — depth without murk. */
     background-image:
-      radial-gradient(125% 85% at 50% 110%, color-mix(in oklab, var(--color-bamboo-600) 55%, transparent), transparent  62%),
-      radial-gradient(95% 65% at 86% -12%, color-mix(in oklab, var(--color-indigo-700) 48%, transparent), transparent  58%),
-      radial-gradient(75% 55% at 6% -4%, color-mix(in oklab, var(--color-miso-700) 30%, transparent), transparent  52%);
+      radial-gradient(125% 85% at 50% 110%, color-mix(in oklab, var(--color-bamboo-600) 52%, transparent), transparent  62%),
+      radial-gradient(95% 65% at 86% -12%, color-mix(in oklab, var(--color-vermilion-700) 50%, transparent), transparent  58%),
+      radial-gradient(75% 55% at 6% -4%, color-mix(in oklab, var(--color-miso-700) 32%, transparent), transparent  52%);
     background-attachment: fixed;
     overscroll-behavior-y: none;
     text-rendering: optimizeLegibility;
@@ -360,7 +382,7 @@
     background: color-mix(in oklab, var(--color-rice-50) 92%, transparent);
     border-color: color-mix(in oklab, var(--color-ink-900) 10%, transparent);
   }
-  .location-map .leaflet-control-attribution a { color: var(--color-indigo-600); }
+  .location-map .leaflet-control-attribution a { color: var(--color-vermilion-600); }
   .ink-rule {
     background: linear-gradient(
       90deg,
@@ -430,11 +452,235 @@
       filter 0.5s ease;
   }
 
+  /* Directional variants, so a two-column editorial row can enter from the
+     side it belongs to rather than everything rising from the same place.
+     Each only overrides the *pending* transform; the shown state is shared. */
+  [data-reveal="pending"][data-reveal-variant="left"] {
+    transform: translate3d(-34px, 0, 0);
+  }
+  [data-reveal="pending"][data-reveal-variant="right"] {
+    transform: translate3d(34px, 0, 0);
+  }
+  [data-reveal="pending"][data-reveal-variant="zoom"] {
+    transform: scale(0.92);
+  }
+  [data-reveal="pending"][data-reveal-variant="flip"] {
+    transform: perspective(900px) rotateX(14deg) translate3d(0, 18px, 0);
+    transform-origin: bottom center;
+  }
+  /* A left/right variant would point the wrong way in RTL; the mirrored
+     direction is what the reader expects, so flip the sign. */
+  html[dir="rtl"] [data-reveal="pending"][data-reveal-variant="left"] {
+    transform: translate3d(34px, 0, 0);
+  }
+  html[dir="rtl"] [data-reveal="pending"][data-reveal-variant="right"] {
+    transform: translate3d(-34px, 0, 0);
+  }
+
   /* Fluid heading scale: large on wide screens, legible but never tiny on
      phones. `clamp` keeps the ramp smooth with no breakpoint jumps. */
   .text-fluid-hero { font-size: clamp(2.25rem, 6vw + 0.5rem, 4.5rem); line-height: 1.04; }
   .text-fluid-h2 { font-size: clamp(1.6rem, 3vw + 0.75rem, 2.6rem); line-height: 1.12; }
   .text-fluid-h3 { font-size: clamp(1.25rem, 1.4vw + 0.9rem, 1.7rem); line-height: 1.2; }
+
+  /* The hero headline gets its own ramp: it is the one line that has to feel
+     poster-scale on a laptop without wrapping to four lines on a phone. */
+  .text-fluid-display {
+    font-size: clamp(2.6rem, 7.2vw + 0.4rem, 5.4rem);
+    line-height: 0.98;
+    letter-spacing: -0.03em;
+  }
+
+  /* ---- Section bands -------------------------------------------------
+     Full-bleed horizontal bands that break the page into chapters. Each is a
+     flat warm field plus a faint woven pattern, so the eye reads a change of
+     material rather than a change of card. */
+  .band-vermilion {
+    color: var(--color-rice-50);
+    background-color: var(--color-vermilion-600);
+    background-image:
+      radial-gradient(120% 90% at 12% 0%, color-mix(in oklab, var(--color-vermilion-500) 70%, transparent), transparent 60%),
+      radial-gradient(110% 80% at 92% 100%, color-mix(in oklab, var(--color-vermilion-700) 75%, transparent), transparent 62%);
+  }
+
+  .band-rose {
+    color: var(--color-ink-900);
+    background-color: var(--color-rose-50);
+    background-image:
+      radial-gradient(120% 90% at 14% 0%, color-mix(in oklab, var(--color-rose-200) 60%, transparent), transparent 58%),
+      radial-gradient(110% 80% at 90% 100%, color-mix(in oklab, var(--color-miso-300) 34%, transparent), transparent 60%);
+  }
+
+  .band-ink {
+    color: var(--color-rice-50);
+    background-color: var(--color-ink-950);
+    background-image:
+      radial-gradient(120% 80% at 50% 110%, color-mix(in oklab, var(--color-bamboo-600) 42%, transparent), transparent 62%),
+      radial-gradient(90% 60% at 86% -10%, color-mix(in oklab, var(--color-vermilion-700) 45%, transparent), transparent 58%),
+      radial-gradient(70% 50% at 6% 0%, color-mix(in oklab, var(--color-miso-600) 30%, transparent), transparent 52%);
+  }
+
+  /* A woven seigaiha-ish arc pattern, drawn with gradients only. Tuned to sit
+     on a coloured band as a texture, never as a foreground. */
+  .pattern-arcs {
+    background-image:
+      radial-gradient(circle at 50% 100%, transparent 0 18px, currentColor 18px 19px, transparent 19px 30px, currentColor 30px 31px, transparent 31px),
+      radial-gradient(circle at 0% 100%, transparent 0 18px, currentColor 18px 19px, transparent 19px 30px, currentColor 30px 31px, transparent 31px),
+      radial-gradient(circle at 100% 100%, transparent 0 18px, currentColor 18px 19px, transparent 19px 30px, currentColor 30px 31px, transparent 31px);
+    background-size: 60px 30px;
+    background-repeat: repeat;
+  }
+
+  /* ---- Organic shape breaks ------------------------------------------
+     A curved transition between a coloured band and the page around it.
+     It is a separate absolutely-positioned *background layer* rather than a
+     pseudo-element on the section, because the band gradients are painted
+     per-element: a pseudo-element that re-declares `background: inherit`
+     restarts the gradient in its own box and leaves a visible seam where the
+     two meet. One layer means one gradient across the whole curve.
+
+     Markup contract: the host section needs `isolate overflow-x-clip` (so the
+     -z-10 layer stays in the section's own stacking context and the overhang
+     does not widen the document) plus padding to clear the curve. */
+  .band-layer {
+    position: absolute;
+    inset-inline: -8%;
+    bottom: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .band-layer-curve-top {
+    top: -3rem;
+    border-start-start-radius: 50% 3rem;
+    border-start-end-radius: 50% 3rem;
+  }
+
+  /* ---- Cards ---------------------------------------------------------
+     The product card. A rice panel that lifts and warms on hover; the image
+     zooms a hair behind a fixed frame. `:focus-within` mirrors the hover so a
+     keyboard user gets the same affordance as a pointer. */
+  .dish-card {
+    background-color: color-mix(in oklab, white 82%, var(--color-rice-100));
+    border: 1px solid color-mix(in oklab, var(--color-rice-400) 55%, transparent);
+    border-radius: var(--radius-washi-lg);
+    box-shadow: var(--shadow-washi);
+    transition:
+      transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.3s ease;
+  }
+  .dish-card:hover,
+  .dish-card:focus-within {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-washi-lg);
+    border-color: color-mix(in oklab, var(--color-vermilion-600) 35%, transparent);
+  }
+
+  /* On the coloured bands the card is a translucent pane of the band colour
+     rather than a white chip, so the band stays one field. */
+  .dish-card-on-band {
+    background-color: color-mix(in oklab, white 6%, transparent);
+    border-color: color-mix(in oklab, white 22%, transparent);
+    color: var(--color-rice-50);
+    box-shadow: none;
+  }
+  .dish-card-on-band:hover,
+  .dish-card-on-band:focus-within {
+    background-color: color-mix(in oklab, white 96%, transparent);
+    color: var(--color-ink-900);
+    border-color: transparent;
+    box-shadow: var(--shadow-washi-lg);
+  }
+
+  /* ---- Filter pills -------------------------------------------------- */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1.15rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in oklab, var(--color-rice-400) 60%, transparent);
+    background: color-mix(in oklab, white 70%, var(--color-rice-100));
+    font-size: 0.875rem;
+    color: var(--color-ink-800);
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+  }
+  .pill:hover {
+    background: color-mix(in oklab, var(--color-rose-100) 70%, white);
+  }
+  .pill-active {
+    background: var(--color-vermilion-600);
+    border-color: var(--color-vermilion-600);
+    color: var(--color-rice-50);
+  }
+  .pill-active:hover {
+    background: var(--color-vermilion-700);
+  }
+
+  /* Same pill, sitting on a coloured band. */
+  .pill-on-band {
+    border-color: color-mix(in oklab, white 28%, transparent);
+    background: color-mix(in oklab, white 8%, transparent);
+    color: var(--color-rice-50);
+  }
+  .pill-on-band:hover {
+    background: color-mix(in oklab, white 18%, transparent);
+    color: var(--color-rice-50);
+  }
+  .pill-on-band.pill-active {
+    background: var(--color-rice-50);
+    border-color: var(--color-rice-50);
+    color: var(--color-vermilion-700);
+  }
+  .pill-on-band.pill-active:hover {
+    background: white;
+    color: var(--color-vermilion-700);
+  }
+
+  /* ---- Circular seal -------------------------------------------------
+     The rotating "Discover"-style badge that sits over a section junction. */
+  .seal {
+    display: grid;
+    place-items: center;
+    border-radius: 9999px;
+    background: var(--color-ink-950);
+    color: var(--color-rice-50);
+    box-shadow: var(--shadow-washi-lg);
+  }
+  .seal-spin {
+    animation: seal-spin 26s linear infinite;
+  }
+  @keyframes seal-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ---- Image plate ---------------------------------------------------
+     A framed dish photo. `object-fit: cover` inside a fixed ratio means the
+     grid never reflows when an image is swapped. */
+  .plate {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-washi-lg);
+    background: var(--color-rice-200);
+  }
+  .plate img {
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .group:hover .plate img,
+  .plate:hover img {
+    transform: scale(1.04);
+  }
+
+  /* ---- Editorial rule ------------------------------------------------
+     A short vermilion rule under a section eyebrow. Used instead of a full
+     divider so the heading group reads as one unit. */
+  .eyebrow-rule {
+    display: block;
+    width: 2.5rem;
+    height: 3px;
+    border-radius: 9999px;
+    background: var(--color-vermilion-600);
+  }
 
   /* The customer content column rests on a rice-paper sheet laid over the ink
      ground, so the ink page dressing stays visible top/bottom (around hero and
@@ -461,10 +707,10 @@
   *.hero-night {
     background-color: var(--color-ink-950);
     background-image:
-      radial-gradient(120% 80% at 50% 108%, color-mix(in oklab, var(--color-bamboo-600) 45%, transparent), transparent  62%),
-      radial-gradient(90% 60% at 85% -10%, color-mix(in oklab, var(--color-indigo-700) 50%, transparent), transparent  58%),
-      radial-gradient(70% 50% at 8% 0%, color-mix(in oklab, var(--color-miso-600) 32%, transparent), transparent  52%);
-    box-shadow: inset   0 3px 0 var(--color-miso-500);
+      radial-gradient(120% 80% at 50% 108%, color-mix(in oklab, var(--color-bamboo-600) 42%, transparent), transparent 62%),
+      radial-gradient(90% 60% at 85% -10%, color-mix(in oklab, var(--color-vermilion-700) 52%, transparent), transparent 58%),
+      radial-gradient(70% 50% at 8% 0%, color-mix(in oklab, var(--color-miso-600) 34%, transparent), transparent 52%);
+    box-shadow: inset 0 3px 0 var(--color-vermilion-500);
   }
 
  /* ---- Washi paper band (header / bottom nav) -----------------------

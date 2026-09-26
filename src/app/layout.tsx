@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import {
+  Fraunces,
   IBM_Plex_Sans,
   IBM_Plex_Sans_Arabic,
   Shippori_Mincho,
@@ -38,7 +39,17 @@ const bodyFont = IBM_Plex_Sans({
   display: "swap",
 });
 
-const displayFont = IBM_Plex_Sans({
+/**
+ * Display face. Fraunces is a soft, high-contrast old-style serif: at display
+ * sizes it reads editorial and a little hand-cut, which is the register the
+ * hero and section headings want. Body copy stays IBM Plex Sans, so the two
+ * roles are unmistakably different rather than one sans doing both jobs.
+ *
+ * It is not preloaded (the hero is the only place it paints above the fold and
+ * the layout already preloads the body face); `preload: false` keeps the
+ * initial request count down.
+ */
+const displayFont = Fraunces({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["600", "700"],

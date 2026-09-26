@@ -85,7 +85,7 @@ export default async function AdminAiUsagePage({
                 </div>
                 <div className="mt-1 h-2 overflow-hidden rounded-full bg-rice-200">
                   <div
-                    className="h-full rounded-full bg-indigo-500"
+                    className="h-full rounded-full bg-vermilion-500"
                     style={{ width: `${Math.max(1, (day.requests / dailyMax) * 100)}%` }}
                   />
                 </div>
@@ -233,7 +233,7 @@ function FilterLink({
       className={cn(
         "rounded-full border px-3 py-1.5 text-xs font-medium",
         active
-          ? "border-indigo-600 bg-indigo-600 text-rice-50"
+          ? "border-vermilion-600 bg-vermilion-600 text-rice-50"
           : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
       )}
     >

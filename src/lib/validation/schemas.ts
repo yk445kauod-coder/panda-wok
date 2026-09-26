@@ -446,6 +446,18 @@ export const feedbackResponseSchema = z.object({
     .default("resolved"),
 });
 
+/**
+ * Consent to show a rating on the public menu.
+ *
+ * `feedback.is_public` is the only switch that lets a customer's score reach
+ * `menu_item_ratings`, so it is deliberately a separate, explicit action with
+ * its own audit entry rather than a side effect of replying to a review.
+ */
+export const feedbackPublishSchema = z.object({
+  feedbackId: uuidSchema,
+  isPublic: z.coerce.boolean(),
+});
+
 export const conversationStatusSchema = z.object({
   conversationId: uuidSchema,
   status: z.enum(["open", "pending", "closed"]),
