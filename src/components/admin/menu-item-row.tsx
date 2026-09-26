@@ -70,6 +70,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
               alt=""
               className="size-full object-cover"
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <ImageOff className="size-5 text-ink-700/40" />

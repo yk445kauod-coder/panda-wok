@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminForm, Field, TextArea, Toggle } from "@/components/admin/form-kit";
+import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { saveCategoryAction } from "@/lib/actions/admin";
 import type { AdminCategory } from "@/lib/services/admin-catalog";
 
@@ -64,14 +65,11 @@ export function CategoryForm({ category }: { category: AdminCategory | null }) {
         />
       </fieldset>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="sr-only">Imagery and search listing</legend>
-        <Field
-          name="imageUrl"
-          label="Image URL"
-          hint="External URL or a Supabase Storage public URL."
-          defaultValue={category?.image_url ?? ""}
-        />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="block text-sm font-medium text-ink-900">Photo</label>
+          <ImageUploadField initialUrl={category?.image_url ?? null} idSuffix="category" />
+        </div>
         <Field
           name="sortOrder"
           label="Sort order"
@@ -82,6 +80,10 @@ export function CategoryForm({ category }: { category: AdminCategory | null }) {
           }
           defaultValue={String(category?.sort_order ?? 0)}
         />
+      </div>
+
+      <fieldset className="grid gap-4 sm:grid-cols-2">
+        <legend className="sr-only">Search engine listing</legend>
         <Field
           name="seoTitle"
           label="SEO title"

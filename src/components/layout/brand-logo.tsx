@@ -23,6 +23,7 @@ export function BrandLogo({
     <img
       src={src}
       alt={`${brand.name} logo`}
+      decoding="async"
       className={`object-contain ${className ?? "size-9"}`}
     />
   );
