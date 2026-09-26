@@ -20,7 +20,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "fonts": "node scripts/build-kana-font.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

@@ -1,6 +1,27 @@
 @import "tailwindcss";
 
 /*
+ * The CJK script mark face (中華).
+ *
+ * A 928-byte subset covering exactly the two glyphs in BRAND_SCRIPT_MARK, built
+ * from Google's Shippori Mincho by `npm run fonts`. Declaring it here instead of
+ * via `next/font` matters: next/font would emit all 244 of Google's CJK
+ * unicode-range @font-face rules (189 KB of CSS, 63% of the site's stylesheet)
+ * to describe glyphs this site never renders.
+ *
+ * `font-display: swap` + a local fallback chain means the mark paints in the
+ * serif fallback first and upgrades when this loads, never blocking.
+ */
+@font-face {
+  font-family: "Panda Kana";
+  src: url("/fonts/kana-mark.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+4E2D, U+83EF, U+00B7;
+}
+
+/*
  * Panda Wok design tokens.
  *
  * The scheme is built from the materials of an Asian kitchen rather than a
@@ -254,17 +275,17 @@
     letter-spacing: 0;
   }
 
-  /* Kanji/CJK display face. Applied only where script glyphs appear (日本,
-     中华, category names), so a Mincho renders them natively instead of the
-     browser substituting a system fallback mid-word. It intentionally wins over
-     the Arabic display override: CJK glyphs are not Arabic copy. */
+  /* CJK script face. Applied only where script glyphs appear (中華, category
+     names), so a Mincho renders them natively instead of the browser
+     substituting a system fallback mid-word. It intentionally wins over the
+     Arabic display override: CJK glyphs are not Arabic copy. */
   .font-kana {
-    font-family: var(--font-kana), var(--font-display), ui-serif, Georgia, serif;
+    font-family: "Panda Kana", var(--font-kana), var(--font-display), ui-serif, Georgia, serif;
     letter-spacing: 0.05em;
   }
 
   html[lang="ar"] .font-kana {
-    font-family: var(--font-kana), var(--font-arabic-display), var(--font-display), ui-serif, Georgia, serif;
+    font-family: "Panda Kana", var(--font-kana), var(--font-arabic-display), var(--font-display), ui-serif, Georgia, serif;
   }
 
   /* Numbers and prices stay Latin/numeric in both languages, because Arabic
@@ -430,51 +451,68 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
 
-/* Scroll reveal. Elements start slightly transparent+offset and settle when
-     they enter the viewport (the observer toggles `data-reveal` between
-     "pending" and "shown"). The observer also pushes elements back to
-     "pending" when they leave the viewport, so scrolling out fades them
-     out again — a gentle in/out loop rather than a one-shot reveal. Falls
-     back to fully visible when JS is off, because the element renders
-     "shown" and nothing ever demotes it to "pending". */
-  [data-reveal="pending"] {
-    opacity: 0;
-    transform: translate3d(0, 22px, 0) scale(0.985);
-    filter: blur(4px);
-  }
-  [data-reveal="shown"] {
-    opacity: 1;
-    transform: none;
-    filter: blur(0);
-    transition:
-      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-      filter 0.5s ease;
-  }
+/* Scroll reveal — CSS only, no JavaScript.
+     The previous implementation was a client component with an
+     IntersectionObserver that toggled `data-reveal` between "pending" and
+     "shown". Two problems: it made every call site a client boundary, so a
+     page wrapping its dish grid in <Reveal> shipped the whole grid twice
+     (HTML *and* RSC payload), and it re-composited a blur filter on every
+     card during scrolling.
 
-  /* Directional variants, so a two-column editorial row can enter from the
-     side it belongs to rather than everything rising from the same place.
-     Each only overrides the *pending* transform; the shown state is shared. */
-  [data-reveal="pending"][data-reveal-variant="left"] {
-    transform: translate3d(-34px, 0, 0);
-  }
-  [data-reveal="pending"][data-reveal-variant="right"] {
-    transform: translate3d(34px, 0, 0);
-  }
-  [data-reveal="pending"][data-reveal-variant="zoom"] {
-    transform: scale(0.92);
-  }
-  [data-reveal="pending"][data-reveal-variant="flip"] {
-    transform: perspective(900px) rotateX(14deg) translate3d(0, 18px, 0);
-    transform-origin: bottom center;
-  }
-  /* A left/right variant would point the wrong way in RTL; the mirrored
-     direction is what the reader expects, so flip the sign. */
-  html[dir="rtl"] [data-reveal="pending"][data-reveal-variant="left"] {
-    transform: translate3d(34px, 0, 0);
-  }
-  html[dir="rtl"] [data-reveal="pending"][data-reveal-variant="right"] {
-    transform: translate3d(-34px, 0, 0);
+     `animation-timeline: view()` scrubs the entry against scroll position on
+     the compositor instead. The animation is declared inside @supports and
+     excludes reduced-motion, so anywhere it is unsupported the element simply
+     renders its final state — nothing is ever hidden by this rule. */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      @keyframes reveal-rise {
+        from {
+          opacity: 0;
+          transform: translate3d(0, 22px, 0) scale(0.985);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @keyframes reveal-left {
+        from { opacity: 0; transform: translate3d(-34px, 0, 0); }
+        to { opacity: 1; transform: none; }
+      }
+      @keyframes reveal-right {
+        from { opacity: 0; transform: translate3d(34px, 0, 0); }
+        to { opacity: 1; transform: none; }
+      }
+      @keyframes reveal-zoom {
+        from { opacity: 0; transform: scale(0.92); }
+        to { opacity: 1; transform: none; }
+      }
+      @keyframes reveal-flip {
+        from {
+          opacity: 0;
+          transform: perspective(900px) rotateX(14deg) translate3d(0, 18px, 0);
+        }
+        to { opacity: 1; transform: none; }
+      }
+
+      [data-reveal] {
+        animation-name: reveal-rise;
+        animation-fill-mode: both;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        animation-timeline: view();
+        /* Finish by the time the element is ~12% into the viewport. */
+        animation-range: entry calc(6% + var(--reveal-delay, 0) * 14%) entry calc(58% + var(--reveal-delay, 0) * 14%);
+      }
+      [data-reveal-variant="left"] { animation-name: reveal-left; }
+      [data-reveal-variant="right"] { animation-name: reveal-right; }
+      [data-reveal-variant="zoom"] { animation-name: reveal-zoom; }
+      [data-reveal-variant="flip"] { animation-name: reveal-flip; }
+
+      /* A left/right variant would point the wrong way in RTL; the mirrored
+         direction is what the reader expects, so flip it. */
+      html[dir="rtl"] [data-reveal-variant="left"] { animation-name: reveal-right; }
+      html[dir="rtl"] [data-reveal-variant="right"] { animation-name: reveal-left; }
+    }
   }
 
   /* Fluid heading scale: large on wide screens, legible but never tiny on

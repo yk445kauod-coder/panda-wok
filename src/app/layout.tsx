@@ -3,7 +3,6 @@ import {
   Fraunces,
   IBM_Plex_Sans,
   IBM_Plex_Sans_Arabic,
-  Shippori_Mincho,
 } from "next/font/google";
 import "./globals.css";
 import { siteUrl } from "@/lib/seo/metadata";
@@ -28,8 +27,8 @@ import { dirFor } from "@/lib/i18n/config";
  *
  * The brand face is IBM Plex in both scripts: `IBM_Plex_Sans` for Latin,
  * `IBM_Plex_Sans_Arabic` for Arabic. Same family, one voice — the display slot
- * stays a notch heavier (600/700 Latin, 500/700 Arabic)for headings, and
- * Shippori Mincho covers CJK glyphs inline.
+ * stays a notch heavier (600/700 Latin, 500/700 Arabic) for headings, and a
+ * hand-built two-glyph subset covers the CJK script mark (see below).
 
  */
 const bodyFont = IBM_Plex_Sans({
@@ -84,18 +83,19 @@ const arabicDisplayFont = IBM_Plex_Sans_Arabic({
 /**
  * Kanji display face. The kitchen's wok is named in script (中華), and a Latin
  * serif has no glyphs for it — the browser would fall back to a system face
- * mid-word. Shippori Mincho is a Japanese Mincho, so those glyphs stay
- * deliberate and native. It is only referenced by the `.font-kana` utility, so
- * it never affects Latin copy.
+ * mid-word. It is only referenced by the `.font-kana` utility, so it never
+ * affects Latin copy.
+ *
+ * This is NOT loaded through `next/font`. Google serves Shippori Mincho as 244
+ * unicode-range chunks, and `next/font` emits an `@font-face` for every one of
+ * them whether or not the page uses a single CJK glyph: that was a 189 KB CSS
+ * file (63% of all CSS on /menu) describing 244 files the browser never
+ * fetched, on a site whose only script mark is two characters long.
+ *
+ * Instead `public/fonts/kana-mark.woff2` is a 928-byte subset built from those
+ * chunks covering exactly 中 and 華, declared by hand in globals.css. Rebuild it
+ * with `npm run fonts` if the mark ever changes.
  */
-const kanaDisplayFont = Shippori_Mincho({
-  variable: "--font-kana",
-  subsets: ["latin"],
-  weight: ["400", "600"],
-  display: "swap",
-  preload: false,
-});
-
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const t = await getT(locale);
@@ -151,7 +151,7 @@ export default async function RootLayout({
     <html
       lang={locale}
       dir={dirFor(locale)}
-      className={`${bodyFont.variable} ${displayFont.variable} ${arabicFont.variable} ${arabicDisplayFont.variable} ${kanaDisplayFont.variable} h-full antialiased`}
+      className={`${bodyFont.variable} ${displayFont.variable} ${arabicFont.variable} ${arabicDisplayFont.variable} h-full antialiased`}
       data-locale={locale}
     >
       <body className="min-h-full flex flex-col">
