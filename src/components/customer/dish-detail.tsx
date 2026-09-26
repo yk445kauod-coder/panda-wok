@@ -10,6 +10,7 @@ import {
   Utensils,
 } from "lucide-react";
 import { Badge } from "@/components/ui/button";
+import { Reveal } from "@/components/ui/reveal";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import { DishCard } from "@/components/customer/dish-card";
 import { AddToCartPanel } from "@/components/customer/add-to-cart-panel";
@@ -58,6 +59,7 @@ export function DishDetail({
       <Breadcrumbs items={breadcrumbs} />
 
       <div className="mt-4 grid gap-6 lg:grid-cols-2">
+        <Reveal className="lg:self-start">
         <div>
           <div className="relative aspect-[4/3] overflow-hidden rounded-washi bg-rice-200 shadow-washi">
             {dish.image_url ? (
@@ -113,7 +115,9 @@ export function DishDetail({
             </ul>
           ) : null}
         </div>
+        </Reveal>
 
+        <Reveal className="lg:self-start" delay={100}>
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <Link
@@ -237,10 +241,11 @@ export function DishDetail({
             locale={locale}
           />
         </div>
+        </Reveal>
       </div>
 
       {related.length > 0 ? (
-        <section className="mt-12" aria-labelledby="related-heading">
+        <Reveal as="section" aria-labelledby="related-heading" className="mt-12" delay={160}>
           <h2 id="related-heading" className="text-lg font-semibold text-ink-900">
             {t("dish.moreFrom", { category: categoryName })}
           </h2>
@@ -256,7 +261,7 @@ export function DishDetail({
               </li>
             ))}
           </ul>
-        </section>
+        </Reveal>
       ) : null}
     </div>
   );

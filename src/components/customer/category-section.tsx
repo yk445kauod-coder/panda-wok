@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Reveal } from "@/components/ui/reveal";
 import { DishCard } from "@/components/customer/dish-card";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import type { Category, MenuItem } from "@/lib/services/catalog";
@@ -36,7 +37,7 @@ export function CategorySection({
         ]}
       />
 
-      <header className="mt-4">
+      <Reveal as="header" className="mt-4">
         <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
           {local.name}
         </h1>
@@ -53,7 +54,7 @@ export function CategorySection({
         <p className="mt-2 text-sm text-ink-700/70">
           {t("menu.summary", { total: items.length, available })}
         </p>
-      </header>
+      </Reveal>
 
       {categories.length > 1 ? (
         <nav
@@ -85,8 +86,8 @@ export function CategorySection({
       ) : null}
 
       {items.length === 0 ? (
+        <Reveal className="mt-6" delay={60}>
         <EmptyState
-          className="mt-6"
           title={t("menu.emptyTitle")}
           description={t("menu.emptyBody")}
           action={
@@ -98,8 +99,10 @@ export function CategorySection({
             </Link>
           }
         />
+        </Reveal>
       ) : (
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Reveal className="mt-6" delay={60}>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item, index) => (
             <li key={item.id}>
               <DishCard
@@ -112,6 +115,7 @@ export function CategorySection({
             </li>
           ))}
         </ul>
+        </Reveal>
       )}
     </div>
   );
