@@ -780,3 +780,74 @@ work above.
 Verified: 100 tests pass, `tsc --noEmit` clean, lint 0 errors (10 `no-img-element`
 warnings are intentional), `next build` green.
 
+## Icons, favicon and the phone footer (2026-09-26)
+
+### The tab icon was Next's placeholder the whole time
+`src/app/favicon.ico` shipped `create-next-app`'s grey triangle (25931 bytes,
+three raw-BMP entries plus one PNG). Confirmed by decoding it: the only colours
+present were pure `0,0,0` and `255,255,255`. `src/app/icon.svg` was already the
+hand-drawn panda, but browsers prefer `favicon.ico` when both are present, so
+the placeholder is what actually showed. If a favicon ever "doesn't update",
+decode the `.ico` before touching code — a grayscale-only palette is the tell.
+
+**Icons are generated, not hand-made:** `npm run icons`
+(`scripts/generate-icons.mjs`, requires `sharp` — now an explicit devDependency,
+it was previously only hoisted in via Next). It writes `src/app/favicon.ico`
+(16/32/48 PNG entries, hand-assembled because sharp cannot emit ICO),
+`src/app/icon.svg`, `src/app/apple-icon.png` (180) and `public/icon-{192,512}.png`
+from the single vector source `public/panda-logo.svg`. Re-run it when the mark
+changes.
+
+Two non-obvious constraints are baked into that script, both discovered by
+looking at the output rather than assuming:
+
+- **The mark must be inset to ~78% of the canvas.** The logo fills 95% of its
+  bounding box, so at 16px it reads as a dark smudge edge-to-edge.
+- **The plate must be ink, not rice.** The mark is a *white* panda on a
+  transparent ground (drawn for the dark hero). On a cream plate the white
+  circle vanishes and the 32px icon samples as 100% rice/white — i.e. invisible.
+  Ink plate + white mark is the only combination that reads on both light and
+  dark tab strips.
+
+`manifest.webmanifest` now ships the real PNGs (`any` + a separate `maskable`
+entry) instead of pointing at `panda-logo.svg`, which has no safe zone for
+Android's maskable crop.
+
+### The footer is desktop-only now
+`SiteFooter` carries `hidden sm:block` by request. Nothing is orphaned: the
+header holds the nav + language switcher, and `/contact` lists every channel the
+footer had. The phone-specific accordion (`MobileFooterSections` in
+`mobile-footer.tsx`) became unreachable — `sm:hidden` nested inside
+`hidden sm:block` can never render — so it was deleted along with its imports;
+only `FooterSocial` remains in that file. **Watch for that pattern when hiding a
+container:** a child breakpoint inside a hidden parent is dead code, and `tsc`
+won't flag it.
+
+### Hero stats and menu pills (same session)
+Hero dropped the ETA and delivery-fee stats (`etaMinutes`/`deliveryFee`/
+`freeOver`); it now shows dish count, rating, city, plus a direct-order line
+(`home.heroOrderDirect`). The menu's dietary filter pills are gone — no
+catalogue row carries a diet flag, so every pill but "available" matched
+nothing. Removed the dead `diet` query param and the orphaned dictionary keys
+(`dietaryFilter`/`filter*`/`noMatchTitle`, `menu.availableNow`).
+
+Careful when grepping for removed copy: `deliveryHint` ("{fee}, free over
+{freeOver}") and the FAQ's fee sentence legitimately still mention the delivery
+fee — they render at checkout, not in the hero. Check the surrounding context
+before "cleaning up" a match.
+
+### ImageKit asset is unreachable
+`https://ik.imagekit.io/fbwa3np7/IMG-20260922-WA0012.jpg` returns **404**, and so
+does the account root — the whole ImageKit URL endpoint is not publicly serving,
+so that image cannot be used as a favicon or anywhere else. If the owner wants a
+photo mark, the file needs uploading somewhere reachable (or into the existing
+public `menu-images` Supabase bucket).
+
+Verified: 100 tests pass, `tsc --noEmit` clean, lint 0 errors (10 intentional
+`no-img-element` warnings), `next build` green. Live checks on the dev server:
+`/favicon.ico` byte-identical to the generated file, `/icon.svg`,
+`/apple-icon.png`, `/manifest.webmanifest`, `/icon-{192,512}.png` all 200;
+`<head>` links favicon + icon + apple-touch-icon + manifest; footer
+`display:none` at 390px and visible (339px tall) at 1440px; no ETA/fee in either
+locale's hero, direct-order line present in both.
+
