@@ -102,7 +102,6 @@ export const en = {
     featuredSubheading: "Dishes the kitchen has marked as featured.",
     fullMenu: "Full menu",
     browseBySection: "Browse by section",
-    availableNow: "Available right now",
     seeWholeMenu: "See the whole menu",
     noDishesTitle: "No dishes published yet",
     noDishesBody:
@@ -117,10 +116,9 @@ export const en = {
     heroEyebrow: "Asian kitchen · {city}",
     heroOrder: "Order now",
     heroHowTo: "How ordering works",
+    heroOrderDirect:
+      "Order straight from this site — no app to download and no phone call needed.",
     heroStatsDishes: "dishes on the menu",
-    heroStatsEta: "minute delivery",
-    heroStatsFee: "delivery fee",
-    heroStatsFreeOver: "free over {amount}",
     heroStatRating: "customer rating",
 
     /* Popular band. */
@@ -161,20 +159,12 @@ export const en = {
     searchPlaceholder: "Search dishes…",
     clearSearch: "Clear search",
     updating: "updating…",
-    dietaryFilter: "Dietary filter",
-    filterEverything: "Everything",
-    filterAvailable: "Available now",
-    filterSpicy: "Spicy",
-    filterVegetarian: "Vegetarian",
-    filterVegan: "Vegan",
     emptyTitle: "The menu is empty",
     emptyBody:
       "The kitchen has not published any dishes yet. Please check back shortly or contact us directly.",
     noMatchTitle: "No dishes match that",
-    noMatchBody: "Try a different search term or clear the dietary filter.",
-    clearFilters: "Clear filters",
-    nothingTitle: "Nothing to show",
-    nothingBody: "The kitchen has not published any dishes yet.",
+    noMatchBody: "Try a different search term.",
+    clearFilters: "Clear search",
     resultCount: "{count} result",
     resultsCount: "{count} results",
     sectionPage: "Section page",

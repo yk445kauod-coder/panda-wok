@@ -4,52 +4,43 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { useT } from "@/components/i18n-provider";
-import { cn } from "@/lib/utils/format";
 
 /**
- * Client-side filter bar. It writes to the query string so a filtered menu is
- * shareable and back-button friendly, and it debounces the free-text search.
+ * Client-side search bar. It writes to the query string so a search is
+ * shareable and back-button friendly, and it debounces the free-text input.
+ *
+ * There is deliberately no dietary filter here. The pills that used to sit
+ * below the search box were a fixed list — "Available now", "Spicy",
+ * "Vegetarian", "Vegan" — invented in the component rather than read from the
+ * kitchen's own data, and they filtered on flags the kitchen had not
+ * necessarily set. The search box matches names and descriptions in both
+ * languages, which covers the same intent without asserting anything the menu
+ * does not say.
  */
-export function MenuFilters({
-  initialQuery,
-  initialDiet,
-}: {
-  initialQuery: string;
-  initialDiet: string;
-}) {
+export function MenuFilters({ initialQuery }: { initialQuery: string }) {
   const t = useT();
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
-  const [diet, setDiet] = useState(initialDiet);
   const [pending, startTransition] = useTransition();
-
-  const diets = [
-    { key: "", label: t("menu.filterEverything") },
-    { key: "available", label: t("menu.filterAvailable") },
-    { key: "spicy", label: t("menu.filterSpicy") },
-    { key: "vegetarian", label: t("menu.filterVegetarian") },
-    { key: "vegan", label: t("menu.filterVegan") },
-  ] as const;
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (query === initialQuery && diet === initialDiet) return;
-      const params = new URLSearchParams();
-      if (query.trim()) params.set("q", query.trim());
-      if (diet) params.set("diet", diet);
-      const qs = params.toString();
+      if (query === initialQuery) return;
+      const trimmed = query.trim();
       startTransition(() => {
-        router.replace(qs ? `/menu?${qs}` : "/menu", { scroll: false });
+        router.replace(trimmed ? `/menu?q=${encodeURIComponent(trimmed)}` : "/menu", {
+          scroll: false,
+        });
       });
     }, 320);
     return () => clearTimeout(timer);
-    // initialQuery/initialDiet intentionally omitted: they change on navigation
-    // and re-running would fight the user's typing.
+    // initialQuery intentionally omitted: it changes on navigation and
+    // re-running would fight the user's typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, diet, router]);
+  }, [query, router]);
 
   return (
-    <div className="mt-5 space-y-3">
+    <div className="mt-5">
       <div className="relative">
         <Search
           className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ink-700/50"
@@ -81,32 +72,6 @@ export function MenuFilters({
             <X className="size-3.5" />
           </button>
         ) : null}
-      </div>
-
-      <div
-        role="group"
-        aria-label={t("menu.dietaryFilter")}
-        className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4"
-      >
-        {diets.map((option) => {
-          const active = diet === option.key;
-          return (
-            <button
-              key={option.key || "all"}
-              type="button"
-              onClick={() => setDiet(option.key)}
-              aria-pressed={active}
-              className={cn(
-                "whitespace-nowrap rounded-full border px-3.5 py-2 text-sm transition-colors",
-                active
-                  ? "border-vermilion-600 bg-vermilion-600 text-rice-50"
-                  : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
-              )}
-            >
-              {option.label}
-            </button>
-          );
-        })}
       </div>
     </div>
   );

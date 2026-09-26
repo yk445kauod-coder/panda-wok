@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, Clock, MapPin, Star, Wallet } from "lucide-react";
+import { ArrowRight, Globe, MapPin, Star } from "lucide-react";
 import {
   getFeaturedItems,
   getMenuRatings,
@@ -31,7 +31,6 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { brandDescription, brandTagline } from "@/lib/i18n/brand";
 import type { T } from "@/lib/i18n/server";
 import { localiseCategory } from "@/lib/i18n/catalog";
-import { formatPrice } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
@@ -178,10 +177,6 @@ export default async function HomePage() {
         t={t}
         stats={{
           dishCount: menu.items.length,
-          etaMinutes: settings.ordering.etaMinutes,
-          deliveryFee: settings.ordering.deliveryFee,
-          freeOver: settings.ordering.freeDeliveryOver,
-          currency,
           rating: avgRating,
           city: settings.brand.city,
         }}
@@ -451,10 +446,6 @@ function Hero({
   t: T;
   stats: {
     dishCount: number;
-    etaMinutes: number;
-    deliveryFee: number;
-    freeOver: number;
-    currency: string;
     rating: { average: number; count: number } | null;
     city: string;
   };
@@ -523,6 +514,17 @@ function Hero({
             </Link>
           </div>
 
+          {/* The hero's job is to get someone into the basket, so the one
+              reassurance worth stating up front is that there is no app and no
+              phone call in the way. */}
+          <p className="mt-5 inline-flex items-start gap-2 text-sm text-rice-200/85">
+            <Globe
+              className="mt-0.5 size-4 shrink-0 text-vermilion-300"
+              aria-hidden="true"
+            />
+            {t("home.heroOrderDirect")}
+          </p>
+
           <HeroStats stats={stats} t={t} />
         </div>
 
@@ -533,13 +535,16 @@ function Hero({
 }
 
 /**
- * The hero's proof strip: four live figures read from the database.
+ * The hero's proof strip: live figures read from the database.
  *
- * Every value is real — the dish count is the published menu, the ETA and fee
- * come from `settings.ordering`, and the rating only appears when customers
- * have actually rated something. The strip is omitted entirely rather than
- * padded out when a value is missing, so it never asserts a number the kitchen
- * cannot stand behind.
+ * Every value is real — the dish count is the published menu, and the rating
+ * only appears when customers have actually rated something. The strip is
+ * omitted entirely rather than padded out when a value is missing, so it never
+ * asserts a number the kitchen cannot stand behind.
+ *
+ * Delivery ETA and fee were removed from here by request. They are still
+ * published, at the point where they actually matter: the checkout summary
+ * and the menu's delivery hint, both fed by `settings.ordering`.
  */
 function HeroStats({
   stats,
@@ -547,15 +552,11 @@ function HeroStats({
 }: {
   stats: {
     dishCount: number;
-    etaMinutes: number;
-    deliveryFee: number;
-    freeOver: number;
-    currency: string;
     rating: { average: number; count: number } | null;
   };
   t: T;
 }) {
-  const entries: { icon: typeof Clock; value: string; label: string }[] = [];
+  const entries: { icon: typeof Star; value: string; label: string }[] = [];
 
   if (stats.dishCount > 0) {
     entries.push({
@@ -564,18 +565,6 @@ function HeroStats({
       label: t("home.heroStatsDishes"),
     });
   }
-  entries.push({
-    icon: Clock,
-    value: String(stats.etaMinutes),
-    label: t("home.heroStatsEta"),
-  });
-  entries.push({
-    icon: Wallet,
-    value: formatPrice(stats.deliveryFee, stats.currency),
-    label: t("home.heroStatsFreeOver", {
-      amount: formatPrice(stats.freeOver, stats.currency),
-    }),
-  });
   if (stats.rating) {
     entries.push({
       icon: Star,
@@ -584,8 +573,10 @@ function HeroStats({
     });
   }
 
+  if (entries.length === 0) return null;
+
   return (
-    <dl className="mt-9 grid max-w-xl grid-cols-2 gap-x-6 gap-y-4 border-t border-rice-100/15 pt-6 sm:grid-cols-3">
+    <dl className="mt-9 grid max-w-xl grid-cols-2 gap-x-6 gap-y-4 border-t border-rice-100/15 pt-6">
       {entries.map((entry) => (
         <div key={entry.label} className="flex items-start gap-2.5">
           <entry.icon

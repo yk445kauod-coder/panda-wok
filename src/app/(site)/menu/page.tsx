@@ -73,7 +73,6 @@ export default async function MenuPage({
       : t("menu.categoryFallback");
 
   const query = params.q?.trim().toLowerCase() ?? "";
-  const diet = params.diet ?? "";
 
   // The search haystack intentionally includes both languages, so a customer
   // can find a dish by either its Arabic or English name.
@@ -83,10 +82,6 @@ export default async function MenuPage({
         `${item.name_en} ${item.name_ar ?? ""} ${item.name_ja ?? ""} ${item.description_en ?? ""} ${item.description_ar ?? ""}`.toLowerCase();
       if (!haystack.includes(query)) return false;
     }
-    if (diet === "spicy" && !item.is_spicy) return false;
-    if (diet === "vegetarian" && !(item.is_vegetarian || item.is_vegan)) return false;
-    if (diet === "vegan" && !item.is_vegan) return false;
-    if (diet === "available" && !item.is_available) return false;
     return true;
   });
 
@@ -97,7 +92,7 @@ export default async function MenuPage({
       { name: t("common.home"), path: "/" },
       { name: t("menu.title"), path: "/menu" },
     ]),
-    ...(query || diet
+    ...(query
       ? []
       : [
           menuSchema({
@@ -120,7 +115,7 @@ export default async function MenuPage({
         ]),
   ];
 
-  const isFiltered = Boolean(query || diet);
+  const isFiltered = Boolean(query);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -161,33 +156,31 @@ export default async function MenuPage({
         </nav>
       ) : null}
 
-      <MenuFilters initialQuery={params.q ?? ""} initialDiet={diet} />
+      <MenuFilters initialQuery={params.q ?? ""} />
 
       {menu.items.length === 0 ? (
         <Reveal className="relative mt-6" delay={60}>
           <LeafField2D count={10} />
           <EmptyState
-          className="relative"
-          title={t("menu.emptyTitle")}
-          description={t("menu.emptyBody")}
-        />
+            className="relative"
+            title={t("menu.emptyTitle")}
+            description={t("menu.emptyBody")}
+          />
         </Reveal>
       ) : filtered.length === 0 ? (
         <Reveal className="mt-6" delay={60}>
-        <EmptyState
-          title={isFiltered ? t("menu.noMatchTitle") : t("menu.nothingTitle")}
-          description={isFiltered ? t("menu.noMatchBody") : t("menu.nothingBody")}
-          action={
-            isFiltered ? (
+          <EmptyState
+            title={t("menu.noMatchTitle")}
+            description={t("menu.noMatchBody")}
+            action={
               <Link
                 href="/menu"
                 className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
               >
                 {t("menu.clearFilters")}
               </Link>
-            ) : null
-          }
-        />
+            }
+          />
         </Reveal>
       ) : isFiltered ? (
         <section className="mt-6" aria-live="polite">
