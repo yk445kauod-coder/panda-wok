@@ -895,3 +895,62 @@ environment (`wrangler whoami` = unauthenticated, no `CLOUDFLARE_API_TOKEN`),
 so the app change is committed but not yet deployed.
 
 
+## The real menu is imported (2026-09-26)
+
+`scripts/import-menu.mjs` + `scripts/data/panda-wok-menu.json` (the owner's CMS
+manifest, committed verbatim). Live result: **10 categories, 53 dishes, 15
+modifier groups, 57 options**, Arabic on every dish, EGP 20–1560.
+
+**The manifest is positional, and that is the whole difficulty.** It is a flat
+export of the owner's sheet (200 non-empty rows, 89 priced). Reading it as "each
+priced row is a dish" is wrong and produces 89 junk dishes named `chicken`,
+`beef`, `no protein`. The actual grammar:
+
+- A **priced row is the dish name**; the *unpriced* line after it is that dish's
+  description. (So `Vegetables spring rolls (4 pieces)` + `mixed vegetables and
+  glass noodles…` + `95` is one dish, not two rows.)
+- A run of priced `no protein / chicken / beef / shrimp` rows after a
+  `your choice :` marker are **variants of the dish above**, not new dishes.
+  Stored as a `Choose your protein` group (min 1, max 1) with `price_delta` from
+  the cheapest variant — the sheet quotes absolute prices, the DB stores deltas.
+  `Lo-mein` is 125/208/249/275 → base 125, deltas 0/83/124/150.
+- `your choice :` followed by *unpriced* words (`steamed`, `fried`) is a free
+  choice group; the sauces in `Main dishes` likewise.
+- `your choice of X or Y with …` in a Box is **prose describing the dish**, not a
+  choice — it stays in `description_en`. Treating it as a group produced a
+  one-option radio group with a 200-character label.
+
+Every one of the 200 rows is accounted for, and the script refuses to write when
+a row is unmatched or a slug collides. `--dry-run` prints the plan, counts and an
+audit (missing Arabic, missing descriptions, Japanese-named dishes); `--apply`
+refuses if `menu_items` is non-empty and rolls back its own categories on
+failure.
+
+Verified live after import: English and Arabic `/menu` render, `/menu/<slug>`
+shows the protein group with `+EGP 83.00` deltas, home shows 53 dishes, and a
+rolled-back `place_order` priced Lo-mein + chicken at **208.00** with the delta
+snapshotted into `order_items.modifiers` (pickup, so no delivery fee; 14% tax →
+237.12). Group limits are enforced server-side by `place_order`.
+
+### Two things to raise with the owner
+
+1. **Japanese-flavoured dishes are in the real menu**: Teriyaki noodles, Japanese
+   teppan fried rice, Korean ramen fried rice, Spicy tomato ramen noodles, Sweet
+   and sour & teriyaki meal (single/twin), Teriyaki Chicken/Beef Box, Teriyaki
+   sauce — 9 items. Chinese-only branding (the `中華` mark) is therefore a
+   *branding* choice, not a claim about the menu. Renaming them is the owner's
+   call, so they were imported as written.
+2. **`Main dishes` items are literally named `Chicken` and `Beef`** (333/378),
+   with the sauce as the choice group. That is what the sheet says, but on a menu
+   card "Chicken" alone reads oddly — a rename (e.g. "Chicken with your choice of
+   sauce") needs the owner's approval.
+
+Also worth knowing: **`is_required` does not gate checkout.**
+`add-to-cart-panel.tsx` auto-selects the first option when `min_select > 0 &&
+max_select === 1`, so the customer is never stuck, but `place_order` only
+validates `chosen >= min_select` when `is_required` is true. The imported protein
+groups are min 1 / max 1 and *not* required, consistent with every other group in
+the DB; making them required would be stricter but would change behaviour, so it
+was left alone.
+
+
