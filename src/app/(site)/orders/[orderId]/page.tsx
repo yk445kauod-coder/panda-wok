@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth/session";
 import { getOrderForViewer } from "@/lib/services/orders";
 import { buildTimeline, isActive } from "@/lib/services/order-status";
 import { Badge } from "@/components/ui/button";
+import { Reveal } from "@/components/ui/reveal";
 import { OrderStatusRealtime } from "@/components/customer/order-status-realtime";
 import { OrderTimeline } from "@/components/customer/order-timeline";
 import { CancelOrderButton } from "@/components/customer/cancel-order-button";
@@ -96,6 +97,7 @@ export default async function OrderTrackingPage({
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       {placed === "1" ? (
+        <Reveal>
         <div
           role="status"
           className="mb-4 flex items-start gap-2 rounded-xl border border-jade-500/30 bg-jade-500/10 p-4"
@@ -106,8 +108,10 @@ export default async function OrderTrackingPage({
             <p className="mt-0.5 text-xs text-ink-700/85">{t("orders.orderPlacedBody")}</p>
           </div>
         </div>
+        </Reveal>
       ) : null}
 
+      <Reveal>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-ink-900">
@@ -136,15 +140,16 @@ export default async function OrderTrackingPage({
           {t("orders.etaHint", { minutes: order.eta_minutes })}
         </p>
       ) : null}
+      </Reveal>
 
-      <section aria-labelledby="timeline-heading" className="washi-panel mt-5 p-4">
+      <Reveal as="section" aria-labelledby="timeline-heading" className="washi-panel mt-5 p-4" delay={80}>
         <h2 id="timeline-heading" className="text-sm font-semibold text-ink-900">
           {t("orders.progress")}
         </h2>
         <OrderTimeline steps={timeline} locale={locale} />
-      </section>
+      </Reveal>
 
-      <section aria-labelledby="items-heading" className="washi-panel mt-3 p-4">
+      <Reveal as="section" aria-labelledby="items-heading" className="washi-panel mt-3 p-4" delay={140}>
         <h2
           id="items-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
@@ -232,9 +237,9 @@ export default async function OrderTrackingPage({
             status: paymentStatusLabel(order.payment_status, locale),
           })}
         </p>
-      </section>
+      </Reveal>
 
-      <section aria-labelledby="where-heading" className="washi-panel mt-3 p-4">
+      <Reveal as="section" aria-labelledby="where-heading" className="washi-panel mt-3 p-4" delay={200}>
         <h2
           id="where-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
@@ -292,7 +297,7 @@ export default async function OrderTrackingPage({
             {t("orders.yourNote", { note: order.customer_note })}
           </p>
         ) : null}
-      </section>
+      </Reveal>
 
       {order.cancel_reason ? (
         <p className="mt-3 rounded-xl border border-miso-500/30 bg-miso-300/15 p-3.5 text-sm text-ink-800">

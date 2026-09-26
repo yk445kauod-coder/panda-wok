@@ -5,6 +5,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/auth/session";
 import { getMyOrders } from "@/lib/services/orders";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Reveal } from "@/components/ui/reveal";
 import { Badge } from "@/components/ui/button";
 import { isActive, type OrderStatus } from "@/lib/services/order-status";
 import { formatDateTime, formatPrice } from "@/lib/utils/format";
@@ -48,10 +49,12 @@ export default async function OrdersPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
+      <Reveal>
       <h1 className="text-2xl font-semibold text-ink-900">{t("orders.title")}</h1>
       <p className="mt-1 text-sm text-ink-700/80">
         {t("orders.subtitle", { brand })}
       </p>
+      </Reveal>
 
       {orders.length === 0 ? (
         <EmptyState
@@ -70,7 +73,7 @@ export default async function OrdersPage() {
       ) : (
         <>
           {active.length > 0 ? (
-            <section aria-labelledby="active-heading" className="mt-6">
+            <Reveal as="section" aria-labelledby="active-heading" className="mt-6" delay={80}>
               <h2
                 id="active-heading"
                 className="text-sm font-semibold uppercase tracking-wide text-ink-700/70"
@@ -84,13 +87,15 @@ export default async function OrdersPage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </Reveal>
           ) : null}
 
           {past.length > 0 ? (
-            <section
+            <Reveal
+              as="section"
               aria-labelledby="past-heading"
               className={active.length > 0 ? "mt-8" : "mt-6"}
+              delay={140}
             >
               <h2
                 id="past-heading"
@@ -105,7 +110,7 @@ export default async function OrdersPage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </Reveal>
           ) : null}
         </>
       )}

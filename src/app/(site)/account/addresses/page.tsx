@@ -7,6 +7,7 @@ import { getMyAddresses } from "@/lib/services/orders";
 import { getPublicSettings } from "@/lib/services/catalog";
 import { AddressBook } from "@/components/customer/address-book";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
+import { Reveal } from "@/components/ui/reveal";
 import { getLocale, getT } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -47,10 +48,10 @@ export default async function AddressesPage({
         ]}
       />
 
-      <header className="mt-4">
+      <Reveal as="header" className="mt-4">
         <h1 className="text-2xl font-semibold text-ink-900">{t("addresses.title")}</h1>
         <p className="mt-1 text-sm text-ink-700/80">{t("addresses.subtitle")}</p>
-      </header>
+      </Reveal>
 
       {backTo ? (
         <p className="mt-3 rounded-xl bg-rice-200/70 px-3.5 py-2.5 text-xs text-ink-800">
@@ -62,7 +63,7 @@ export default async function AddressesPage({
         </p>
       ) : null}
 
-      <AddressBook addresses={addresses} />
+      <Reveal delay={80}><AddressBook addresses={addresses} /></Reveal>
     </div>
   );
 }

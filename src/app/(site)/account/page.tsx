@@ -8,6 +8,7 @@ import { getMyStats, getMyOrders, getMyAddresses } from "@/lib/services/orders";
 import { getLoyaltyOverview } from "@/lib/services/loyalty";
 import { getFeatureFlagMap, getPublicSettings } from "@/lib/services/catalog";
 import { Badge } from "@/components/ui/button";
+import { Reveal } from "@/components/ui/reveal";
 import { SignOutButton } from "@/components/customer/sign-out-button";
 import { ProfileForm } from "@/components/customer/profile-form";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
@@ -46,7 +47,7 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
+      <Reveal as="header" className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-ink-900">
             {profile?.full_name
@@ -59,7 +60,7 @@ export default async function AccountPage() {
           </p>
         </div>
         <LanguageSwitcher current={locale} />
-      </header>
+      </Reveal>
 
       {profile?.is_blocked ? (
         <p
@@ -70,7 +71,7 @@ export default async function AccountPage() {
         </p>
       ) : null}
 
-      <section aria-labelledby="stats-heading" className="mt-5">
+      <Reveal as="section" aria-labelledby="stats-heading" className="mt-5" delay={60}>
         <h2 id="stats-heading" className="sr-only">
           {t("account.statsHeading")}
         </h2>
@@ -99,13 +100,13 @@ export default async function AccountPage() {
             />
           ) : null}
         </dl>
-      </section>
+      </Reveal>
 
       {/* Active order shortcut */}
       {orders.some((o) =>
         ["new", "accepted", "in_progress", "prepared", "out_for_delivery"].includes(o.status),
       ) ? (
-        <section aria-labelledby="active-heading" className="washi-panel mt-5 p-4">
+        <Reveal as="section" aria-labelledby="active-heading" className="washi-panel mt-5 p-4" delay={100}>
           <h2 id="active-heading" className="text-sm font-semibold text-ink-900">
             {t("account.trackOrder")}
           </h2>
@@ -138,11 +139,11 @@ export default async function AccountPage() {
                 </li>
               ))}
           </ul>
-        </section>
+        </Reveal>
       ) : null}
 
       {/* Profile */}
-      <section aria-labelledby="profile-heading" className="washi-panel mt-5 p-4">
+      <Reveal as="section" aria-labelledby="profile-heading" className="washi-panel mt-5 p-4" delay={140}>
         <h2 id="profile-heading" className="text-sm font-semibold text-ink-900">
           {t("account.detailsHeading")}
         </h2>
@@ -154,10 +155,10 @@ export default async function AccountPage() {
             notificationsOptIn: profile?.notifications_opt_in ?? false,
           }}
         />
-      </section>
+      </Reveal>
 
       {/* Addresses */}
-      <section aria-labelledby="addresses-heading" className="washi-panel mt-3 p-4">
+      <Reveal as="section" aria-labelledby="addresses-heading" className="washi-panel mt-3 p-4" delay={180}>
         <div className="flex items-center justify-between gap-3">
           <h2
             id="addresses-heading"
@@ -194,7 +195,7 @@ export default async function AccountPage() {
             ))}
           </ul>
         )}
-      </section>
+        </Reveal>
 
       {/* Shortcuts */}
       <nav aria-label={t("account.shortcuts")} className="mt-5 grid grid-cols-2 gap-3">

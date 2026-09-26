@@ -7,6 +7,7 @@ import { JsonLdScript } from "@/components/seo/json-ld";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Reveal } from "@/components/ui/reveal";
 import { DishCard } from "@/components/customer/dish-card";
+import { LeafField2D } from "@/components/customer/leaf-field-2d";
 import { MenuFilters } from "@/components/customer/menu-filters";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -157,14 +158,17 @@ export default async function MenuPage({
       <MenuFilters initialQuery={params.q ?? ""} initialDiet={diet} />
 
       {menu.items.length === 0 ? (
-        <EmptyState
-          className="mt-6"
+        <Reveal className="relative mt-6" delay={60}>
+          <LeafField2D count={10} />
+          <EmptyState
+          className="relative"
           title={t("menu.emptyTitle")}
           description={t("menu.emptyBody")}
         />
+        </Reveal>
       ) : filtered.length === 0 ? (
+        <Reveal className="mt-6" delay={60}>
         <EmptyState
-          className="mt-6"
           title={isFiltered ? t("menu.noMatchTitle") : t("menu.nothingTitle")}
           description={isFiltered ? t("menu.noMatchBody") : t("menu.nothingBody")}
           action={
@@ -178,6 +182,7 @@ export default async function MenuPage({
             ) : null
           }
         />
+        </Reveal>
       ) : isFiltered ? (
         <section className="mt-6" aria-live="polite">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-700/70">

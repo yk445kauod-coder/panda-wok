@@ -24,7 +24,7 @@ export function Reveal({
   className?: string;
   /** Stagger in ms, for lists of cards. */
   delay?: number;
-  as?: "div" | "section" | "li" | "article";
+  as?: "div" | "section" | "li" | "article" | "header";
   /** Forwarded to the tag when `as="section"` keeps section semantics intact. */
   "aria-labelledby"?: string;
 }) {

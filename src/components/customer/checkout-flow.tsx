@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Badge, Button, Spinner } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Reveal } from "@/components/ui/reveal";
 import { useCart } from "@/components/customer/cart-provider";
 import { useErrorText, useT } from "@/components/i18n-provider";
 import { trackEvent } from "@/components/customer/analytics-beacon";
@@ -207,12 +208,14 @@ export function CheckoutFlow({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
+      <Reveal>
       <h1 className="text-2xl font-semibold text-ink-900">{t("checkout.title")}</h1>
       <p className="mt-1 text-sm text-ink-700/80">
         {itemCount === 1
           ? t("checkout.itemCountSingular", { count: itemCount })
           : t("checkout.itemCountPlural", { count: itemCount })}
       </p>
+      </Reveal>
 
       {offline ? (
         <div
@@ -228,7 +231,7 @@ export function CheckoutFlow({
       ) : null}
 
       {/* Fulfilment */}
-      <section className="washi-panel mt-4 p-4">
+      <Reveal as="section" className="washi-panel mt-4 p-4" delay={60}>
         <h2 className="text-sm font-semibold text-ink-900">
           {t("checkout.fulfilmentHeading")}
         </h2>
@@ -280,11 +283,11 @@ export function CheckoutFlow({
             );
           })}
         </div>
-      </section>
+      </Reveal>
 
       {/* Address */}
       {fulfillment === "delivery" ? (
-        <section className="washi-panel mt-3 p-4">
+        <Reveal as="section" className="washi-panel mt-3 p-4" delay={100}>
           <div className="flex items-center justify-between gap-3">
             <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink-900">
               <MapPin className="size-4 text-indigo-600" aria-hidden="true" />
@@ -391,11 +394,11 @@ export function CheckoutFlow({
               </Link>
             </p>
           ) : null}
-        </section>
+        </Reveal>
       ) : null}
 
       {/* Payment */}
-      <section className="washi-panel mt-3 p-4">
+      <Reveal as="section" className="washi-panel mt-3 p-4" delay={140}>
         <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink-900">
           <Wallet className="size-4 text-indigo-600" aria-hidden="true" />
           {t("checkout.paymentHeading")}
@@ -443,11 +446,11 @@ export function CheckoutFlow({
             );
           })}
         </ul>
-      </section>
+      </Reveal>
 
       {/* Loyalty redemption */}
       {redeemablePoints > 0 ? (
-        <section className="washi-panel mt-3 p-4">
+        <Reveal as="section" className="washi-panel mt-3 p-4" delay={160}>
           <h2 className="text-sm font-semibold text-ink-900">
             {t("checkout.loyaltyHeading")}
           </h2>
@@ -470,11 +473,11 @@ export function CheckoutFlow({
               className="size-4 accent-indigo-600"
             />
           </label>
-        </section>
+        </Reveal>
       ) : null}
 
       {/* Note */}
-      <section className="washi-panel mt-3 p-4">
+      <Reveal as="section" className="washi-panel mt-3 p-4" delay={180}>
         <label htmlFor="order-note" className="text-sm font-semibold text-ink-900">
           {t("checkout.kitchenNote")}
         </label>
@@ -487,10 +490,10 @@ export function CheckoutFlow({
           placeholder={t("checkout.notePlaceholder")}
           className="mt-2 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 py-2 text-sm outline-none focus:border-miso-500"
         />
-      </section>
+      </Reveal>
 
       {/* Summary */}
-      <section className="washi-panel mt-3 p-4">
+      <Reveal as="section" className="washi-panel mt-3 p-4" delay={200}>
         <h2 className="text-sm font-semibold text-ink-900">{t("checkout.orderSummary")}</h2>
         <ul className="mt-3 space-y-1.5 text-sm">
           {lines.map((line) => (
@@ -579,7 +582,7 @@ export function CheckoutFlow({
         {previousOrders === 0 ? (
           <p className="mt-1 text-xs text-ink-700/70">{t("checkout.firstOrder")}</p>
         ) : null}
-      </section>
+      </Reveal>
 
       {error ? (
         <div
