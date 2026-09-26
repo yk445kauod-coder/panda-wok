@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
-import { MobileFooterSections, FooterSocial } from "@/components/layout/mobile-footer";
+import { FooterSocial } from "@/components/layout/mobile-footer";
 import { sortSocialEntries } from "@/components/icons/social";
 import { getLocale, getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/server";
@@ -151,7 +151,11 @@ export async function SiteFooter({
   ];
 
   return (
-    <footer className="mt-12 border-t border-ink-900/10 washi-paper">
+    // `hidden sm:block` by request: the footer is desktop-only. Everything a
+    // phone user needs is reachable elsewhere — the header carries the nav and
+    // the language switcher, and /contact carries every channel the footer
+    // listed, so nothing is orphaned by hiding it.
+    <footer className="mt-12 hidden border-t border-ink-900/10 washi-paper sm:block">
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-2 sm:gap-8 sm:py-10 lg:grid-cols-4">
         <div className="sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2">
@@ -166,13 +170,6 @@ export async function SiteFooter({
             <LanguageSwitcher current={locale} variant="labelled" />
           </div>
         </div>
-
-        {/* Phones: collapsible. Desktop: the two columns as before. */}
-        <MobileFooterSections
-          sections={sections}
-          brandName={brand.name}
-          className="sm:hidden"
-        />
 
         {sections.map((section) => (
           <nav key={section.key} aria-label={section.heading} className="hidden sm:block">
