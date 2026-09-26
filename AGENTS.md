@@ -678,3 +678,19 @@ picker with GPS autofill via the browser geolocation API and reverse geocode,
 letting the customer confirm a pin on a map instead of typing only. The
 customer picks a point, the address fills in for confirmation.
 
+
+## Bamboo identity + contrast pass (2026-09-25, pushed fdc04a1)
+- .bamboo-culm is now 7px wide, brighter bamboo-600/500 internode rings, a bamboo-400 rim-lit edge + ground shadow; BambooAmbience hero density = 7 culms in a w-24 container, 44-70px tall. Hero also drifts LeafField2D count=16 (bamboo-green/sakura/maple) over the ink - sakura is the Japanese half, wok/bamboo the Chinese.
+
+
+
+- Contrast overhaul (all in globals.css): body ground stirs a lantern-lit horizon ( bamboo-600/indigo-700/miso-700 radial casts, background-attachment: fixed);.page-sheet/.washi-paper/.washi-banner gain the banded washi edges + grain dots + sheen;.glass-bar/.glass-card now carry their OWN lacquer gradient ( ink-green/miso - no longer transparent --glass-* vars),with cream rice-100 hairline edges. .hero-night interiors are a deep ink with a vermillion miso-500 top seam.
+
+
+
+- Admin language switcher: AdminShell (client) now imports useI18n and mounts <LanguageSwitcher current={locale} variant="compact"/> on the mobile top bar and the desktop sidebar - the console follows the cookie like the customer app. Admin UI strings remain English by design.
+
+
+
+- Mock-data cleanup (verified, DB): categories/menu_items/page_content/faqs/delivery_zones/announcements/orders are all 0 rows on the live project. Only real persistence remains: settings ( 28 rows - phones/socials/brand) + 2 ai_providers rows ( infra.). No offers/coupons tables exist - nothing stale to purge.
+
