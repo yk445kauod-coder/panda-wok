@@ -38,7 +38,7 @@ export function BrandBanner({
   const socialEntries = sortSocialEntries(contact.social);
 
   return (
-    <section className="relative overflow-hidden border-y border-ink-900/10 bg-gradient-to-b from-rice-100 via-rice-50 to-rice-200">
+    <section className="washi-banner relative overflow-hidden">
       <AsanohaPanel className="opacity-60" />
       <BambooRails />
       <LeafField2D count={16} />

@@ -14,6 +14,7 @@ export function PageEnter({ children }: { children: ReactNode }) {
 
   return (
     <motion.div
+      className="page-sheet"
       initial={reduced ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}

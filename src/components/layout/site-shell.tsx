@@ -60,7 +60,7 @@ export async function SiteHeader({
       >
         {t("common.skipToContent")}
       </a>
-      <header className="sticky top-0 z-30 border-b border-ink-900/8 bg-rice-100/85 pt-safe backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-ink-900/8 washi-paper pt-safe">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
           <Link
             href="/"
@@ -151,7 +151,7 @@ export async function SiteFooter({
   ];
 
   return (
-    <footer className="mt-12 border-t border-ink-900/10 bg-rice-50/70">
+    <footer className="mt-12 border-t border-ink-900/10 washi-paper">
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-2 sm:gap-8 sm:py-10 lg:grid-cols-4">
         <div className="sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2">

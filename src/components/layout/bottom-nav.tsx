@@ -38,7 +38,7 @@ export function BottomNav({ flags }: { flags: Record<string, boolean> }) {
   return (
     <nav
       aria-label={t("nav.primary")}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-900/10 bg-rice-50/95 backdrop-blur-sm pb-safe md:hidden"
+      className="glass-bar fixed inset-x-0 bottom-0 z-40 pb-safe md:hidden"
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-between px-1">
         {visible.map((item) => {
@@ -56,7 +56,7 @@ export function BottomNav({ flags }: { flags: Record<string, boolean> }) {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium transition-colors",
-                  active ? "text-indigo-600" : "text-ink-700/70 hover:text-ink-900",
+                  active ? "text-indigo-300 drop-shadow-sm" : "text-rice-100/75 hover:text-rice-50",
                 )}
               >
                 <span className="relative">

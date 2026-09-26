@@ -78,11 +78,11 @@ export function FloatingPanda() {
             openAssistant();
           }
         }}
-        className="group relative grid size-16 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60"
+        className="glass-card group relative grid size-16 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60"
       >
         <span
           aria-hidden="true"
-          className="enso-ring absolute inset-0 rounded-full border border-ink-900/15"
+          className="enso-ring absolute inset-0 rounded-full border border-rice-100/25"
           data-motion="enso"
         />
         <span

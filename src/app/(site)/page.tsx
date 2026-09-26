@@ -270,8 +270,8 @@ function Hero({
   t: T;
 }) {
   return (
-    <section className="relative overflow-hidden border-b border-ink-900/8 bg-gradient-to-b from-rice-100 via-rice-50 to-rice-100">
-      <AsanohaPanel className="opacity-[0.55]" />
+    <section className="relative overflow-hidden border-b border-rice-100/10 bg-transparent">
+      <AsanohaPanel className="asanoha-light opacity-[0.28]" />
       <BambooAmbience locale={locale} />
       {/* Cherry blossom for the Japanese half of the kitchen; the Chinese wok
           half is carried by the bamboo standing behind the copy. */}
@@ -284,25 +284,25 @@ function Hero({
           <MobileHeroMark logoUrl={logoUrl} brand={brand} />
 
           <p
-            className="font-kana mt-5 text-sm font-semibold tracking-[0.35em] text-indigo-700"
+            className="font-kana mt-5 text-sm font-semibold tracking-[0.35em] text-indigo-300"
             aria-hidden="true"
           >
             {BRAND_SCRIPT_MARK}
           </p>
 
-          <h1 className="mt-3 max-w-2xl font-display text-4xl leading-[1.05] font-bold text-ink-900 text-balance sm:text-6xl lg:text-7xl">
+          <h1 className="mt-3 max-w-2xl font-display text-4xl leading-[1.05] font-bold text-rice-50 text-balance sm:text-6xl lg:text-7xl">
             {brand}
           </h1>
 
-          <p className="mt-4 max-w-xl text-lg font-medium text-ink-800 text-pretty sm:text-xl">
+          <p className="mt-4 max-w-xl text-lg font-medium text-rice-200/90 text-pretty sm:text-xl">
             {tagline}
           </p>
 
           <span aria-hidden="true" className="ink-rule mt-5 block max-w-xs" />
 
           {!acceptingOrders ? (
-            <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-chili-700">
-              <span aria-hidden="true" className="size-1.5 rounded-full bg-chili-600" />
+            <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-chili-300">
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-chili-400" />
               {t("home.closedForOrders")}
             </p>
           ) : null}
@@ -317,7 +317,7 @@ function Hero({
             </Link>
             <Link
               href="/about"
-              className="inline-flex h-12 items-center justify-center rounded-xl border border-ink-900/15 bg-rice-50/70 px-6 font-medium text-ink-900 transition-colors hover:bg-rice-100"
+              className="glass-card inline-flex h-12 items-center justify-center rounded-xl border border-rice-100/25 px-6 font-medium text-rice-50 transition-colors hover:bg-rice-100/15"
             >
               {t("home.ourStory")}
             </Link>
@@ -355,9 +355,9 @@ function MobileHeroMark({ logoUrl, brand }: { logoUrl: string; brand: string }) 
       />
       <span
         aria-hidden="true"
-        className="h-10 w-px bg-gradient-to-b from-transparent via-ink-900/20 to-transparent"
+        className="h-10 w-px bg-gradient-to-b from-transparent via-rice-100/25 to-transparent"
       />
-      <span className="font-display text-xl font-semibold tracking-tight text-ink-900">
+      <span className="font-display text-xl font-semibold tracking-tight text-rice-50">
         {brand}
       </span>
     </div>
@@ -372,10 +372,10 @@ function BambooPlate({ logoUrl, brand }: { logoUrl: string; brand: string }) {
       data-motion="decorative"
       className="relative mx-auto hidden aspect-square w-full max-w-sm place-items-center lg:grid"
     >
-      <span className="absolute inset-0 rounded-full border border-bamboo-600/25" />
-      <span className="asanoha absolute inset-4 rounded-full opacity-60" />
-      <span className="absolute inset-10 rounded-full border border-dashed border-ink-900/15" />
-      <span className="absolute inset-16 rounded-full bg-rice-50/80 shadow-washi-lg" />
+      <span className="absolute inset-0 rounded-full border border-bamboo-400/30" />
+      <span className="asanoha absolute inset-4 rounded-full opacity-25" />
+      <span className="absolute inset-10 rounded-full border border-dashed border-rice-100/15" />
+      <span className="absolute inset-16 rounded-full bg-rice-50/95 shadow-washi-lg" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={logoUrl}

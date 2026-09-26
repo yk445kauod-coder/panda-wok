@@ -86,7 +86,9 @@
   --surface: var(--color-rice-100);
   --surface-raised: var(--color-rice-50);
   --surface-muted: var(--color-rice-200);
+  --surface-ink: var(--color-ink-950);
   --border-subtle: color-mix(in oklab, var(--color-rice-400) 55%, transparent);
+  --border-ink: color-mix(in oklab, var(--color-ink-700) 65%, transparent);
   --text-primary: var(--color-ink-900);
   --text-muted: var(--color-ink-500);
   --accent: var(--color-indigo-600);
@@ -177,8 +179,8 @@
 }
 
 :root {
-  --background: var(--color-rice-100);
-  --foreground: var(--color-ink-900);
+  --background: var(--color-ink-950);
+  --foreground: var(--color-rice-100);
 }
 
 @layer base {
@@ -195,18 +197,13 @@
     background-color: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
-    /* Rice paper grain, drawn with gradients so it costs no extra request. */
+    /* Sumi-ink night with a faint warm horizon: an ember glow low behind
+       the page and a bamboo-tinged gradient up high, so the dark reads as
+       a lantern-lit kitchen rather than a flat void. */
     background-image:
-      radial-gradient(
-        circle at 12% 8%,
-        color-mix(in oklab, var(--color-miso-300) 22%, transparent),
-        transparent 42%
-      ),
-      radial-gradient(
-        circle at 88% 4%,
-        color-mix(in oklab, var(--color-bamboo-300) 26%, transparent),
-        transparent 46%
-      );
+      radial-gradient(120% 80% at 50% 108%, color-mix(in oklab, var(--color-bamboo-600) 30%, transparent), transparent 60%),
+      radial-gradient(90% 60% at 85% -10%, color-mix(in oklab, var(--color-indigo-700) 35%, transparent), transparent 55%),
+      radial-gradient(70% 50% at 8% 0%, color-mix(in oklab, var(--color-miso-600) 22%, transparent), transparent 50%);
     background-attachment: fixed;
     overscroll-behavior-y: none;
     text-rendering: optimizeLegibility;
@@ -317,7 +314,7 @@
 
   .ink-rule {
     height: 1px;
-    background: linear-gradient(to right, transparent, color-mix(in oklab, var(--color-ink-900) 14%, transparent), transparent);
+    background: linear-gradient(to right, transparent, color-mix(in oklab, var(--color-rice-100) 35%, transparent), transparent);
   }
 
   /* Map pin: a soft bamboo teardrop above a tonal ring. */
@@ -369,8 +366,7 @@
       90deg,
       transparent,
       color-mix(in oklab, var(--color-ink-700) 30%, transparent),
-      transparent
-    );
+      transparent );
   }
 
   /* Bamboo culm drawn with repeating gradients: internode bands + a thin
@@ -436,6 +432,107 @@
   .text-fluid-hero { font-size: clamp(2.25rem, 6vw + 0.5rem, 4.5rem); line-height: 1.04; }
   .text-fluid-h2 { font-size: clamp(1.6rem, 3vw + 0.75rem, 2.6rem); line-height: 1.12; }
   .text-fluid-h3 { font-size: clamp(1.25rem, 1.4vw + 0.9rem, 1.7rem); line-height: 1.2; }
+
+  /* The customer content column rests on a rice-paper sheet laid over the ink
+     ground, so the ink page dressing stays visible top/bottom (around hero and
+     banner) while body copy keeps the warm paper read. The sheet is a soft
+     paper gradient, not a card: no outer padding, content columns size
+     themselves inside. */
+  .page-sheet {
+    color: var(--color-ink-900);
+    background-color: color-mix(in oklab, var(--color-rice-100) 94%, white);
+    background-image:
+      radial-gradient(120% 100% at 18% 0%, color-mix(in oklab, var(--color-miso-300) 12%, transparent), transparent 50%),
+      radial-gradient(130% 110% at 92% 8%, color-mix(in oklab, var(--color-bamboo-300) 16%, transparent), transparent 58%);
+    border-top: 1px solid color-mix(in oklab, var(--color-rice-300) 60%, transparent);
+    box-shadow:
+      inset 0 1px 0 white,
+      inset 0 -1px 0 color-mix(in oklab, var(--color-ink-900) 7%, transparent);
+  }
+
+  /* ---- Washi paper band (header / bottom nav) -----------------------
+     Rice paper is the "card" the ink rests on: a warm off-white sheet with a
+     subtle fibre grain and a soft lit edge. The sheet *moves*: a gentle
+     sheen breathes diagonally (so the light catches the fibres, as if the paper
+     were alive, or lamplight passes across it), and the whole band sways by
+     fractions of a degree so it never feels printed-flat. Motion is muted to
+     the point of calm: two very long, overlapping animations, each under
+     6% amplitude. */
+  .washi-paper {
+    color: var(--color-ink-900);
+    background-color: color-mix(in oklab, var(--color-rice-100) 88%, white);
+    background-image:
+      /* Fibre grain: faint mottled dots so it reads as handmade washi, not a
+         plain cream rectangle. */
+      radial-gradient(120% 100% at 20% 0%, color-mix(in oklab, var(--color-miso-300) 14%, transparent), transparent 55%),
+      radial-gradient(140% 120% at 95% 12%, color-mix(in oklab, var(--color-bamboo-300) 18%, transparent), transparent 60%),
+      linear-gradient(115deg, transparent 20%, color-mix(in oklab, white 70%, transparent) 48%, transparent 76%);
+    background-size: 140% 160%, 180% 140%, 260% 260%;
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, white 80%, transparent),
+      inset 0 -1px 0 color-mix(in oklab, var(--color-ink-900) 8%, transparent),
+      0 10px 30px -18px rgb(0 0 0 / 0.55);
+    border-bottom: 1px solid color-mix(in oklab, var(--color-rice-400) 55%, transparent);
+    animation: washi-sheen 9.5s ease-in-out infinite, washi-sway 12s ease-in-out infinite;
+    transform-origin: top center;
+  }
+
+  @keyframes washi-sheen {
+  0%, 100% { background-position: 0 0, 0 0, 100% 0; }
+  50% { background-position: 0 12%, 0 6%, -60% 10%; }
+  }
+
+  @keyframes washi-sway {
+  0%, 100% { transform: rotate(0.35deg); }
+  50% { transform: rotate(-0.35deg); }
+  }
+
+  /* Rice-paper sheet for the brand banner, mounted flush on the ink ground. */
+  .washi-banner {
+    color: var(--color-ink-900);
+    background-color: color-mix(in oklab, var(--color-rice-50) 96%, white);
+    background-image:
+      radial-gradient(110% 90% at 16% 0%, color-mix(in oklab, var(--color-miso-300) 16%, transparent), transparent 50%),
+      radial-gradient(130% 110% at 92% 8%, color-mix(in oklab, var(--color-bamboo-300) 20%, transparent), transparent 58%);
+    box-shadow:
+      inset 0 1px 0 white,
+      inset 0 -1px 0 color-mix(in oklab, var(--color-ink-900) 10%, transparent),
+      0 -18px 60px -30px rgb(229 177 112 / 0.35),
+      0 30px 70px -34px rgb(0 0 0 / 0.8);
+    border-block: 1px solid color-mix(in oklab, var(--color-rice-300) 70%, var(--color-miso-400));
+    animation: washi-sheen 12s ease-in-out infinite, washi-sway 14s ease-in-out infinite;
+  }
+
+  /* ---- Glass helpers ----------------------------------------------
+     For the floating bits that must sit *over* the ink ground without owning a
+     solid card: the bottom nav, the assistant bubble, quick pills. A true
+     backdrop blur behind a translucent paper tint reads as lacquered glass. */
+  .glass-bar {
+    color: var(--color-rice-50);
+    background: linear-gradient(to bottom, color-mix(in oklab, var(--color-rice-100) 10%, transparent), color-mix(in oklab, var(--color-rice-50) 6%, transparent));
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+    border-top: 1px solid color-mix(in oklab, var(--color-rice-100) 22%, transparent);
+    box-shadow: 0 -12px 30px -18px rgb(0 0 0 / 0.6);
+  }
+
+  .glass-card {
+    color: var(--color-rice-50);
+    background: linear-gradient(to bottom right, color-mix(in oklab, var(--color-rice-50) 14%, transparent), color-mix(in oklab, var(--color-ink-800) 22%, transparent));
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid color-mix(in oklab, var(--color-rice-100) 26%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, white 45%, transparent),
+      0 18px 40px -22px rgb(0 0 0 / 0.6);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .washi-paper,
+  .washi-banner {
+    animation: none;
+    }
+  }
 
 /* Home hero copy fades and rises in once, right after first paint. The panda
      mark and the plate arrive with the copy; none of this is a scroll effect —
