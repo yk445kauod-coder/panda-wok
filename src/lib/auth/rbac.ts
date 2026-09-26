@@ -94,14 +94,41 @@ export function can(
   return CAPABILITIES[role]?.includes(capability) ?? false;
 }
 
+/**
+ * True when the role holds at least one of the given capabilities. Used where a
+ * screen is reachable through more than one permission, so a role is never shut
+ * out of a shared area just because it lacks one particular capability.
+ */
+export function canAny(
+  role: StaffRole | null | undefined,
+  capabilities: readonly Capability[],
+): boolean {
+  if (!role) return false;
+  return capabilities.some((capability) => can(role, capability));
+}
+
 export function capabilitiesFor(role: StaffRole): readonly Capability[] {
   return CAPABILITIES[role] ?? [];
+}
+
+/**
+ * The first destination a role may open, in navigation order. Roles do not share
+ * a single capability, so this is how a member is sent somewhere useful instead
+ * of being bounced in a redirect loop when they hit a page they cannot view.
+ */
+export function firstAccessibleHref(role: StaffRole | null | undefined): string {
+  if (!role) return "/admin/denied";
+  const match = ADMIN_NAV.find(
+    (item) => item.capability && can(role, item.capability),
+  );
+  return match?.href ?? "/admin/denied";
 }
 
 export const ADMIN_NAV: readonly {
   href: string;
   label: string;
-  capability: Capability;
+  /** Omit to show the destination to every unlocked member. */
+  capability?: Capability;
   group: string;
 }[] = [
   { href: "/admin", label: "Overview", capability: "orders.view", group: "Operations" },
@@ -127,4 +154,7 @@ export const ADMIN_NAV: readonly {
   { href: "/admin/exports", label: "Exports", capability: "exports.manage", group: "Platform" },
   { href: "/admin/backups", label: "Backups", capability: "backups.view", group: "Platform" },
   { href: "/admin/settings", label: "Settings", capability: "settings.manage", group: "Platform" },
+  // No capability: the guide is a reference every unlocked member should reach,
+  // and it is how a member discovers what their own role is allowed to do.
+  { href: "/admin/guide", label: "Guide", group: "Help" },
 ];

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { can, type Capability, type StaffRole } from "@/lib/auth/rbac";
+import { can, firstAccessibleHref, type Capability, type StaffRole } from "@/lib/auth/rbac";
 import { gateIdentity, type GateIdentity } from "@/lib/auth/admin-gate";
 import { tryCreateAdminSupabase } from "@/lib/supabase/service";
 
@@ -176,13 +176,22 @@ export async function getAdminSession(): Promise<AdminSession | null> {
 /**
  * Requires an unlocked ops session holding a capability. Used by every admin
  * page; identity comes from the gate, never from a customer session.
+ *
+ * A member who lacks the capability is sent to their own first accessible page
+ * rather than a dead end, so navigating to the wrong URL self-corrects instead
+ * of stranding them on a denied screen.
  */
 export async function requireCapability(
   capability: Capability,
 ): Promise<AdminSession> {
   const session = await getAdminSession();
   if (!session) redirect("/admin/denied");
-  if (!can(session.role, capability)) redirect("/admin/denied");
+  if (!can(session.role, capability)) {
+    const home = firstAccessibleHref(session.role);
+    // A page the role may not open is only a denial when there is nowhere else
+    // to send them; otherwise they simply arrive at a screen they can use.
+    redirect(home === "/admin/denied" ? "/admin/denied" : home);
+  }
   return session;
 }
 

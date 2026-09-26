@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Activity,
+  BookOpen,
   Bot,
   Boxes,
   Brain,
@@ -58,9 +59,10 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/exports": Download,
   "/admin/backups": Database,
   "/admin/settings": Settings,
+  "/admin/guide": BookOpen,
 };
 
-const GROUP_ORDER = ["Operations", "CRM", "Growth", "Platform"];
+const GROUP_ORDER = ["Operations", "CRM", "Growth", "Platform", "Help"];
 
 /**
  * Admin navigation. The link list is filtered by the caller's capabilities, so
@@ -80,7 +82,11 @@ export function AdminShell({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const allowed = ADMIN_NAV.filter((item) => capabilities.includes(item.capability));
+  // A destination with no capability is shown to every unlocked member (the
+  // guide); otherwise the role must actually hold the capability.
+  const allowed = ADMIN_NAV.filter(
+    (item) => !item.capability || capabilities.includes(item.capability),
+  );
   const groups = GROUP_ORDER.filter((group) =>
     allowed.some((item) => item.group === group),
   );

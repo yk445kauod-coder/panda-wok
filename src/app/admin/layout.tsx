@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAdminSession, requireCapability } from "@/lib/auth/session";
+import { getAdminSession } from "@/lib/auth/session";
 import { getPublicSettings } from "@/lib/services/catalog";
 import { capabilitiesFor, ROLE_LABELS } from "@/lib/auth/rbac";
 import { AdminShell } from "@/components/admin/admin-shell";
@@ -29,10 +29,10 @@ export default async function AdminLayout({
     return <AdminGateForm brand={settings?.brand} />;
   }
 
-  // Defensive: the loosest capability every role holds. A role without even
-  // this cannot render the console at all.
-  await requireCapability("orders.view");
-
+  // No capability gate here on purpose: the roles do not share a single
+  // capability (marketing has no orders.view, kitchen has no crm.view), so
+  // requiring one would lock a legitimate member out of the whole console.
+  // Each page guards itself, and this shell renders only what the role may open.
   return (
     <AdminShell
       role={session.role}
