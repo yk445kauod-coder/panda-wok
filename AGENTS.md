@@ -643,3 +643,38 @@ deliberately kept: they are operational configuration (contact numbers, tax
 rate, delivery fee, ETA), not fabricated content, and deleting them would break
 checkout.
 
+## UX scroll-reveal sweep (2026-09-25, session committed 83f7de1 → c5a699e)
+
+- `src/components/ui/reveal.tsx` — bidirectional IntersectionObserver reveal;
+  starts "shown" (JS-off safe), demotes below-the-fold to pending in a layout
+  effect, promotes on scroll, respects `prefers-reduced-motion`. `as` now also
+  accepts `"header"` (the previous union was div/section/li/article).
+- Reveal is applied across: home, menu (+ empty states, with a gentle
+  `LeafField2D` behind the all-empty state), category page, dish detail (image,
+  info column, related panel), cart/checkout (each step: fulfilment, address,
+  pickup, payment, loyalty, note, summary), orders list + order detail
+  (banner, header, timeline, items, where), account (header, stats, active
+  order, profile, addresses), addresses page.
+- Ambient identity (already live before this session, verified present):
+  `BambooAmbience` (hero + identity band) and `SakuraField` / `LeafField2D`
+  falling leaves (hero + brand banner).
+- Sound is deliberately absent ("site is silent by design"); no audio was
+  added.
+- Brand fonts wired in `src/app/layout.tsx`: IBM Plex Sans + IBM Plex Sans
+  Arabic (body/display) with Shippori Mincho as the Japanese accent.
+- Menu/loyalty/account empty states and all `washi-panel` sections inherit the
+  `data-reveal` treatment — content stays in the DOM (readable, indexable).
+
+**Admin gate (verified present):** `/admin` is sealed by a single-field HMAC
+passcode gate (`src/lib/auth/admin-gate.ts`, cookie `panda-wok.admin`, default
+`Panda2026`). The owner's passcode unlocks the full console; staff accounts
+created in Admin → Users carry a `login_id`, and typing that id in the gate
+unlocks only the member's role-scoped console (`requireCapability` + RLS still
+apply). Owner creates accounts for any role with a chosen phone/id.
+
+**Map address picker (verified present):** `address-book.tsx` (used on
+`/account/addresses` + checkout) embeds `location-map.tsx` — an OpenStreetMap
+picker with GPS autofill via the browser geolocation API and reverse geocode,
+letting the customer confirm a pin on a map instead of typing only. The
+customer picks a point, the address fills in for confirmation.
+
