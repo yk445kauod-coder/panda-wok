@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, MapPin, Navigation, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { Badge, Button, Spinner } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  LocationMap,
-  type PinCoords,
-  type ResolvedAddress,
-} from "@/components/customer/location-map";
+import type { PinCoords, ResolvedAddress } from "@/components/customer/location-map";
 import { useErrorText, useT } from "@/components/i18n-provider";
 import {
   deleteAddressAction,
@@ -24,6 +21,12 @@ import {
   type ResolvedFields,
 } from "@/lib/utils/address-fill";
 import type { Address } from "@/lib/services/orders";
+
+/** Leaflet + обратный геокодинг pulled in only when the map is actually opened. */
+const LocationMapLazy = dynamic(
+  () => import("@/components/customer/location-map").then((m) => m.LocationMap),
+  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-xl bg-rice-200" aria-hidden="true" /> },
+);
 
 type Mode = { kind: "closed" } | { kind: "new" } | { kind: "edit"; address: Address };
 
@@ -454,7 +457,7 @@ export function AddressBook({ addresses }: { addresses: Address[] }) {
 
             {!manual ? (
               <div className="mt-3 space-y-2.5">
-                <LocationMap
+                <LocationMapLazy
                   key={mapKey}
                   coords={coords}
                   onChange={setCoords}
