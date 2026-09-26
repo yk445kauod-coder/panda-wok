@@ -1,0 +1,60 @@
+{
+  "name": "project",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "pages:build": "opennextjs-cloudflare build && node scripts/build-pages.mjs",
+    "pages:deploy": "npm run pages:build && wrangler pages deploy .pages --project-name panda-wok",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "db:link": "supabase link --project-ref xjbtsryidznsxqlynmfa",
+    "db:list": "supabase migration list",
+    "db:push": "supabase db push",
+    "db:diff": "supabase db diff --linked",
+    "db:types": "supabase gen types typescript --linked --schema public > src/lib/types/database.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.47.0",
+    "motion": "^13.4.1",
+    "next": "16.3.6",
+    "page-mascot": "^0.1.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-leaflet": "^5.0.0",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
+    "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.22",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "sharp": "^0.35.4",
+    "supabase": "^2.117.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^3.2.7",
+    "wrangler": "^4.136.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

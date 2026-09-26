@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+.pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+npm-debug.log*
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# cloudflare / opennext
+/.open-next/
+/.pages/
+/.wrangler/
+cloudflare-env.d.ts
+
+# production
+/build
+/dist
+
+# testing
+/coverage
+
+# typescript
+*.tsbuildinfo
+
+# misc
+.DS_Store
+*.pem
+.agent_tmp/
+
+# vercel
+.vercel
+
+# env: never commit real secrets, but the placeholder template is tracked
+.env*
+!.env.example

@@ -1,0 +1,46 @@
+# Cloudflare Pages headers — Panda Wok
+# Security + SEO + caching headers for static assets.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(self)
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: blob: *.supabase.co https:; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com data:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Language: en, ar
+
+# Long-cache immutable Next build assets
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Short-cache public pages
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+/*.webp
+  Cache-Control: public, max-age=86400
+/*.png
+  Cache-Control: public, max-age=86400
+/*.avif
+  Cache-Control: public, max-age=86400
+/*.ico
+  Cache-Control: public, max-age=86400
+/*.json
+  Cache-Control: public, max-age=3600
+
+# Open Graph image may change with brand edits wan is generated server-side.
+/opengraph-image
+  Cache-Control: public, max-age=3600, s-maxage=86400
+
+# Manifest + robots are always fresh-ish
+/manifest.webmanifest
+  Cache-Control: public, max-age=3600
+/robots.txt
+  Cache-Control: public, max-age=3600, s-maxage=86400
+/sitemap.xml
+  Cache-Control: public, max-age=3600, s-maxage=86400
+/llms.txt
+  Cache-Control: public, max-age=3600, s-maxage=86400
+  Content-Type: text/plain; charset=utf-8

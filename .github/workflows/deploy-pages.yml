@@ -1,0 +1,76 @@
+# Deploy Panda Wok (full SSR) to Cloudflare Pages.
+#
+# Cloudflare's built-in (Git-connected) Pages CI cannot build this project: its
+# Functions bundler ships an old wrangler that mishandles `nodejs_compat` and
+# fails to resolve bare Node builtins inside Next's vendor bundles. That
+# integration is disabled on the project, and this workflow — which builds on a
+# normal runner and ships the result with `wrangler pages deploy` — is the
+# supported path.
+#
+# Branch mapping (per spec):
+#   main / production  -> Pages *production* deployment (the live site)
+#   any other branch    -> Pages *preview* deployment for that branch
+#
+# Required repository secret:
+#   CLOUDFLARE_API_TOKEN    — Workers/Pages edit. Without it the deploy step
+#                             fails; the build step still succeeds.
+# Optional repository variable:
+#   CLOUDFLARE_ACCOUNT_ID
+#
+# NEXT_PUBLIC_SUPABASE_ANON_KEY is NOT a required secret: it is the publishable
+# key, which ships to every browser by design, so it falls back to a literal
+# below. A repository secret with the same name still overrides the fallback.
+
+name: Deploy Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build OpenNext output for Pages
+        run: npm run pages:build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://xjbtsryidznsxqlynmfa.supabase.co
+          # Publishable key: public by design (ships in the browser bundle).
+          # The `||` keeps the build green when the secret is unset — without
+          # it, config collection for /api/analytics aborts and no deploy runs.
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: >-
+            ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+                'sb_publishable_0zVizyDItI9BdiQq667KxA_gnYlTfPX' }}
+          # Pinned to the production origin on every branch on purpose: a
+          # preview host must never leak into a canonical URL or the sitemap.
+          NEXT_PUBLIC_SITE_URL: https://panda-wok.pages.dev
+
+      - name: Resolve Pages branch
+        id: target
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ] || [ "${{ github.ref_name }}" = "production" ]; then
+            echo "branch=production" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy .pages --project-name=panda-wok --branch=${{ steps.target.outputs.branch }}

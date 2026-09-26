@@ -1,0 +1,11 @@
+# Cloudflare redirects — Panda Wok
+# Only real 301 aliases live here. Next.js owns routing for everything else, so
+# there is deliberately no SPA catch-all: on Workers a `/*  /:splat 200` rewrite
+# resolves against static assets and turns every dynamic route into a 404.
+#
+# The alias target must be a route that actually exists in the app — these three
+# map old draft-era paths onto the live menu slugs.
+
+/menu/sushi-rolls  /menu/sushi  301
+/menu/wok-noodles  /menu/wok  301
+/menu/chicken-ramen-bowl  /menu/chicken-ramen  301

@@ -1,0 +1,958 @@
+/**
+ * English dictionary — the reference shape every other locale must satisfy.
+ * Keys are grouped by surface and read as dotted paths (`menu.title`).
+ * Placeholders use single braces: `{count}`, `{name}`.
+ */
+export const en = {
+  common: {
+    loading: "Loading…",
+    loadingBasket: "Loading your basket",
+    loadingCheckout: "Loading checkout",
+    loadingAdmin: "Loading admin data",
+    skipToContent: "Skip to content",
+    viewCustomerSite: "View the customer site",
+    contactKitchen: "Contact the kitchen",
+    browseMenu: "Browse the menu",
+    backHome: "Back home",
+    home: "Home",
+    menu: "Menu",
+    about: "About",
+    contact: "Contact",
+    loyalty: "Loyalty",
+    feedback: "Feedback",
+    account: "Account",
+    basket: "Basket",
+    orders: "Orders",
+    signIn: "Sign in",
+    signOut: "Sign out",
+    createAccount: "Create an account",
+    save: "Save",
+    cancel: "Cancel",
+    edit: "Edit",
+    delete: "Delete",
+    remove: "Remove",
+    manage: "Manage",
+    default: "Default",
+    optional: "Optional",
+    required: "Required",
+    free: "Free",
+    item: "item",
+    items: "items",
+    dish: "dish",
+    dishes: "dishes",
+    search: "Search",
+    close: "Close",
+    tryAgain: "Try again",
+    add: "Add",
+    inBasket: "In basket",
+    photoSoon: "Photo coming soon",
+    priceNote: "Prices are confirmed on the server when you place the order.",
+  },
+
+  nav: {
+    home: "Home",
+    menu: "Menu",
+    about: "About",
+    contact: "Contact",
+    loyalty: "Loyalty",
+    feedback: "Feedback",
+    basket: "Basket",
+    orders: "Orders",
+    account: "Account",
+    primary: "Primary",
+    explore: "Explore",
+    yourAccount: "Your account",
+    orderTracking: "Order tracking",
+    reachKitchen: "Reach the kitchen",
+    brandHome: "{brand} home",
+    askPanda: "Ask Panda",
+    askPandaAssistant: "Ask {brand} assistant",
+    location: "Location",
+    faq: "FAQ",
+    privacy: "Privacy",
+  },
+
+
+  footer: {
+    explore: "Explore",
+    account: "Your account",
+    reachKitchen: "Reach the kitchen",
+    contactPending: "Contact details are being finalised.",
+    followUs: "Follow the kitchen",
+    copyright: "© {year} {brand}. Cloud kitchen, {city}. All prices in EGP.",
+  },
+
+  social: {
+    instagram: "Instagram",
+    facebook: "Facebook",
+    tiktok: "TikTok",
+    whatsapp: "WhatsApp",
+    website: "Website",
+  },
+
+  home: {
+    metaTitle: "{brand} — {tagline}",
+    metaDescription:
+      "{tagline}. Browse the full {brand} menu, order for delivery across {city} and track your food from the kitchen to your door.",
+    closedForOrders: "Closed for new orders",
+    startOrder: "Start your order",
+    viewMenu: "View the menu",
+    ourStory: "Our story",
+    featuredHeading: "From the kitchen",
+    featuredSubheading: "Dishes the kitchen has marked as featured.",
+    fullMenu: "Full menu",
+    browseBySection: "Browse by section",
+    seeWholeMenu: "See the whole menu",
+    noDishesTitle: "No dishes published yet",
+    noDishesBody:
+      "Once the kitchen adds dishes they will appear here, with prices and allergen information.",
+    identitySig: "{brand} · {cuisine} · {city}",
+    identityHeading: "What the kitchen cooks",
+    identityBody:
+      "These are the kitchen's own cuisine tags, taken from the live kitchen record rather than written into the page. The menu underneath is the authoritative list of what is actually available.",
+
+    /* Hero. Every number here is a live figure read from the database, so the
+       hero never claims a stat the kitchen cannot back up. */
+    heroEyebrow: "Asian kitchen · {city}",
+    heroOrder: "Order now",
+    heroHowTo: "How ordering works",
+    heroOrderDirect:
+      "Order straight from this site — no app to download and no phone call needed.",
+    heroStatsDishes: "dishes on the menu",
+    heroStatRating: "customer rating",
+
+    /* Popular band. */
+    eyebrowLabel: "Cooked to order",
+    popularHeading: "Popular right now",
+    popularSubheading: "The dishes the kitchen is proudest of this week.",
+    popularFilterAll: "All",
+    popularExplore: "Explore the full menu",
+
+    /* Editorial section on the home page. The two rows are built from the
+       kitchen's own published categories — whichever sections the admin fills
+       are the ones that appear — so there is no hardcoded dish copy here. */
+    editorialEyebrow: "What's trending",
+    editorialDiscover: "Discover",
+    editorialKitchenTitle: "Two kitchens, one pass",
+    editorialKitchenBody:
+      "A Japanese-inspired sushi counter and a Chinese-inspired wok, cooked in the same room and sent out together. Everything is made when you order it — nothing is held under a lamp.",
+    editorialLearnMore: "More about the kitchen",
+    editorialEmptyList: "The kitchen has not published dishes in this section yet.",
+
+    /* Closing call to action. */
+    closingTitle: "Hungry yet?",
+    closingBody:
+      "The menu is cooked to order and delivered across {city}. Browse it, build your basket and we will take it from there.",
+    closingCta: "Browse the menu",
+    closingCall: "Call the kitchen",
+    closingWhatsapp: "Chat on WhatsApp",
+  },
+
+  menu: {
+    metaTitle: "Menu — {brand}",
+    metaDescription:
+      "The full {brand} menu with prices in {currency}, cooked to order and delivered across {city}.",
+    title: "Menu",
+    summary: "{total} dishes, {available} available right now. Everything is cooked to order.",
+    sections: "Menu sections",
+    searchLabel: "Search the menu",
+    searchPlaceholder: "Search dishes…",
+    clearSearch: "Clear search",
+    updating: "updating…",
+    emptyTitle: "The menu is empty",
+    emptyBody:
+      "The kitchen has not published any dishes yet. Please check back shortly or contact us directly.",
+    noMatchTitle: "No dishes match that",
+    noMatchBody: "Try a different search term.",
+    clearFilters: "Clear search",
+    resultCount: "{count} result",
+    resultsCount: "{count} results",
+    sectionPage: "Section page",
+    categoryFallback: "Menu",
+  },
+
+  dish: {
+    chefPick: "Chef's pick",
+    soldOut: "Sold out",
+    backOnMenu: "Back on the menu soon",
+    currentlyUnavailable: "currently unavailable",
+    available: "available",
+    spicy: "Spicy",
+    vegan: "Vegan",
+    vegetarian: "Vegetarian",
+    prepMin: "{minutes}m",
+    prepAbout: "About {minutes} min prep",
+    kcal: "{calories} kcal",
+    containsNuts: "Contains nuts",
+    ingredients: "Ingredients",
+    allergensHeading: "Allergens recorded for this dish",
+    allergensDisclaimer:
+      "This list is what the kitchen has recorded and is not a guarantee. If you have a serious allergy, please confirm directly with us before ordering.",
+    cutOutReady: "Cut-out ready",
+    cutOutAvailable: "Cut-out available",
+    moreFrom: "More from {category}",
+    imageAltView: "{name} view {index}",
+    featured: "Featured dishes",
+    offer: "Offer",
+    viewDish: "View dish",
+    ratingLabel: "{rating} out of 5",
+    ratingCount: "{count} ratings",
+    ratingCountOne: "1 rating",
+    ratedBy: "Rated by {count} customers",
+  },
+
+  addToCart: {
+    add: "Add · {price}",
+    added: "Added",
+    decreaseQuantity: "Decrease quantity",
+    increaseQuantity: "Increase quantity",
+    quantityFor: "{name} quantity",
+    notesLabel: "Anything the kitchen should know?",
+    notesPlaceholder: "No coriander, less chilli, sauce on the side…",
+    chooseOne: "Choose one",
+    chooseUpTo: "Choose up to {count}",
+    chooseAtLeast: ", at least {count}",
+    unfinished: "Please finish choosing: {groups}.",
+    maxInBasket: "You already have the maximum of this dish in your basket.",
+    maxExtras: "You can choose up to {count} extras. Deselect one first.",
+    unavailableTitle: "This dish is unavailable right now.",
+    unavailableBody:
+      "The kitchen has either run out or paused it. Please pick another dish, or try again later.",
+    browseRest: "Browse the rest of the menu",
+  },
+
+  upsell: {
+    heading: "Goes well with this",
+    note: "Optional additions the kitchen suggests. Nothing is added automatically.",
+  },
+
+  cart: {
+    metaTitle: "Your basket",
+    metaDescription: "Review your {brand} basket before checkout.",
+    title: "Your basket",
+    itemCountSingular: "{count} item",
+    itemCountPlural: "{count} items",
+    emptyTitle: "Your basket is empty",
+    emptyBody:
+      "Add a few dishes and they will appear here. Your basket is saved on this device, so it survives a refresh.",
+    reduceQuantity: "Reduce {name} quantity",
+    increaseQuantity: "Increase {name} quantity",
+    summary: "Summary",
+    subtotal: "Subtotal",
+    delivery: "Delivery",
+    tax: "Tax",
+    total: "Total",
+    freeDeliveryHint: "Add {amount} more for free delivery.",
+    minimumHint: "Minimum order is {minimum}. Add {amount} more to check out.",
+    notAccepting:
+      "The kitchen is not accepting new orders at the moment. You can still keep your basket and try again shortly.",
+    goToCheckout: "Go to checkout",
+    addMore: "Add more dishes",
+    paused: "Ordering is paused",
+    pausedBody:
+      "Online ordering is temporarily switched off. Please contact the kitchen to place an order.",
+  },
+
+  checkout: {
+    metaTitle: "Checkout",
+    metaDescription: "Confirm your {brand} delivery details and place your order.",
+    title: "Checkout",
+    itemCountSingular: "{count} item in your basket",
+    itemCountPlural: "{count} items in your basket",
+    nothingTitle: "There is nothing to check out",
+    nothingBody: "Your basket is empty. Add a dish and come back to finish your order.",
+    offlineTitle: "You are offline",
+    offlineBody:
+      "Your basket is safe on this device. Reconnect and press place order — you will not be charged twice.",
+    fulfilmentHeading: "How would you like it?",
+    fulfilmentLabel: "Fulfilment method",
+    delivery: "Delivery",
+    deliveryHint: "{fee}, free over {freeOver}",
+    pickup: "Pickup",
+    pickupHint: "No delivery fee",
+    addressHeading: "Delivery address",
+    noAddressTitle: "No delivery address saved",
+    noAddressBody: "Add the building, floor and a landmark so the rider can find you.",
+    addAddress: "Add an address",
+    building: "Building {value}",
+    floor: "Floor {value}",
+    apartment: "Apt {value}",
+    landmark: "Landmark: {value}",
+    noPhoneWarning:
+      "Your profile has no phone number. The rider may not be able to reach you — add one in {link}.",
+    yourAccountLink: "your account",
+    paymentHeading: "Payment method",
+    paymentNotice:
+      "Online card payment is not enabled yet, so orders are paid on delivery or pickup.",
+    cashAtPickup: "Cash at pickup",
+    cashOnDelivery: "Cash on delivery",
+    cardAtPickup: "Card at pickup",
+    cardOnDelivery: "Card on delivery",
+    noteHeading: "Order note",
+    noteLabel: "Anything else the kitchen should know?",
+    notePlaceholder: "Leave at the door, call when you arrive…",
+    kitchenNote: "Note for the kitchen",
+    orderSummary: "Order summary",
+    pointsDiscount: "Points discount",
+    pointsEarned: "You will earn {points} loyalty points on this order.",
+    firstOrder: "This will be your first order.",
+    reviewBasket: "Review your basket",
+    addAnotherDish: "Add another dish",
+    retrySafe:
+      "Retrying is safe: an order is only created once, even if you press the button twice.",
+    placing: "Placing your order…",
+    placeOrderWithTotal: "Place order · {total}",
+    notAcceptingNow: "The kitchen is not accepting new orders right now.",
+    minimumIs: "Minimum order is {amount}.",
+    chooseAddress: "Choose a delivery address to continue.",
+    waitingConnection: "Waiting for a connection…",
+    doubleTapSafe: "Pressing twice is safe — you will only be charged once.",
+    placingSr: "Placing your order",
+    placeOrder: "Place order",
+    placingOrder: "Placing order…",
+    loyaltyHeading: "Loyalty points",
+    loyaltyPoints: "You have {points} points",
+    loyaltyRedeem: "Redeem points on this order",
+    loyaltyHint: "Up to {points} points ({value} off) can be applied.",
+    pickupAt: "Collect from the kitchen",
+    readyIn: "Ready in about {minutes} minutes once preparation starts.",
+    errors: {
+      offline:
+        "You are offline. Reconnect and try again — nothing has been lost.",
+      staleCart:
+        "Something in your basket changed. Refresh the page to see the latest prices.",
+      refresh: "Refresh",
+      minimum: "Your basket is below the {amount} minimum order.",
+      noAddress: "Choose a delivery address before placing the order.",
+      closed: "The kitchen is not accepting new orders at the moment.",
+    },
+  },
+
+  orders: {
+    metaTitle: "Your orders",
+    metaDescription: "Track your current {brand} order and revisit past ones.",
+    title: "Your orders",
+    subtitle: "Everything you have ordered from {brand}, newest first.",
+    emptyTitle: "No orders yet",
+    emptyBody:
+      "Once you place your first order it will appear here with live tracking.",
+    inProgress: "In progress",
+    history: "Order history",
+    openLive: "Open the order to follow it live.",
+    itemCountSingular: "{count} item",
+    itemCountPlural: "{count} items",
+    trackingMetaTitle: "Order tracking",
+    trackingMetaDescription: "Follow your {brand} order from the kitchen to your door.",
+    trackingTitle: "Order #{number}",
+    placed: "Placed {date}",
+    completeNoUpdates: "This order is complete and no longer updates.",
+    orderPlaced: "Order placed",
+    orderPlacedBody:
+      "The kitchen has received it. We will update this page as it progresses.",
+    etaHint: "Estimated about {minutes} minutes once preparation starts.",
+    progress: "Progress",
+    whatYouOrdered: "What you ordered",
+    discount: "Discount",
+    pickup: "Pickup",
+    delivery: "Delivery",
+    tax: "Tax",
+    subtotal: "Subtotal",
+    total: "Total",
+    payment: "Payment: {method} · {status}",
+    deliveryDetails: "Delivery details",
+    pickupHeading: "Pickup",
+    pickupBody:
+      "You chose to collect this order from the kitchen. Please check {link} for collection information.",
+    pickupBodyBefore: "You chose to collect this order from the kitchen. Please check ",
+    pickupBodyAfter: " for collection information.",
+    contactDetailsLink: "our contact details",
+    addressGone:
+      "The saved address for this order is no longer available in your address book. Please contact the kitchen if you need to confirm it.",
+    yourNote: "Your note: “{note}”",
+    allOrders: "All your orders",
+    needChange: "Need to change something? Please quote order #{number} when you contact us.",
+    cancelOrder: "Cancel order",
+    cancelConfirmTitle: "Cancel this order?",
+    cancelConfirmBody:
+      "This cannot be undone. Once the kitchen starts cooking, the order can no longer be canceled.",
+    cancelYes: "Yes, cancel it",
+    cancelKeep: "Keep order",
+    liveUpdating: "Updating live",
+    polling: "Checking for updates every 30 seconds",
+    cancelling: "Cancelling…",
+    reorder: "Order again",
+    reordering: "Adding…",
+    reorderAdded: "Added to your basket",
+    timeline: {
+      placed: "Order placed",
+      accepted: "Accepted by the kitchen",
+      preparing: "Being prepared",
+      prepared: "Ready",
+      outForDelivery: "Out for delivery",
+      delivered: "Delivered",
+      readyForPickup: "Ready for pickup",
+      collected: "Collected",
+      canceled: "Canceled",
+      rejected: "Rejected",
+      refunded: "Refunded",
+      failed: "Failed",
+    },
+    hints: {
+      new: "We have your order and the kitchen is about to review it.",
+      accepted: "The kitchen has accepted your order and will start soon.",
+      in_progress: "Your food is being cooked to order right now.",
+      prepared: "Everything is packed and waiting for the rider.",
+      out_for_delivery: "Your order has left the kitchen.",
+      finished: "Delivered. Enjoy your food.",
+      canceled: "This order was canceled.",
+      rejected: "The kitchen could not accept this order.",
+      failed: "Something went wrong with this order.",
+      refunded: "This order was refunded.",
+    },
+  },
+
+  account: {
+    metaTitle: "Your account",
+    metaDescription: "Manage your {brand} profile, addresses and loyalty points.",
+    hello: "Hello, {name}",
+    title: "Your account",
+    memberSince: "Member since {date}",
+    staffAccount: " · Staff account",
+    blockedNotice:
+      "This account is currently blocked from placing orders. Please contact the kitchen to resolve it.",
+    statsHeading: "Your activity",
+    statOrders: "Orders",
+    statLifetimeSpend: "Lifetime spend",
+    statActiveOrders: "Active orders",
+    statLoyaltyPoints: "Loyalty points",
+    trackOrder: "Track your order",
+    detailsHeading: "Your details",
+    addressesHeading: "Delivery addresses",
+    noAddresses: "No addresses saved yet. Add one so checkout is a single tap.",
+    shortcuts: "Account shortcuts",
+    yourOrders: "Your orders",
+    addresses: "Addresses",
+    profile: {
+      fullName: "Full name",
+      phone: "Phone number",
+      messagesHeading: "Messages from us",
+      orderUpdates: "Order updates",
+      orderUpdatesHint:
+        "Status changes and anything the kitchen needs to tell you about your order.",
+      offers: "Offers and new dishes",
+      offersHint: "Occasional announcements. You can turn this off at any time.",
+      language: "Language",
+      languageHint: "The language we use for this site and your order updates.",
+      saveChanges: "Save changes",
+      saved: "Saved",
+      saving: "Saving…",
+    },
+  },
+
+  addresses: {
+    metaTitle: "Delivery addresses",
+    metaDescription: "Manage the addresses {brand} delivers to.",
+    title: "Delivery addresses",
+    subtitle: "Add the building, floor and a landmark so the rider can find you quickly.",
+    cameFromCheckout: "You came from checkout.",
+    backToCheckout: "Go back and finish your order",
+    emptyTitle: "No addresses yet",
+    emptyBody: "Add your first delivery address so checkout takes seconds.",
+    addAddress: "Add an address",
+    addAnother: "Add another address",
+    newAddress: "New address",
+    editAddress: "Edit address",
+    closeForm: "Close the address form",
+    coordinatesSaved: "Coordinates saved",
+    accuracy: " (±{meters} m)",
+    ariaCoords: "{lat}, {lng}",
+    autoDetecting: "Finding your current location…",
+    autoDetected: "Detected your current location",
+    useDetectedAddress: "Use this address",
+    pinHeading: "Pin your exact spot",
+    pinHint: "Drop the pin where the rider should arrive — the doorway, not the street.",
+    pinRequiredHint: "Drop a pin, or tap “Use my location”, to continue.",
+    confirmPin: "Confirm this spot",
+    clearPin: "Clear pin",
+    enterManually: "Type address instead",
+    useMapInstead: "Use the map instead",
+    useMyLocation: "Use my location",
+    updateLocation: "Update",
+    map: {
+      dropPinHint: "Tap the map or drag the pin to set your exact spot",
+      locateButton: "My location",
+      locating: "Finding you…",
+      resolving: "Reading this address…",
+      accuracy: "±{meters} m from this pin",
+    },
+    setDefault: "Use this as my default delivery address",
+    saveAddress: "Save address",
+    saving: "Saving…",
+    fields: {
+      label: "Label",
+      labelPlaceholder: "Home, Work…",
+      contactName: "Who should the rider ask for?",
+      contactPhone: "Phone for this delivery",
+      area: "Area / district",
+      areaPlaceholder: "Sidi Gaber, Smouha…",
+      addressLine: "Street and building number",
+      building: "Building",
+      floor: "Floor",
+      apartment: "Apartment",
+      city: "City",
+      landmark: "Nearest landmark",
+      landmarkPlaceholder: "Next to the pharmacy on the corner…",
+      notes: "Notes for the rider",
+      notesPlaceholder: "Gate code, call on arrival…",
+    },
+    errors: {
+      locationDenied: "We could not read your location. Please allow location access.",
+      locationUnsupported: "Your browser does not support location sharing.",
+      locationDeclined:
+        "Location permission was declined. You can still type your address.",
+      locationUnreadable:
+        "We could not read your location. Please type the address instead.",
+      coordinates: "{lat}, {lng}",
+      accuracySuffix: " · ±{meters} m",
+    },
+  },
+
+  loyalty: {
+    metaTitle: "Loyalty",
+    metaDescription: "Earn points on every {brand} order and turn them into rewards.",
+    title: "Loyalty",
+    subtitle:
+      "Every order earns points. Points become rewards you can spend on your next meal.",
+    offTitle: "Loyalty is currently switched off",
+    offBody:
+      "Our loyalty programme is paused right now. Please check back soon.",
+    joinHeading: "Join the programme",
+    joinBody:
+      "{points} point{plural} for every EGP spent. Points accumulate on your account and can be redeemed at checkout.",
+    yourPointsBalance: "Your points balance",
+    worthAbout: "Worth about {value} EGP off",
+    lifetimePoints: "Lifetime points",
+    pointsUsed: "Points used",
+    pointsToTier: "{remaining} points to {tier}",
+    progressLabel: "Progress towards {tier}",
+    highestTier: "You are on our highest tier. Thank you for ordering with us.",
+    rewardsHeading: "Rewards",
+    noRewardsTitle: "No rewards published yet",
+    noRewardsBody:
+      "The kitchen has not published any rewards. Your points still accumulate.",
+    availableUntil: "Available until {date}",
+    pointsLabel: "points",
+    rewardAvailable: "Available",
+    rewardKeepEarning: "Keep earning",
+    rewardsFootnote:
+      "Rewards are applied at checkout, where your balance is verified on the server.",
+    historyHeading: "Points history",
+    noHistoryTitle: "No points activity yet",
+    noHistoryBody: "Your first order will start your points history.",
+    footnote:
+      "{brand} loyalty points are awarded per completed order, never on canceled or refunded orders. Points expire only if the programme is retired, and we will tell you before that happens.",
+  },
+
+  feedback: {
+    metaTitle: "Feedback",
+    metaDescription: "Tell {brand} how your order went — good or bad.",
+    offTitle: "Feedback is switched off",
+    offBody:
+      "We are not collecting feedback at the moment. Please contact the kitchen directly.",
+    title: "Feedback",
+    subtitle:
+      "We are a small kitchen and we read everything. Tell us what worked and what did not.",
+    submit: "Send feedback",
+    submitting: "Sending…",
+    previousHeading: "What you have told us",
+    signInTitle: "Sign in to send feedback",
+    signInBody:
+      "We ask you to sign in so we can tie your feedback to your order and reply to you directly. It also stops anonymous spam from burying real messages.",
+    signInCta: "Sign in",
+    signUpCta: "Create an account",
+    preferNot: "Prefer not to sign in? Call or message us instead — details are on the ",
+    contactPage: "contact page",
+    // Form
+    formHeading: "Tell us how it went",
+    formBody:
+      "Good or bad, it goes straight to the kitchen and helps us get better.",
+    yourRating: "Your rating",
+    ratingAria: "{value} out of 5",
+    rating: {
+      1: "Not good",
+      2: "Could be better",
+      3: "Fine",
+      4: "Really good",
+      5: "Excellent",
+    },
+    categoryHeading: "What is this about?",
+    categoryLabel: "Short summary",
+    categoryOptional: "Optional.",
+    orderGeneral: "Not about a specific order",
+    orderHint:
+      "Optional. Linking an order lets the kitchen see exactly what you received.",
+    titlePlaceholder: "Ramen was perfect, delivery was quick…",
+    messageLabel: "Your message",
+    messagePlaceholder: "What did you like? What could we do better?",
+    sendMore: "Send more feedback",
+    privacyNote:
+      "Your feedback is only visible to Panda Wok staff. Your name is never shown publicly.",
+    doneTitle: "Thank you for telling us",
+    doneBody:
+      "A real person reads every message. If you asked for a reply, you will find it in your messages.",
+    yourOrders: "Your orders",
+    // Previous feedback
+    nothingSentTitle: "Nothing sent yet",
+    nothingSentBody:
+      "Anything you send will appear here with the kitchen's reply once we have read it.",
+    resolved: "Resolved",
+    awaitingReply: "Awaiting reply",
+    replyFromKitchen: "Reply from the kitchen",
+    viewOrder: "View the order",
+    categories: {
+      overall: "Overall experience",
+      food_quality: "Food quality",
+      delivery: "Delivery",
+      service: "Service",
+      complaint: "Complaint",
+      suggestion: "Suggestion",
+      other: "Something else",
+    },
+  },
+
+  about: {
+    metaTitle: "About {brand}",
+    metaDescription:
+      "The story behind {brand}, a cloud kitchen cooking {cuisine} to order in {city}, {country}.",
+    title: "About {brand}",
+    cloudKitchenHeading: "A cloud kitchen, not a dining room",
+    cloudKitchenBody:
+      "We cook in a dedicated kitchen and send everything straight to you. That means no tables, no queues and no waiting room — just food made when you order it, and a smaller operation that can pay attention to detail.",
+    howWeCookHeading: "How we cook",
+    howWeCookBody:
+      "Dishes are cooked to order and nothing is held under a lamp waiting to be chosen. Because everything is made to order, our prep times are honest rather than instant, and a busy night affects everyone equally.",
+    identityHeading: "What the kitchen cooks",
+    identityBody:
+      "The tags below are the kitchen's own record of the cuisines it cooks — they are read from the live kitchen record, not written into this page. The menu is the authoritative list of what is actually available.",
+    allergensHeading: "Allergens and honest labelling",
+    allergensBody:
+      "Every dish page lists the allergens the kitchen has recorded, along with vegetarian, vegan and spicy markers. That information is what we know about our own preparation; it is not a guarantee, because suppliers and shared equipment can introduce traces. If you have a serious allergy, please speak to us directly before ordering.",
+    whereHeading: "Where we are",
+    whereBody:
+      "We cook in {area}{city}, {country}, and deliver across the city. Delivery fees, minimums and typical timings are listed on each order as you check out, and they are set by the kitchen rather than fixed in the code.",
+    seeMenu: "See the menu",
+    contactUs: "Contact us",
+    fallbackTagline: "A cloud kitchen, cooking to order.",
+    fallbackDescription:
+      "{brand} is a cloud kitchen in {city}, cooking to order.",
+  },
+
+  contact: {
+    metaTitle: "Contact {brand}",
+    metaDescription:
+      "Reach {brand} in {city} to ask about an order, an allergen or delivery to your area.",
+    title: "Contact {brand}",
+    subtitle:
+      "Questions about an order, an allergen or delivery to your area — reach us directly. We are a small kitchen, so a phone call usually gets the fastest answer.",
+    pending:
+      "Our contact details are being updated. Please check back shortly, or use the assistant if you have a question about the menu.",
+    labelPhone: "Phone",
+    notePhone: "Best for order changes and urgent questions.",
+    labelPhoneSecondary: "Second line",
+    notePhoneSecondary: "A second line for orders and delivery questions.",
+    labelEmail: "Email",
+    noteEmail: "Good for feedback or anything that is not urgent.",
+    noteSocial: "Follow us for new dishes and announcements.",
+    hoursHeading: "Opening hours",
+    hoursPending:
+      "Our opening hours are being confirmed. Please call before ordering outside usual mealtimes.",
+    whereHeading: "Where we cook",
+    whereBody: "{area}{city}, {country}",
+    whereNote:
+      "We are a cloud kitchen rather than a restaurant, so there is no dining room to visit. Collection is available at checkout if you prefer to pick your order up.",
+    orderingHeading: "Ordering and delivery",
+    minimumOrder: "Minimum order",
+    deliveryFee: "Delivery fee",
+    freeDeliveryOver: "Free delivery over",
+    typicalDeliveryTime: "Typical delivery time",
+    minutesValue: "about {minutes} minutes",
+    orderingNote:
+      "Timings are a guide rather than a promise, and depend on how busy the kitchen is.",
+    startOrder: "Start an order",
+    sendFeedback: "Send feedback",
+    days: {
+      mon: "Monday",
+      tue: "Tuesday",
+      wed: "Wednesday",
+      thu: "Thursday",
+      fri: "Friday",
+      sat: "Saturday",
+      sun: "Sunday",
+    },
+  },
+
+  faq: {
+    metaTitle: "FAQ — {brand} delivery, allergens and ordering",
+    metaDescription:
+      "Answers to the questions customers ask {brand} most: where we deliver, minimum order, allergens, payment and how to order online.",
+    title: "Frequently asked questions",
+    subtitle:
+      "Straight answers about ordering, delivery, allergens and payment. Every figure here is read from the kitchen's live settings, so it matches what checkout charges.",
+    contactPrompt: "Still unsure about something?",
+    contactLink: "Contact the kitchen",
+    seeMenu: "See the menu",
+    items: {
+      where: {
+        q: "Where does {brand} cook, and where do you deliver?",
+        a: "{brand} is a cloud kitchen in {city}, {country}. We deliver across {city}; the delivery fee is {fee} and delivery is free on orders over {freeOver}.",
+      },
+      order: {
+        q: "How do I order online?",
+        a: "Add dishes to your basket, open checkout and confirm your address. The minimum order is {minOrder}. You can order as a guest or sign in to keep your order history and loyalty points.",
+      },
+      deliveryTime: {
+        q: "How long does delivery take?",
+        a: "A typical delivery takes about {minutes} minutes including preparation. It is a guide rather than a promise, and depends on how busy the kitchen is.",
+      },
+      collection: {
+        q: "Can I collect my order instead of having it delivered?",
+        a: "Yes. There is no dining room — we are a cloud kitchen — but you can choose collection at checkout and pick your order up from the kitchen.",
+      },
+      allergens: {
+        q: "Can you tell me about allergens?",
+        a: "Dishes are labelled vegetarian and vegan where that applies. If you have a serious allergy, contact the kitchen before ordering: our food is prepared in a single kitchen where nuts, shellfish, gluten and soy are all handled.",
+      },
+      cuisine: {
+        q: "What kind of food does {brand} serve?",
+        a: "{brand} cooks {cuisine} to order. The current menu is always the authoritative list of what is available.",
+      },
+      vegetarian: {
+        q: "Are there vegetarian or vegan options?",
+        a: "Yes. Vegetarian and vegan dishes are labelled on the menu. You can filter the menu by dietary preference and each dish page lists what applies to it.",
+      },
+      payment: {
+        q: "What payment methods do you accept?",
+        a: "All prices are shown in {currency}. Available payment methods are offered at checkout, and you will see the final total — including delivery and any tax — before you confirm.",
+      },
+      hours: {
+        q: "What are your opening hours?",
+        a: "Opening hours are being confirmed. Please check the contact page or call the kitchen before ordering outside usual mealtimes.",
+      },
+      reservations: {
+        q: "Can I book a table?",
+        a: "No. {brand} is a cloud kitchen with no dining room, so there is nothing to reserve. Delivery and collection are the two options.",
+      },
+      account: {
+        q: "Do I need an account to order?",
+        a: "No. An account is optional; it keeps your order history, saved addresses and loyalty points. Orders placed as a guest can still be tracked with your order reference.",
+      },
+    },
+  },
+
+  location: {
+    metaTitle: "{brand} location and delivery area in {city}",
+    metaDescription:
+      "Where {brand} cooks and which areas it delivers to in {city}. Delivery fees, minimum order and typical timings from the kitchen's own settings.",
+    title: "{brand} in {city}",
+    subtitle:
+      "{brand} is a cloud kitchen: we cook in one kitchen and send everything to you. There is no dining room, but you can collect at checkout.",
+    areaHeading: "Where we cook",
+    deliveriesHeading: "Delivery and fees",
+    collectionHeading: "Collection",
+    collectionBody:
+      "Choose collection at checkout and pick your order up from the kitchen. We will message you when it is ready.",
+    directionsHeading: "Exact location",
+    directionsPending:
+      "Our exact street address is being confirmed. Call the kitchen before travelling if you are collecting.",
+    directionsLink: "Open directions in Maps",
+    cityOnly:
+      "We are based in {city}, {country}. The full street address has not been published yet.",
+    notFound: "This location page does not exist.",
+    startOrder: "Start an order",
+    contactUs: "Contact us",
+  },
+
+  legal: {
+    privacy: {
+      metaTitle: "{brand} privacy policy",
+      metaDescription:
+        "What data {brand} collects when you order, why it is collected, who processes it and how to ask us to delete it.",
+      title: "Privacy policy",
+      updatedLabel: "Last updated",
+      pending:
+        "This policy is being finalised. Until it is published, please contact the kitchen directly with any data question.",
+      contactLink: "Ask a privacy question",
+    },
+  },
+
+  auth: {
+    signIn: {
+      title: "Sign in",
+      subtitle: "Welcome back. Sign in to track orders and keep your points.",
+      identifier: "Email or phone",
+      identifierPlaceholder: "you@example.com or 01xxxxxxxxx",
+      password: "Password",
+      submit: "Sign in",
+      submitting: "Signing in…",
+      forgot: "Forgot your password?",
+      noAccount: "Create an account",
+      browseWithout: "Browse the menu without signing in",
+      errors: {
+        invalid: "That email or password is not right.",
+      },
+    },
+    signUp: {
+      title: "Create your account",
+      subtitle: "Order, track and earn points — it takes a moment.",
+      fullName: "Full name",
+      fullNamePlaceholder: "Your name",
+      phone: "Phone number",
+      phoneHint: "We use your phone to reach you about your order.",
+      phonePlaceholder: "01xxxxxxxxx",
+      email: "Email",
+      emailOptional: "Email (optional)",
+      emailHint: "Add an email if you would like receipts and password resets by email.",
+      emailPlaceholder: "you@example.com",
+      password: "Password",
+      passwordHint: "At least 8 characters.",
+      language: "Preferred language",
+      languageHint: "We will use this language for the site and your order updates.",
+      submit: "Create account",
+      submitting: "Creating account…",
+      haveAccount: "Already have an account?",
+      signIn: "Sign in",
+      successTitle: "Check your email",
+      successBody:
+        "We have sent you a confirmation link. Open it to finish setting up your account.",
+      confirmNotice:
+        "Your account is ready. Open the confirmation email if we sent one, then sign in.",
+    },
+    forgot: {
+      title: "Reset your password",
+      subtitle:
+        "Enter the email or phone on your account and we will send you a reset link.",
+      identifier: "Email or phone",
+      submit: "Send reset link",
+      submitting: "Sending…",
+      sentTitle: "Check your messages",
+      sentBody:
+        "If that account exists, we have sent reset instructions. The link expires soon, so use it promptly.",
+      backToSignIn: "Back to sign in",
+    },
+    reset: {
+      title: "Choose a new password",
+      subtitle: "Pick something you have not used here before.",
+      password: "New password",
+      confirm: "Confirm new password",
+      submit: "Update password",
+      submitting: "Updating…",
+      mismatch: "The two passwords do not match.",
+      success: "Your password has been updated. Please sign in.",
+    },
+    errors: {
+      generic: "Something went wrong. Please try again.",
+      phoneTaken: "That phone number is already registered.",
+      emailTaken: "That email is already registered.",
+      weakPassword: "Please choose a stronger password.",
+    },
+    placeholders: {
+      phoneEmailNote: "placeholder",
+    },
+  },
+
+  errors: {
+    offlineTitle: "You appear to be offline",
+    offlineBody:
+      "Your basket is saved on this device. Reconnect and try again — nothing is lost.",
+    serverTitle: "Something went wrong on our side",
+    serverBody:
+      "This is not your fault. Retrying usually fixes it. If it keeps happening, please contact the kitchen.",
+    reference: "Reference: {digest}",
+    notFoundTitle: "Page not found",
+    notFoundBody: "The page you were looking for does not exist or has moved.",
+    forbiddenTitle: "Access denied",
+    codes: {
+      AUTH_REQUIRED: "Please sign in to continue.",
+      FORBIDDEN: "You do not have permission to do that.",
+      EMPTY_CART: "Your basket is empty.",
+      CART_TOO_LARGE: "That is too many lines for one order. Please split it.",
+      ITEM_UNAVAILABLE: "An item in your basket just became unavailable.",
+      ITEM_NOT_FOUND: "An item in your basket no longer exists on the menu.",
+      MIN_ORDER_NOT_MET: "Your basket is below the minimum order value.",
+      ADDRESS_REQUIRED: "Please choose a delivery address.",
+      ADDRESS_INVALID: "That delivery address is missing a street or building.",
+      ADDRESS_NOT_FOUND: "We could not find that delivery address.",
+      QUANTITY_LIMIT_EXCEEDED: "That quantity is above the per-item limit.",
+      MODIFIER_LIMIT_EXCEEDED:
+        "One or more extras are above the allowed maximum. Please review your choices.",
+      NO_LOYALTY_POINTS: "You do not have enough points to redeem.",
+      IDEMPOTENCY_KEY_REQUIRED:
+        "Something went wrong submitting the order. Please retry.",
+      ACCOUNT_BLOCKED:
+        "This account cannot place orders. Please contact the kitchen.",
+      INVALID_TOTAL:
+        "The order total could not be calculated. Please review your basket and try again.",
+      VALIDATION: "Some of the details are not valid. Please check and try again.",
+      NOT_FOUND: "That record no longer exists.",
+      OFFLINE: "You appear to be offline. Your basket is saved on this device.",
+      RATE_LIMITED: "Too many attempts. Please wait a moment and try again.",
+      NOT_CONFIGURED: "This feature is not configured yet.",
+      EMAIL_ALREADY_EXISTS:
+        "An account with this email already exists. Try signing in or reset your password.",
+      PHONE_ALREADY_EXISTS:
+        "An account with this phone number already exists. Try signing in or reset your password.",
+      INVALID_CREDENTIALS:
+        "That email, phone number or password combination did not work.",
+      AUTH_PROVIDER_NOT_CONFIGURED:
+        "Account creation is temporarily unavailable. Please try again shortly.",
+      DATABASE_NOT_CONFIGURED:
+        "Account creation is temporarily unavailable. Please try again shortly.",
+      PROFILE_CREATE_FAILED:
+        "We could not finish setting up your account. Please try again — nothing was saved.",
+      EMAIL_CONFIRMATION_REQUIRED:
+        "Check your inbox to confirm your email, then sign in.",
+      UNKNOWN: "Something went wrong. Please try again.",
+    },
+  },
+
+  assistant: {
+    title: "Ask Panda",
+    open: "Open the assistant",
+    close: "Close the assistant",
+    placeholder: "Ask about the menu, allergens or delivery…",
+    send: "Send",
+    sending: "Sending…",
+    newConversation: "Start a new conversation",
+    disclosure: "Replies are generated by an AI assistant.",
+    error: "The assistant could not reply just now. Please try again.",
+    emptyState: "Ask a question to get started.",
+  },
+
+  status: {
+    new: "New",
+    accepted: "Accepted",
+    in_progress: "In progress",
+    prepared: "Prepared",
+    out_for_delivery: "Out for delivery",
+    delivered: "Delivered",
+    canceled: "Canceled",
+    rejected: "Rejected",
+    failed: "Failed",
+    refunded: "Refunded",
+  },
+
+
+  flags: {
+    new: "New",
+    bronze: "Bronze",
+    silver: "Silver",
+    gold: "Gold",
+    platinum: "Platinum",
+  },
+};
+
+/**
+ * The dictionary shape. Values are widened to `string` (no `as const`) so a
+ * translation is free to use any wording while the key structure stays fixed.
+ */
+export type Dictionary = typeof en;

@@ -1,0 +1,306 @@
+import type { Metadata } from "next";
+import type { ComponentType, SVGProps } from "react";
+import Link from "next/link";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { buildMetadata } from "@/lib/seo/metadata";
+import { getPublicSettings, getRestaurant } from "@/lib/services/catalog";
+import { breadcrumbSchema, faqPageSchema } from "@/lib/seo/schema";
+import { buildFaq } from "@/lib/seo/faq";
+import { JsonLdScript } from "@/components/seo/json-ld";
+import { Breadcrumbs } from "@/components/customer/breadcrumbs";
+import { Reveal } from "@/components/ui/reveal";
+import { socialIcon, socialLabel, sortSocialEntries } from "@/components/icons/social";
+import { getLocale, getT } from "@/lib/i18n/server";
+
+export const dynamic = "force-dynamic";
+
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getPublicSettings();
+  return buildMetadata({
+    title: `Contact ${settings.brand.name}`,
+    description: `Reach ${settings.brand.name} in ${settings.brand.city} to ask about an order, an allergen or delivery to your area.`,
+    path: "/contact",
+    siteName: settings.brand.name,
+  });
+}
+
+const DAY_LABELS: Record<string, string> = {
+  mon: "Monday",
+  tue: "Tuesday",
+  wed: "Wednesday",
+  thu: "Thursday",
+  fri: "Friday",
+  sat: "Saturday",
+  sun: "Sunday",
+};
+
+/**
+ * Contact details come from the settings table, so the kitchen can change a
+ * phone number without a deploy. Nothing here is invented: when a value is
+ * missing we say so instead of showing a placeholder.
+ */
+export default async function ContactPage() {
+  const [settings, restaurant, locale] = await Promise.all([
+    getPublicSettings(),
+    getRestaurant(),
+    getLocale(),
+  ]);
+  const t = await getT(locale);
+
+  const faqs = buildFaq(t, settings, restaurant);
+
+  const brand = restaurant?.name_en ?? settings.brand.name;
+  const { phone, phoneSecondary, email, social, openingHours } = settings.support;
+
+  const hoursEntries = Object.entries(
+    (openingHours ?? {}) as Record<string, unknown>,
+  ).filter(([, value]) => typeof value === "string" && value.trim());
+
+  const socialEntries = sortSocialEntries(social);
+
+  const hasAnyChannel =
+    Boolean(phone) ||
+    Boolean(phoneSecondary) ||
+    Boolean(email) ||
+    socialEntries.length > 0;
+
+  // The (site) layout already emits the Restaurant/LocalBusiness node for every
+  // public page, so this page only adds what is unique to it: the breadcrumb and
+  // the FAQ. Re-declaring the same @id here would send conflicting descriptions.
+  const structured = [
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Contact", path: "/contact" },
+    ]),
+    faqPageSchema(faqs),
+  ];
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-6">
+      <Breadcrumbs
+        items={[
+          { name: "Home", path: "/" },
+          { name: "Contact", path: "/contact" },
+        ]}
+      />
+
+      <Reveal className="mt-4">
+        <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
+          {t("contact.title", { brand })}
+        </h1>
+        <p className="mt-1.5 text-sm text-ink-700/85">{t("contact.subtitle")}</p>
+      </Reveal>
+
+      <Reveal delay={80}>
+      {!hasAnyChannel ? (
+        <p className="mt-5 rounded-xl border border-miso-500/30 bg-miso-300/15 p-4 text-sm text-ink-800">
+          {t("contact.pending")}
+        </p>
+      ) : (
+        <ul className="mt-5 space-y-3">
+          {phone ? (
+            <ContactRow
+              icon={Phone}
+              label={t("contact.labelPhone")}
+              value={phone}
+              href={`tel:${phone.replace(/\s+/g, "")}`}
+              note={t("contact.notePhone")}
+            />
+          ) : null}
+
+          {phoneSecondary ? (
+            <ContactRow
+              icon={Phone}
+              label={t("contact.labelPhoneSecondary")}
+              value={phoneSecondary}
+              href={`tel:${phoneSecondary.replace(/\s+/g, "")}`}
+              note={t("contact.notePhoneSecondary")}
+            />
+          ) : null}
+
+          {email ? (
+            <ContactRow
+              icon={Mail}
+              label={t("contact.labelEmail")}
+              value={email}
+              href={`mailto:${email}`}
+              note={t("contact.noteEmail")}
+            />
+          ) : null}
+
+          {socialEntries.map(([key, url]) => (
+            <ContactRow
+              key={key}
+              icon={socialIcon(key)}
+              label={socialLabel(t, key)}
+              value={url.replace(/^https?:\/\//, "")}
+              href={url}
+              note={t("contact.noteSocial")}
+              external
+            />
+          ))}
+        </ul>
+      )}
+      </Reveal>
+
+      <Reveal delay={120}>
+        <section aria-labelledby="hours-heading" className="washi-panel mt-5 p-4">
+        <h2
+          id="hours-heading"
+          className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
+        >
+          <Clock className="size-4 text-vermilion-600" aria-hidden="true" />
+          {t("contact.hoursHeading")}
+        </h2>
+        {hoursEntries.length === 0 ? (
+          <p className="mt-2 text-sm text-ink-700/80">{t("contact.hoursPending")}</p>
+        ) : (
+          <dl className="mt-3 space-y-1.5 text-sm">
+            {hoursEntries.map(([day, value]) => (
+              <div key={day} className="flex justify-between gap-3">
+                <dt className="text-ink-700/85">
+                  {DAY_LABELS[day.toLowerCase()] ?? day}
+                </dt>
+                <dd className="tabular-nums text-ink-900">{String(value)}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </section>
+      </Reveal>
+
+      <Reveal delay={140}>
+        <section aria-labelledby="area-heading" className="washi-panel mt-3 p-4">
+        <h2
+          id="area-heading"
+          className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
+        >
+          <MapPin className="size-4 text-vermilion-600" aria-hidden="true" />
+          Where we cook
+        </h2>
+        <p className="mt-2 text-sm text-ink-700/85">
+          {restaurant?.area ? `${restaurant.area}, ` : ""}
+          {restaurant?.city ?? settings.brand.city},{" "}
+          {restaurant?.country ?? settings.brand.country}
+        </p>
+        <p className="mt-1 text-xs text-ink-700/70">
+          We are a cloud kitchen rather than a restaurant, so there is no dining room to
+          visit. Collection is available at checkout if you prefer to pick your order up.
+        </p>
+      </section>
+      </Reveal>
+
+      <Reveal delay={160}>
+        <section aria-labelledby="ordering-heading" className="washi-panel mt-3 p-4">
+        <h2 id="ordering-heading" className="text-sm font-semibold text-ink-900">
+          Ordering and delivery
+        </h2>
+        <dl className="mt-3 space-y-1.5 text-sm">
+          <div className="flex justify-between gap-3">
+            <dt className="text-ink-700/85">Minimum order</dt>
+            <dd className="tabular-nums text-ink-900">
+              {settings.ordering.minOrderTotal} EGP
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-ink-700/85">Delivery fee</dt>
+            <dd className="tabular-nums text-ink-900">{settings.ordering.deliveryFee} EGP</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-ink-700/85">Free delivery over</dt>
+            <dd className="tabular-nums text-ink-900">
+              {settings.ordering.freeDeliveryOver} EGP
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-ink-700/85">Typical delivery time</dt>
+            <dd className="tabular-nums text-ink-900">
+              about {settings.ordering.etaMinutes} minutes
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-2 text-xs text-ink-700/70">
+          Timings are a guide rather than a promise, and depend on how busy the kitchen is.
+        </p>
+      </section>
+      </Reveal>
+
+      <Reveal delay={180}>
+        <section aria-labelledby="faq-heading" className="mt-5">
+        <h2 id="faq-heading" className="text-sm font-semibold text-ink-900">
+          {t("contact.faqHeading")}
+        </h2>
+        <p className="mt-1 text-xs text-ink-700/75">{t("contact.faqSubtitle")}</p>
+        <dl className="mt-3 space-y-3">
+          {faqs.slice(0, 6).map((faq) => (
+            <div key={faq.question} className="washi-panel p-4">
+              <dt className="text-sm font-semibold text-ink-900">{faq.question}</dt>
+              <dd className="mt-1.5 text-sm text-ink-700/85">{faq.answer}</dd>
+            </div>
+          ))}
+        </dl>
+        <Link href="/faq" className="mt-3 inline-block text-sm font-medium text-vermilion-700 hover:text-vermilion-800">
+          {t("faq.title")} →
+        </Link>
+      </section>
+      </Reveal>
+
+      <Reveal delay={210}>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+        <Link
+          href="/menu"
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-vermilion-600 px-6 font-medium text-rice-50 hover:bg-vermilion-700 sm:flex-1"
+        >
+          Start an order
+        </Link>
+        <Link
+          href="/feedback"
+          className="inline-flex h-12 items-center justify-center rounded-xl border border-ink-900/15 px-6 font-medium text-ink-900 hover:bg-rice-200 sm:flex-1"
+        >
+          Send feedback
+        </Link>
+      </div>
+      </Reveal>
+
+      <JsonLdScript data={structured} />
+    </div>
+  );
+}
+
+function ContactRow({
+  icon: Icon,
+  label,
+  value,
+  href,
+  note,
+  external,
+}: {
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  label: string;
+  value: string;
+  href: string;
+  note: string;
+  external?: boolean;
+}) {
+  return (
+    <li>
+      <a
+        href={href}
+        {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+        className="washi-panel flex items-start gap-3 p-4 transition-shadow hover:shadow-washi-lg"
+      >
+        <Icon className="mt-0.5 size-5 shrink-0 text-vermilion-600" aria-hidden="true" />
+        <span className="min-w-0">
+          <span className="block text-xs font-medium uppercase tracking-wide text-ink-700/70">
+            {label}
+          </span>
+          <span className="mt-0.5 block break-words text-sm font-medium text-ink-900">
+            {value}
+          </span>
+          <span className="mt-1 block text-xs text-ink-700/75">{note}</span>
+        </span>
+      </a>
+    </li>
+  );
+}
