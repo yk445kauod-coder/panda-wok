@@ -31,7 +31,7 @@ export default async function AuthLayout({
   const t = await getT(locale);
 
   return (
-    <div className="relative flex min-h-dvh flex-col">
+    <div className="page-sheet relative flex min-h-dvh flex-col">
       <div
         aria-hidden="true"
         data-motion="decorative"

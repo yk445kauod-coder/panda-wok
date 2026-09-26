@@ -450,7 +450,19 @@
       inset 0 -1px 0 color-mix(in oklab, var(--color-ink-900) 7%, transparent);
   }
 
-  /* ---- Washi paper band (header / bottom nav) -----------------------
+ 
+  /* The home hero is a night vault laid *over* the paper sheet: an opaque
+     sumi-ink band(with the same lantern glow language as the body ground) so
+     the deep, lamp-lit kitchen leads the page arid the paper sheets frame it. */
+  .hero-night {
+    background-color: var(--color-ink-950);
+    background-image:
+      radial-gradient(120% 80% at 50% 108%, color-mix(in oklab, var(--color-bamboo-600) 30%, transparent), transparent  60%),
+      radial-gradient(90% 60% at 85% -10%, color-mix(in oklab, var(--color-indigo-700) 35%, transparent), transparent 55%),
+      radial-gradient(70% 50% at 8% 0%, color-mix(in oklab, var(--color-miso-600) 22%, transparent), transparent 50%);
+  }
+
+ /* ---- Washi paper band (header / bottom nav) -----------------------
      Rice paper is the "card" the ink rests on: a warm off-white sheet with a
      subtle fibre grain and a soft lit edge. The sheet *moves*: a gentle
      sheen breathes diagonally (so the light catches the fibres, as if the paper

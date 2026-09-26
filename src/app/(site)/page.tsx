@@ -270,7 +270,7 @@ function Hero({
   t: T;
 }) {
   return (
-    <section className="relative overflow-hidden border-b border-rice-100/10 bg-transparent">
+    <section className="hero-night relative overflow-hidden border-b border-rice-100/10">
       <AsanohaPanel className="asanoha-light opacity-[0.28]" />
       <BambooAmbience locale={locale} />
       {/* Cherry blossom for the Japanese half of the kitchen; the Chinese wok
