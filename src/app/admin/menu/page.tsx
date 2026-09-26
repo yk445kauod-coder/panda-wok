@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireCapability } from "@/lib/auth/session";
 import {
   getAdminMenuItem,
+  getAdminModifierGroups,
   listAdminCategories,
   listAdminMenuItems,
 } from "@/lib/services/admin-catalog";
@@ -29,6 +30,7 @@ export default async function AdminMenuPage({
   ]);
 
   const editing = params.edit ? await getAdminMenuItem(params.edit) : null;
+  const modifierGroups = editing ? await getAdminModifierGroups(editing.id) : [];
 
   // Group by category, preserving the category sort order, so the list reads
   // like the real menu rather than an unordered table.
@@ -97,6 +99,7 @@ export default async function AdminMenuPage({
           ) : (
             <MenuItemForm
               item={editing}
+              modifierGroups={modifierGroups}
               categories={categories.map((c) => ({
                 id: c.id,
                 name_en: c.name_en,

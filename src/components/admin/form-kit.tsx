@@ -1,13 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils/format";
+import { cn, slugify } from "@/lib/utils/format";
 import type { FormActionResult } from "@/lib/actions/result";
 
 import { useErrorText } from "@/components/i18n-provider";
+
+/**
+ * Field-level messages returned by a failed action (e.g. "This slug is taken").
+ * AdminForm publishes them here so every Field/TextArea below can render its
+ * own message without the caller threading props through the whole tree. Before
+ * this, `useAdminForm` captured `fields` but nothing ever rendered them, so a
+ * duplicate-slug rejection showed only a generic summary line.
+ */
+const FieldErrorsContext = createContext<Record<string, string>>({});
+
 /**
  * The admin mutation lifecycle in one place: submit, surface field errors,
  * surface a summary error, then refresh the server component. Every admin form
@@ -80,39 +90,41 @@ export function AdminForm({
   className?: string;
   extraActions?: React.ReactNode;
 }) {
-  const { submit, pending, error, done } = useAdminForm(action, options);
+  const { submit, pending, error, done, fields } = useAdminForm(action, options);
 
   return (
-    <form onSubmit={submit} className={cn("space-y-4", className)} noValidate>
-      {children}
+    <FieldErrorsContext.Provider value={fields}>
+      <form onSubmit={submit} className={cn("space-y-4", className)} noValidate>
+        {children}
 
-      {error ? (
-        <p
-          role="alert"
-          className="flex items-start gap-2 rounded-xl border border-chili-500/30 bg-chili-500/8 p-3 text-sm text-chili-600"
-        >
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          {error}
-        </p>
-      ) : null}
+        {error ? (
+          <p
+            role="alert"
+            className="flex items-start gap-2 rounded-xl border border-chili-500/30 bg-chili-500/8 p-3 text-sm text-chili-600"
+          >
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            {error}
+          </p>
+        ) : null}
 
-      {done ? (
-        <p
-          role="status"
-          className="flex items-center gap-2 rounded-xl border border-jade-500/30 bg-jade-500/10 p-3 text-sm text-jade-600"
-        >
-          <Check className="size-4 shrink-0" aria-hidden="true" />
-          {done}
-        </p>
-      ) : null}
+        {done ? (
+          <p
+            role="status"
+            className="flex items-center gap-2 rounded-xl border border-jade-500/30 bg-jade-500/10 p-3 text-sm text-jade-600"
+          >
+            <Check className="size-4 shrink-0" aria-hidden="true" />
+            {done}
+          </p>
+        ) : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" loading={pending}>
-          {submitLabel}
-        </Button>
-        {extraActions}
-      </div>
-    </form>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="submit" loading={pending}>
+            {submitLabel}
+          </Button>
+          {extraActions}
+        </div>
+      </form>
+    </FieldErrorsContext.Provider>
   );
 }
 
@@ -141,6 +153,8 @@ export function Field({
   dir?: "ltr" | "rtl";
   required?: boolean;
 }) {
+  const fieldErrors = useContext(FieldErrorsContext);
+  const message = error ?? fieldErrors[name];
   return (
     <div className={className}>
       <label htmlFor={name} className="block text-sm font-medium text-ink-900">
@@ -157,11 +171,15 @@ export function Field({
             required={required}
             defaultValue={defaultValue}
             placeholder={placeholder}
-            className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
+            aria-invalid={message ? true : undefined}
+            className={cn(
+              "h-11 w-full rounded-xl border bg-rice-50 px-3 text-sm outline-none focus:border-miso-500",
+              message ? "border-chili-500" : "border-ink-900/12",
+            )}
           />
         )}
       </div>
-      {error ? <p className="mt-1 text-xs text-chili-600">{error}</p> : null}
+      {message ? <p className="mt-1 text-xs text-chili-600">{message}</p> : null}
     </div>
   );
 }
@@ -210,6 +228,8 @@ export function TextArea({
   defaultValue?: string;
   placeholder?: string;
 }) {
+  const fieldErrors = useContext(FieldErrorsContext);
+  const message = error ?? fieldErrors[name];
   return (
     <div>
       <label htmlFor={name} className="block text-sm font-medium text-ink-900">
@@ -222,9 +242,72 @@ export function TextArea({
         rows={rows}
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="mt-1.5 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 py-2 text-sm outline-none focus:border-miso-500"
+        aria-invalid={message ? true : undefined}
+        className={cn(
+          "mt-1.5 w-full rounded-xl border bg-rice-50 px-3 py-2 text-sm outline-none focus:border-miso-500",
+          message ? "border-chili-500" : "border-ink-900/12",
+        )}
       />
-      {error ? <p className="mt-1 text-xs text-chili-600">{error}</p> : null}
+      {message ? <p className="mt-1 text-xs text-chili-600">{message}</p> : null}
+    </div>
+  );
+}
+
+/**
+ * Slug input that fills itself from the English name until the admin edits it
+ * by hand, then stops guessing. Drops into a form, keeps its own state, and
+ * still participates in the field-error context by name.
+ */
+export function SlugField({
+  name = "slug",
+  label = "URL slug",
+  hint,
+  sourceName,
+  defaultValue = "",
+}: {
+  name?: string;
+  label?: string;
+  hint?: string;
+  /** Form field name to derive the slug from (e.g. the English name). */
+  sourceName: string;
+  defaultValue?: string;
+}) {
+  const fieldErrors = useContext(FieldErrorsContext);
+  const message = fieldErrors[name];
+  const [value, setValue] = useState(defaultValue);
+  const touched = useRef(Boolean(defaultValue));
+
+  return (
+    <div>
+      <label htmlFor={name} className="block text-sm font-medium text-ink-900">
+        {label}
+      </label>
+      <p className="mt-0.5 text-xs text-ink-700/65">
+        {hint ?? "Public address: /menu/your-slug. Filled from the English name; edit to override."}
+      </p>
+      <input
+        id={name}
+        name={name}
+        value={value}
+        required
+        aria-invalid={message ? true : undefined}
+        onInput={(event) => {
+          touched.current = true;
+          const next = (event.target as HTMLInputElement).value;
+          setValue(slugify(next));
+        }}
+        onBlur={() => {
+          // Derive only while the admin has not typed their own slug.
+          if (touched.current) return;
+          const source = document.querySelector<HTMLInputElement>(`[name="${sourceName}"]`);
+          if (source?.value) setValue(slugify(source.value));
+        }}
+        className={cn(
+          "mt-1.5 h-11 w-full rounded-xl border bg-rice-50 px-3 font-mono text-sm outline-none focus:border-miso-500",
+          message ? "border-chili-500" : "border-ink-900/12",
+        )}
+      />
+      {message ? <p className="mt-1 text-xs text-chili-600">{message}</p> : null}
     </div>
   );
 }

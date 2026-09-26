@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminForm, Field, TextArea, Toggle } from "@/components/admin/form-kit";
+import { AdminForm, Field, SlugField, TextArea, Toggle } from "@/components/admin/form-kit";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { saveCategoryAction } from "@/lib/actions/admin";
 import type { AdminCategory } from "@/lib/services/admin-catalog";
@@ -41,10 +41,9 @@ export function CategoryForm({ category }: { category: AdminCategory | null }) {
           hint="Optional subtitle on the public menu."
           defaultValue={category?.name_ja ?? ""}
         />
-        <Field
-          name="slug"
-          label="URL slug"
-          hint="Public address: /menu/your-slug. Lowercase words separated by hyphens."
+        <SlugField
+          sourceName="nameEn"
+          hint="Public address: /menu/your-slug. Filled from the English name; edit to override."
           defaultValue={category?.slug ?? ""}
         />
       </fieldset>

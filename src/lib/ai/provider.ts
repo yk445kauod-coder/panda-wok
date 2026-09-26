@@ -519,6 +519,28 @@ function envBlock(kind: AiProviderKind, suffix: "MODEL" | "BASE_URL" | "API_KEY"
   return (serverEnv as Record<string, string | undefined>)[`AI_${suffix}`];
 }
 
+/**
+ * Resolves the API key a provider row references. The value lives either in
+ * Supabase Vault (set from the admin AI centre) or in the server environment
+ * (deploy-time config). Vault is checked first so an operator can rotate a key
+ * from the console without a redeploy; the environment remains a valid fallback
+ * for keys provisioned at deploy time. Never returns anything to the client.
+ */
+async function resolveSecretValue(secretRef: string): Promise<string | undefined> {
+  const fromEnv = (serverEnv as Record<string, string | undefined>)[secretRef];
+  if (fromEnv) return fromEnv;
+
+  const admin = tryCreateAdminSupabase();
+  if (!admin) return undefined;
+  try {
+    const { data, error } = await admin.rpc("get_ai_secret", { p_name: secretRef });
+    if (error || !data) return undefined;
+    return typeof data === "string" && data.length > 0 ? data : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export type DbProviderRow = {
   kind: string;
   name: string;
@@ -721,7 +743,7 @@ export async function resolveDbProvider(
 
   if (kind === "pollinations") {
     const baseUrl = (row.base_url ?? envBlock("pollinations", "BASE_URL"))?.replace(/\/+$/, "");
-    const apiKey = row.secret_ref ? process.env[row.secret_ref] : undefined;
+    const apiKey = row.secret_ref ? await resolveSecretValue(row.secret_ref) : undefined;
     const model = row.model ?? envBlock("pollinations", "MODEL") ?? "openai";
     if (!baseUrl) return null;
     return new QuotaEnforcedProvider(
@@ -731,7 +753,7 @@ export async function resolveDbProvider(
   }
 
   if (kind === "openai_compatible") {
-    const apiKey = row.secret_ref ? process.env[row.secret_ref] : undefined;
+    const apiKey = row.secret_ref ? await resolveSecretValue(row.secret_ref) : undefined;
     const baseUrl = row.base_url;
     if (!apiKey || !baseUrl) return null;
     return new QuotaEnforcedProvider(

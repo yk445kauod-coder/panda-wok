@@ -75,10 +75,10 @@ export function AiProviderForm({ provider }: { provider: Provider | null }) {
 
         <Field
           name="secretRef"
-          label="API key environment variable"
+          label="API key name"
           defaultValue={provider?.secret_ref ?? ""}
-          placeholder="AI_API_KEY"
-          hint="The NAME of the env var, never the key itself."
+          placeholder="OPENROUTER_API_KEY"
+          hint="Name of a key stored in API keys below (or an env var of the same name). Never the key itself."
         />
 
         <Field

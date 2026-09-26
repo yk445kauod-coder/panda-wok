@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createServerSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
 import type { Database } from "@/lib/types/database";
 
 /**
@@ -10,6 +10,11 @@ import type { Database } from "@/lib/types/database";
 
 export type AdminMenuItem = Database["public"]["Tables"]["menu_items"]["Row"] & {
   categories: { id: string; name_en: string; slug: string } | null;
+};
+
+export type AdminModifierOption = Database["public"]["Tables"]["modifier_options"]["Row"];
+export type AdminModifierGroup = Database["public"]["Tables"]["modifier_groups"]["Row"] & {
+  modifier_options: AdminModifierOption[];
 };
 
 export async function listAdminMenuItems(params?: {
@@ -46,6 +51,30 @@ export async function getAdminMenuItem(id: string): Promise<AdminMenuItem | null
 
   if (error) throw new Error(`Failed to load the dish: ${error.message}`);
   return (data as unknown as AdminMenuItem) ?? null;
+}
+
+/** Option groups for a dish, with their options, in display order. */
+export async function getAdminModifierGroups(
+  menuItemId: string,
+): Promise<AdminModifierGroup[]> {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("modifier_groups")
+    .select("*, modifier_options (*)")
+    .eq("menu_item_id", menuItemId)
+    .order("sort_order", { ascending: true });
+
+  if (error) throw new Error(`Failed to load option groups: ${error.message}`);
+
+  return (data ?? []).map((row) => {
+    const group = row as unknown as AdminModifierGroup;
+    return {
+      ...group,
+      modifier_options: (group.modifier_options ?? []).sort(
+        (a, b) => a.sort_order - b.sort_order,
+      ),
+    };
+  });
 }
 
 export type AdminCategory = Database["public"]["Tables"]["categories"]["Row"] & {
@@ -231,6 +260,21 @@ export async function listAiProviders() {
     .order("priority", { ascending: true });
 
   if (error) throw new Error(`Failed to load AI providers: ${error.message}`);
+  return data ?? [];
+}
+
+/**
+ * Stored credential names and a masked hint for each. Values are never read
+ * here — the RPC returns only a four-character tail so an operator can tell
+ * which key is installed without it leaving Vault.
+ */
+export async function listAiSecretHints(): Promise<
+  { name: string; hint: string; updated_at: string }[]
+> {
+  const admin = tryCreateAdminSupabase();
+  if (!admin) return [];
+  const { data, error } = await admin.rpc("list_ai_secret_hints");
+  if (error) return [];
   return data ?? [];
 }
 

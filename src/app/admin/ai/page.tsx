@@ -4,10 +4,12 @@ import {
   listAiProviders,
   listAiPrompts,
   listAiRequests,
+  listAiSecretHints,
 } from "@/lib/services/admin-catalog";
 import { getAiUsage } from "@/lib/crm/insights";
 import { externalAiConfigured } from "@/lib/config/env";
 import { AiProviderForm } from "@/components/admin/ai-provider-form";
+import { AiSecretsManager } from "@/components/admin/ai-secrets-manager";
 import { AdminForm, Field, TextArea, Toggle } from "@/components/admin/form-kit";
 import { saveAiPromptAction } from "@/lib/actions/admin";
 import { Badge } from "@/components/ui/button";
@@ -26,11 +28,12 @@ export const dynamic = "force-dynamic";
 export default async function AdminAiPage() {
   await requireCapability("ai.manage");
 
-  const [providers, prompts, usage, recent] = await Promise.all([
+  const [providers, prompts, usage, recent, secrets] = await Promise.all([
     listAiProviders(),
     listAiPrompts(),
     getAiUsage(30),
     listAiRequests(20),
+    listAiSecretHints(),
   ]);
 
   const configured = externalAiConfigured();
@@ -195,14 +198,16 @@ export default async function AdminAiPage() {
             Register a provider
           </h2>
           <p className="mt-1 text-xs text-ink-700/70">
-            Record which model should back the assistant. Enabling a provider here does not
-            supply a key — the key comes from the server environment.
+            Record which model should back the assistant. Reference a stored key by
+            name below (or an environment variable of the same name).
           </p>
           <div className="mt-3">
             <AiProviderForm provider={null} />
           </div>
         </section>
       </div>
+
+      <AiSecretsManager secrets={secrets} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="washi-panel p-4" aria-label="System instructions">

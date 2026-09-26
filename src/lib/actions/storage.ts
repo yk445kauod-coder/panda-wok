@@ -12,8 +12,8 @@ const MAX_BYTES = 8 * 1024 * 1024;
 /**
  * Server-side upload into the public menu-images bucket. The client never talks
  * to storage directly: the form posts the File, the action checks the caller's
- * capability, type and size,and writes with the service role — so the object is
- * always ownered by the app, never by some anon, and the path is unpredictable.
+ * capability, type and size, and writes with the service role — so the object is
+ * always owned by the app, never by some anon, and the path is unpredictable.
  *
  * Returns the stable public URL the caller should save into `image_url`.
  */
@@ -23,7 +23,7 @@ export async function uploadMenuImageAction(
   const session = await assertCapability("menu.manage");
   const file = formData.get("image");
   if (!(file instanceof File)) return actionFail("VALIDATION", "Choose an image file first.");
-  if (file.size === 0 || file.size > MAX_BYTES) return actionFail("VALIDATION", "Image must beat most 8 MB.");
+  if (file.size === 0 || file.size > MAX_BYTES) return actionFail("VALIDATION", "Image must be at most 8 MB.");
   if (!ACCEPTED.has(file.type)) return actionFail("VALIDATION", "PNG, JPEG, WebP or AVIF only.");
 
   const ext = { "image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/avif": ".avif" }[file.type];

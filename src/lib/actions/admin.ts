@@ -21,6 +21,8 @@ import {
   orderStatusUpdateSchema,
   menuItemSchema,
   categorySchema,
+  modifierGroupSchema,
+  modifierOptionSchema,
   stockItemSchema,
   stockMovementSchema,
   rewardSchema,
@@ -349,6 +351,168 @@ export async function toggleMenuItemAction(
     entity: "menu_items",
     entityId: menuItemId,
     after: { [field]: value },
+  });
+
+  revalidatePath("/admin/menu");
+  revalidatePath("/menu");
+  return actionOk();
+}
+
+/* -------------------------------------------------------------- modifiers */
+
+/**
+ * Create or update a modifier group ("Choose up to 2 extras"). Groups hang off
+ * a dish; the limits here mirror what `place_order` enforces, so the customer
+ * can never be shown a promise the database would reject.
+ */
+export async function saveModifierGroupAction(
+  formData: FormData,
+): Promise<FormActionResult<{ id: string }>> {
+  const session = await assertCapability("menu.manage");
+
+  const parsed = modifierGroupSchema.safeParse({
+    id: formData.get("id") || undefined,
+    menuItemId: formData.get("menuItemId"),
+    nameEn: formData.get("nameEn"),
+    nameAr: formData.get("nameAr") ?? undefined,
+    minSelect: formData.get("minSelect") || 0,
+    maxSelect: formData.get("maxSelect") || 1,
+    isRequired: formData.get("isRequired") === "on",
+    sortOrder: formData.get("sortOrder") || 0,
+  });
+  if (!parsed.success) return toFormError(parsed.error);
+
+  const supabase = await createServerSupabase();
+  const payload = {
+    menu_item_id: parsed.data.menuItemId,
+    name_en: parsed.data.nameEn,
+    name_ar: parsed.data.nameAr ?? null,
+    min_select: parsed.data.minSelect,
+    max_select: parsed.data.maxSelect,
+    is_required: parsed.data.isRequired,
+    sort_order: parsed.data.sortOrder,
+  };
+
+  const result = parsed.data.id
+    ? await supabase
+        .from("modifier_groups")
+        .update(payload)
+        .eq("id", parsed.data.id)
+        .select("id")
+        .maybeSingle()
+    : await supabase.from("modifier_groups").insert(payload).select("id").single();
+
+  if (result.error || !result.data) {
+    return actionError(result.error ?? new Error("Option group not saved"));
+  }
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: parsed.data.id ? "modifier_group.updated" : "modifier_group.created",
+    entity: "modifier_groups",
+    entityId: result.data.id,
+    after: { name: parsed.data.nameEn, menu_item_id: parsed.data.menuItemId },
+  });
+
+  revalidatePath("/admin/menu");
+  revalidatePath("/menu");
+  return actionOk({ id: result.data.id });
+}
+
+export async function deleteModifierGroupAction(
+  groupId: string,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("menu.manage");
+  if (!isUuid(groupId)) return actionFail("VALIDATION", "Invalid option group.");
+
+  const supabase = await createServerSupabase();
+  // modifier_options cascade from the group, so one delete removes the pair.
+  const { error } = await supabase.from("modifier_groups").delete().eq("id", groupId);
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "modifier_group.deleted",
+    entity: "modifier_groups",
+    entityId: groupId,
+  });
+
+  revalidatePath("/admin/menu");
+  revalidatePath("/menu");
+  return actionOk();
+}
+
+export async function saveModifierOptionAction(
+  formData: FormData,
+): Promise<FormActionResult<{ id: string }>> {
+  const session = await assertCapability("menu.manage");
+
+  const parsed = modifierOptionSchema.safeParse({
+    id: formData.get("id") || undefined,
+    groupId: formData.get("groupId"),
+    nameEn: formData.get("nameEn"),
+    nameAr: formData.get("nameAr") ?? undefined,
+    priceDelta: formData.get("priceDelta") || 0,
+    isAvailable: formData.get("isAvailable") === "on",
+    sortOrder: formData.get("sortOrder") || 0,
+  });
+  if (!parsed.success) return toFormError(parsed.error);
+
+  const supabase = await createServerSupabase();
+  const payload = {
+    group_id: parsed.data.groupId,
+    name_en: parsed.data.nameEn,
+    name_ar: parsed.data.nameAr ?? null,
+    price_delta: parsed.data.priceDelta,
+    is_available: parsed.data.isAvailable,
+    sort_order: parsed.data.sortOrder,
+  };
+
+  const result = parsed.data.id
+    ? await supabase
+        .from("modifier_options")
+        .update(payload)
+        .eq("id", parsed.data.id)
+        .select("id")
+        .maybeSingle()
+    : await supabase.from("modifier_options").insert(payload).select("id").single();
+
+  if (result.error || !result.data) {
+    return actionError(result.error ?? new Error("Option not saved"));
+  }
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: parsed.data.id ? "modifier_option.updated" : "modifier_option.created",
+    entity: "modifier_options",
+    entityId: result.data.id,
+    after: { name: parsed.data.nameEn, price_delta: parsed.data.priceDelta },
+  });
+
+  revalidatePath("/admin/menu");
+  revalidatePath("/menu");
+  return actionOk({ id: result.data.id });
+}
+
+export async function deleteModifierOptionAction(
+  optionId: string,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("menu.manage");
+  if (!isUuid(optionId)) return actionFail("VALIDATION", "Invalid option.");
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("modifier_options").delete().eq("id", optionId);
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "modifier_option.deleted",
+    entity: "modifier_options",
+    entityId: optionId,
   });
 
   revalidatePath("/admin/menu");
@@ -1645,6 +1809,82 @@ export async function saveAiProviderAction(
 
   revalidatePath("/admin/ai");
   return actionOk({ id: result.data.id });
+}
+
+/**
+ * Stores (or rotates) an AI provider credential in Supabase Vault, encrypted at
+ * rest. The console sends the value once over the server action boundary; it is
+ * never echoed back — the page only ever shows a masked hint. Vault is written
+ * through the `service_role`, and the RPC is not executable by `anon` or
+ * `authenticated`, so no browser session can read a stored key.
+ */
+export async function saveAiSecretAction(
+  formData: FormData,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("ai.manage");
+
+  const name = String(formData.get("name") ?? "").trim();
+  const value = String(formData.get("value") ?? "");
+  if (!/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(name)) {
+    return actionFail("VALIDATION", "Use letters, digits and underscores; start with a letter.");
+  }
+  if (value.trim().length < 8) {
+    return actionFail("VALIDATION", "The key looks too short — paste the full value.");
+  }
+
+  const admin = tryCreateAdminSupabase();
+  if (!admin) {
+    return actionFail("NOT_CONFIGURED", "Privileged storage is unavailable on this deployment.");
+  }
+
+  const { error } = await admin.rpc("set_ai_secret", {
+    p_name: name,
+    p_value: value.trim(),
+    p_description: "Managed from the Panda Wok AI centre",
+  });
+  if (error) return actionError(error);
+
+  // Audit the reference only — never the credential.
+  await logAudit(admin, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "ai_secret.saved",
+    entity: "vault.secrets",
+    entityId: name,
+    after: { name },
+  });
+
+  revalidatePath("/admin/ai");
+  return actionOk();
+}
+
+/** Deletes a stored credential by name. Idempotent. */
+export async function deleteAiSecretAction(
+  name: string,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("ai.manage");
+  if (!/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(name)) {
+    return actionFail("VALIDATION", "Invalid secret name.");
+  }
+
+  const admin = tryCreateAdminSupabase();
+  if (!admin) {
+    return actionFail("NOT_CONFIGURED", "Privileged storage is unavailable on this deployment.");
+  }
+
+  const { error } = await admin.rpc("delete_ai_secret", { p_name: name });
+  if (error) return actionError(error);
+
+  await logAudit(admin, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "ai_secret.deleted",
+    entity: "vault.secrets",
+    entityId: name,
+  });
+
+  revalidatePath("/admin/ai");
+  return actionOk();
 }
 
 export async function saveAiPromptAction(

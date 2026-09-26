@@ -170,3 +170,20 @@ export function safeJson<T>(value: unknown, fallback: T): T {
 export function escapeLike(value: string): string {
   return value.replace(/([\\%_*])/g, "\\$1");
 }
+
+/**
+ * Derives a public URL slug from a dish or category name, matching the server
+ * `slugSchema` (`^[a-z0-9]+(?:-[a-z0-9]+)*$`). Latinises accented characters so
+ * "Crème Brûlée" → "creme-brulee"; scripts without a Latin mapping (Arabic,
+ * Japanese) collapse to an empty string, so the caller keeps whatever the admin
+ * typed rather than writing a meaningless slug.
+ */
+export function slugify(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}

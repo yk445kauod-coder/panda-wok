@@ -247,6 +247,38 @@ export const categorySchema = z.object({
   isEnabled: z.coerce.boolean().default(true),
 });
 
+/**
+ * Modifier (extra/option) groups and their options. These are what the
+ * customer sees on the dish page ("Choose up to 2 extras"); the same limits are
+ * re-enforced in `place_order`, so the editor validates them here too. A group
+ * with `maxSelect = 1` is a radio, anything higher is checkboxes.
+ */
+export const modifierGroupSchema = z
+  .object({
+    id: optionalUuid,
+    menuItemId: uuidSchema,
+    nameEn: z.string().trim().min(2, "English name is required").max(80),
+    nameAr: optionalText(80),
+    minSelect: z.coerce.number().int().min(0).max(20).default(0),
+    maxSelect: z.coerce.number().int().min(1).max(20).default(1),
+    isRequired: z.coerce.boolean().default(false),
+    sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+  })
+  .refine((group) => group.maxSelect >= group.minSelect, {
+    message: "Maximum must be at least the minimum",
+    path: ["maxSelect"],
+  });
+
+export const modifierOptionSchema = z.object({
+  id: optionalUuid,
+  groupId: uuidSchema,
+  nameEn: z.string().trim().min(2, "English name is required").max(80),
+  nameAr: optionalText(80),
+  priceDelta: z.coerce.number().min(-100_000).max(100_000).default(0),
+  isAvailable: z.coerce.boolean().default(true),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+});
+
 export const stockItemSchema = z.object({
   id: optionalUuid,
   nameEn: z.string().trim().min(2, "Name is required").max(80),

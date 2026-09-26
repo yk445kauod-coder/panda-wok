@@ -1,28 +1,36 @@
 "use client";
 
-import { AdminForm, Field, TextArea, Toggle } from "@/components/admin/form-kit";
+import { AdminForm, Field, SlugField, TextArea, Toggle } from "@/components/admin/form-kit";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
+import { ModifierEditor } from "@/components/admin/modifier-editor";
 import { saveMenuItemAction } from "@/lib/actions/admin";
-import type { AdminMenuItem } from "@/lib/services/admin-catalog";
+import type { AdminMenuItem, AdminModifierGroup } from "@/lib/services/admin-catalog";
 
 type Category = { id: string; name_en: string; slug: string };
 
 /**
  * Create/edit form for a dish. The essential fields come first — names,
- * price, categoryand photo — so adding a dish is a handful of inputs. The
+ * price, category and photo — so adding a dish is a handful of inputs. The
  * long tail (attributes, nutrition, SEO) sits folded in "More options",
  * one click away but out of the way for everyday edits.
+ *
+ * When editing an existing dish, the extras editor sits below the form: a
+ * modifier group needs a saved `menu_items.id`, so it only appears once the
+ * dish exists.
  */
 export function MenuItemForm({
   item,
   categories,
+  modifierGroups = [],
 }: {
   item: AdminMenuItem | null;
   categories: Category[];
+  modifierGroups?: AdminModifierGroup[];
 }) {
   const editing = Boolean(item);
 
   return (
+    <>
     <AdminForm
       action={saveMenuItemAction}
       submitLabel={editing ? "Save changes" : "Create dish"}
@@ -66,6 +74,15 @@ export function MenuItemForm({
             label="Price (EGP)"
             hint="The total the customer pays for this dish."
             defaultValue={item ? String(item.price) : ""}
+          />
+          <Field
+            name="compareAtPrice"
+            label="Was price (EGP)"
+            type="number"
+            hint="Optional. Set higher than the price to show a strikethrough offer badge."
+            defaultValue={
+              item?.compare_at_price != null ? String(item.compare_at_price) : ""
+            }
           />
         </div>
 
@@ -170,10 +187,9 @@ export function MenuItemForm({
 
           <fieldset className="grid gap-4 sm:grid-cols-2">
             <legend className="sr-only">Imagery</legend>
-            <Field
-              name="slug"
-              label="URL slug"
-              hint="Used for /menu/your-slug. Lowercase words separated by hyphens."
+            <SlugField
+              sourceName="nameEn"
+              hint="Public address: /menu/your-slug. Filled from the English name; edit to override."
               defaultValue={item?.slug ?? ""}
             />
             <Field
@@ -209,5 +225,12 @@ export function MenuItemForm({
         </div>
       </details>
     </AdminForm>
+
+    {editing && item ? (
+      <div className="mt-6 border-t border-ink-900/10 pt-6">
+        <ModifierEditor menuItemId={item.id} groups={modifierGroups} />
+      </div>
+    ) : null}
+    </>
   );
 }

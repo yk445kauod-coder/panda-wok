@@ -2325,6 +2325,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["staff_role"]
       }
+      delete_ai_secret: { Args: { p_name: string }; Returns: boolean }
       feedback_count: {
         Args: {
           p_category?: Database["public"]["Enums"]["feedback_category"]
@@ -2333,12 +2334,21 @@ export type Database = {
         }
         Returns: number
       }
+      get_ai_secret: { Args: { p_name: string }; Returns: string }
       has_role: {
         Args: { required: Database["public"]["Enums"]["staff_role"] }
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      list_ai_secret_hints: {
+        Args: never
+        Returns: {
+          hint: string
+          name: string
+          updated_at: string
+        }[]
+      }
       log_audit_event: {
         Args: {
           p_action: string
@@ -2391,6 +2401,10 @@ export type Database = {
           broadcast_id: string
           recipients: number
         }[]
+      }
+      set_ai_secret: {
+        Args: { p_description?: string; p_name: string; p_value: string }
+        Returns: string
       }
       setting_numeric: {
         Args: { p_default: number; p_key: string }
