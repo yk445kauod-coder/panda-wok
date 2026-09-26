@@ -409,21 +409,26 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
 
-  /* Scroll reveal. Elements start slightly transparent+offset and settle when
+/* Scroll reveal. Elements start slightly transparent+offset and settle when
      they enter the viewport (the observer toggles `data-reveal` between
-     "pending" and "shown").
-     Falls back to fully visible when JS is off, because the element renders
+     "pending" and "shown"). The observer also pushes elements back to
+     "pending" when they leave the viewport, so scrolling out fades them
+     out again — a gentle in/out loop rather than a one-shot reveal. Falls
+     back to fully visible when JS is off, because the element renders
      "shown" and nothing ever demotes it to "pending". */
   [data-reveal="pending"] {
     opacity: 0;
-    transform: translate3d(0, 18px, 0);
+    transform: translate3d(0, 22px, 0) scale(0.985);
+    filter: blur(4px);
   }
   [data-reveal="shown"] {
     opacity: 1;
     transform: none;
+    filter: blur(0);
     transition:
-      opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      filter 0.5s ease;
   }
 
   /* Fluid heading scale: large on wide screens, legible but never tiny on
@@ -431,6 +436,19 @@
   .text-fluid-hero { font-size: clamp(2.25rem, 6vw + 0.5rem, 4.5rem); line-height: 1.04; }
   .text-fluid-h2 { font-size: clamp(1.6rem, 3vw + 0.75rem, 2.6rem); line-height: 1.12; }
   .text-fluid-h3 { font-size: clamp(1.25rem, 1.4vw + 0.9rem, 1.7rem); line-height: 1.2; }
+
+/* Home hero copy fades and rises in once, right after first paint. The panda
+     mark and the plate arrive with the copy; none of this is a scroll effect —
+     it seduces the eyes the instant the page lands. Reduced-motion users get
+     the final state via the global override below. */
+  @keyframes hero-rise {
+    from { opacity: 0; transform: translate3d(0, 18px, 0); }
+    to { opacity: 1; transform: none; }
+  }
+  .animate-hero-rise {
+    animation: hero-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 120ms;
+  }
 }
 
 /*

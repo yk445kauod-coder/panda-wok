@@ -5,6 +5,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
 import { breadcrumbSchema, menuSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Reveal } from "@/components/ui/reveal";
 import { DishCard } from "@/components/customer/dish-card";
 import { MenuFilters } from "@/components/customer/menu-filters";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
@@ -200,12 +201,12 @@ export default async function MenuPage({
         </section>
       ) : (
         <div className="mt-8 space-y-10">
-          {localisedCategories.map((category) => {
+          {localisedCategories.map((category, index) => {
             const items = menu.items.filter((i) => i.category_id === category.id);
             if (items.length === 0) return null;
 
             return (
-              <section key={category.id} aria-labelledby={`cat-${category.slug}`}>
+              <Reveal as="section" key={category.id} aria-labelledby={`cat-${category.slug}`} delay={(index % 3) * 70}>
                 <div className="flex items-end justify-between gap-3">
                   <div>
                     <h2
@@ -248,7 +249,7 @@ export default async function MenuPage({
                     </li>
                   ))}
                 </ul>
-              </section>
+              </Reveal>
             );
           })}
         </div>

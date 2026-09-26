@@ -23,10 +23,18 @@ export default async function AdminLayout({
   // nobody is bounced to the customer sign-in: an unauthenticated visitor sees
   // a single passcode field. The role then comes from the credential itself —
   // the passcode is the owner, a staff login id is that member's role.
-  const session = await getAdminSession();
-  if (!session) {
-    const settings = await getPublicSettings().catch(() => null);
-    return <AdminGateForm brand={settings?.brand} />;
+  const [session, settings] = await Promise.allSettled([
+    getAdminSession(),
+    getPublicSettings(),
+  ]);
+  const adminSession = session.status === "fulfilled" ? session.value : null;
+  const brand =
+    settings.status === "fulfilled" && settings.value?.brand
+      ? settings.value.brand
+      : undefined;
+
+  if (!adminSession) {
+    return <AdminGateForm brand={brand} />;
   }
 
   // No capability gate here on purpose: the roles do not share a single
@@ -35,9 +43,10 @@ export default async function AdminLayout({
   // Each page guards itself, and this shell renders only what the role may open.
   return (
     <AdminShell
-      role={session.role}
-      capabilities={capabilitiesFor(session.role)}
-      staffName={session.profile?.full_name ?? ROLE_LABELS[session.role]}
+      role={adminSession.role}
+      capabilities={capabilitiesFor(adminSession.role)}
+      staffName={adminSession.profile?.full_name ?? ROLE_LABELS[adminSession.role]}
+      brand={brand}
     >
       {children}
     </AdminShell>

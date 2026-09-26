@@ -33,25 +33,35 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Overview</h1>
-          <p className="mt-1 text-sm text-ink-700/80">
-            The last {metrics.windowDays} days at Panda Wok. Figures update on every load.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {unread > 0 ? (
-            <Link href="/admin/chat">
-              <Badge tone="indigo">{unread} unread message{unread === 1 ? "" : "s"}</Badge>
+      <header className="relative overflow-hidden rounded-2xl border border-ink-900/10 bg-ink-950 p-5 text-rice-100 sm:p-6">
+        <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-indigo-600/30 to-transparent" aria-hidden="true" />
+        <div className="relative flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-3xs font-semibold tracking-widest text-rice-300/70 uppercase">
+              {new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date())}
+            </p>
+            <h1 className="mt-1 font-display text-2xl font-semibold text-rice-50">
+              {session.profile?.full_name
+                ? `Welcome back, ${session.profile.full_name.split(" ")[0]}`
+                : "Welcome to the kitchen"}
+            </h1>
+            <p className="mt-1 text-sm text-rice-200/85">
+              The last {metrics.windowDays} days at Panda Wok. Figures update on every load.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {unread > 0 ? (
+              <Link href="/admin/chat">
+                <Badge tone="indigo">{unread} unread message{unread === 1 ? "" : "s"}</Badge>
+              </Link>
+            ) : null}
+            <Link
+              href="/admin/orders?status=new"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-medium text-rice-50 transition-colors hover:bg-indigo-700"
+            >
+              Open the order queue
             </Link>
-          ) : null}
-          <Link
-            href="/admin/orders?status=new"
-            className="inline-flex h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-medium text-rice-50 hover:bg-indigo-700"
-          >
-            Open the order queue
-          </Link>
+          </div>
         </div>
       </header>
 
@@ -300,21 +310,21 @@ function StatCard({
   tone?: "neutral" | "warning";
 }) {
   return (
-    <div className="washi-panel p-4">
+    <div className="washi-panel group relative overflow-hidden p-4 transition-shadow hover:shadow-md">
       <div className="flex items-center gap-2 text-ink-700/75">
         <span
           className={
             tone === "warning"
-              ? "grid size-7 place-items-center rounded-lg bg-chili-500/12 text-chili-600"
-              : "grid size-7 place-items-center rounded-lg bg-rice-200 text-ink-800"
+              ? "grid size-8 place-items-center rounded-xl bg-chili-500/12 text-chili-600"
+              : "grid size-8 place-items-center rounded-xl bg-indigo-600/10 text-indigo-600"
           }
         >
           {icon}
         </span>
-        <span className="text-xs font-medium uppercase tracking-wide">{label}</span>
+        <span className="text-xs font-semibold tracking-wide text-ink-700/80 uppercase">{label}</span>
       </div>
-      <p className="mt-2 text-2xl font-semibold tabular-nums text-ink-900">{value}</p>
-      {hint ? <p className="mt-0.5 text-xs text-ink-700/65">{hint}</p> : null}
+      <p className="mt-2.5 text-2xl font-semibold tabular-nums text-ink-900">{value}</p>
+      {hint ? <p className="mt-1 text-xs text-ink-700/65">{hint}</p> : null}
     </div>
   );
 }

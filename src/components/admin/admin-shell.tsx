@@ -13,6 +13,7 @@ import {
   Coffee,
   Database,
   Download,
+  ExternalLink,
   Gauge,
   Heart,
   LayoutDashboard,
@@ -30,6 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { ADMIN_NAV, ROLE_LABELS, type Capability, type StaffRole } from "@/lib/auth/rbac";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { cn } from "@/lib/utils/format";
 
 /**
@@ -72,11 +74,13 @@ export function AdminShell({
   role,
   capabilities,
   staffName,
+  brand,
   children,
 }: {
   role: StaffRole;
   capabilities: readonly Capability[];
   staffName: string;
+  brand?: { name: string; logo_url: string | null };
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -94,12 +98,13 @@ export function AdminShell({
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
       {/* Mobile top bar */}
-      <div className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-ink-900/10 bg-rice-100/90 px-4 pt-safe backdrop-blur lg:hidden">
+      <div className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-ink-900/10 bg-ink-950/92 px-4 pt-safe text-rice-100 backdrop-blur lg:hidden">
         <Link href="/admin" className="flex h-14 items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-lg bg-indigo-600 font-display text-sm font-semibold text-rice-50">
-            PW
-          </span>
-          <span className="font-display text-base font-semibold text-ink-900">
+          <BrandLogo
+            brand={brand ?? { name: "Panda Wok", logo_url: null }}
+            className="size-8"
+          />
+          <span className="font-display text-base font-semibold text-rice-50">
             Ops
           </span>
         </Link>
@@ -109,7 +114,7 @@ export function AdminShell({
           aria-expanded={open}
           aria-controls="admin-nav"
           aria-label={open ? "Close navigation" : "Open navigation"}
-          className="grid size-10 place-items-center rounded-lg border border-ink-900/12 text-ink-800"
+          className="grid size-10 place-items-center rounded-lg border border-rice-100/20 text-rice-100"
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
@@ -124,9 +129,10 @@ export function AdminShell({
         )}
       >
         <div className="hidden items-center gap-2.5 px-4 pt-5 lg:flex">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-indigo-600 font-display text-sm font-semibold text-rice-50">
-            PW
-          </span>
+          <BrandLogo
+            brand={brand ?? { name: "Panda Wok", logo_url: null }}
+            className="size-9 rounded-lg bg-rice-50/10 p-1"
+          />
           <span className="min-w-0">
             <span className="block font-display text-sm font-semibold text-rice-50">
               Panda Wok Ops
@@ -192,8 +198,23 @@ export function AdminShell({
         </div>
       </nav>
 
-      <main id="main" className="min-w-0 flex-1 px-4 py-5 lg:px-8 lg:py-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
+      <main id="main" className="min-w-0 flex-1">
+        <div className="hidden items-center justify-between gap-3 border-b border-ink-900/10 bg-rice-100/60 px-6 py-2.5 lg:flex">
+          <div className="flex items-center gap-2 text-xs text-ink-700/75">
+            <span className="inline-flex h-6 items-center rounded-full bg-indigo-600/10 px-2.5 font-semibold tracking-wide text-indigo-700 uppercase">
+              {ROLE_LABELS[role]}
+            </span>
+            <span className="truncate">{staffName}</span>
+          </div>
+          <Link
+            href="/"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-ink-700 transition-colors hover:bg-ink-900/6 hover:text-ink-900"
+          >
+            <ExternalLink className="size-3.5" aria-hidden="true" />
+            View the customer site
+          </Link>
+        </div>
+        <div className="mx-auto max-w-6xl px-4 py-5 lg:px-8 lg:py-8">{children}</div>
       </main>
     </div>
   );

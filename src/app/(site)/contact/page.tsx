@@ -8,6 +8,7 @@ import { breadcrumbSchema, faqPageSchema } from "@/lib/seo/schema";
 import { buildFaq } from "@/lib/seo/faq";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
+import { Reveal } from "@/components/ui/reveal";
 import { socialIcon, socialLabel, sortSocialEntries } from "@/components/icons/social";
 import { getLocale, getT } from "@/lib/i18n/server";
 
@@ -84,13 +85,14 @@ export default async function ContactPage() {
         ]}
       />
 
-      <header className="mt-4">
+      <Reveal className="mt-4">
         <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
           {t("contact.title", { brand })}
         </h1>
         <p className="mt-1.5 text-sm text-ink-700/85">{t("contact.subtitle")}</p>
-      </header>
+      </Reveal>
 
+      <Reveal delay={80}>
       {!hasAnyChannel ? (
         <p className="mt-5 rounded-xl border border-miso-500/30 bg-miso-300/15 p-4 text-sm text-ink-800">
           {t("contact.pending")}
@@ -140,8 +142,10 @@ export default async function ContactPage() {
           ))}
         </ul>
       )}
+      </Reveal>
 
-      <section aria-labelledby="hours-heading" className="washi-panel mt-5 p-4">
+      <Reveal delay={120}>
+        <section aria-labelledby="hours-heading" className="washi-panel mt-5 p-4">
         <h2
           id="hours-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
@@ -164,8 +168,10 @@ export default async function ContactPage() {
           </dl>
         )}
       </section>
+      </Reveal>
 
-      <section aria-labelledby="area-heading" className="washi-panel mt-3 p-4">
+      <Reveal delay={140}>
+        <section aria-labelledby="area-heading" className="washi-panel mt-3 p-4">
         <h2
           id="area-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
@@ -183,8 +189,10 @@ export default async function ContactPage() {
           visit. Collection is available at checkout if you prefer to pick your order up.
         </p>
       </section>
+      </Reveal>
 
-      <section aria-labelledby="ordering-heading" className="washi-panel mt-3 p-4">
+      <Reveal delay={160}>
+        <section aria-labelledby="ordering-heading" className="washi-panel mt-3 p-4">
         <h2 id="ordering-heading" className="text-sm font-semibold text-ink-900">
           Ordering and delivery
         </h2>
@@ -216,8 +224,10 @@ export default async function ContactPage() {
           Timings are a guide rather than a promise, and depend on how busy the kitchen is.
         </p>
       </section>
+      </Reveal>
 
-      <section aria-labelledby="faq-heading" className="mt-5">
+      <Reveal delay={180}>
+        <section aria-labelledby="faq-heading" className="mt-5">
         <h2 id="faq-heading" className="text-sm font-semibold text-ink-900">
           {t("contact.faqHeading")}
         </h2>
@@ -234,8 +244,10 @@ export default async function ContactPage() {
           {t("faq.title")} →
         </Link>
       </section>
+      </Reveal>
 
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+      <Reveal delay={210}>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
         <Link
           href="/menu"
           className="inline-flex h-12 items-center justify-center rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 hover:bg-indigo-700 sm:flex-1"
@@ -249,6 +261,7 @@ export default async function ContactPage() {
           Send feedback
         </Link>
       </div>
+      </Reveal>
 
       <JsonLdScript data={structured} />
     </div>

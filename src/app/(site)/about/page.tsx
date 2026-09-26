@@ -7,6 +7,7 @@ import { breadcrumbSchema, organisationSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { Reveal } from "@/components/ui/reveal";
 import { Badge } from "@/components/ui/button";
 import { getLocale, getT } from "@/lib/i18n/server";
 import {
@@ -98,7 +99,7 @@ export default async function AboutPage() {
         ]}
       />
 
-      <header className="mt-4 flex items-start gap-4">
+      <Reveal className="mt-4 flex items-start gap-4">
         <BrandLogo brand={settings.brand} className="mt-1 size-14 shrink-0" />
         <div>
           <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
@@ -117,9 +118,10 @@ export default async function AboutPage() {
             </ul>
           ) : null}
         </div>
-      </header>
+      </Reveal>
 
-      <section className="prose-panda mt-6 space-y-4 text-sm leading-relaxed text-ink-800">
+      <Reveal delay={80}>
+        <section className="prose-panda mt-6 space-y-4 text-sm leading-relaxed text-ink-800">
         <p>{description}</p>
 
         <h2 className="font-display text-lg font-semibold text-ink-900">
@@ -166,9 +168,11 @@ export default async function AboutPage() {
             ),
           })}
         </p>
-      </section>
+        </section>
+      </Reveal>
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+      <Reveal delay={140}>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Link
           href="/menu"
           className="inline-flex h-12 items-center justify-center rounded-xl bg-indigo-600 px-6 font-medium text-rice-50 hover:bg-indigo-700 sm:flex-1"
@@ -182,6 +186,7 @@ export default async function AboutPage() {
           {t("about.contactUs")}
         </Link>
       </div>
+      </Reveal>
 
       <JsonLdScript data={structured} />
     </article>

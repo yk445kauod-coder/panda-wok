@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth/session";
 import { getLoyaltyOverview } from "@/lib/services/loyalty";
 import { getEnabledRewards, getFeatureFlagMap, getPublicSettings } from "@/lib/services/catalog";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
+import { Reveal } from "@/components/ui/reveal";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate, formatNumber, humanise } from "@/lib/utils/format";
@@ -69,12 +70,12 @@ export default async function LoyaltyPage() {
         ]}
       />
 
-      <header className="mt-4">
+      <Reveal className="mt-4">
         <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
           {t("loyalty.title")}
         </h1>
         <p className="mt-1.5 text-sm text-ink-700/85">{t("loyalty.subtitle")}</p>
-      </header>
+      </Reveal>
 
       {!session ? (
         <section className="washi-panel mt-5 p-5">
@@ -184,7 +185,7 @@ export default async function LoyaltyPage() {
           </section>
 
           {/* Rewards */}
-          <section aria-labelledby="rewards-heading" className="mt-6">
+          <Reveal as="section" aria-labelledby="rewards-heading" className="mt-6" delay={100}>
             <h2
               id="rewards-heading"
               className="flex items-center gap-1.5 text-lg font-semibold text-ink-900"
@@ -256,10 +257,10 @@ export default async function LoyaltyPage() {
             )}
 
             <p className="mt-3 text-xs text-ink-700/70">{t("loyalty.rewardsFootnote")}</p>
-          </section>
+          </Reveal>
 
           {/* History */}
-          <section aria-labelledby="history-heading" className="mt-6">
+          <Reveal as="section" aria-labelledby="history-heading" className="mt-6" delay={160}>
             <h2 id="history-heading" className="text-lg font-semibold text-ink-900">
               {t("loyalty.historyHeading")}
             </h2>
@@ -298,11 +299,13 @@ export default async function LoyaltyPage() {
                 ))}
               </ul>
             )}
-          </section>
+          </Reveal>
         </>
       )}
 
+      <Reveal delay={220}>
       <JsonLdLoyaltyNote brand={settings.brand.name} t={t} />
+      </Reveal>
     </div>
   );
 }

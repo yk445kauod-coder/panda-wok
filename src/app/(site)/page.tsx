@@ -221,7 +221,7 @@ export default async function HomePage() {
           </div>
         </section>
       ) : (
-        <section className="mx-auto max-w-6xl px-4 py-10">
+        <Reveal as="section" className="mx-auto max-w-6xl px-4 py-10" delay={120}>
           <EmptyState
             title={t("home.noDishesTitle")}
             description={t("home.noDishesBody")}
@@ -234,7 +234,7 @@ export default async function HomePage() {
               </Link>
             }
           />
-        </section>
+        </Reveal>
       )}
 
       <BrandBanner
@@ -277,7 +277,7 @@ function Hero({
           half is carried by the bamboo standing behind the copy. */}
       <SakuraField density={1} />
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 animate-hero-rise sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
         <div>
           {/* Phones get the mark first, at the top of the page. On desktop the
               ringed plate on the right carries it instead. */}

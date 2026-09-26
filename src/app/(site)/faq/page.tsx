@@ -6,6 +6,7 @@ import { breadcrumbSchema, faqPageSchema } from "@/lib/seo/schema";
 import { buildFaq } from "@/lib/seo/faq";
 import { JsonLdScript } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
+import { Reveal } from "@/components/ui/reveal";
 import { getLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -58,23 +59,26 @@ export default async function FaqPage() {
         ]}
       />
 
-      <header className="mt-4">
+      <Reveal className="mt-4">
         <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
           {t("faq.title")}
         </h1>
         <p className="mt-1.5 text-sm text-ink-700/85">{t("faq.subtitle")}</p>
-      </header>
+      </Reveal>
 
-      <dl className="mt-5 space-y-3">
-        {faqs.map((faq) => (
-          <div key={faq.question} className="washi-panel p-4">
-            <dt className="text-sm font-semibold text-ink-900">{faq.question}</dt>
-            <dd className="mt-1.5 text-sm text-ink-700/85">{faq.answer}</dd>
-          </div>
-        ))}
-      </dl>
+      <Reveal delay={80}>
+        <dl className="mt-5 space-y-3">
+          {faqs.map((faq) => (
+            <div key={faq.question} className="washi-panel p-4">
+              <dt className="text-sm font-semibold text-ink-900">{faq.question}</dt>
+              <dd className="mt-1.5 text-sm text-ink-700/85">{faq.answer}</dd>
+            </div>
+          ))}
+        </dl>
+      </Reveal>
 
-      <section className="washi-panel mt-5 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <Reveal delay={140}>
+        <section className="washi-panel mt-5 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-ink-800">{t("faq.contactPrompt")}</p>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link
@@ -91,6 +95,7 @@ export default async function FaqPage() {
           </Link>
         </div>
       </section>
+      </Reveal>
 
       <JsonLdScript data={structured} />
     </div>

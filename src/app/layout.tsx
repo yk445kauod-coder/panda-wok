@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import {
+  IBM_Plex_Sans,
   IBM_Plex_Sans_Arabic,
-  Noto_Kufi_Arabic,
-  Playfair_Display,
-  Plus_Jakarta_Sans,
   Shippori_Mincho,
 } from "next/font/google";
 import "./globals.css";
@@ -25,17 +23,25 @@ import { dirFor } from "@/lib/i18n/config";
  * they keep their @font-face and unicode-range, so a face still loads the
  * moment copy actually uses it, but nothing is fetched up front. Weights are
  * trimmed to the ones the design system asks for.
+
+ *
+ * The brand face is IBM Plex in both scripts: `IBM_Plex_Sans` for Latin,
+ * `IBM_Plex_Sans_Arabic` for Arabic. Same family, one voice — the display slot
+ * stays a notch heavier (600/700 Latin, 500/700 Arabic)for headings, and
+ * Shippori Mincho covers CJK glyphs inline.
+
  */
-const bodyFont = Plus_Jakarta_Sans({
+const bodyFont = IBM_Plex_Sans({
   variable: "--font-body",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
-const displayFont = Playfair_Display({
+const displayFont = IBM_Plex_Sans({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["600", "700"],
   display: "swap",
   preload: false,
 });
@@ -50,15 +56,16 @@ const arabicFont = IBM_Plex_Sans_Arabic({
 });
 
 /**
- * Arabic display face for headings only. Kufi is a heavier, more geometric
- * script than the Plex body face, which gives Arabic headings the same
- * "display vs body" contrast Latin gets from Playfair Display vs Plus Jakarta
- * Sans.
+ * Arabic display face for headings only. Plex Arabic SemiBold sits a notch
+ * heavier than the body weights, which gives Arabic headings the same
+ * "display vs body" contrast Latin gets from Plex SemiBold vs Plex Regular.
+ * None of the contrast comes from switching families anymore. One Plex
+ * voice in both scripts.
  */
-const arabicDisplayFont = Noto_Kufi_Arabic({
+const arabicDisplayFont = IBM_Plex_Sans_Arabic({
   variable: "--font-arabic-display",
   subsets: ["arabic"],
-  weight: ["400", "600"],
+  weight: ["500", "700"],
   display: "swap",
   preload: false,
 });
