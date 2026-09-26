@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Flame, Leaf, Clock, CircleSlash } from "lucide-react";
+import { ArrowRight, Flame, Leaf, CircleSlash } from "lucide-react";
 import { Badge } from "@/components/ui/button";
 import { StarRating } from "@/components/customer/star-rating";
 import { formatPrice, cn } from "@/lib/utils/format";
@@ -26,14 +26,12 @@ import { makeTranslator } from "@/lib/i18n/translate";
  * It stays a server component: translation goes through a local translator
  * rather than a hook, so no card ships a client bundle.
  *
- * The prep clock and the "view dish" arrow are hoisted to module scope because
- * they are identical on every card. This does *not* shrink the rendered HTML —
- * React still emits each SVG element once per card, so a full menu is 123 inline
- * SVGs either way — but it does shrink the RSC flight payload, because the
- * element is serialised once and referenced rather than re-serialised per card
- * (~13 KB off a 52-dish /menu).
+ * The "view dish" arrow is hoisted to module scope because it is identical on
+ * every card. This does *not* shrink the rendered HTML — React still emits each
+ * SVG element once per card, so a full menu is 123 inline SVGs either way — but
+ * it does shrink the RSC flight payload, because the element is serialised once
+ * and referenced rather than re-serialised per card (~13 KB off a 52-dish /menu).
  */
-const PREP_ICON = <Clock className="size-3" aria-hidden="true" />;
 const VIEW_ICON = <ArrowRight className="size-3.5 rtl:rotate-180" aria-hidden="true" />;
 
 export function DishCard({
@@ -111,20 +109,6 @@ export function DishCard({
           {unavailable ? <Badge tone="danger">{t("dish.soldOut")}</Badge> : null}
           {hasDiscount ? <Badge tone="success">{t("dish.offer")}</Badge> : null}
         </div>
-
-        {item.prep_minutes ? (
-          <span
-            className={cn(
-              "absolute end-2.5 bottom-2.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-2xs font-semibold backdrop-blur",
-              onBand
-                ? "bg-ink-950/55 text-rice-50"
-                : "bg-rice-50/90 text-ink-800 shadow-washi",
-            )}
-          >
-            {PREP_ICON}
-            {t("dish.prepMin", { minutes: item.prep_minutes })}
-          </span>
-        ) : null}
       </div>
 
       <div className="flex flex-1 flex-col p-4">

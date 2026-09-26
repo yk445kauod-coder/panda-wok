@@ -154,9 +154,10 @@ export const placeOrderSchema = z.object({
   // there is nothing to pick up. The DB enum keeps the value for historical
   // orders, but no new order can be placed as one.
   fulfillment: z.literal("delivery").default("delivery"),
-  paymentMethod: z
-    .enum(["cash_on_delivery", "card_on_delivery", "online"])
-    .default("cash_on_delivery"),
+  // Cash and InstaPay are the only methods the kitchen accepts. `card_on_delivery`
+  // and `online` remain in the DB enum for historical orders but are no longer
+  // offered, so they are rejected here rather than silently accepted.
+  paymentMethod: z.enum(["cash_on_delivery", "instapay"]).default("cash_on_delivery"),
   customerNote: z.string().trim().max(300).optional(),
   pointsToRedeem: z.coerce.number().int().min(0).max(100000).default(0),
 });
@@ -221,7 +222,6 @@ export const menuItemSchema = z.object({
   isVegetarian: z.coerce.boolean().default(false),
   isVegan: z.coerce.boolean().default(false),
   containsNuts: z.coerce.boolean().default(false),
-  prepMinutes: z.coerce.number().int().min(0).max(240).default(15),
   calories: z.coerce.number().int().min(0).max(10000).nullable().optional(),
   allergens: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
   ingredients: z.array(z.string().trim().min(1).max(60)).max(30).default([]),

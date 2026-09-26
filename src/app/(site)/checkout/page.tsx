@@ -68,6 +68,7 @@ export default async function CheckoutPage() {
       addresses={addresses}
       defaultAddressId={defaultAddress?.id ?? null}
       customerPhone={session.profile?.phone ?? null}
+      instapayUrl={settings.support.instapayUrl}
       loyaltyPoints={loyalty.account?.points_balance ?? 0}
       loyaltyTier={loyalty.account?.tier ?? null}
       previousOrders={stats.orderCount}

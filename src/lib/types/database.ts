@@ -2542,7 +2542,11 @@ export type Database = {
         | "rejected"
         | "failed"
         | "refunded"
-      payment_method: "cash_on_delivery" | "card_on_delivery" | "online"
+      payment_method:
+        | "cash_on_delivery"
+        | "card_on_delivery"
+        | "online"
+        | "instapay"
       payment_status: "unpaid" | "authorized" | "paid" | "refunded" | "failed"
       staff_role:
         | "owner"
@@ -2733,7 +2737,12 @@ export const Constants = {
         "failed",
         "refunded",
       ],
-      payment_method: ["cash_on_delivery", "card_on_delivery", "online"],
+      payment_method: [
+        "cash_on_delivery",
+        "card_on_delivery",
+        "online",
+        "instapay",
+      ],
       payment_status: ["unpaid", "authorized", "paid", "refunded", "failed"],
       staff_role: [
         "owner",

@@ -15,6 +15,7 @@ import { menuSchema } from "@/lib/seo/schema";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Reveal } from "@/components/ui/reveal";
 import { FeaturedDishStrip } from "@/components/customer/featured-strip";
+import { AnnouncementBanner } from "@/components/customer/announcement-banner";
 import { IdentityBand } from "@/components/customer/identity-band";
 import { PopularMenu } from "@/components/customer/popular-menu";
 import {
@@ -29,6 +30,7 @@ import { BRAND_LOGO_URL, BRAND_SCRIPT_MARK } from "@/lib/brand";
 import { BrandBanner } from "@/components/customer/brand-banner";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { brandDescription, brandTagline } from "@/lib/i18n/brand";
+import { getAnnouncements } from "@/lib/services/content";
 import type { T } from "@/lib/i18n/server";
 import { localiseCategory } from "@/lib/i18n/catalog";
 
@@ -64,15 +66,16 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [featured, categories, menu, settings, restaurant, locale, ratings] =
+  const locale = await getLocale();
+  const [featured, categories, menu, settings, restaurant, ratings, announcements] =
     await Promise.all([
       getFeaturedItems(6),
       getPublicCategories(),
       getPublicMenu(),
       getPublicSettings(),
       getRestaurant(),
-      getLocale(),
       getMenuRatings(),
+      getAnnouncements(locale),
     ]);
   const t = await getT(locale);
 
@@ -180,6 +183,8 @@ export default async function HomePage() {
           city: settings.brand.city,
         }}
       />
+
+      <AnnouncementBanner announcements={announcements} />
 
       <IdentityBand
         brand={brand}

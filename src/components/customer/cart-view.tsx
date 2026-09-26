@@ -198,15 +198,18 @@ export function CartView({
                 : formatPrice(totals.deliveryFee, undefined, locale)}
             </dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-ink-700/85">
-              {t("cart.tax")}
-              <span className="ms-1 text-xs text-ink-700/60">
-                ({Math.round(config.taxRate * 100)}%)
-              </span>
-            </dt>
-            <dd className="tabular-nums">{formatPrice(totals.tax, undefined, locale)}</dd>
-          </div>
+          {/* Hidden at a zero rate: "Tax (0%) — EGP 0.00" is noise. */}
+          {config.taxRate > 0 ? (
+            <div className="flex justify-between">
+              <dt className="text-ink-700/85">
+                {t("cart.tax")}
+                <span className="ms-1 text-xs text-ink-700/60">
+                  ({Math.round(config.taxRate * 100)}%)
+                </span>
+              </dt>
+              <dd className="tabular-nums">{formatPrice(totals.tax, undefined, locale)}</dd>
+            </div>
+          ) : null}
           <div className="mt-2 flex justify-between border-t border-ink-900/8 pt-2.5 text-base font-semibold">
             <dt>{t("cart.total")}</dt>
             <dd className="tabular-nums">{formatPrice(totals.total, undefined, locale)}</dd>

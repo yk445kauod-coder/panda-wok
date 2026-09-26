@@ -153,12 +153,7 @@ export function MenuItemForm({
           </fieldset>
 
           <fieldset className="grid gap-4 sm:grid-cols-2">
-            <legend className="sr-only">Preparationand nutrition</legend>
-            <Field
-              name="prepMinutes"
-              label="Prep minutes"
-              defaultValue={String(item?.prep_minutes ?? 15)}
-            />
+            <legend className="sr-only">Nutrition</legend>
             <Field
               name="calories"
               label="Calories"

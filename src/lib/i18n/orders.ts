@@ -57,8 +57,11 @@ export function fulfilmentLabel(value: string, locale: Locale): string {
 }
 
 export function paymentMethodLabel(value: string, locale: Locale): string {
+  // `card_on_delivery` and `online` are kept for historical orders only; they
+  // are no longer offered at checkout.
   const map: Record<string, { en: string; ar: string }> = {
     cash_on_delivery: { en: "Cash on delivery", ar: "نقداً عند التوصيل" },
+    instapay: { en: "InstaPay", ar: "إنستاباي" },
     card_on_delivery: { en: "Card on delivery", ar: "بطاقة عند التوصيل" },
     online: { en: "Online payment", ar: "دفع إلكتروني" },
   };

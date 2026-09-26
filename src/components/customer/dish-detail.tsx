@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   AlertTriangle,
-  Clock,
   Flame,
   Leaf,
   Nut,
@@ -144,12 +143,6 @@ export function DishDetail({
           </p>
 
           <ul className="mt-4 flex flex-wrap gap-2 text-xs">
-            {dish.prep_minutes ? (
-              <li className="inline-flex items-center gap-1.5 rounded-full bg-rice-200/70 px-2.5 py-1 text-ink-800">
-                <Clock className="size-3.5" aria-hidden="true" />
-                {t("dish.prepAbout", { minutes: dish.prep_minutes })}
-              </li>
-            ) : null}
             {dish.calories ? (
               <li className="inline-flex items-center gap-1.5 rounded-full bg-rice-200/70 px-2.5 py-1 text-ink-800">
                 <Utensils className="size-3.5" aria-hidden="true" />

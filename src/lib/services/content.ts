@@ -99,18 +99,39 @@ export async function getDeliveryZones(): Promise<DeliveryZoneRow[]> {
   return data ?? [];
 }
 
-/** Announcements whose schedule window contains now. */
+/**
+ * Announcements for the reader's locale, honouring the schedule window.
+ *
+ * Rows are standalone: there is no translation-pair column, so an English and
+ * an Arabic version of the same notice are two rows the admin aligns with the
+ * same `sort_order`. `.in("locale", [locale, "en"])` on its own therefore
+ * returned *both* and an Arabic visitor saw the English notice underneath the
+ * Arabic one. Rows are deduplicated by `sort_order`, preferring the requested
+ * locale, so the English row only appears when no localised one covers that
+ * slot.
+ */
 export async function getAnnouncements(locale: Locale): Promise<AnnouncementRow[]> {
   const supabase = createPublicSupabase();
+  const nowIso = new Date().toISOString();
   const { data, error } = await supabase
     .from("announcements")
     .select("*")
     .eq("is_active", true)
     .in("locale", [locale, "en"])
+    .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
+    .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
     .order("sort_order", { ascending: true });
 
   if (error) return [];
-  return data ?? [];
+
+  const chosen = new Map<number, AnnouncementRow>();
+  for (const row of data ?? []) {
+    const existing = chosen.get(row.sort_order);
+    if (!existing || (row.locale === locale && existing.locale !== locale)) {
+      chosen.set(row.sort_order, row);
+    }
+  }
+  return [...chosen.values()].sort((a, b) => a.sort_order - b.sort_order);
 }
 
 /** Per-page SEO override, when staff have entered one. */

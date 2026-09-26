@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   CheckCircle2,
+  ExternalLink,
   MapPin,
   Plus,
   RefreshCw,
@@ -25,7 +26,7 @@ import { toAppError, type AppError } from "@/lib/utils/errors";
 import type { Address } from "@/lib/services/orders";
 import type { Locale } from "@/lib/i18n/config";
 
-type PaymentMethod = "cash_on_delivery" | "card_on_delivery";
+type PaymentMethod = "cash_on_delivery" | "instapay";
 
 /**
  * Checkout. Failure-aware by design:
@@ -41,6 +42,7 @@ export function CheckoutFlow({
   addresses,
   defaultAddressId,
   customerPhone,
+  instapayUrl,
   loyaltyPoints,
   loyaltyTier,
   previousOrders,
@@ -51,6 +53,7 @@ export function CheckoutFlow({
   addresses: Address[];
   defaultAddressId: string | null;
   customerPhone: string | null;
+  instapayUrl: string | null;
   loyaltyPoints: number;
   loyaltyTier: string | null;
   previousOrders: number;
@@ -246,10 +249,12 @@ export function CheckoutFlow({
           {t("checkout.delivery")}
         </h2>
         <p className="mt-1 text-xs text-ink-700/75">
-          {t("checkout.deliveryHint", {
-            fee: formatPrice(config.deliveryFee, undefined, locale),
-            freeOver: formatPrice(config.freeDeliveryOver, undefined, locale),
-          })}
+          {config.deliveryFee === 0
+            ? t("checkout.deliveryFree")
+            : t("checkout.deliveryHint", {
+                fee: formatPrice(config.deliveryFee, undefined, locale),
+                freeOver: formatPrice(config.freeDeliveryOver, undefined, locale),
+              })}
         </p>
       </Reveal>
 
@@ -378,8 +383,8 @@ export function CheckoutFlow({
                 label: t("checkout.cashOnDelivery"),
               },
               {
-                key: "card_on_delivery",
-                label: t("checkout.cardOnDelivery"),
+                key: "instapay",
+                label: t("checkout.instapay"),
               },
             ] as const
           ).map((option) => {
@@ -402,6 +407,27 @@ export function CheckoutFlow({
                   />
                   <span className="text-sm text-ink-900">{option.label}</span>
                 </label>
+
+                {/* The InstaPay transfer link only appears once the customer has
+                    chosen InstaPay — showing a payment link next to an unselected
+                    option invites paying for an order that was never placed. */}
+                {option.key === "instapay" && active && instapayUrl ? (
+                  <div className="mt-2 rounded-xl border border-ink-900/10 bg-rice-200/40 p-3">
+                    <p className="text-xs text-ink-700/80">{t("checkout.instapayHint")}</p>
+                    <a
+                      href={instapayUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-vermilion-700 underline"
+                    >
+                      {t("checkout.instapayLink")}
+                      <ExternalLink className="size-3.5" aria-hidden="true" />
+                    </a>
+                    <p className="mt-1.5 text-2xs text-ink-700/70">
+                      {t("checkout.instapayReference")}
+                    </p>
+                  </div>
+                ) : null}
               </li>
             );
           })}
@@ -536,15 +562,19 @@ export function CheckoutFlow({
                 : formatPrice(totals.deliveryFee, undefined, locale)}
             </dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-ink-700/85">
-              {t("cart.tax")}
-              <span className="ms-1 text-xs text-ink-700/60">
-                ({Math.round(config.taxRate * 100)}%)
-              </span>
-            </dt>
-            <dd className="tabular-nums">{formatPrice(totals.tax, undefined, locale)}</dd>
-          </div>
+          {/* A zero-rate tax line is noise, so it is hidden rather than shown
+              as "Tax (0%) — EGP 0.00". */}
+          {config.taxRate > 0 ? (
+            <div className="flex justify-between">
+              <dt className="text-ink-700/85">
+                {t("cart.tax")}
+                <span className="ms-1 text-xs text-ink-700/60">
+                  ({Math.round(config.taxRate * 100)}%)
+                </span>
+              </dt>
+              <dd className="tabular-nums">{formatPrice(totals.tax, undefined, locale)}</dd>
+            </div>
+          ) : null}
           <div className="mt-2 flex justify-between border-t border-ink-900/8 pt-2.5 text-base font-semibold">
             <dt>{t("cart.total")}</dt>
             <dd className="tabular-nums">{formatPrice(totals.total, undefined, locale)}</dd>

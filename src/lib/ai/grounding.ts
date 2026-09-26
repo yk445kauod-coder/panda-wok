@@ -38,7 +38,6 @@ export type GroundingSnapshot = {
     vegan: boolean;
     containsNuts: boolean;
     allergens: string[];
-    prepMinutes: number;
     calories: number | null;
   }[];
   rewards: { name: string; pointsCost: number; description: string | null }[];
@@ -95,7 +94,6 @@ export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
       vegan: item.is_vegan,
       containsNuts: item.contains_nuts,
       allergens: item.allergens ?? [],
-      prepMinutes: item.prep_minutes,
       calories: item.calories,
     })),
     rewards: rewards.map((r) => ({
@@ -104,10 +102,7 @@ export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
       description: r.description_en,
     })),
     loyalty: settings.loyalty,
-    paymentMethods: [
-      "Cash on delivery",
-      "Card on delivery",
-    ],
+    paymentMethods: ["Cash on delivery", "InstaPay"],
   };
 }
 
@@ -143,9 +138,13 @@ export function renderSnapshot(snapshot: GroundingSnapshot): string {
   lines.push("");
   lines.push("=== ORDERING ===");
   lines.push(
-    `Minimum order: ${snapshot.ordering.minOrderTotal} EGP. Delivery fee: ${snapshot.ordering.deliveryFee} EGP, free over ${snapshot.ordering.freeDeliveryOver} EGP.`,
+    `Minimum order: ${snapshot.ordering.minOrderTotal} EGP. Delivery: ${
+      snapshot.ordering.deliveryFee === 0
+        ? "free"
+        : `${snapshot.ordering.deliveryFee} EGP, free over ${snapshot.ordering.freeDeliveryOver} EGP`
+    }.`,
   );
-  lines.push(`Typical delivery time: about ${snapshot.ordering.etaMinutes} minutes plus prep.`);
+  lines.push(`Typical delivery time: about ${snapshot.ordering.etaMinutes} minutes.`);
   lines.push(
     `Currently accepting orders: ${snapshot.ordering.acceptingOrders ? "yes" : "no"}`,
   );
