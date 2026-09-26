@@ -1016,6 +1016,26 @@ Japanese-flavoured hero/editorial copy. What remains, deliberately:
   ramen, Korean ramen rice — 9 items). Those are the owner's wording, imported
   as written; renaming them is the owner's call.
 
+## Deploy (2026-09-26, pushed 8f4b467)
+
+Pushed `feature/panda-wok-platform` (0 behind / 11 ahead — a clean fast-forward)
+and the `Deploy Pages` workflow ran green (run on `8f4b467`, conclusion
+`success`). **The `CLOUDFLARE_API_TOKEN` repository secret is set now** — the
+earlier "deploy step always fails" note is obsolete; the previous run
+(`c0213adc`) had already succeeded. Push-to-deploy works, so `npm run
+pages:deploy` is a fallback, not the only route.
+
+Verified live on https://panda-wok.pages.dev after the deploy:
+
+- `/`, `/menu`, `/about`, `/faq` = 200; `/checkout` = 307 (auth middleware, as
+  designed). The 307 is expected for an anonymous visitor, not a failure.
+- The free-delivery banner renders in **both** locales from the `announcements`
+  rows: EN shows "Free delivery on every order", AR shows "التوصيل مجاني على كل
+  الطلبات", and the Arabic page does **not** also render the English row — the
+  `getAnnouncements` `sort_order` dedup fix holds in production.
+- No `15m` / `15 د` prep chip anywhere, confirming the prep-time removal
+  reached the deployed bundle (a stale bundle was the failure mode last time).
+
 ## Menu photo upload — the "crash" was a 1 MB framework cap (2026-09-26)
 
 The fear that uploading a photo would crash the admin was a real defect, and it
