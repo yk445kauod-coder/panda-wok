@@ -701,3 +701,82 @@ customer picks a point, the address fills in for confirmation.
 - Direct image upload added: src/lib/actions/storage.ts (uploadMenuImageAction, capability menu.manage, uploads to the existing public menu-images bucket, <=8MB PNG/JPEG/WebP/AVIF) + src/components/admin/image-upload-field.tsx (live preview, hidden imageUrl input - no manual URL pasting. Both menu-item + category forms now mount it. Reuses assertCapability,actionOk/Fail (positional - do NOT pass {code,message} object to actionFail).
 - Image hygiene: dish images were already loading eager/lazy + fetchPriority + decoding async through dishImageSrc(Set; added decoding=async to brand-logo + menu-item-row. Home hero + upload-preview <img>s are intentionally plain img (local SVG/blob - next/image inapplicable); eslint disable comments standard.
 - Still blocked: deployment to Pages needs the repo secret CLOUDFLARE_API_TOKEN set by an account owner(repo secret set is 403 with the integration token. Manual: CLOUDFLARE_API_TOKEN=npm run pages:deploy (branch feature/panda-wok-platform = production).
+
+## Customer design overhaul + real ratings (2026-09-26, pushed f8eded3)
+
+Sushi-reference composition pass over the customer surface, on existing tokens
+and i18n. New: `src/components/customer/dish-card.tsx` (shared card: image,
+rating, price, action), `popular-menu.tsx` (client category filter over real
+rows), `editorial-sections.tsx` (image/text spreads that alternate sides),
+`star-rating.tsx`. Hero gained a stat row (dish count, ETA, delivery threshold,
+average rating). `/menu` section headings now use `font-display text-fluid-h3`.
+
+### Ratings are computed, never invented
+`menu_item_ratings` (migration `20260926120000`) aggregates
+`feedback.rating` where `is_public` and tied to an order. The brand rule is
+that nothing visitor-facing is fabricated, so there is no hardcoded "4.9": the
+card renders a star only when `rating_count > 0` and shows the count beside it.
+The single pre-existing live feedback row has `order_id = null` and
+`is_public = false`, so the menu currently shows no stars — correct, not broken.
+
+**Defect found and fixed (`20260926130000`): the view was dead for every
+visitor.** It was created `security_invoker` on the stated assumption that
+"all three base tables expose a public read path". They do not — `feedback`
+has only `feedback_self_read` (auth.uid()) / `feedback_staff_read`, and
+`orders` only `orders_owner_read` / `orders_staff_read`; **all four are
+`authenticated`-only, there is no anon policy on either table.** Evaluated as
+`anon` the view matched zero rows and returned **HTTP 200 with no error and no
+log** — a silent empty result, the worst failure mode. It is now
+`security_invoker = false` (definer rights), which is sound because the view
+projects only `(menu_item_id, rounded average, count)`: no user id, no order
+id, no review text. Do **not** "fix" this by adding an anon SELECT policy to
+`feedback` — that would expose raw review text, user ids and image URLs to
+every anonymous visitor.
+
+Two traps worth remembering from this one:
+- A `security_invoker` view is not automatically RLS-safe for a public page.
+  Check the *policies on the base tables* for the role that will actually read
+  it (`anon` here), not the grants.
+- Because a definer view does not consult RLS, the view's own `where
+  f.is_public` is now load-bearing, not belt-and-braces.
+
+Verified live in a rolled-back transaction: ratings 5+4 consented -> `4.5` /
+count 2, and an un-consented 1-star correctly excluded. Then confirmed in the
+DOM (`4.7 · 3 ratings · 4.7 out of 5`) with temporary rows, which were deleted.
+
+### Two layout bugs that only a real browser shows
+1. **A bare `grid` is not `grid-cols-1`.** An implicit grid column is `auto`,
+   so its min-content floor is set by the widest unbreakable child — the
+   `truncate` spans (nowrap reports full unwrapped width) forced the editorial
+   column to 445px inside a 358px container and pushed the whole page
+   sideways on a phone. Use `grid-cols-1` (`minmax(0, 1fr)`) or explicit
+   `minmax(0, Xfr)` tracks. `wideElements: []` will *not* catch this, because
+   the overflowing element is the grid container, which is itself in flow.
+2. **A transformed box counts toward scrollable overflow.** The `left`/`right`
+   reveal variants translate +/-34px while pending, which widened the document
+   by ~17px at *every* breakpoint until the host got `overflow-x-clip`.
+
+### Measuring overflow correctly (hard-won)
+- Launch headless Chromium **at the target size**
+  (`--window-size=390,844`) and pass `mobile: false` to
+  `Emulation.setDeviceMetricsOverride`. With `mobile: true` the emulated
+  layout viewport (426px) disagrees with `clientWidth` (390px) and produces
+  ~35px of phantom overflow that no amount of CSS will fix.
+- Scroll the whole page first: reveal animations only run on intersection, and
+  pending transforms are exactly what you are measuring.
+- To find the culprit, toggle each section's `display` and watch
+  `documentElement.scrollWidth` — cheaper and more reliable than eyeballing
+  bounding boxes.
+- `scrollW - clientW <= 1` is the pass bar (subpixel rounding).
+
+**Known pre-existing overflow, NOT introduced by this work and NOT yet
+fixed:** ~3px at phone width and ~57px at 768px, present on `/about`,
+`/contact`, `/faq` and `/cart` alike (identical numbers), so it lives in the
+shared shell — the footer (`washi-panel`) and the footer link grid — not in
+any page. `main`'s decorative canvases are all `pointer-events-none` and were
+excluded as suspects. Worth a dedicated pass; it is unrelated to the design
+work above.
+
+Verified: 100 tests pass, `tsc --noEmit` clean, lint 0 errors (10 `no-img-element`
+warnings are intentional), `next build` green.
+
