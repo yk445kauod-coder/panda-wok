@@ -61,18 +61,30 @@ export function ImageUploadField({
       return;
     }
     setError(null);
-    setPreview(URL.createObjectURL(file));
+    const blobUrl = URL.createObjectURL(file);
+    setPreview(blobUrl);
     setBusy(true);
     const fd = new FormData();
     fd.append("image", file);
     startTransition(async () => {
-      const res = await uploadMenuImageAction(fd);
-      setBusy(false);
-      if (res.ok) {
-        applyUrl(res.data.url, { fromFile: true });
-      } else {
-        setError(res.error.message);
+      try {
+        const res = await uploadMenuImageAction(fd);
+        if (res.ok) {
+          applyUrl(res.data.url, { fromFile: true });
+        } else {
+          setError(res.error.message);
+          setPreview(url || null);
+        }
+      } catch {
+        // A rejected action (rather than a returned failure) means the request
+        // never reached the handler — an oversized body, a dropped connection, a
+        // stale deployment. Without this the promise rejected silently and the
+        // button stayed on the spinner, which is what "it crashes" looked like.
+        setError("Upload did not reach the server. Check your connection and try again.");
         setPreview(url || null);
+      } finally {
+        setBusy(false);
+        URL.revokeObjectURL(blobUrl);
       }
     });
   }

@@ -1016,3 +1016,88 @@ Japanese-flavoured hero/editorial copy. What remains, deliberately:
   ramen, Korean ramen rice — 9 items). Those are the owner's wording, imported
   as written; renaming them is the owner's call.
 
+## Menu photo upload — the "crash" was a 1 MB framework cap (2026-09-26)
+
+The fear that uploading a photo would crash the admin was a real defect, and it
+had nothing to do with Supabase or the bucket:
+
+- Next caps **server-action request bodies at 1 MB** by default
+  (`serverActions.bodySizeLimit`). `uploadMenuImageAction` is a server action
+  that receives the raw `File`, while the field and the `menu-images` bucket both
+  advertise **8 MB**. So every ordinary phone photo (2–5 MB) was rejected by the
+  framework *before the action ran*.
+- Reproduced and fixed in isolation. With the limit absent, a 2.43 MB PNG POST
+  returns **HTTP 500 "Body exceeded 1 MB limit"** (`statusCode: 413`). With
+  `experimental.serverActions.bodySizeLimit: "8mb"` the same POST returns 200,
+  the object lands in `storage.objects` at 2,431,703 bytes, and the returned
+  public URL serves **200** with the full byte count. Both test objects were
+  deleted afterwards; the bucket is empty.
+- The client now also wraps the action call in `try/catch/finally`. A *rejected*
+  action (oversized body, dropped connection, stale deployment) previously left
+  the button spinning forever with no message — which is exactly what "it
+  crashes" looked like. It now clears the spinner and shows a message. The blob
+  preview URL is revoked on completion instead of leaking.
+
+## The importer is insert-only — re-running it duplicates the menu (2026-09-26)
+
+`scripts/import-menu.mjs` uses `.insert()` on `categories`, `menu_items`,
+`modifier_groups` and `modifier_options`. It is **not** idempotent, despite the
+manifest's `import_instructions.idempotency_key: "external_id"` asking for an
+upsert by `external_id`: `external_id` does not exist on any live table. Running
+`--apply` against the live DB would insert a **second** copy of the whole menu
+(another 10 categories / 53 items), because `categories_slug_key` /
+`menu_items_slug_key` are per-tenant unique and the existing rows occupy those
+slugs — so it would either error on the first collision or duplicate whichever
+rows do not collide.
+
+Two further traps in that script, both of which bite on a re-run:
+
+1. **It resurrects `Pancit canton filipino noodles`.** The owner had that dish
+   deleted outright (row + group + options), and the dry run still plans it
+   (`Pancit canton filipino noodles … Choose your protein(4)`), because the
+   source manifest still contains it. A re-import undoes the deletion.
+2. **`--dry-run` is the default and is not read-only-safe by accident.** It
+   performs no writes, which is correct, but it also reports `unmatched rows: 0`
+   and `(none)` under PROBLEMS for a plan that would duplicate the menu. Do not
+   read a clean dry run as "safe to apply".
+
+Re-importing is therefore a deliberate, destructive operation: back up first,
+and decide whether to replace the catalogue or extend it. Do not run
+`--apply` to "refresh" the menu.
+
+## Drift: live menu vs the source manifest (2026-09-26, counted)
+
+| | live DB | manifest dry run |
+|---|---|---|
+| categories | 10 | 10 |
+| menu items | 52 | 53 |
+| modifier groups | 14 | 15 |
+| modifier options | 53 | 57 |
+
+The difference is the deleted `Pancit canton filipino noodles` and its group and
+options. Everything else matches, so the live menu is the manifest minus that
+one dish — the menu is **not** half-imported. The Chinese menu is already live;
+"upload the Chinese menu" is done in the DB sense and the remaining work is
+photos (0 of 52 items have an `image_url`).
+
+## Japanese-flavoured dishes: content, not localisation (2026-09-26)
+
+`menu_items.name_ja` and `categories.name_ja` are **0-filled** live, so nothing
+Japanese is rendered from the database. `.font-kana` is a 928-byte **Chinese**
+subset (中, 華) and `.font-kana` is not Japanese at all. What remains is nine
+Japanese-*named* dishes (teriyaki ×4, ramen ×2, teppan ×1, Korean ramen rice ×1,
+teriyaki sauce ×1) — these are the owner's menu wording, not UI localisation, and
+renaming them changes the product. Treat "remove Japanese" as satisfied at the
+localisation layer and ask the owner before touching dish names.
+
+## Menu weight: the real cause is the RSC payload, not images (2026-09-26)
+
+Restating because it keeps coming up: `/menu` ships **382 KB of HTML, 245 KB of
+which is the inline RSC flight payload**, with **123 inline SVGs** (104 of them
+the same two icons repeated per card). Images contribute **nothing** today
+because no dish has one. Reducing weight means not serialising all 52 dishes
+into every `/menu` response — paginate per category or render the grid
+client-side from a small JSON payload. Both change what crawlers see, so they
+are an owner decision, not a silent rewrite.
+
+

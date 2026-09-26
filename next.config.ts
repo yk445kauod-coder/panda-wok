@@ -22,6 +22,16 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "motion"],
+    /**
+     * Menu photo uploads post the File to `uploadMenuImageAction`, and Next caps
+     * server-action bodies at 1 MB by default. A phone photo is routinely 2-5 MB,
+     * so every real upload was rejected by the framework before the action ran —
+     * surfacing as a generic failure that looked like a crash. The limit is raised
+     * to match the 8 MB the field and the `menu-images` bucket already advertise.
+     */
+    serverActions: {
+      bodySizeLimit: "8mb",
+    },
   },
   /**
    * /llms.txt is the AI-agent contract (AEO/GEO). App Router cannot host a
