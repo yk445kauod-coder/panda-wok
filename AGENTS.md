@@ -954,3 +954,65 @@ the DB; making them required would be stricter but would change behaviour, so it
 was left alone.
 
 
+
+## Where the menu's weight actually is (2026-09-26, measured)
+
+The menu "feels heavy" complaint was measured, not guessed. On the standalone
+build with the real anon key baked in:
+
+- `/menu` HTML is **382 KB**, of which **245 KB is the inline RSC flight
+  payload** and 40 KB is inline SVG. There are **123 inline SVGs**, 104 of which
+  are the same two icons (prep clock + view-dish arrow) repeated per card.
+- **Zero dishes have an `image_url`.** The import never set one, so `DishCard`
+  renders its `asanoha` "photo soon" placeholder on all 52 cards. Image weight
+  is therefore not a factor in the current menu's slowness — the card art path
+  (`dishImageSrc`/`srcSet`/`fetchpriority`) is simply unused. Uploading real
+  photos is the biggest *visual* win available, and the upload path is ready.
+- All 52 dishes share `prep_minutes = 15`, so the clock chip is identical on
+  every card. If per-dish prep is not real data, dropping it from the card is
+  free weight and removes 52 identical chips.
+- `/admin/menu` is only 58 KB with 1 SVG, so the *admin* menu is not heavy; the
+  heaviness lives on the customer `/menu` payload.
+
+What was actually changed: the two repeated icons are hoisted to module scope,
+which cut the RSC payload 258 KB -> 245 KB. **Hoisting does not shrink the
+rendered DOM** — React still emits one SVG per card, so the 123 inline SVGs
+remain. Do not expect a DOM win from that change.
+
+Fixing the remaining payload means not shipping the full catalogue as HTML:
+paginate `/menu` per category (each category already has its own `/menu/<slug>`
+page), or render the grid client-side from a small JSON payload. Both change how
+crawlers see the menu, so they need a decision, not a silent rewrite.
+
+## Delivery-only and offers (2026-09-26)
+
+- Pickup is gone: `place_order` rejects `fulfillment='pickup'` with
+  `PICKUP_UNAVAILABLE`, and the timeline / order-detail / guide / FAQ / llms
+  copy no longer mention it. Migration `20260926150000_offers_and_delivery_only.sql`.
+- `offers` (threshold discounts) + `Admin -> Offers` CRUD. **Checkout applies
+  the single best-saving offer, never stacked** — the admin page says so
+  explicitly because "two active offers" reading as "both apply" is the obvious
+  and expensive misreading.
+- `Pancit canton filipino noodles` was deleted outright (row + modifier group +
+  stock link + image rows), not archived, at the owner's request. `menu_items`
+  is 52 rows.
+
+## Japanese removal — what "removed" means here (2026-09-26)
+
+Japanese was never a locale (`LOCALES = ["en","ar"]`). What was removed:
+`name_ja` reads/writes everywhere, the admin "Name (Japanese)" inputs, and the
+Japanese-flavoured hero/editorial copy. What remains, deliberately:
+
+- `menu_items.name_ja` **column still exists in the DB**. The Pages worker is
+  deployed separately and its bundle still selects `name_ja`; dropping the column
+  while that bundle is live made `/menu` fail silently to its empty state. Drop
+  it only after the app deploy, and in this order: deploy app -> verify -> drop
+  column (the reverse order is the trap recorded in `391d667`).
+- `.font-kana` is a **Chinese** script face, not Japanese — `public/fonts/kana-mark.woff2`
+  is a 928-byte subset covering exactly 中 and 華, built by `npm run fonts`.
+  Shippori Mincho via `next/font` used to ship a 189 KB stylesheet of 244
+  unicode-range chunks for that two-glyph mark.
+- The real menu still contains Japanese-*flavoured* dishes (teriyaki, teppan,
+  ramen, Korean ramen rice — 9 items). Those are the owner's wording, imported
+  as written; renaming them is the owner's call.
+
