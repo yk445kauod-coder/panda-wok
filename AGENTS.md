@@ -851,3 +851,47 @@ Verified: 100 tests pass, `tsc --noEmit` clean, lint 0 errors (10 intentional
 `display:none` at 390px and visible (339px tall) at 1440px; no ETA/fee in either
 locale's hero, direct-order line present in both.
 
+## Japanese removed from the app; the DB columns stay until deploy (2026-09-26)
+
+Japanese is not a published language here (English + Arabic only), so the
+`name_ja` field was removed from every app layer: `catalog.ts` column lists,
+`validation/schemas.ts` (`nameJa`), `actions/admin.ts` (payloads + formData),
+both admin forms, the dish/category subtitles, the menu search haystack, and the
+Japanese-flavoured hero/editorial/About copy. `BRAND_SCRIPT_MARK` is now
+Chinese-only (中華); the cuisine identity comes from the live `cuisine_tags`.
+Commit `0121084`; guarded by `tests/identity-script.test.ts`.
+
+**The `categories.name_ja` / `menu_items.name_ja` columns were NOT dropped, on
+purpose.** A `drop column` migration was written and applied, and it silently
+broke production: the deployed Pages worker is built and published separately
+from this repo, and that live bundle still selects `name_ja`. PostgREST answered
+the unknown-column select with an error, `getPublicMenu` threw, and `/menu` fell
+to its empty state — **HTTP 200, no visible error, zero dishes**. The drop was
+reverted (columns re-added nullable; the migration row was deleted from
+`supabase_migrations.schema_migrations` so local and remote stay aligned), and
+`src/lib/types/database.ts` was regenerated against the restored schema.
+
+Order of operations for any future column removal here:
+1. Deploy the app that stops selecting the column.
+2. *Then* drop the column.
+
+How the breakage was proven (worth reusing): create a real dish with the
+service-role key, fetch `/menu` with `cache: "no-store"`, and grep the HTML for
+the dish name. With the column dropped the name was absent; after re-adding it,
+present. The empty state is indistinguishable from "no menu yet" by status code
+alone, so a status check will not catch this class of bug — assert on rendered
+content. The live worker's bundles contain no `name_ja` string, which is why
+grepping the served HTML for the column name proves nothing; the column list is
+data passed to PostgREST, not a literal in the client bundle.
+
+`panda-wok.pages.dev` responds with `cache-control: private, no-cache,
+no-store`, so these probes read live output rather than a stale edge copy.
+
+Verified after the revert: typecheck clean, 113 tests pass, lint 0 errors (9
+intentional `no-img-element` warnings), `next build` green, and a live probe
+confirms the deployed app renders a freshly created dish on both `/menu` and
+`/menu/<slug>`. Cloudflare deploy credentials are not available in this
+environment (`wrangler whoami` = unauthenticated, no `CLOUDFLARE_API_TOKEN`),
+so the app change is committed but not yet deployed.
+
+
