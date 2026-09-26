@@ -544,16 +544,16 @@ saving. It writes hidden `latitude`/`longitude`/`accuracyM` fields so the same
 when they have no address. So "the existing sterile system" the brief complained
 about is superseded — verify before rebuilding it.
 
-### Ambient layer (no binary assets)
-- `src/components/layout/ambience-sound.tsx` — opt-in WebAudio garden
-  soundscape: pentatonic chimes through a soft limiter, filtered-noise air and a
-  distant bird. Synthesised, so there are **no audio files** in `public/`.
-  Starts only on an explicit tap; the choice persists in localStorage.
+### Ambient layer (no binary assets, no audio)
 - `src/components/customer/leaf-field-2d.tsx` — Canvas2D drifting leaves (the
   only falling-leaf effect on the site; chosen over WebGL deliberately).
 - `src/components/customer/bamboo-ambience.tsx` — pure-CSS bamboo culms.
 - `src/components/customer/asian-frames.tsx` — asanoha / bamboo frame motifs.
 - All are decorative and honour reduced-motion.
+
+**There is no sound layer and there must not be one.** No `AudioContext`, no
+oscillator, no `new Audio()`, no audio files in `public/`. The site is silent by
+design; the visual ambience carries the Asian identity instead.
 
 ### Brand mark
 `public/panda-logo.svg` is the one canonical mark (`src/lib/brand.ts`), used by
@@ -582,13 +582,14 @@ tax 14%, loyalty points 1:1.
 
 Deployed to production from `ec31675` (CI run 36185261883, success).
 
-**Sound is gone for good.** The user asked for "الغي الصوت" after an earlier
-session added a garden-ambience toggle. `AmbienceToggle`
-(`src/components/layout/ambience-sound.tsx`), its two call sites in
-`site-shell.tsx` (header + footer) and the `ambience.soundOn/soundOff` keys in
-both dictionaries are deleted. There is now no `AudioContext`, oscillator or
-`new Audio()` anywhere in `src/`. Do not reintroduce background audio: the site
-is meant to be silent, and the visual ambience carries the identity instead.
+**Sound is gone for good, and stays gone.** An earlier session added a
+garden-ambience toggle (`AmbienceToggle` in
+`src/components/layout/ambience-sound.tsx`, with call sites in `site-shell.tsx`
+and `ambience.soundOn/soundOff` dictionary keys). It has been removed, and the
+removal is a standing rule, not a one-off cleanup: **do not add interface sound
+in any form.** No `AudioContext`, no oscillator, no `new Audio()`, no audio
+files in `public/`, no mute toggle — there is nothing to mute. The site is
+silent by design; the visual ambience carries the Asian identity instead.
 `BambooAmbience` (CSS culms) and `LeafField2D` (Canvas2D drifting leaves) are
 visual only and stay.
 
