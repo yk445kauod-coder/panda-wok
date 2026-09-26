@@ -276,10 +276,10 @@ function Hero({
       <BambooAmbience locale={locale} />
       {/* Cherry blossom for the Japanese half of the kitchen; the Chinese wok
           half is carried by the bamboo standing behind the copy. */}
-      <SakuraField density={1} />
+      <SakuraField density={0.7} />
       {/* Bamboo-green maple and sakura leaves drift over the ink, so the
           Japanese half carries motion and the wok half carries bamboo. */}
-      <LeafField2D count={16} />
+      <LeafField2D count={9} />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 animate-hero-rise sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
         <div>

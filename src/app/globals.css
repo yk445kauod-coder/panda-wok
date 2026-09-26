@@ -377,15 +377,15 @@
   background: repeating-linear-gradient(
     to bottom,
     var(--color-bamboo-600) 0,
-    var(--color-bamboo-600)  ​2px,
-    var(--color-bamboo-500)  ​2.5px,
-    var(--color-bamboo-500)  ​30px,
-    var(--color-bamboo-700)  ​32px,
-    var(--color-bamboo-700)  ​36px
+    var(--color-bamboo-600)  2px,
+    var(--color-bamboo-500)  2.5px,
+    var(--color-bamboo-500)  30px,
+    var(--color-bamboo-700)  32px,
+    var(--color-bamboo-700)  36px
   );
   box-shadow:
     inset -1px 0 0 color-mix(in oklab, var(--color-bamboo-400) 60%, transparent),
-    inset  ​1px 0 0 rgb(0 0 0 / 0.25),
+    inset  1px 0 0 rgb(0 0 0 / 0.25),
     0 14px 24px -16px rgb(0 0 0 / 0.6);
   transform-origin: bottom center;
   animation: bamboo-sway 6s ease-in-out infinite;
@@ -526,9 +526,9 @@
      backdrop blur behind a translucent paper tint reads as lacquered glass. */
   *.glass-bar {
     color: var(--color-rice-50);
-    background: linear-gradient(to bottom, color-mix(in oklab, var(--color-ink-800) 86%, var(--color-rice-100)), color-mix(in oklab, var(--color-ink-950) 92%, var(--color-bamboo-700)));
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    backdrop-filter: blur(20px) saturate(160%);
+    background: linear-gradient(to bottom, color-mix(in oklab, var(--color-ink-900) 94%, var(--color-rice-100)), color-mix(in oklab, var(--color-ink-950) 96%, var(--color-bamboo-700)));
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
     border-top: 1px solid color-mix(in oklab, var(--color-miso-400) 45%, var(--color-rice-100));
     box-shadow:
       inset   0 1px 0 color-mix(in oklab, var(--color-rice-100) 25%, transparent),
@@ -537,9 +537,9 @@
 
   *.glass-card {
     color: var(--color-rice-50);
-    background: linear-gradient(145deg, color-mix(in oklab, var(--color-ink-800) 88%, var(--color-miso-500)), color-mix(in oklab, var(--color-ink-950) 94%, var(--color-bamboo-600)));
-    -webkit-backdrop-filter: blur(18px) saturate(160%);
-    backdrop-filter: blur(18px) saturate(160%);
+    background: linear-gradient(145deg, color-mix(in oklab, var(--color-ink-900) 94%, var(--color-miso-500)), color-mix(in oklab, var(--color-ink-950) 96%, var(--color-bamboo-600)));
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
     border: 1px solid color-mix(in oklab, var(--color-rice-100) 30%, transparent);
     box-shadow:
       inset   0 1px 0 color-mix(in oklab, var(--color-rice-100) 22%, transparent),
