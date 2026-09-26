@@ -46,12 +46,6 @@ export function MenuItemForm({
             defaultValue={item?.name_en ?? ""}
           />
           <Field name="nameAr" label="Name (Arabic)" defaultValue={item?.name_ar ?? ""} />
-          <Field
-            name="nameJa"
-            label="Name (Japanese)"
-            hint="Optional. Shown as a subtitle where it adds character."
-            defaultValue={item?.name_ja ?? ""}
-          />
           <div>
             <label htmlFor="categoryId" className="block text-sm font-medium text-ink-900">
               Category

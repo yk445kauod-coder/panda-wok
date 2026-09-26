@@ -41,11 +41,6 @@ export function CategorySection({
         <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
           {local.name}
         </h1>
-        {category.name_ja ? (
-          <p className="mt-1 text-sm text-ink-700/60" lang="ja">
-            {category.name_ja}
-          </p>
-        ) : null}
         {local.description ? (
           <p className="mt-2 max-w-2xl text-sm text-ink-700/85">
             {local.description}

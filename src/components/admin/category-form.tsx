@@ -35,12 +35,6 @@ export function CategoryForm({ category }: { category: AdminCategory | null }) {
           dir="rtl"
           defaultValue={category?.name_ar ?? ""}
         />
-        <Field
-          name="nameJa"
-          label="Name (Japanese)"
-          hint="Optional subtitle on the public menu."
-          defaultValue={category?.name_ja ?? ""}
-        />
         <SlugField
           sourceName="nameEn"
           hint="Public address: /menu/your-slug. Filled from the English name; edit to override."

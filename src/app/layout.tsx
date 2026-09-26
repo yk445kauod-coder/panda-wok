@@ -82,11 +82,11 @@ const arabicDisplayFont = IBM_Plex_Sans_Arabic({
 });
 
 /**
- * Kanji display face. The kitchen's two kitchens are named in script (日本 for
- * the sushi counter, 中华 for the wok), and a Latin serif has no glyphs for
- * them — the browser would fall back to a system face mid-word. Shippori Mincho
- * is a Japanese Mincho, so those glyphs stay deliberate and native. It is only
- * referenced by the `.font-kana` utility, so it never affects Latin copy.
+ * Kanji display face. The kitchen's wok is named in script (中華), and a Latin
+ * serif has no glyphs for it — the browser would fall back to a system face
+ * mid-word. Shippori Mincho is a Japanese Mincho, so those glyphs stay
+ * deliberate and native. It is only referenced by the `.font-kana` utility, so
+ * it never affects Latin copy.
  */
 const kanaDisplayFont = Shippori_Mincho({
   variable: "--font-kana",

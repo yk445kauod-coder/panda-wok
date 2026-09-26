@@ -27,7 +27,6 @@ export type Category = Pick<
   | "id"
   | "name_en"
   | "name_ar"
-  | "name_ja"
   | "slug"
   | "description_en"
   | "description_ar"
@@ -44,7 +43,6 @@ export type MenuItem = Pick<
   | "category_id"
   | "name_en"
   | "name_ar"
-  | "name_ja"
   | "slug"
   | "description_en"
   | "description_ar"
@@ -92,10 +90,10 @@ export type MenuRating = {
 };
 
 const PUBLIC_CATEGORY_COLUMNS =
-  "id, name_en, name_ar, name_ja, slug, description_en, description_ar, image_url, seo_title, seo_description, sort_order, is_enabled";
+  "id, name_en, name_ar, slug, description_en, description_ar, image_url, seo_title, seo_description, sort_order, is_enabled";
 
 const PUBLIC_ITEM_COLUMNS =
-  "id, category_id, name_en, name_ar, name_ja, slug, description_en, description_ar, price, compare_at_price, is_available, is_featured, is_spicy, is_vegetarian, is_vegan, contains_nuts, prep_minutes, calories, allergens, ingredients, image_url, image_alt, has_transparent_png, sort_order, seo_title, seo_description, seo_keywords";
+  "id, category_id, name_en, name_ar, slug, description_en, description_ar, price, compare_at_price, is_available, is_featured, is_spicy, is_vegetarian, is_vegan, contains_nuts, prep_minutes, calories, allergens, ingredients, image_url, image_alt, has_transparent_png, sort_order, seo_title, seo_description, seo_keywords";
 
 /**
  * Public catalogue reads go through the anon/authenticated client so RLS is

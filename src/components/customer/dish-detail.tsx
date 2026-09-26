@@ -134,12 +134,6 @@ export function DishDetail({
             {name}
           </h1>
 
-          {dish.name_ja ? (
-            <p className="mt-0.5 text-sm text-ink-700/60" lang="ja">
-              {dish.name_ja}
-            </p>
-          ) : null}
-
           <p className="mt-3 text-2xl font-semibold text-ink-900">
             {formatPrice(dish.price, currency, locale)}
             {dish.compare_at_price && Number(dish.compare_at_price) > Number(dish.price) ? (

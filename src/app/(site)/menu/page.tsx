@@ -79,7 +79,7 @@ export default async function MenuPage({
   const filtered = menu.items.filter((item) => {
     if (query) {
       const haystack =
-        `${item.name_en} ${item.name_ar ?? ""} ${item.name_ja ?? ""} ${item.description_en ?? ""} ${item.description_ar ?? ""}`.toLowerCase();
+        `${item.name_en} ${item.name_ar ?? ""} ${item.description_en ?? ""} ${item.description_ar ?? ""}`.toLowerCase();
       if (!haystack.includes(query)) return false;
     }
     return true;
@@ -219,14 +219,6 @@ export default async function MenuPage({
                       className="font-display text-fluid-h3 font-semibold text-ink-900"
                     >
                       {category.name}
-                      {category.name_ja ? (
-                        <span
-                          lang="ja"
-                          className="font-kana ms-2 align-middle text-sm font-normal text-ink-700/60"
-                        >
-                          {category.name_ja}
-                        </span>
-                      ) : null}
                     </h2>
                     {category.description ? (
                       <p className="mt-1 text-sm text-ink-700/80">

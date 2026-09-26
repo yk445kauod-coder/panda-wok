@@ -5,10 +5,12 @@ import { ar } from "@/lib/i18n/dictionaries/ar";
 import { BRAND_SCRIPT_MARK } from "@/lib/brand";
 
 /**
- * The identity band used to render 日本 / 中華 badges from hardcoded dictionary
- * keys. It is now driven by the kitchen's live `cuisine_tags`, so the script
- * marks that remain are the shared BRAND_SCRIPT_MARK used by the hero plate and
+ * The identity band renders the kitchen's live `cuisine_tags`, so the only
+ * script mark left is the shared BRAND_SCRIPT_MARK used by the hero plate and
  * the closing brand banner.
+ *
+ * The shop publishes in English and Arabic only — there is no Japanese
+ * anywhere, by request — so the mark names the wok in Chinese and nothing else.
  *
  * The mark renders in the Shippori Mincho face, which is a Japanese Mincho: it
  * ships Japanese glyph forms. A simplified-Chinese-only character (华, 亚) is
@@ -18,7 +20,7 @@ import { BRAND_SCRIPT_MARK } from "@/lib/brand";
  * These assertions pin the copy to characters the chosen face actually covers,
  * so the mismatch cannot come back unnoticed.
  */
-const COVERED_BY_MINCHO = new Set(["日", "本", "中", "華"]);
+const COVERED_BY_MINCHO = new Set(["中", "華"]);
 
 describe("identity script marks", () => {
   it("keeps the hero/banner script mark inside the covered glyph set", () => {
@@ -27,6 +29,10 @@ describe("identity script marks", () => {
     );
     expect(uncovered, `${BRAND_SCRIPT_MARK} contains glyphs outside the subset`).toEqual([]);
     expect(BRAND_SCRIPT_MARK).not.toContain("华");
+  });
+
+  it("carries no Japanese in the brand mark", () => {
+    expect(BRAND_SCRIPT_MARK).not.toMatch(/[\u3040-\u309f\u30a0-\u30ff]|日本/);
   });
 
   it("sources every .font-kana script mark from the shared constant", () => {
@@ -68,6 +74,29 @@ describe("identity script marks", () => {
     expect(source).not.toContain('identityHeading", { cuisine');
     for (const dict of [en, ar]) {
       expect(dict.home.identityHeading).not.toContain("{cuisine}");
+    }
+  });
+
+  it("has no Japanese name field anywhere in the app", () => {
+    // Japanese is not a published language here, so the column, the schema
+    // field, the admin input and the customer subtitles were all removed.
+    // Grep-style guards stop any of them creeping back.
+    const files = [
+      "src/lib/services/catalog.ts",
+      "src/lib/validation/schemas.ts",
+      "src/lib/actions/admin.ts",
+      "src/components/admin/menu-item-form.tsx",
+      "src/components/admin/category-form.tsx",
+      "src/components/customer/dish-detail.tsx",
+      "src/components/customer/category-section.tsx",
+      "src/components/customer/editorial-sections.tsx",
+      "src/app/(site)/menu/page.tsx",
+      "src/app/(site)/page.tsx",
+    ];
+    for (const file of files) {
+      const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+      expect(source, `${file} still references name_ja/nameJa`).not.toMatch(/name_ja|nameJa/);
+      expect(source, `${file} still hardcodes lang="ja"`).not.toContain('lang="ja"');
     }
   });
 });

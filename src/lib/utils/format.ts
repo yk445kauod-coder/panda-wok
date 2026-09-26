@@ -174,9 +174,9 @@ export function escapeLike(value: string): string {
 /**
  * Derives a public URL slug from a dish or category name, matching the server
  * `slugSchema` (`^[a-z0-9]+(?:-[a-z0-9]+)*$`). Latinises accented characters so
- * "Crème Brûlée" → "creme-brulee"; scripts without a Latin mapping (Arabic,
- * Japanese) collapse to an empty string, so the caller keeps whatever the admin
- * typed rather than writing a meaningless slug.
+ * "Crème Brûlée" → "creme-brulee"; scripts without a Latin mapping (Arabic)
+ * collapse to an empty string, so the caller keeps whatever the admin typed
+ * rather than writing a meaningless slug.
  */
 export function slugify(value: string): string {
   return value

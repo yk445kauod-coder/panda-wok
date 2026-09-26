@@ -9,7 +9,6 @@ export type EditorialSection = {
   categoryId: string;
   slug: string;
   name: string;
-  nameJa: string | null;
   description: string | null;
   items: MenuItem[];
 };
@@ -18,10 +17,10 @@ export type EditorialSection = {
  * Editorial rows for the home page: for each published category, a photo
  * plate and a column of dish cards.
  *
- * Every string in here comes from the kitchen's own category record — the name,
- * the Japanese subtitle and the description are whatever the admin typed. There
- * is no per-section marketing copy in the codebase, because inventing it would
- * mean the page describes dishes the kitchen may never have published.
+ * Every string in here comes from the kitchen's own category record — the name
+ * and the description are whatever the admin typed. There is no per-section
+ * marketing copy in the codebase, because inventing it would mean the page
+ * describes dishes the kitchen may never have published.
  *
  * Rows alternate which side the photo sits on, and the whole row enters from
  * the side its photo is on, so the page reads as a sequence of spreads rather
@@ -84,12 +83,9 @@ export function EditorialSections({
             </Link>
 
             <div className={cn(flipped && "lg:order-1")}>
-              <p className="text-xs font-semibold tracking-[0.28em] text-vermilion-600 uppercase">
-                {section.nameJa ?? section.name}
-              </p>
               <h3
                 id={`editorial-${section.categoryId}`}
-                className="mt-2 font-display text-fluid-h3 font-semibold text-ink-900"
+                className="font-display text-fluid-h3 font-semibold text-ink-900"
               >
                 {section.name}
               </h3>

@@ -133,9 +133,9 @@ export const en = {
        are the ones that appear — so there is no hardcoded dish copy here. */
     editorialEyebrow: "What's trending",
     editorialDiscover: "Discover",
-    editorialKitchenTitle: "Two kitchens, one pass",
+    editorialKitchenTitle: "Fresh from the wok",
     editorialKitchenBody:
-      "A Japanese-inspired sushi counter and a Chinese-inspired wok, cooked in the same room and sent out together. Everything is made when you order it — nothing is held under a lamp.",
+      "A Chinese-inspired wok kitchen, cooked to order and sent out straight from the pass. Everything is made when you order it — nothing is held under a lamp.",
     editorialLearnMore: "More about the kitchen",
     editorialEmptyList: "The kitchen has not published dishes in this section yet.",
 

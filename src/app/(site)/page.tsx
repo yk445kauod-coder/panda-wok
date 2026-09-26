@@ -87,8 +87,8 @@ export default async function HomePage() {
     menu.items.some((item) => item.category_id === category.id),
   );
 
-  // The live cuisine tags are the honest description of the kitchen ("Japanese-
-  // inspired", "Chinese-inspired", …). They are shown verbatim rather than
+  // The live cuisine tags are the honest description of the kitchen ("Chinese-
+  // inspired", "Wok", "Ramen", …). They are shown verbatim rather than
   // replaced by a slogan, so the page never claims more than the menu supports.
   const cuisineIdentity =
     restaurant?.cuisine_tags && restaurant.cuisine_tags.length > 0
@@ -152,7 +152,6 @@ export default async function HomePage() {
         categoryId: category.id,
         slug: category.slug,
         name: localised.name,
-        nameJa: category.name_ja ?? null,
         description:
           locale === "ar" && category.description_ar?.trim()
             ? category.description_ar
@@ -250,11 +249,6 @@ export default async function HomePage() {
                       <span className="font-display text-base font-semibold text-ink-900">
                         {local.name}
                       </span>
-                      {category.name_ja ? (
-                        <span className="mt-0.5 text-xs text-ink-700/60" lang="ja">
-                          {category.name_ja}
-                        </span>
-                      ) : null}
                       <span className="mt-3 text-xs text-ink-700/70">
                         {count} {count === 1 ? t("common.dish") : t("common.dishes")}
                       </span>
@@ -454,11 +448,9 @@ function Hero({
     <section className="hero-night relative overflow-hidden border-b border-rice-100/10">
       <AsanohaPanel className="asanoha-light opacity-[0.28]" />
       <BambooAmbience locale={locale} />
-      {/* Cherry blossom for the Japanese half of the kitchen; the Chinese wok
-          half is carried by the bamboo standing behind the copy. */}
+      {/* Petals and bamboo-green leaves drift over the ink, so the wok kitchen
+          carries motion without a second cuisine claim. */}
       <SakuraField density={0.7} />
-      {/* Bamboo-green maple and sakura leaves drift over the ink, so the
-          Japanese half carries motion and the wok half carries bamboo. */}
       <LeafField2D count={9} />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 animate-hero-rise sm:py-20 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
