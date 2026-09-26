@@ -38,7 +38,7 @@ export async function GET() {
   lines.push("");
   lines.push("## How to order");
   lines.push(`1. Browse the menu at ${siteUrl()}/menu`);
-  lines.push("2. Add dishes to your cart and checkout — delivery or pickup.");
+  lines.push("2. Add dishes to your cart and checkout — we deliver to your address.");
   lines.push(`3. Track your order live at ${siteUrl()}/orders`);
   lines.push("");
   lines.push("## Contact");
@@ -75,7 +75,7 @@ export async function GET() {
   lines.push("");
   lines.push("Q: Do you deliver?");
   lines.push(
-    "A: Yes — delivery and pickup are available; checkout shows delivery options at your address.",
+    "A: Yes — every order is delivered to your address. We are a cloud kitchen, so there is no counter to collect from.",
   );
   lines.push("");
   lines.push("Q: What cuisines do you serve?");

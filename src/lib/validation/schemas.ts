@@ -150,7 +150,10 @@ export const placeOrderSchema = z.object({
   idempotencyKey: z.string().trim().min(8).max(120),
   items: z.array(cartLineSchema).min(1, "Your basket is empty").max(60),
   addressId: optionalUuid,
-  fulfillment: z.enum(["delivery", "pickup"]).default("delivery"),
+  // Delivery only: this is a cloud kitchen with no counter to collect from, so
+  // there is nothing to pick up. The DB enum keeps the value for historical
+  // orders, but no new order can be placed as one.
+  fulfillment: z.literal("delivery").default("delivery"),
   paymentMethod: z
     .enum(["cash_on_delivery", "card_on_delivery", "online"])
     .default("cash_on_delivery"),
@@ -361,6 +364,26 @@ export const upsellRuleSchema = z.object({
   priority: z.coerce.number().int().min(0).max(999).default(0),
   isEnabled: z.coerce.boolean().default(true),
 });
+
+export const offerSchema = z
+  .object({
+    id: optionalUuid,
+    nameEn: z.string().trim().min(2, "Name is required").max(120),
+    nameAr: optionalText(120),
+    kind: z.enum(["percent", "fixed"]),
+    threshold: z.coerce.number().min(0).max(1_000_000).default(0),
+    value: z.coerce.number().min(0).max(1_000_000),
+    maxDiscount: z.preprocess(
+      (raw) => (raw === "" || raw == null ? undefined : raw),
+      z.coerce.number().min(0).max(1_000_000).optional(),
+    ),
+    isEnabled: z.coerce.boolean().default(true),
+    sortOrder: z.coerce.number().int().min(0).max(999).default(0),
+  })
+  .refine((data) => data.kind !== "percent" || data.value <= 100, {
+    path: ["value"],
+    message: "A percentage offer cannot exceed 100%.",
+  });
 
 export const exportRequestSchema = z.object({
   dataset: z.enum([

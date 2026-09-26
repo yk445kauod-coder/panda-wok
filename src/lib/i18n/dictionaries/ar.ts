@@ -259,12 +259,10 @@ export const ar: Dictionary = {
     offlineTitle: "أنت غير متصل بالإنترنت",
     offlineBody:
       "سلتك آمنة على هذا الجهاز. أعد الاتصال واضغط تنفيذ الطلب — لن تُحاسَب مرتين.",
-    fulfilmentHeading: "كيف تفضّل استلامه؟",
-    fulfilmentLabel: "طريقة الاستلام",
     delivery: "توصيل",
-    deliveryHint: "{fee}، مجاناً فوق {freeOver}",
-    pickup: "استلام",
-    pickupHint: "بدون رسوم توصيل",
+    deliveryHint: "نوصّل إلى بابك — {fee}، ومجاناً فوق {freeOver}.",
+    deliveryOnly:
+      "نحن مطبخ سحابي بلا منفذ استلام، لذلك كل الطلبات تُوصَّل.",
     addressHeading: "عنوان التوصيل",
     noAddressTitle: "لا يوجد عنوان توصيل محفوظ",
     noAddressBody: "أضف المبنى والطابق ومعَلَماً قريباً ليصل إليك المندوب.",
@@ -278,10 +276,8 @@ export const ar: Dictionary = {
     yourAccountLink: "حسابك",
     paymentHeading: "طريقة الدفع",
     paymentNotice:
-      "الدفع بالبطاقة عبر الإنترنت غير مفعّل بعد، لذا تُدفع الطلبات عند التوصيل أو الاستلام.",
-    cashAtPickup: "نقداً عند الاستلام",
+      "الدفع بالبطاقة عبر الإنترنت غير مفعّل بعد، لذا تُدفع الطلبات عند التوصيل.",
     cashOnDelivery: "نقداً عند التوصيل",
-    cardAtPickup: "بطاقة عند الاستلام",
     cardOnDelivery: "بطاقة عند التوصيل",
     noteHeading: "ملاحظة على الطلب",
     noteLabel: "أي شيء آخر يجب أن يعرفه المطبخ؟",
@@ -289,6 +285,9 @@ export const ar: Dictionary = {
     kitchenNote: "ملاحظة للمطبخ",
     orderSummary: "ملخص الطلب",
     pointsDiscount: "خصم النقاط",
+    offerDiscount: "خصم العرض",
+    offerApplied: "تم تطبيق {name} — وفّرت {amount}.",
+    offerHint: "اطلب بـ {threshold} أو أكثر ويُخصم {value} تلقائياً.",
     pointsEarned: "ستكسب {points} نقطة ولاء على هذا الطلب.",
     firstOrder: "سيكون هذا أول طلب لك.",
     reviewBasket: "راجع سلتك",
@@ -309,7 +308,6 @@ export const ar: Dictionary = {
     loyaltyPoints: "لديك {points} نقطة",
     loyaltyRedeem: "استبدال النقاط في هذا الطلب",
     loyaltyHint: "يمكن استخدام حتى {points} نقطة ({value} خصماً).",
-    pickupAt: "الاستلام من المطبخ",
     readyIn: "جاهز خلال حوالى {minutes} دقيقة بمجرد بدء التحضير.",
     errors: {
       offline: "أنت غير متصل بالإنترنت. أعد الاتصال وحاول مرة أخرى — لم يُفقد شيء.",
@@ -345,19 +343,11 @@ export const ar: Dictionary = {
     progress: "التقدّم",
     whatYouOrdered: "ما طلبته",
     discount: "الخصم",
-    pickup: "الاستلام",
-    delivery: "التوصيل",
     tax: "الضريبة",
     subtotal: "المجموع الفرعي",
     total: "الإجمالي",
     payment: "الدفع: {method} · {status}",
     deliveryDetails: "تفاصيل التوصيل",
-    pickupHeading: "الاستلام",
-    pickupBody:
-      "اخترت استلام هذا الطلب من المطبخ. يرجى الاطلاع على {link} للحصول على معلومات الاستلام.",
-    pickupBodyBefore: "اخترت استلام هذا الطلب من المطبخ. يرجى الاطلاع على ",
-    pickupBodyAfter: " للحصول على معلومات الاستلام.",
-    contactDetailsLink: "بيانات التواصل معنا",
     addressGone:
       "العنوان المحفوظ لهذا الطلب لم يعد متاحاً في دفتر عناوينك. يرجى التواصل مع المطبخ إذا كنت بحاجة لتأكيده.",
     yourNote: "ملاحظتك: «{note}»",
@@ -382,8 +372,6 @@ export const ar: Dictionary = {
       prepared: "جاهز",
       outForDelivery: "في الطريق إليك",
       delivered: "تم التوصيل",
-      readyForPickup: "جاهز للاستلام",
-      collected: "تم الاستلام",
       canceled: "ملغى",
       rejected: "مرفوض",
       refunded: "مُسترد",
@@ -651,7 +639,7 @@ export const ar: Dictionary = {
     whereHeading: "أين نطبخ",
     whereBody: "{area}{city}، {country}",
     whereNote:
-      "نحن مطبخ سحابي ولسنا مطعماً، لذا لا توجد صالة طعام للزيارة. الاستلام متاح عند الدفع إذا فضّلت استلام طلبك بنفسك.",
+      "نحن مطبخ سحابي للتوصيل فقط ولسنا مطعماً، لذا لا توجد صالة طعام للزيارة ولا منفذ للاستلام.",
     orderingHeading: "الطلب والتوصيل",
     minimumOrder: "الحد الأدنى للطلب",
     deliveryFee: "رسوم التوصيل",
@@ -698,7 +686,7 @@ export const ar: Dictionary = {
       },
       collection: {
         q: "هل يمكنني استلام طلبي بدلاً من توصيله؟",
-        a: "نعم. لا توجد صالة طعام — نحن مطبخ سحابي — لكن يمكنك اختيار الاستلام عند الدفع واستلام طلبك من المطبخ.",
+        a: "لا. نحن مطبخ سحابي للتوصيل فقط ولا يوجد منفذ للاستلام، لذا يصل كل طلب إلى عنوانك.",
       },
       allergens: {
         q: "هل يمكنكم إخباري بمسببات الحساسية؟",
@@ -722,7 +710,7 @@ export const ar: Dictionary = {
       },
       reservations: {
         q: "هل يمكنني حجز طاولة؟",
-        a: "لا. {brand} مطبخ سحابي بلا صالة طعام، لذا لا يوجد ما يُحجز. الخياران هما التوصيل والاستلام.",
+        a: "لا. {brand} مطبخ سحابي للتوصيل فقط وبلا صالة طعام، لذا لا يوجد ما يُحجز ولا ما يُستلم.",
       },
       account: {
         q: "هل أحتاج إلى حساب للطلب؟",
@@ -737,15 +725,15 @@ export const ar: Dictionary = {
       "أين يطبخ {brand} وما المناطق التي يوصل إليها في {city}. رسوم التوصيل والحد الأدنى للطلب والمدة المعتادة من إعدادات المطبخ.",
     title: "{brand} في {city}",
     subtitle:
-      "{brand} مطبخ سحابي: نطبخ في مطبخ واحد ونرسل كل شيء إليك. لا توجد صالة طعام، لكن يمكنك الاستلام عند الدفع.",
+      "{brand} مطبخ سحابي للتوصيل فقط: نطبخ في مطبخ واحد ونرسل كل شيء إليك.",
     areaHeading: "أين نطبخ",
     deliveriesHeading: "التوصيل والرسوم",
-    collectionHeading: "الاستلام",
+    collectionHeading: "توصيل فقط",
     collectionBody:
-      "اختر الاستلام عند الدفع واستلم طلبك من المطبخ. سنراسلك عندما يصبح جاهزاً.",
+      "نحن مطبخ توصيل فقط، لذا يُوصَّل كل طلب إلى عنوانك. لا يوجد منفذ للاستلام.",
     directionsHeading: "الموقع بالتفصيل",
     directionsPending:
-      "يجري تأكيد عنوان الشارع بالتفصيل. اتصل بالمطبخ قبل التوجه إذا كنت ستستلم طلبك.",
+      "يجري تأكيد عنوان الشارع بالتفصيل. اتصل بالمطبخ إذا احتجت إلى الاتجاهات.",
     directionsLink: "افتح الاتجاهات في الخرائط",
     cityOnly: "نحن في {city}، {country}. لم يُنشر عنوان الشارع الكامل بعد.",
     notFound: "صفحة الموقع هذه غير موجودة.",
@@ -867,6 +855,8 @@ export const ar: Dictionary = {
       MODIFIER_LIMIT_EXCEEDED:
         "إضافة أو أكثر تتجاوز الحد الأقصى المسموح. يرجى مراجعة اختياراتك.",
       NO_LOYALTY_POINTS: "ليس لديك نقاط كافية للاستبدال.",
+      PICKUP_UNAVAILABLE:
+        "هذا مطبخ توصيل فقط ولا يوجد مكان للاستلام. يرجى إضافة عنوان توصيل.",
       IDEMPOTENCY_KEY_REQUIRED:
         "حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.",
       ACCOUNT_BLOCKED: "هذا الحساب لا يمكنه تنفيذ طلبات. يرجى التواصل مع المطبخ.",

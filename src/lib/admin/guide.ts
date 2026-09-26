@@ -136,7 +136,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
           { title: "Kitchen accepted", body: "The kitchen has taken it on and committed a prep time." },
           { title: "Preparing your food", body: "The order is being cooked." },
           { title: "Prepared and packed", body: "Food is bagged and waiting for the rider." },
-          { title: "On the way", body: "The rider has left. Delivery orders only — pickup skips this step." },
+          { title: "On the way", body: "The rider has left the kitchen with the order." },
           { title: "Delivered", body: "The order is closed and the customer has earned loyalty points." },
         ],
         tips: [

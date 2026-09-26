@@ -106,11 +106,9 @@ describe("customer timeline", () => {
     expect(timeline.find((s) => s.status === "prepared")?.at).toBeNull();
   });
 
-  it("drops the rider step for a pickup order", () => {
-    const delivery = buildTimeline("prepared", history, false);
-    const pickup = buildTimeline("prepared", history, true);
-    expect(delivery.some((s) => s.status === "out_for_delivery")).toBe(true);
-    expect(pickup.some((s) => s.status === "out_for_delivery")).toBe(false);
+  it("always includes the rider step now that every order is delivered", () => {
+    const timeline = buildTimeline("prepared", history);
+    expect(timeline.some((s) => s.status === "out_for_delivery")).toBe(true);
   });
 
   it("ends a canceled order on a failed step instead of showing the rest", () => {

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Activity,
+  BadgePercent,
   BookOpen,
   Bot,
   Boxes,
@@ -48,6 +49,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/menu": Package,
   "/admin/categories": Tags,
   "/admin/upsell": Sparkles,
+  "/admin/offers": BadgePercent,
   "/admin/crm": Users,
   "/admin/crm/activity": Activity,
   "/admin/crm/segments": Gauge,

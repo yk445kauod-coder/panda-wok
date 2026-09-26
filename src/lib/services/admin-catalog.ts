@@ -395,3 +395,23 @@ export async function listAnnouncements() {
   if (error) throw new Error(`Failed to load announcements: ${error.message}`);
   return data ?? [];
 }
+
+/* ------------------------------------------------------------------ offers */
+
+export type AdminOffer = Database["public"]["Tables"]["offers"]["Row"];
+
+/**
+ * Every offer, enabled or not, so the console can show the full picture and a
+ * disabled promotion is still editable. Ordered the way checkout ranks them.
+ */
+export async function listOffers() {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("offers")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("threshold", { ascending: true });
+
+  if (error) throw new Error(`Failed to load offers: ${error.message}`);
+  return data ?? [];
+}

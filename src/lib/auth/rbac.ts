@@ -138,6 +138,7 @@ export const ADMIN_NAV: readonly {
   { href: "/admin/menu", label: "Menu CMS", capability: "menu.manage", group: "Operations" },
   { href: "/admin/categories", label: "Categories", capability: "menu.manage", group: "Operations" },
   { href: "/admin/upsell", label: "Upselling", capability: "menu.manage", group: "Operations" },
+  { href: "/admin/offers", label: "Offers", capability: "menu.manage", group: "Operations" },
   { href: "/admin/content", label: "Content", capability: "settings.manage", group: "Operations" },
   { href: "/admin/crm", label: "Customers", capability: "crm.view", group: "CRM" },
   { href: "/admin/crm/activity", label: "Activity", capability: "crm.view", group: "CRM" },

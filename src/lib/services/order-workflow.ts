@@ -93,11 +93,8 @@ export type TimelineStep = {
 export function buildTimeline(
   status: OrderStatus,
   history: { to_status: OrderStatus; created_at: string }[],
-  isPickup = false,
 ): TimelineStep[] {
-  const flow = ORDER_STATUS_FLOW.filter(
-    (s) => !(isPickup && s === "out_for_delivery"),
-  );
+  const flow = ORDER_STATUS_FLOW;
   const reachedAt = new Map<OrderStatus, string>();
   for (const entry of history) {
     if (!reachedAt.has(entry.to_status)) reachedAt.set(entry.to_status, entry.created_at);

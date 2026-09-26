@@ -264,12 +264,10 @@ export const en = {
     offlineTitle: "You are offline",
     offlineBody:
       "Your basket is safe on this device. Reconnect and press place order — you will not be charged twice.",
-    fulfilmentHeading: "How would you like it?",
-    fulfilmentLabel: "Fulfilment method",
     delivery: "Delivery",
-    deliveryHint: "{fee}, free over {freeOver}",
-    pickup: "Pickup",
-    pickupHint: "No delivery fee",
+    deliveryHint: "Delivered to your door — {fee}, free over {freeOver}.",
+    deliveryOnly:
+      "We are a cloud kitchen with no counter, so every order is delivered.",
     addressHeading: "Delivery address",
     noAddressTitle: "No delivery address saved",
     noAddressBody: "Add the building, floor and a landmark so the rider can find you.",
@@ -283,10 +281,8 @@ export const en = {
     yourAccountLink: "your account",
     paymentHeading: "Payment method",
     paymentNotice:
-      "Online card payment is not enabled yet, so orders are paid on delivery or pickup.",
-    cashAtPickup: "Cash at pickup",
+      "Online card payment is not enabled yet, so orders are paid on delivery.",
     cashOnDelivery: "Cash on delivery",
-    cardAtPickup: "Card at pickup",
     cardOnDelivery: "Card on delivery",
     noteHeading: "Order note",
     noteLabel: "Anything else the kitchen should know?",
@@ -294,6 +290,9 @@ export const en = {
     kitchenNote: "Note for the kitchen",
     orderSummary: "Order summary",
     pointsDiscount: "Points discount",
+    offerDiscount: "Offer discount",
+    offerApplied: "{name} applied — you saved {amount}.",
+    offerHint: "Spend {threshold} or more and {value} comes off automatically.",
     pointsEarned: "You will earn {points} loyalty points on this order.",
     firstOrder: "This will be your first order.",
     reviewBasket: "Review your basket",
@@ -314,7 +313,6 @@ export const en = {
     loyaltyPoints: "You have {points} points",
     loyaltyRedeem: "Redeem points on this order",
     loyaltyHint: "Up to {points} points ({value} off) can be applied.",
-    pickupAt: "Collect from the kitchen",
     readyIn: "Ready in about {minutes} minutes once preparation starts.",
     errors: {
       offline:
@@ -353,19 +351,11 @@ export const en = {
     progress: "Progress",
     whatYouOrdered: "What you ordered",
     discount: "Discount",
-    pickup: "Pickup",
-    delivery: "Delivery",
     tax: "Tax",
     subtotal: "Subtotal",
     total: "Total",
     payment: "Payment: {method} · {status}",
     deliveryDetails: "Delivery details",
-    pickupHeading: "Pickup",
-    pickupBody:
-      "You chose to collect this order from the kitchen. Please check {link} for collection information.",
-    pickupBodyBefore: "You chose to collect this order from the kitchen. Please check ",
-    pickupBodyAfter: " for collection information.",
-    contactDetailsLink: "our contact details",
     addressGone:
       "The saved address for this order is no longer available in your address book. Please contact the kitchen if you need to confirm it.",
     yourNote: "Your note: “{note}”",
@@ -390,8 +380,6 @@ export const en = {
       prepared: "Ready",
       outForDelivery: "Out for delivery",
       delivered: "Delivered",
-      readyForPickup: "Ready for pickup",
-      collected: "Collected",
       canceled: "Canceled",
       rejected: "Rejected",
       refunded: "Refunded",
@@ -669,7 +657,7 @@ export const en = {
     whereHeading: "Where we cook",
     whereBody: "{area}{city}, {country}",
     whereNote:
-      "We are a cloud kitchen rather than a restaurant, so there is no dining room to visit. Collection is available at checkout if you prefer to pick your order up.",
+      "We are a delivery-only cloud kitchen rather than a restaurant, so there is no dining room to visit and no counter to collect from.",
     orderingHeading: "Ordering and delivery",
     minimumOrder: "Minimum order",
     deliveryFee: "Delivery fee",
@@ -716,7 +704,7 @@ export const en = {
       },
       collection: {
         q: "Can I collect my order instead of having it delivered?",
-        a: "Yes. There is no dining room — we are a cloud kitchen — but you can choose collection at checkout and pick your order up from the kitchen.",
+        a: "No. We are a delivery-only cloud kitchen with no counter to collect from, so every order comes to your address.",
       },
       allergens: {
         q: "Can you tell me about allergens?",
@@ -740,7 +728,7 @@ export const en = {
       },
       reservations: {
         q: "Can I book a table?",
-        a: "No. {brand} is a cloud kitchen with no dining room, so there is nothing to reserve. Delivery and collection are the two options.",
+        a: "No. {brand} is a delivery-only cloud kitchen with no dining room, so there is nothing to reserve and nothing to collect.",
       },
       account: {
         q: "Do I need an account to order?",
@@ -755,15 +743,15 @@ export const en = {
       "Where {brand} cooks and which areas it delivers to in {city}. Delivery fees, minimum order and typical timings from the kitchen's own settings.",
     title: "{brand} in {city}",
     subtitle:
-      "{brand} is a cloud kitchen: we cook in one kitchen and send everything to you. There is no dining room, but you can collect at checkout.",
+      "{brand} is a delivery-only cloud kitchen: we cook in one kitchen and send everything to you.",
     areaHeading: "Where we cook",
     deliveriesHeading: "Delivery and fees",
-    collectionHeading: "Collection",
+    collectionHeading: "Delivery only",
     collectionBody:
-      "Choose collection at checkout and pick your order up from the kitchen. We will message you when it is ready.",
+      "We are a delivery-only kitchen, so every order is brought to your address. There is no counter to collect from.",
     directionsHeading: "Exact location",
     directionsPending:
-      "Our exact street address is being confirmed. Call the kitchen before travelling if you are collecting.",
+      "Our exact street address is being confirmed. Call the kitchen if you need directions.",
     directionsLink: "Open directions in Maps",
     cityOnly:
       "We are based in {city}, {country}. The full street address has not been published yet.",
@@ -886,6 +874,8 @@ export const en = {
       MODIFIER_LIMIT_EXCEEDED:
         "One or more extras are above the allowed maximum. Please review your choices.",
       NO_LOYALTY_POINTS: "You do not have enough points to redeem.",
+      PICKUP_UNAVAILABLE:
+        "This is a delivery-only kitchen, so orders cannot be collected. Please add a delivery address.",
       IDEMPOTENCY_KEY_REQUIRED:
         "Something went wrong submitting the order. Please retry.",
       ACCOUNT_BLOCKED:

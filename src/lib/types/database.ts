@@ -1564,6 +1564,59 @@ export type Database = {
           },
         ]
       }
+      offers: {
+        Row: {
+          created_at: string
+          id: string
+          is_enabled: boolean
+          kind: Database["public"]["Enums"]["offer_kind"]
+          max_discount: number | null
+          name_ar: string | null
+          name_en: string
+          restaurant_id: string
+          sort_order: number
+          threshold: number
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          kind?: Database["public"]["Enums"]["offer_kind"]
+          max_discount?: number | null
+          name_ar?: string | null
+          name_en: string
+          restaurant_id?: string
+          sort_order?: number
+          threshold?: number
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          kind?: Database["public"]["Enums"]["offer_kind"]
+          max_discount?: number | null
+          name_ar?: string | null
+          name_en?: string
+          restaurant_id?: string
+          sort_order?: number
+          threshold?: number
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -1679,6 +1732,8 @@ export type Database = {
           fulfillment: Database["public"]["Enums"]["fulfillment_type"]
           id: string
           idempotency_key: string
+          offer_id: string | null
+          offer_name: string | null
           order_number: string
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
@@ -1709,6 +1764,8 @@ export type Database = {
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
           idempotency_key: string
+          offer_id?: string | null
+          offer_name?: string | null
           order_number: string
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -1739,6 +1796,8 @@ export type Database = {
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
           idempotency_key?: string
+          offer_id?: string | null
+          offer_name?: string | null
           order_number?: string
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -1754,6 +1813,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_restaurant_id_fkey"
             columns: ["restaurant_id"]
@@ -2265,11 +2331,22 @@ export type Database = {
       }
     }
     Functions: {
+      best_offer: {
+        Args: { p_subtotal: number }
+        Returns: {
+          amount: number
+          offer_id: string
+          offer_kind: Database["public"]["Enums"]["offer_kind"]
+          offer_name_ar: string
+          offer_name_en: string
+        }[]
+      }
       can_backup: { Args: never; Returns: boolean }
       can_broadcast: { Args: never; Returns: boolean }
       can_export: { Args: never; Returns: boolean }
       can_manage_feedback: { Args: never; Returns: boolean }
       can_manage_marketing: { Args: never; Returns: boolean }
+      can_manage_offers: { Args: never; Returns: boolean }
       can_manage_orders: { Args: never; Returns: boolean }
       crm_customer_count: { Args: { p_search?: string }; Returns: number }
       crm_customers: {
@@ -2453,6 +2530,7 @@ export type Database = {
         | "adjust"
         | "bonus"
         | "clawback"
+      offer_kind: "percent" | "fixed"
       order_status:
         | "new"
         | "accepted"
@@ -2642,6 +2720,7 @@ export const Constants = {
         "bonus",
         "clawback",
       ],
+      offer_kind: ["percent", "fixed"],
       order_status: [
         "new",
         "accepted",

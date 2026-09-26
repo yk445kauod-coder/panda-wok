@@ -115,8 +115,9 @@ describe("ops guide content", () => {
     expect(flow).toBeDefined();
     const text = flow!.steps.map((step) => step.body).join(" ").toLowerCase();
     // The real flow is new → accepted → in_progress → prepared →
-    // out_for_delivery → finished, and pickup skips the rider step.
-    expect(text).toContain("pickup skips");
+    // out_for_delivery → finished. Every order is delivered, so the rider
+    // step is always present.
+    expect(text).toContain("rider has left the kitchen");
     // The terminal-status rules are the tips, not the steps.
     const tips = (flow!.tips ?? []).join(" ").toLowerCase();
     expect(tips).toContain("cannot be reopened");

@@ -30,6 +30,7 @@ import {
   featureFlagUpdateSchema,
   broadcastSchema,
   upsellRuleSchema,
+  offerSchema,
   exportRequestSchema,
   backupRequestSchema,
   aiProviderSchema,
@@ -1204,6 +1205,118 @@ export async function deleteUpsellRuleAction(
   });
 
   revalidatePath("/admin/upsell");
+  return actionOk();
+}
+
+/* ------------------------------------------------------------------ offers */
+
+export async function saveOfferAction(
+  formData: FormData,
+): Promise<FormActionResult<{ id: string }>> {
+  const session = await assertCapability("menu.manage");
+
+  const parsed = offerSchema.safeParse({
+    id: formData.get("id") || undefined,
+    nameEn: formData.get("nameEn"),
+    nameAr: formData.get("nameAr") ?? undefined,
+    kind: formData.get("kind"),
+    threshold: formData.get("threshold") || 0,
+    value: formData.get("value"),
+    maxDiscount: formData.get("maxDiscount"),
+    isEnabled: formData.get("isEnabled") === "on",
+    sortOrder: formData.get("sortOrder") || 0,
+  });
+  if (!parsed.success) return toFormError(parsed.error);
+
+  const supabase = await createServerSupabase();
+  const payload = {
+    name_en: parsed.data.nameEn,
+    name_ar: parsed.data.nameAr ?? null,
+    kind: parsed.data.kind,
+    threshold: parsed.data.threshold,
+    value: parsed.data.value,
+    // A ceiling only means something for a percentage offer.
+    max_discount: parsed.data.kind === "percent" ? parsed.data.maxDiscount ?? null : null,
+    is_enabled: parsed.data.isEnabled,
+    sort_order: parsed.data.sortOrder,
+  };
+
+  const result = parsed.data.id
+    ? await supabase
+        .from("offers")
+        .update(payload)
+        .eq("id", parsed.data.id)
+        .select("id")
+        .maybeSingle()
+    : await supabase.from("offers").insert(payload).select("id").single();
+
+  if (result.error || !result.data) {
+    return actionError(result.error ?? new Error("Offer not saved"));
+  }
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: parsed.data.id ? "offer.updated" : "offer.created",
+    entity: "offers",
+    entityId: result.data.id,
+    after: { kind: payload.kind, threshold: payload.threshold, value: payload.value },
+  });
+
+  revalidatePath("/admin/offers");
+  // The offer list feeds the checkout config, so the customer pages change too.
+  revalidatePath("/checkout");
+  revalidatePath("/cart");
+  return actionOk({ id: result.data.id });
+}
+
+export async function deleteOfferAction(
+  offerId: string,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("menu.manage");
+  const supabase = await createServerSupabase();
+
+  const { error } = await supabase.from("offers").delete().eq("id", offerId);
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "offer.deleted",
+    entity: "offers",
+    entityId: offerId,
+  });
+
+  revalidatePath("/admin/offers");
+  revalidatePath("/checkout");
+  revalidatePath("/cart");
+  return actionOk();
+}
+
+export async function toggleOfferAction(
+  offerId: string,
+  enabled: boolean,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("menu.manage");
+  const supabase = await createServerSupabase();
+
+  const { error } = await supabase
+    .from("offers")
+    .update({ is_enabled: enabled })
+    .eq("id", offerId);
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: enabled ? "offer.enabled" : "offer.disabled",
+    entity: "offers",
+    entityId: offerId,
+  });
+
+  revalidatePath("/admin/offers");
+  revalidatePath("/checkout");
+  revalidatePath("/cart");
   return actionOk();
 }
 

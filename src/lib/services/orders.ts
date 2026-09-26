@@ -24,7 +24,7 @@ export async function getOrderForViewer(orderId: string): Promise<OrderWithItems
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "*, order_items (*, ), order_status_history (id, order_id, from_status, to_status, changed_by, changed_by_role, note, created_at)",
+      "*, order_items (*), order_status_history (id, order_id, from_status, to_status, changed_by, changed_by_role, note, created_at)",
     )
     .eq("id", orderId)
     .maybeSingle();

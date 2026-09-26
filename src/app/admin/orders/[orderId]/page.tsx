@@ -48,7 +48,6 @@ export default async function AdminOrderDetailPage({
   if (!order) notFound();
 
   const address = safeJson<AddressSnapshot>(order.address_snapshot, {});
-  const isPickup = order.fulfillment === "pickup" || address.mode === "pickup";
 
   const latitude = toCoord(address.latitude);
   const longitude = toCoord(address.longitude);
@@ -173,12 +172,7 @@ export default async function AdminOrderDetailPage({
               </a>
             ) : null}
 
-            {isPickup ? (
-              <p className="mt-3 rounded-lg bg-rice-200/70 px-3 py-2 text-sm text-ink-800">
-                Customer is collecting this order.
-              </p>
-            ) : (
-              <address className="mt-3 flex items-start gap-2 text-sm not-italic text-ink-800">
+            <address className="mt-3 flex items-start gap-2 text-sm not-italic text-ink-800">
                 <MapPin className="mt-0.5 size-4 shrink-0 text-ink-700/70" aria-hidden="true" />
                 <span>
                   {[
@@ -207,9 +201,8 @@ export default async function AdminOrderDetailPage({
                   ) : null}
                 </span>
               </address>
-            )}
 
-            {!isPickup && mapUrl ? (
+            {mapUrl ? (
               <a
                 href={mapUrl}
                 target="_blank"
@@ -221,7 +214,7 @@ export default async function AdminOrderDetailPage({
               </a>
             ) : null}
 
-            {!isPickup && !mapUrl ? (
+            {!mapUrl ? (
               <p className="mt-2 text-xs text-ink-700/60">
                 No map pin shared with this address.
               </p>

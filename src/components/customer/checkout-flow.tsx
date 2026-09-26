@@ -9,7 +9,6 @@ import {
   MapPin,
   Plus,
   RefreshCw,
-  Store,
   Truck,
   Wallet,
 } from "lucide-react";
@@ -26,7 +25,6 @@ import { toAppError, type AppError } from "@/lib/utils/errors";
 import type { Address } from "@/lib/services/orders";
 import type { Locale } from "@/lib/i18n/config";
 
-type Fulfillment = "delivery" | "pickup";
 type PaymentMethod = "cash_on_delivery" | "card_on_delivery";
 
 /**
@@ -63,7 +61,6 @@ export function CheckoutFlow({
   const router = useRouter();
   const { lines, hydrated, subtotal, itemCount, clear } = useCart();
 
-  const [fulfillment, setFulfillment] = useState<Fulfillment>("delivery");
   const [addressId, setAddressId] = useState<string | null>(defaultAddressId);
   const [payment, setPayment] = useState<PaymentMethod>("cash_on_delivery");
   const [note, setNote] = useState("");
@@ -114,13 +111,24 @@ export function CheckoutFlow({
   const pointsToRedeem = usePoints ? redeemablePoints : 0;
 
   const totals = useMemo(
-    () => computeTotals(subtotal, { fulfillment, config, pointsToRedeem }),
-    [subtotal, fulfillment, config, pointsToRedeem],
+    () => computeTotals(subtotal, { config, pointsToRedeem }),
+    [subtotal, config, pointsToRedeem],
   );
 
   const selectedAddress = addresses.find((a) => a.id === addressId) ?? null;
   const belowMinimum = subtotal > 0 && subtotal < config.minOrderTotal;
-  const needsAddress = fulfillment === "delivery" && !selectedAddress;
+  const needsAddress = !selectedAddress;
+
+  // When no offer applies yet, name the cheapest threshold the basket could
+  // still reach. This is the one promotion message that is genuinely useful
+  // rather than pushy: it tells the customer what the next spend unlocks.
+  const nextOffer = useMemo(() => {
+    if (totals.offerDiscount > 0) return null;
+    const upcoming = config.offers
+      .filter((offer) => offer.threshold > subtotal)
+      .sort((a, b) => a.threshold - b.threshold)[0];
+    return upcoming ?? null;
+  }, [config.offers, subtotal, totals.offerDiscount]);
   const blocked =
     !acceptingOrders ||
     lines.length === 0 ||
@@ -143,9 +151,9 @@ export function CheckoutFlow({
           modifiers: line.modifiers.map((m) => m.id),
           notes: line.notes,
         })),
-        addressId: fulfillment === "delivery" ? selectedAddress?.id : undefined,
-        fulfillment,
-        paymentMethod: fulfillment === "pickup" ? "cash_on_delivery" : payment,
+        addressId: selectedAddress?.id,
+        fulfillment: "delivery",
+        paymentMethod: payment,
         customerNote: note.trim() || undefined,
         pointsToRedeem,
       });
@@ -230,64 +238,23 @@ export function CheckoutFlow({
         </div>
       ) : null}
 
-      {/* Fulfilment */}
+      {/* Delivery only — a cloud kitchen has no counter to collect from, so
+          there is no pickup choice to offer. */}
       <Reveal as="section" className="washi-panel mt-4 p-4" delay={60}>
-        <h2 className="text-sm font-semibold text-ink-900">
-          {t("checkout.fulfilmentHeading")}
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink-900">
+          <Truck className="size-4 text-vermilion-600" aria-hidden="true" />
+          {t("checkout.delivery")}
         </h2>
-        <div
-          role="radiogroup"
-          aria-label={t("checkout.fulfilmentLabel")}
-          className="mt-3 grid grid-cols-2 gap-2"
-        >
-          {(
-            [
-              {
-                key: "delivery",
-                label: t("checkout.delivery"),
-                icon: Truck,
-                hint: t("checkout.deliveryHint", {
-                  fee: formatPrice(config.deliveryFee, undefined, locale),
-                  freeOver: formatPrice(config.freeDeliveryOver, undefined, locale),
-                }),
-              },
-              {
-                key: "pickup",
-                label: t("checkout.pickup"),
-                icon: Store,
-                hint: t("checkout.pickupHint"),
-              },
-            ] as const
-          ).map((option) => {
-            const active = fulfillment === option.key;
-            const Icon = option.icon;
-            return (
-              <button
-                key={option.key}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => setFulfillment(option.key)}
-                className={
-                  active
-                    ? "rounded-xl border border-vermilion-600 bg-vermilion-600/8 p-3 text-start"
-                    : "rounded-xl border border-ink-900/12 p-3 text-start hover:bg-rice-200/60"
-                }
-              >
-                <span className="flex items-center gap-2 text-sm font-medium text-ink-900">
-                  <Icon className="size-4" aria-hidden="true" />
-                  {option.label}
-                </span>
-                <span className="mt-1 block text-xs text-ink-700/75">{option.hint}</span>
-              </button>
-            );
+        <p className="mt-1 text-xs text-ink-700/75">
+          {t("checkout.deliveryHint", {
+            fee: formatPrice(config.deliveryFee, undefined, locale),
+            freeOver: formatPrice(config.freeDeliveryOver, undefined, locale),
           })}
-        </div>
+        </p>
       </Reveal>
 
       {/* Address */}
-      {fulfillment === "delivery" ? (
-        <Reveal as="section" className="washi-panel mt-3 p-4" delay={100}>
+      <Reveal as="section" className="washi-panel mt-3 p-4" delay={100}>
           <div className="flex items-center justify-between gap-3">
             <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink-900">
               <MapPin className="size-4 text-vermilion-600" aria-hidden="true" />
@@ -395,7 +362,6 @@ export function CheckoutFlow({
             </p>
           ) : null}
         </Reveal>
-      ) : null}
 
       {/* Payment */}
       <Reveal as="section" className="washi-panel mt-3 p-4" delay={140}>
@@ -409,17 +375,11 @@ export function CheckoutFlow({
             [
               {
                 key: "cash_on_delivery",
-                label:
-                  fulfillment === "pickup"
-                    ? t("checkout.cashAtPickup")
-                    : t("checkout.cashOnDelivery"),
+                label: t("checkout.cashOnDelivery"),
               },
               {
                 key: "card_on_delivery",
-                label:
-                  fulfillment === "pickup"
-                    ? t("checkout.cardAtPickup")
-                    : t("checkout.cardOnDelivery"),
+                label: t("checkout.cardOnDelivery"),
               },
             ] as const
           ).map((option) => {
@@ -543,18 +503,33 @@ export function CheckoutFlow({
               {formatPrice(totals.subtotal, undefined, locale)}
             </dd>
           </div>
-          {totals.discount > 0 ? (
+          {totals.pointsDiscount > 0 ? (
             <div className="flex justify-between text-jade-600">
               <dt>{t("checkout.pointsDiscount")}</dt>
               <dd className="tabular-nums">
-                −{formatPrice(totals.discount, undefined, locale)}
+                −{formatPrice(totals.pointsDiscount, undefined, locale)}
+              </dd>
+            </div>
+          ) : null}
+          {totals.offerDiscount > 0 ? (
+            <div className="flex justify-between text-jade-600">
+              <dt>
+                {t("checkout.offerDiscount")}
+                {totals.offer ? (
+                  <span className="ms-1 text-xs text-ink-700/60">
+                    {locale === "ar" && totals.offer.offer.name_ar
+                      ? totals.offer.offer.name_ar
+                      : totals.offer.offer.name_en}
+                  </span>
+                ) : null}
+              </dt>
+              <dd className="tabular-nums">
+                −{formatPrice(totals.offerDiscount, undefined, locale)}
               </dd>
             </div>
           ) : null}
           <div className="flex justify-between">
-            <dt className="text-ink-700/85">
-              {fulfillment === "pickup" ? t("checkout.pickup") : t("checkout.delivery")}
-            </dt>
+            <dt className="text-ink-700/85">{t("checkout.delivery")}</dt>
             <dd className="tabular-nums">
               {totals.deliveryFee === 0
                 ? t("common.free")
@@ -579,6 +554,17 @@ export function CheckoutFlow({
         <p className="mt-3 text-xs text-jade-600">
           {t("checkout.pointsEarned", { points: totals.pointsEarned })}
         </p>
+        {nextOffer ? (
+          <p className="mt-1 text-xs text-vermilion-700">
+            {t("checkout.offerHint", {
+              threshold: formatPrice(nextOffer.threshold, undefined, locale),
+              value:
+                nextOffer.kind === "percent"
+                  ? `${nextOffer.value}%`
+                  : formatPrice(nextOffer.value, undefined, locale),
+            })}
+          </p>
+        ) : null}
         {previousOrders === 0 ? (
           <p className="mt-1 text-xs text-ink-700/70">{t("checkout.firstOrder")}</p>
         ) : null}

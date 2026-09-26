@@ -2,7 +2,7 @@ import "server-only";
 
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getPublicSettings } from "@/lib/services/catalog";
-import type { CheckoutConfig } from "@/lib/services/checkout-math";
+import type { CheckoutConfig, OfferRule } from "@/lib/services/checkout-math";
 
 export type { CheckoutConfig, Totals } from "@/lib/services/checkout-math";
 export { computeTotals, meetsMinimum } from "@/lib/services/checkout-math";
@@ -47,5 +47,32 @@ export async function getCheckoutConfig(): Promise<CheckoutConfig> {
     loyaltyPointValue: settings.loyalty.pointValue,
     pointsPerCurrency: settings.loyalty.pointsPerCurrency,
     currency: "EGP",
+    offers: await getEnabledOffers(supabase),
   };
+}
+
+/**
+ * Enabled threshold promotions, in the canonical order the admin set. Returns
+ * an empty list rather than throwing: a promotion lookup failure must not stop
+ * a customer from checking out, and "no offer" is always a valid answer.
+ */
+async function getEnabledOffers(
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+): Promise<OfferRule[]> {
+  const { data } = await supabase
+    .from("offers")
+    .select("id, name_en, name_ar, kind, threshold, value, max_discount")
+    .eq("is_enabled", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name_en: row.name_en,
+    name_ar: row.name_ar,
+    kind: row.kind,
+    threshold: Number(row.threshold),
+    value: Number(row.value),
+    max_discount: row.max_discount == null ? null : Number(row.max_discount),
+  }));
 }

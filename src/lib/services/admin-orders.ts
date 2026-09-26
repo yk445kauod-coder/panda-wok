@@ -166,7 +166,7 @@ export async function getAdminOrder(id: string): Promise<AdminOrderDetail | null
   const { data, error } = await supabase
     .from("orders")
     .select(
-      `${ADMIN_ORDER_COLUMNS}, order_items (*), order_status_history (id, order_id, from_status, to_status, changed_by, changed_by_role, note, created_at)`,
+      `${ADMIN_ORDER_COLUMNS}, order_status_history (id, order_id, from_status, to_status, changed_by, changed_by_role, note, created_at)`,
     )
     .eq("id", id)
     .maybeSingle();

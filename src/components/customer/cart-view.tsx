@@ -63,7 +63,7 @@ export function CartView({
     );
   }
 
-  const totals = computeTotals(subtotal, { fulfillment: "delivery", config });
+  const totals = computeTotals(subtotal, { config });
   const belowMinimum = subtotal < config.minOrderTotal;
 
   return (

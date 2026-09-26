@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { CheckCircle2, MapPin, Receipt, Store, Truck } from "lucide-react";
+import { CheckCircle2, MapPin, Receipt, Truck } from "lucide-react";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/auth/session";
 import { getOrderForViewer } from "@/lib/services/orders";
@@ -88,8 +88,7 @@ export default async function OrderTrackingPage({
   // where it went even if the customer later edits or deletes the address.
   const address = parseAddressSnapshot(order.address_snapshot);
 
-  const isPickup = order.fulfillment === "pickup";
-  const timeline = buildTimeline(order.status, order.order_status_history, isPickup);
+  const timeline = buildTimeline(order.status, order.order_status_history);
   const active = isActive(order.status);
   const failed = ["canceled", "rejected", "failed", "refunded"].includes(order.status);
   const canCancel = ["new", "accepted"].includes(order.status);
@@ -208,9 +207,7 @@ export default async function OrderTrackingPage({
             </div>
           ) : null}
           <div className="flex justify-between">
-            <dt className="text-ink-700/85">
-              {isPickup ? t("orders.pickup") : t("orders.delivery")}
-            </dt>
+            <dt className="text-ink-700/85">{t("orders.delivery")}</dt>
             <dd className="tabular-nums">
               {Number(order.delivery_fee) === 0
                 ? t("common.free")
@@ -244,23 +241,11 @@ export default async function OrderTrackingPage({
           id="where-heading"
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
         >
-          {isPickup ? (
-            <Store className="size-4 text-vermilion-600" aria-hidden="true" />
-          ) : (
-            <Truck className="size-4 text-vermilion-600" aria-hidden="true" />
-          )}
-          {isPickup ? t("orders.pickupHeading") : t("orders.deliveryDetails")}
+          <Truck className="size-4 text-vermilion-600" aria-hidden="true" />
+          {t("orders.deliveryDetails")}
         </h2>
 
-        {isPickup ? (
-          <p className="mt-2 text-sm text-ink-700/85">
-            {t("orders.pickupBodyBefore")}
-            <Link href="/contact" className="font-medium text-vermilion-600">
-              {t("orders.contactDetailsLink")}
-            </Link>
-            {t("orders.pickupBodyAfter")}
-          </p>
-        ) : address ? (
+        {address ? (
           <address className="mt-2 text-sm not-italic text-ink-800">
             <span className="flex items-start gap-1.5">
               <MapPin
