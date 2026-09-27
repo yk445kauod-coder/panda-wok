@@ -50,6 +50,20 @@ only the schema is. Hiding is always reversible; deleting never is.
   (`COPY … FROM PROGRAM`, `pg_read_file`, `lo_import`) — that is both a safety and
   a security boundary.
 
+## Migration-ordering trap (learned the hard way)
+
+When you reverse a flag change with a **new** migration, its version must sort
+*after* the one it reverses. The restore migration here was first applied through
+the MCP tool, which stamped it `20260927145250` — numerically **before** the hide
+at `20260927170000` — so a fresh `supabase db reset` would have run *hide* last
+and re-hidden the menu. The committed filename is `20260927180000`, and the
+remote `schema_migrations` row was realigned to match.
+
+Rule: name the migration file with a timestamp later than the change it undoes,
+confirm `supabase migration list` shows no local-only / remote-only rows, and
+remember that the *filename* is the version — an MCP `apply_migration` supplies
+its own timestamp unless you control it.
+
 ## Related
 
 - `AGENTS.md` — session notes, including the hide-not-delete examples.
