@@ -129,6 +129,72 @@ export type Database = {
           },
         ]
       }
+      agent_automations: {
+        Row: {
+          at_hour: number
+          cadence: string
+          created_at: string
+          created_by: string | null
+          day_of_month: number | null
+          id: string
+          interval_hours: number | null
+          is_enabled: boolean
+          kind: string
+          last_error: string | null
+          last_run_at: string | null
+          last_status: string | null
+          name: string
+          next_run_at: string
+          notify: boolean
+          payload: Json
+          prompt: string | null
+          updated_at: string
+          weekday: number | null
+        }
+        Insert: {
+          at_hour?: number
+          cadence?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number | null
+          id?: string
+          interval_hours?: number | null
+          is_enabled?: boolean
+          kind: string
+          last_error?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          name: string
+          next_run_at?: string
+          notify?: boolean
+          payload?: Json
+          prompt?: string | null
+          updated_at?: string
+          weekday?: number | null
+        }
+        Update: {
+          at_hour?: number
+          cadence?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number | null
+          id?: string
+          interval_hours?: number | null
+          is_enabled?: boolean
+          kind?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          name?: string
+          next_run_at?: string
+          notify?: boolean
+          payload?: Json
+          prompt?: string | null
+          updated_at?: string
+          weekday?: number | null
+        }
+        Relationships: []
+      }
       agent_memory: {
         Row: {
           content: string
@@ -161,6 +227,47 @@ export type Database = {
           subject_id?: string | null
         }
         Relationships: []
+      }
+      agent_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          model: string | null
+          provider: string | null
+          role: string
+          steps: Json
+          thread_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          provider?: string | null
+          role: string
+          steps?: Json
+          thread_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          provider?: string | null
+          role?: string
+          steps?: Json
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "agent_threads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agent_skills: {
         Row: {
@@ -197,6 +304,33 @@ export type Database = {
           name?: string
           source?: string
           source_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      agent_threads: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string | null
+          owner_label: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id?: string | null
+          owner_label?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string | null
+          owner_label?: string | null
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -1252,6 +1386,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mcp_servers: {
+        Row: {
+          allowed_tools: string[] | null
+          auth_header: string | null
+          created_at: string
+          id: string
+          is_enabled: boolean
+          last_probe_error: string | null
+          last_probe_ok: boolean | null
+          last_probed_at: string | null
+          name: string
+          secret_ref: string | null
+          transport: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          allowed_tools?: string[] | null
+          auth_header?: string | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          last_probe_error?: string | null
+          last_probe_ok?: boolean | null
+          last_probed_at?: string | null
+          name: string
+          secret_ref?: string | null
+          transport?: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          allowed_tools?: string[] | null
+          auth_header?: string | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          last_probe_error?: string | null
+          last_probe_ok?: boolean | null
+          last_probed_at?: string | null
+          name?: string
+          secret_ref?: string | null
+          transport?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
       }
       menu_images: {
         Row: {
@@ -2667,6 +2849,17 @@ export type Database = {
         Returns: string
       }
       agent_cron_tick: { Args: never; Returns: number }
+      agent_next_run: {
+        Args: {
+          p_at_hour: number
+          p_cadence: string
+          p_day_of_month: number
+          p_from?: string
+          p_interval_hours: number
+          p_weekday: number
+        }
+        Returns: string
+      }
       approve_ops_action: {
         Args: { p_id: string; p_note?: string }
         Returns: undefined
@@ -2923,6 +3116,10 @@ export type Database = {
           p_trigger: string
         }
         Returns: string
+      }
+      record_automation_run: {
+        Args: { p_error?: string; p_id: string; p_status: string }
+        Returns: undefined
       }
       reject_ops_action: {
         Args: { p_id: string; p_note?: string }

@@ -1,6 +1,11 @@
 import "server-only";
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import {
+  parseToolTurnOpenAiLike,
+  toOpenAiTool,
+  type ToolSpec,
+} from "@/lib/ai/tool-protocol";
 import { serverEnv } from "@/lib/config/env";
 import { tryCreateAdminSupabase } from "@/lib/supabase/server";
 
@@ -32,12 +37,28 @@ export type AiProviderKind =
   | "anthropic"
   | "openai_compatible";
 
-export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
+export type ChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+  /**
+   * Present on an `assistant` turn that asked for tools: the calls being
+   * echoed back to the model, kept so a subsequent request can replay the
+   * exact exchange. Optional, so every existing caller is unaffected.
+   */
+  toolCalls?: { id: string; name: string; arguments: string }[];
+};
 
 export type CompletionRequest = {
   messages: ChatMessage[];
   temperature: number;
   maxTokens: number;
+  /** Tool definitions offered to the model. Ignored by providers without support. */
+  tools?: ToolSpec[];
+};
+
+/** A tool-using turn. Extends CompletionResult with the calls the model made. */
+export type ToolCompletionResult = CompletionResult & {
+  toolCalls: { id: string; name: string; arguments: string }[];
 };
 
 export type CompletionResult = {
@@ -56,6 +77,13 @@ export interface AiProvider {
   readonly model: string;
   readonly kind: "builtin" | "remote" | "bound";
   complete(request: CompletionRequest): Promise<CompletionResult>;
+  /**
+   * Completes a request that may call tools. Optional: a provider without
+   * native tool support omits it, and the agent loop falls back to parsing a
+   * fenced JSON block out of `complete()`'s prose. That keeps every existing
+   * provider (including the deterministic floor) usable by the agent.
+   */
+  completeWithTools?(request: CompletionRequest): Promise<ToolCompletionResult>;
 }
 
 /** Rough token estimate used only for usage accounting when a provider omits it. */
@@ -268,6 +296,43 @@ export class RemoteProvider implements AiProvider {
       promptTokens: parsed.promptTokens,
       completionTokens: parsed.completionTokens,
       estimatedCost,
+      status: "ok",
+    };
+  }
+
+  /**
+   * Tool-aware completion. Only the OpenAI-shaped kinds support `tools`
+   * natively; Gemini and Anthropic use different envelopes, so they are not
+   * offered this method and the agent loop falls back to fenced JSON for them.
+   */
+  async completeWithTools(request: CompletionRequest): Promise<ToolCompletionResult> {
+    if (!["openrouter", "openai_compatible", "pollinations", "cloudflare"].includes(this.cfg.kind)) {
+      throw new Error(`${this.cfg.kind} does not implement native tool calling`);
+    }
+    const spec = this.buildSpec(request);
+    const response = await fetch(spec.endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...spec.headers },
+      body: JSON.stringify({
+        ...spec.body,
+        ...(request.tools && request.tools.length > 0
+          ? { tools: request.tools.map(toOpenAiTool), tool_choice: "auto" }
+          : {}),
+      }),
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw new RemoteRequestFailure(this.name, response.status, detail);
+    }
+    const turn = parseToolTurnOpenAiLike(JSON.parse(await response.text()));
+    return {
+      text: turn.text,
+      toolCalls: turn.toolCalls,
+      provider: this.name,
+      model: this.model,
+      promptTokens: turn.promptTokens,
+      completionTokens: turn.completionTokens,
+      estimatedCost: estimateCostUsd(this.model, turn.promptTokens, turn.completionTokens),
       status: "ok",
     };
   }
@@ -503,6 +568,42 @@ export class CloudflareBindingProvider implements AiProvider {
       status: "ok",
     };
   }
+
+  /**
+   * Workers AI accepts the OpenAI `tools` shape for its instruct models. A
+   * model that ignores the field simply answers in prose, which the loop
+   * handles (zero tool calls in the turn).
+   */
+  async completeWithTools(request: CompletionRequest): Promise<ToolCompletionResult> {
+    const { system, turns } = splitSystem(request);
+    let result: unknown;
+    try {
+      result = await this.ai.run(this.model, {
+        messages: turns,
+        ...(system ? { system } : {}),
+        max_tokens: request.maxTokens,
+        temperature: request.temperature,
+        ...(request.tools && request.tools.length > 0
+          ? { tools: request.tools.map(toOpenAiTool), tool_choice: "auto" }
+          : {}),
+      });
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? `Workers AI: ${error.message}` : "Workers AI request failed",
+      );
+    }
+    const turn = parseToolTurnOpenAiLike(JSON.parse(JSON.stringify(result ?? {})) as never);
+    return {
+      text: turn.text,
+      toolCalls: turn.toolCalls,
+      provider: this.name,
+      model: this.model,
+      promptTokens: turn.promptTokens,
+      completionTokens: turn.completionTokens,
+      estimatedCost: null,
+      status: "ok",
+    };
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -529,7 +630,7 @@ function envBlock(kind: AiProviderKind, suffix: "MODEL" | "BASE_URL" | "API_KEY"
  * from the console without a redeploy; the environment remains a valid fallback
  * for keys provisioned at deploy time. Never returns anything to the client.
  */
-async function resolveSecretValue(secretRef: string): Promise<string | undefined> {
+export async function resolveSecretValue(secretRef: string): Promise<string | undefined> {
   const fromEnv = (serverEnv as Record<string, string | undefined>)[secretRef];
   if (fromEnv) return fromEnv;
 

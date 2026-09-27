@@ -317,6 +317,22 @@
 }
 
 @layer utilities {
+  /* Shared form control, so the agent forms (MCP, automations) stay
+     consistent without repeating the full class list inline. */
+  .input {
+    width: 100%;
+    height: 2.75rem;
+    border-radius: var(--radius-xl);
+    border: 1px solid color-mix(in oklab, var(--color-ink-900) 12%, transparent);
+    background-color: var(--color-rice-50);
+    padding-inline: 0.75rem;
+    font-size: 0.875rem;
+    outline: none;
+  }
+  .input:focus {
+    border-color: var(--color-miso-500);
+  }
+
   .washi-panel {
     background-color: color-mix(in oklab, white 78%, var(--color-rice-100));
     border: 1px solid color-mix(in oklab, var(--color-rice-400) 60%, transparent);
