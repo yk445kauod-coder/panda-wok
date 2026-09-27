@@ -194,30 +194,36 @@ which.**
 
 ## 6. Spec vs. reality discrepancies worth flagging
 
-1. `README.md` module map is fictional (see §1 note).
-2. `README.md` deploy section still describes the old "redirector" Pages setup;
-   reality is OpenNext `.pages` output deployed directly.
+1. ~~`README.md` module map is fictional~~ — **fixed** (2026-09-26): the README now
+   lists the real `src/lib/services`, `src/lib/crm`, `src/lib/ai`, `src/lib/backup`,
+   `src/lib/export` paths.
+2. ~~`README.md` deploy section describes the old "redirector" setup~~ — **fixed**:
+   it documents the OpenNext `.pages` + `pages:build` / `pages:deploy` path.
 3. The design tokens already exist in `src/app/globals.css` (`@theme`) and partly
    match the requested palette, but use different names/values than the spec's
    `--ink/--vermilion/--gold/--rice/--surface/--muted/--border`. Reconciliation
-   is a Phase 4 task.
-4. Fonts today: `Inter` (body/Latin) + `Fraunces` (display) + `IBM_Plex_Sans_Arabic`
-   (Arabic). The spec asks for a heavier Arabic pairing (IBM Plex Sans Arabic +
-   Noto Kufi Arabic) and a decorative Asian serif. Phase 4 will align.
-5. `support.*` settings are empty live, so the footer/contact currently show
-   empty states. Phase 4 must seed the real numbers you supplied **into the DB**
-   (not into code).
+   landed in Phase 4; the semantic `rice/ink/vermilion/miso/bamboo/chili/jade`
+   families in `docs/design-system.md` are the shape that shipped.
+4. Fonts today: `IBM Plex Sans` (body/Latin) + `Fraunces` (display) +
+   `IBM Plex Sans Arabic` (Arabic body + display). The decorative "Asian serif" is
+   the 928-byte Chinese subset `public/fonts/kana-mark.woff2` (中, 華), not a
+   Japanese face.
+5. ~~`support.*` settings are empty live~~ — **fixed**: real numbers are seeded in
+   the DB (`settings`), never hardcoded. Contact/footer render them live.
 
 ---
 
 ## 7. Known non-mascot gaps carried into later phases
 
-- No dish images (Storage empty) → menu reads as text-only today.
-- No delivery zones, no promo/banner model, no FAQ model, no per-page SEO fields
-  in the DB.
-- `npm run lint` is broken by `.pages/` (Phase 2).
-- `CLOUDFLARE_API_TOKEN` repo secret is still missing, so the GitHub Actions
-  deploy step fails; deploys are done via `npm run pages:deploy`.
+- **Still true:** no dish images (Storage empty) → the menu reads as text-only
+  today. 0 of 90 items have an `image_url`; this is the main remaining menu task
+  and is done per-dish in the admin (`menu-images` bucket upload).
+- ~~No delivery zones, no promo/banner model, no FAQ model, no per-page SEO fields
+  in the DB~~ — **fixed**: `delivery_zones`, `announcements`, `faqs` and `page_seo`
+  all exist live (RLS enabled); `announcements` already has rows.
+- ~~`npm run lint` is broken by `.pages/`~~ — **fixed** in Phase 2.
+- ~~`CLOUDFLARE_API_TOKEN` repo secret missing~~ — **fixed**: the secret is set and
+  GitHub Actions push-to-deploy works.
 
 ---
 
@@ -242,17 +248,18 @@ which.**
 Public pages already return 200 with **zero** redirects. `/loyalty` is gated
 today; the spec's Phase 5 list does not require it to be public, but it *is* in
 the header nav, so an anonymous visitor tapping "Loyalty" is bounced to sign-in.
-Flagged for a decision in Phase 5.
+**Resolved:** kept gated deliberately (loyalty is personal) — Decision D, see
+`docs/architecture.md`.
 
 ## 9. Defects found during baseline (to fix in later phases)
 
-| # | Defect | Evidence | Phase |
-| - | ------ | -------- | ----- |
-| D1 | **Two floating panda buttons render at once** | `(site)/layout.tsx:105` renders `<PandaAssistant>` (own floating trigger at `assistant.tsx:140`, `fixed bottom-20 right-4 … md:bottom-6 md:size-16`) **and** `<FloatingPanda>` (`fixed bottom-24 right-3 … md:bottom-6 md:right-6`). Both are visible on every customer page and overlap on mobile and desktop. | 4 |
-| D2 | `npm run lint` fails with 1186 phantom errors | `eslint.config.mjs` ignores `.next/.open-next/.wrangler` but not `.pages/` | 2 |
-| D3 | Two mascot implementations coexist (sprite + code-drawn SVG) | §5 M1/M2 | 4 (needs your decision) |
-| D4 | Page copy + per-page SEO are code-only (7 items) | §3 C1–C7 | 3/4 |
-| D5 | `support.*` settings empty → contact/footer show empty states | live `settings` query | 4 |
+| # | Defect | Evidence | Phase | Status |
+| - | ------ | -------- | ----- | ------ |
+| D1 | **Two floating panda buttons render at once** | `(site)/layout.tsx:105` rendered `<PandaAssistant>` (own floating trigger) **and** `<FloatingPanda>` overlapping. | 4 | Resolved: both moved into one client boundary `src/components/layout/site-widgets.tsx`. |
+| D2 | `npm run lint` fails with 1186 phantom errors | `eslint.config.mjs` ignores `.next/.open-next/.wrangler` but not `.pages/` | 2 | Fixed (0 errors). |
+| D3 | Two mascot implementations coexist (sprite + code-drawn SVG) | §5 M1/M2 | 4 | Open, cosmetic — both intentional (floating sprite vs assistant avatar); no new character invented. |
+| D4 | Page copy + per-page SEO are code-only (7 items) | §3 C1–C7 | 3/4 | Fixed: `page_content` + `page_seo` tables live, edited at `/admin/content`. |
+| D5 | `support.*` settings empty → contact/footer show empty states | live `settings` query | 4 | Fixed: real values seeded in the DB. |
 
 ## 10. Baseline status line
 

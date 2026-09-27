@@ -50,13 +50,13 @@ production.
 
 | Path | State |
 | ---- | ----- |
-| GitHub Actions → Cloudflare | Workflow correct and branch-aware. **Blocked on one repository secret: `CLOUDFLARE_API_TOKEN`** (the available token lacks `secrets: write`, so it cannot be set from here). Until it is set, the deploy step fails with "set a CLOUDFLARE_API_TOKEN environment variable". |
-| Cloudflare Git-connected CI | Disabled (would always fail). |
+| GitHub Actions → Cloudflare | **Working.** The workflow is branch-aware and the repository secret **`CLOUDFLARE_API_TOKEN` is set now** (the earlier "deploy step always fails" note is obsolete — the previous runs succeeded and a push re-deploys automatically). |
+| Cloudflare Git-connected CI | Disabled on purpose (would always fail). |
 
-**Action for an account owner:** add `CLOUDFLARE_API_TOKEN` (Workers/Pages edit)
-at https://github.com/yk445kauod-coder/panda-wok/settings/secrets/actions ;
-optionally add `CLOUDFLARE_ACCOUNT_ID` as a repository variable. Manual
-`npm run pages:deploy` works today with a locally provided token.
+Push-to-deploy is the primary path; manual `npm run pages:deploy` is a fallback
+for when you want to ship without a commit. The repo's production branch is
+`feature/panda-wok-platform` — pushing there (or to `main`/`production`) publishes
+to production.
 
 ## 6. Result
 
@@ -73,8 +73,10 @@ optionally add `CLOUDFLARE_ACCOUNT_ID` as a repository variable. Manual
 ✅ `eslint.config.mjs` ignores `.pages/**` — `npm run lint` is green.
 ✅ `NEXT_PUBLIC_*` are treated as build-time values, exported before every build.
 ✅ CI is branch-aware and auto-deploys (preview for branches, production for
-`main`/`production`) — pending the `CLOUDFLARE_API_TOKEN` secret, which an account
-owner must add.
-✅ Pages compatibility flags match the repo config.
-⏳ ASSETS-binding serving and preview deploy are exercised end-to-end in Phase 7
-after the first push of this branch.
+`main`/`production`). The `CLOUDFLARE_API_TOKEN` secret is set, so push-to-deploy
+works.
+✅ Pages compatibility flags match the repo config (`wrangler.jsonc` for the
+Worker, `wrangler.toml` for the Pages Functions bundler).
+✅ ASSETS-binding serving and preview deploy were exercised end-to-end in Phase 7
+after the first push of this branch — the live site serves SSR, static assets,
+robots/sitemap/llms, the OG image and Arabic RTL all 200.

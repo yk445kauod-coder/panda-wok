@@ -30,6 +30,17 @@ Nothing here is invented: every value must come from you.
 - If two dishes would produce the same web address, the second one needs an
   explicit slug — the loader will report the clash rather than guessing.
 
+## Data safety (read before loading anything)
+
+This template is for **adding** a menu, not refreshing one. `scripts/import-menu.mjs`
+is **insert-only** — it is not an upsert, has no `external_id` key to conflict on,
+and re-running it duplicates the whole catalogue (another full set of categories
+and items). A dry run reporting "no problems" does **not** mean a re-run is safe.
+
+Never delete a dish, category or modifier to "replace" it — disable it
+(`is_enabled = false`, `is_available = false`) so it can be brought back without
+re-entering prices, translations or images. See `docs/data-safety.md`.
+
 ## Example (this is a format example, not a suggested menu)
 
 ```csv

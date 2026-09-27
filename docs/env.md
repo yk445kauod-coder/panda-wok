@@ -44,12 +44,17 @@ a fallback. Live rows today:
 
 | kind | name | priority | secret needed |
 | ---- | ---- | -------- | ------------- |
-| `cloudflare` | `workers-ai-binding` | 10 (primary) | **none** — uses the Workers AI binding |
+| `cloudflare` | `workers-ai` | 10 (primary) | **none** — uses the Workers AI binding |
+| `pollinations` | `pollinations` | 20 | `AI_POLLINATIONS_API_KEY` (optional) |
+| `openrouter` | `openrouter-free` | 30 | `AI_OPENROUTER_API_KEY` (optional) |
+| `gemini` | `gemini-free` | 40 | `AI_GEMINI_API_KEY` (optional) |
 | `builtin` | `deterministic` | 900 (fallback) | none |
 
 Because the primary is keyless and the fallback is built in, **the assistant
-works with no AI secrets configured at all**. The remaining names are only
-consulted if an operator adds a DB provider row whose `secret_ref` points at them:
+works with no AI secrets configured at all** — the three middle rows fail over
+in order and only activate when their `secret_ref` var is present. The remaining
+names are only consulted if an operator adds a DB provider row whose `secret_ref`
+points at them:
 
 `AI_PROVIDER_KIND`, `AI_MODEL`, `AI_BASE_URL`, `AI_API_KEY`, `AI_FALLBACK_MODEL`,
 and per-provider `AI_<KIND>_{NAME,MODEL,BASE_URL,API_KEY}` for `OPENROUTER`,

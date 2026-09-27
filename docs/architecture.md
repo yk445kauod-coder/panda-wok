@@ -1,7 +1,9 @@
 # Panda Wok — Architecture Plan (Phase 3)
 
-> **STATUS: awaiting your approval.** No code changes were made for this phase.
-> Read §8 (Decisions) first — three choices need a yes/no before I start Phase 4.
+> **STATUS: implemented.** The content tables in §2 exist live and are edited at
+> `/admin/content`; the design/motion work landed in Phase 4. The §8 decisions are
+> resolved — see the status block at the end of this document. No data was deleted
+> in the process (`docs/data-safety.md`).
 
 This document plans the work in the Arabic brief: a complete, admin-editable
 content layer, on-brand design, motion, and a "control everything from `/admin`"
@@ -23,14 +25,20 @@ model — without breaking the live site. It is grounded in the Phase 0 baseline
 6. **Bilingual (en/ar) + RTL** for all new content.
 7. **Original panda mascot** — no code-drawn SVG character; original sprite sheet
    only.
+8. **Never delete data.** Hide with a flag, never destroy a row. No `DELETE`,
+   `DROP` or `TRUNCATE` on the live database, and no re-import to "refresh" an
+   existing menu. This is a standing rule for every session, documented in full
+   in `docs/data-safety.md`.
 
 ---
 
 ## 2. Content model — what's missing
 
 Baseline §4 lists what is already admin-editable (menu, categories, images,
-business rules, brand, contact, social, hours, flags, upsell, loyalty). These are
-**not** yet editable and are the work of Phase 3/4:
+business rules, brand, contact, social, hours, flags, upsell, loyalty). The
+following were **not** editable and were the work of Phase 3/4. All five tables
+below are now live (verified 2026-09-26: `page_content`, `faqs`, `delivery_zones`,
+`announcements`, `page_seo` all exist with RLS enabled):
 
 | # | Content | Today | Needed |
 | - | ------- | ----- | ------ |
@@ -254,5 +262,21 @@ the client (`modifier-selection.ts`, unit-tested) **and** server
 renders every selected extra with its price delta.
 ✅ Architecture, content model, RLS, admin surface, design/motion/mascot, i18n and
 API plan written.
-⏸ **Paused for your approval on Decisions A–D.** Phase 4 does not start until you
-confirm (A and B are blocking; C and D can be answered later but are cleaner now).
+✅ **All five content tables now exist live** (`page_content`, `faqs`,
+`delivery_zones`, `announcements`, `page_seo`), so the plan below is implemented,
+not pending. `/admin/content` is the editor.
+✅ Data safety is now a standing rule, not just a Phase-3 note: see
+`docs/data-safety.md` (hide with a flag, never delete a row).
+
+### Status of the §8 decisions (2026-09-26)
+
+- **A (content tables)** — done; the five tables are live.
+- **B (mascot)** — `PandaAssistant` and `FloatingPanda` are both real, distinct
+  components today; D1 (two overlapping floating triggers) was resolved by moving
+  them into one client boundary (`src/components/layout/site-widgets.tsx`) rather
+  than by deleting either. Recorded here so the earlier "waiting on Decision B"
+  line is not read as still-open.
+- **C (contact details)** — real values were supplied and are live in `settings`
+  (phones `01095052232` / WhatsApp `01500988196`, TikTok/Instagram/Facebook under
+  `support.social`). Blank until the owner filled them; never invented.
+- **D (`/loyalty`)** — left auth-gated as recommended (loyalty is personal).

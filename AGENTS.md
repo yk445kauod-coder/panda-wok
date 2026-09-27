@@ -1282,19 +1282,22 @@ Empty-DB caveat: the dashboard trend/heatmap/radar sit behind `noData`, so on
 the current (zero-order) live data they are *not* exercised. Do not read a clean
 `/admin` as proof the charts work — test with data.
 
-### The menu is now TWO catalogues, and both are live
+### The menu is TWO catalogues, and BOTH are public (Japanese was un-hidden)
 Earlier notes said "upload the Chinese menu" was outstanding. It is not: the DB
-holds 18 categories / 90 items.
+holds 18 categories / 90 items, and **both** catalogues are live on `/menu`.
 
-- **Chinese menu** — 10 categories `sort_order 0-9` (Appetizers to Drinks), 52
-  items, `external_id is null`.
-- **Japanese sushi menu** — 8 categories `sort_order 10-17` (RAW URA MAKI to
-  Sauces), 38 items, `external_id` set (`menu-item-N@I`).
+- **Chinese menu — PUBLIC.** 10 categories `sort_order 0-9` (Appetizers to
+  Drinks), 52 items, `external_id is null`.
+- **Japanese sushi menu — PUBLIC.** 8 categories `sort_order 10-17` (RAW URA
+  MAKI to Sauces), 38 items, `external_id` set (`menu-item-N@I`).
 
-So `/menu` currently shows both kitchens to customers. If the brief is
-"Chinese only for now," hiding the Japanese side is
-`update categories set is_enabled = false where sort_order >= 10` plus the same
-for its items — reversible, and `is_enabled` is already a CMS flag.
+**Correction, and a rule to keep:** a previous session hid the sushi side with
+`20260927170000_hide_japanese_menu.sql` (commit 21d7723), having *assumed* the
+Japanese menu was not ready. The owner did not want that. It was re-enabled by
+`20260927180000_restore_japanese_menu.sql` (verified live: all 18 categories
+`is_enabled = true`, 90 items intact, `/menu` renders the sushi sections again).
+The lesson: **do not hide or disable the owner's menu on an assumption.** Only
+hide on an explicit instruction, and hide with the flag rather than deleting.
 
 **Photos are the real gap, not content:** 0 of 90 items have an `image_url`.
 That is the one menu job that genuinely needs doing, and it is per-dish in the

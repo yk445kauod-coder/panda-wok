@@ -60,6 +60,31 @@ Prefer the semantic alias (`text-ink-900`, `bg-rice-50`) over a raw colour.
 - `.shadow-washi` / `.shadow-washi-lg` — two elevation steps only.
 - `.ink-rule` — the horizontal divider.
 
+## Admin data visualisation (Chart.js)
+
+The admin console renders data as charts, not walls of numbers. All of them live
+in `src/components/charts/` and share one theme bridge:
+
+- `trend-chart.tsx` — line/area over time (revenue, orders)
+- `donut-chart.tsx` — part-of-whole (loyalty tiers)
+- `bar-list.tsx` — ranked horizontal bars (funnel, best sellers, category mix)
+- `gauge-chart.tsx` — a single value against a max (average rating)
+- `radar-chart.tsx` — a value across labelled axes (revenue by weekday)
+- `heatmap.tsx` — intensity grid (orders by weekday × week)
+- `sparkline.tsx` — inline micro-trend, used by `admin/stat-card.tsx`
+- `register.ts` — the **single** place Chart.js controllers/scales/elements are
+  registered; every chart imports it. `RadialLinearScale` + `RadarController`
+  are required by the radar — without them the page builds fine and throws only
+  in the browser (`"radialLinear" is not a registered scale`).
+- `chart-utils.ts` — `CHART_PALETTE` / `SERIES_COLORS`, the literal values of the
+  `@theme` tokens, because Chart.js paints to a `<canvas>` and cannot read CSS
+  custom properties. A palette change is mirrored here once and every chart
+  follows.
+
+Rules: never fabricate a series — an empty window shows its empty state, not a
+zero-filled chart pretending to be data. Charts honour `prefers-reduced-motion`
+(animation is turned off). `react-chartjs-2` is the React binding.
+
 ## Motion
 
 Two utilities, both opt-in:

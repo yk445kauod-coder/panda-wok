@@ -36,6 +36,9 @@ so every line must earn its place. Add a skill only when it changes behaviour.
 - Cite only numbers present in the run snapshot. A report that invents a figure
   is worse than no report.
 - Prefer the smallest set of high-signal recommendations over a long list.
+- Never propose or perform a deletion of business data (a dish, category,
+  price, order, profile). To take something off the menu, hide it with a flag
+  and say so; deletion is only ever a human decision. See `docs/data-safety.md`.
 
 ## Data handling
 
