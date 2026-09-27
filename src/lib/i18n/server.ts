@@ -2,6 +2,7 @@ import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { getSession } from "@/lib/auth/session";
 import {
+  ADMIN_DEFAULT_LOCALE,
   DEFAULT_LOCALE,
   LOCALE_COOKIE,
   localeFromAcceptLanguage,
@@ -37,6 +38,26 @@ export const getLocale = cache(async (): Promise<Locale> => {
 
   const headerList = await headers();
   return localeFromAcceptLanguage(headerList.get("accept-language")) ?? DEFAULT_LOCALE;
+});
+
+/**
+ * Locale for the ops console and the agent.
+ *
+ * Resolution is cookie → saved profile → Arabic. Unlike `getLocale` it does not
+ * consult Accept-Language: the console's readers are the Egyptian staff, so the
+ * absence of an explicit choice means Arabic, not the browser's guess. An
+ * explicit switcher choice or a saved `profiles.locale` still wins. The
+ * customer site keeps `getLocale` and its English fallback.
+ */
+export const getAdminLocale = cache(async (): Promise<Locale> => {
+  const cookieStore = await cookies();
+  const fromCookie = cookieStore.get(LOCALE_COOKIE)?.value;
+  if (fromCookie) return toLocale(fromCookie);
+
+  const session = await getSession();
+  if (session?.profile?.locale) return toLocale(session.profile.locale);
+
+  return ADMIN_DEFAULT_LOCALE;
 });
 
 export async function getDictionary(locale?: Locale): Promise<Dictionary> {

@@ -7,6 +7,8 @@ import { createAdminSupabase } from "@/lib/supabase/server";
 import { actionError, actionOk, type FormActionResult } from "@/lib/actions/result";
 import { probeMcpServer, type McpServerRow } from "@/lib/agent/mcp";
 import { getMcpServer } from "@/lib/services/agent-ops";
+import { getMcpPreset } from "@/lib/agent/mcp-presets";
+import { logAudit } from "@/lib/activity/log";
 
 /**
  * MCP server + automation management. Both are owner/admin surfaces (they grant
@@ -95,6 +97,121 @@ export async function deleteMcpServerAction(
     if (error) throw new Error(error.message);
     revalidatePath("/admin/agent/mcp");
     return actionOk({ id });
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+/**
+ * Installs a ready-to-configure connector from a preset.
+ *
+ * The endpoint and secret *name* come from the preset, not the form, so a
+ * tampered request cannot point a known vendor name at an arbitrary URL. The
+ * credential value is optional here: the connector is stored disabled until a
+ * human pastes the token, so an accidental "add" cannot give the agent a live
+ * connection to an account with no auth.
+ */
+export async function installMcpPresetAction(
+  formData: FormData,
+): Promise<FormActionResult<{ id: string; needsSecret: boolean }>> {
+  try {
+    await assertCapability("ai.manage");
+    const preset = getMcpPreset(String(formData.get("preset") ?? "").trim());
+    if (!preset) {
+      return { ok: false, error: { code: "VALIDATION", message: "Unknown connector." } };
+    }
+
+    const admin = createAdminSupabase();
+    const { data: existing } = await admin
+      .from("mcp_servers")
+      .select("id")
+      .eq("name", preset.id)
+      .maybeSingle();
+    if (existing) {
+      return { ok: false, error: { code: "VALIDATION", message: `${preset.name} is already added.` } };
+    }
+
+    const { data, error } = await admin
+      .from("mcp_servers")
+      .insert({
+        name: preset.id,
+        url: preset.url,
+        transport: preset.transport,
+        auth_header: preset.authHeader,
+        secret_ref: preset.secretRef,
+        allowed_tools: null,
+        // Disabled until a credential is saved — see the note above.
+        is_enabled: false,
+        updated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+
+    await logAudit(admin, {
+      actorId: null,
+      actorRole: "owner",
+      action: "mcp_server.preset_installed",
+      entity: "mcp_servers",
+      entityId: (data as { id: string }).id,
+      after: { preset: preset.id, secretRef: preset.secretRef },
+    });
+
+    revalidatePath("/admin/agent/mcp");
+    return actionOk({ id: (data as { id: string }).id, needsSecret: true });
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+/**
+ * Saves the credential for an MCP connector into Vault under the name the
+ * server row already references. The value never comes back out — the row keeps
+ * only the secret *name*, and the agent resolves it server-side at call time.
+ */
+export async function saveMcpSecretAction(
+  formData: FormData,
+): Promise<FormActionResult<undefined>> {
+  try {
+    await assertCapability("ai.manage");
+    const id = String(formData.get("id") ?? "").trim();
+    const value = String(formData.get("value") ?? "").trim();
+    const server = await getMcpServer(id);
+    if (!server) return { ok: false, error: { code: "NOT_FOUND", message: "No such server." } };
+    if (!server.secret_ref) {
+      return { ok: false, error: { code: "VALIDATION", message: "This connector has no secret name." } };
+    }
+    if (value.length < 8) {
+      return { ok: false, error: { code: "VALIDATION", message: "The value looks too short — paste the full token." } };
+    }
+
+    const admin = createAdminSupabase();
+    const { error } = await admin.rpc("set_ai_secret", {
+      p_name: server.secret_ref,
+      p_value: value,
+      p_description: `MCP connector: ${server.name}`,
+    });
+    if (error) throw new Error(error.message);
+
+    // Storing a credential means the connector is ready; enable it so the agent
+    // can reach it, and note that act in the audit trail.
+    const { error: enableError } = await admin
+      .from("mcp_servers")
+      .update({ is_enabled: true, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (enableError) throw new Error(enableError.message);
+
+    await logAudit(admin, {
+      actorId: null,
+      actorRole: "owner",
+      action: "mcp_server.secret_saved",
+      entity: "mcp_servers",
+      entityId: id,
+      after: { secretRef: server.secret_ref, enabled: true },
+    });
+
+    revalidatePath("/admin/agent/mcp");
+    return actionOk();
   } catch (error) {
     return actionError(error);
   }

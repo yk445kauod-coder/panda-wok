@@ -1,6 +1,6 @@
 import { CalendarClock } from "lucide-react";
 import { requireCapability } from "@/lib/auth/session";
-import { getLocale, getT } from "@/lib/i18n/server";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 import { listAutomations } from "@/lib/services/agent-ops";
 import { AutomationManager } from "@/components/admin/automation-manager";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AgentAutomationsPage() {
   await requireCapability("ai.manage");
-  const t = await getT(await getLocale());
+  const t = await getT(await getAdminLocale());
   const automations = await listAutomations();
 
   return (

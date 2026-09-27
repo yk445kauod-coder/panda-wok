@@ -1,6 +1,6 @@
 import { Plug } from "lucide-react";
 import { requireCapability } from "@/lib/auth/session";
-import { getLocale, getT } from "@/lib/i18n/server";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 import { listMcpServers } from "@/lib/services/agent-ops";
 import { McpServerManager } from "@/components/admin/mcp-server-manager";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AgentMcpPage() {
   await requireCapability("ai.manage");
-  const t = await getT(await getLocale());
+  const t = await getT(await getAdminLocale());
   const servers = await listMcpServers();
 
   return (

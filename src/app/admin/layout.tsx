@@ -5,6 +5,8 @@ import { capabilitiesFor, ROLE_LABELS } from "@/lib/auth/rbac";
 import { listStaffNotifications, countStaffUnread } from "@/lib/services/notifications";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminGateForm } from "@/components/admin/admin-gate-form";
+import { I18nProvider } from "@/components/i18n-provider";
+import { getAdminLocale, getDictionary } from "@/lib/i18n/server";
 
 /**
  * Nothing under /admin is indexable: every page is transactional or internal.
@@ -34,8 +36,18 @@ export default async function AdminLayout({
       ? settings.value.brand
       : undefined;
 
+  // The console runs in its own locale: Arabic unless the staff member chose
+  // otherwise. Repointing the provider here (and the `dir` on the shell) gives
+  // the back office RTL layout without touching the customer site's direction.
+  const locale = await getAdminLocale();
+  const dict = await getDictionary(locale);
+
   if (!adminSession) {
-    return <AdminGateForm brand={brand} />;
+    return (
+      <I18nProvider locale={locale} dict={dict}>
+        <AdminGateForm brand={brand} />
+      </I18nProvider>
+    );
   }
 
   // No capability gate here on purpose: the roles do not share a single
@@ -52,15 +64,17 @@ export default async function AdminLayout({
   ]);
 
   return (
-    <AdminShell
-      role={adminSession.role}
-      capabilities={capabilitiesFor(adminSession.role)}
-      staffName={adminSession.profile?.full_name ?? ROLE_LABELS[adminSession.role]}
-      brand={brand}
-      notifications={notifications}
-      unreadCount={unread}
-    >
-      {children}
-    </AdminShell>
+    <I18nProvider locale={locale} dict={dict}>
+      <AdminShell
+        role={adminSession.role}
+        capabilities={capabilitiesFor(adminSession.role)}
+        staffName={adminSession.profile?.full_name ?? ROLE_LABELS[adminSession.role]}
+        brand={brand}
+        notifications={notifications}
+        unreadCount={unread}
+      >
+        {children}
+      </AdminShell>
+    </I18nProvider>
   );
 }

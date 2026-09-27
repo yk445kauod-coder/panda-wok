@@ -16,6 +16,7 @@ import { AGENT_TOOLS, toolsForCapabilities } from "@/lib/agent/registry";
 import { callMcpTool, discoverMcpTools } from "@/lib/agent/mcp";
 import { recall, renderMemoryContext } from "@/lib/agent/memory";
 import { retrieveSkills, renderSkillContext } from "@/lib/agent/skills";
+import { FABRICATION_NOTICE, findUngroundedFigures } from "@/lib/agent/grounding";
 
 /**
  * The conversational agent loop.
@@ -73,16 +74,38 @@ export type AgentTurnInput = {
 const SYSTEM_PROMPT = `You are the Panda Wok operations agent, embedded in the staff console.
 
 You help staff run a restaurant: you can read live business data and propose or
-perform operational actions. Reply in the language the question is written in.
+perform operational actions.
 
-Rules you must follow:
-- Ground every claim in a tool result. If you did not call a tool, say what you
-  would look up rather than guessing a number.
+LANGUAGE — this matters:
+- Your default and preferred language is Egyptian Arabic (العامية المصرية). Write
+  numbers and dish names naturally, the way a Cairo restaurant manager speaks.
+- If the staff member writes in English, answer in English; otherwise answer in
+  Egyptian Arabic. Match their language, never mix two languages in one reply.
+
+HONESTY — this is the rule you must never break:
+- You have no knowledge of Panda Wok's numbers. Every figure you state — revenue,
+  order counts, prices, stock, customers — MUST come from a tool result in this
+  conversation. If you did not call a tool, you do not know the number.
+- NEVER estimate, round, extrapolate, or invent a figure. "I don't have that
+  number yet" is always the correct answer over a guessed one.
+- If a tool returns an error or no rows, say exactly that. An empty result is a
+  fact about the business ("مفيش أوردرات مكتملة في الفترة دي"), not a reason to
+  fill the gap with a plausible number.
+- If a tool failed, do not answer the question from memory — report the failure
+  and, if useful, suggest a tool that might work.
+- Distinguish clearly between a real value ("0 ج.م") and unavailable data ("مش
+  قادر أوصل للبيانات دلوقتي").
+- Never present a proposal as something that already happened. A write call that
+  is pending approval is pending, not done.
+
+STYLE:
 - Prefer calling a tool over describing what a tool could do.
-- A tool that changes data may require approval; if you are told a call is
-  pending, report that plainly instead of assuming it succeeded.
-- Be concise. Staff are reading this during service. Lead with the answer.
-- Never invent menu items, prices, customers or orders.`;
+- Be brief. Staff read this during service. Lead with the answer, then the number
+  and where it came from.`;
+
+const NO_MODEL_MESSAGE =
+  "مش قادر أوصل لموديل ذكاء اصطناعي دلوقتي، فمقدرش أجاوب من غير بيانات. " +
+  "بس أقدر أوريك اللي الأدوات رجّعته بالظبط تحت.";
 
 /** Providers that can call tools natively; otherwise the model gets no tools. */
 function supportsTools(provider: AiProvider): boolean {
@@ -171,25 +194,33 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
   const chain = await buildDbProviderChain({ rows: await loadDbProviders(), binding: null }, () =>
     // The deterministic floor answers with an honest "I have no model" line;
     // the loop below still runs so the transcript shows the attempt.
-    "I could not reach a language model, so I can only repeat what my tools returned.",
+    NO_MODEL_MESSAGE,
   );
   const provider = chain.primary ?? chain.fallbacks[0] ?? chain.fallback;
 
   const steps: AgentStep[] = [];
+  // Every payload a tool returned, kept so the final answer can be checked
+  // against it. Only `ok` results count — an error carries no numbers to ground
+  // against, which is exactly why an answer must not be built from one.
+  const observations: unknown[] = [];
+  let providerError: string | null = null;
 
   for (let step = 0; step < maxSteps; step += 1) {
     let turn: Awaited<ReturnType<typeof nextTurn>>;
     try {
       turn = await nextTurn(provider, messages, tools, { temperature: 0.3, maxTokens: 900 });
-    } catch {
-      // A provider hiccup mid-loop must not discard the work already done:
-      // stop and let the caller see the steps that succeeded.
+    } catch (error) {
+      // A provider hiccup mid-loop must not discard the work already done: stop
+      // and let the caller see the steps that succeeded. Record the failure so
+      // the answer can say the model was unreachable rather than imply the data
+      // was empty.
+      providerError = error instanceof Error ? error.message : "model call failed";
       break;
     }
 
     if (turn.toolCalls.length === 0) {
       return {
-        answer: turn.text || summariseSteps(steps),
+        answer: finaliseAnswer(turn.text, steps, observations, providerError),
         steps,
         provider: turn.provider,
         model: turn.model,
@@ -234,6 +265,7 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
         try {
           const data = await callMcpTool(match.server, match.tool.name, args);
           steps.push({ tool: call.name, arguments: args, status: "ok", summary: `called ${match.tool.name}`, data });
+          observations.push({ [match.tool.name]: data });
           messages.push(
             toolMessage({
               callId: call.id,
@@ -288,6 +320,7 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
           summary: outcome.summary,
           data: outcome.data,
         });
+        observations.push(outcome.data);
         messages.push(
           toolMessage({
             callId: call.id,
@@ -315,13 +348,47 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
 
   // Step budget exhausted: return what we have rather than pretending to finish.
   return {
-    answer: summariseSteps(steps),
+    answer: finaliseAnswer("", steps, observations, providerError),
     steps,
     provider: provider.name,
     model: provider.model,
     fallback: provider.kind === "builtin",
     pendingApproval: steps.filter((s) => s.status === "pending_approval"),
   };
+}
+
+/**
+ * The last gate before an answer reaches a human.
+ *
+ *  - If the model produced no text, fall back to a readable summary of what the
+ *    tools actually returned.
+ *  - If the model was unreachable mid-loop, say so explicitly instead of letting
+ *    a partial or empty transcript read as "there was nothing to find".
+ *  - If the prose cites a money figure or a large number that no tool returned,
+ *    the prose is unsound, so it is withheld and the raw observations are shown
+ *    instead. A prompt asks the model to behave; this makes the guarantee.
+ */
+export function finaliseAnswer(
+  text: string,
+  steps: AgentStep[],
+  observations: unknown[],
+  providerError: string | null,
+): string {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    const summary = summariseSteps(steps);
+    return providerError ? `${NO_MODEL_MESSAGE}\n\n${summary}` : summary;
+  }
+
+  const invented = findUngroundedFigures(trimmed, observations);
+  if (invented.length > 0) {
+    console.warn(
+      `[agent] withheld ungrounded answer (figures not in tool results: ${invented.join(", ")})`,
+    );
+    return `${FABRICATION_NOTICE}\n\n${summariseSteps(steps)}`;
+  }
+
+  return trimmed;
 }
 
 function toolMessage(result: ToolResult): ChatMessage {
@@ -338,8 +405,13 @@ function toolMessage(result: ToolResult): ChatMessage {
 
 /** Readable fallback when no model produced prose but tools did run. */
 function summariseSteps(steps: AgentStep[]): string {
-  if (steps.length === 0) return "I did not find anything to report.";
+  if (steps.length === 0) return "مش لاقي حاجة أقولها — مكتبتش نتيجة.";
   return steps
-    .map((s) => `- ${s.tool}: ${s.status === "pending_approval" ? `needs approval — ${s.summary}` : s.summary}`)
+    .map((s) => {
+      const label = s.tool;
+      if (s.status === "pending_approval") return `- ${label}: محتاج موافقة — ${s.summary}`;
+      if (s.status === "error") return `- ${label}: فشل — ${s.summary}`;
+      return `- ${label}: ${s.summary}`;
+    })
     .join("\n");
 }

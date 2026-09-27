@@ -13,7 +13,7 @@ import { GaugeChart } from "@/components/charts/gauge-chart";
 import { RadarChart } from "@/components/charts/radar-chart";
 import { Heatmap } from "@/components/charts/heatmap";
 import { formatDateTime, formatNumber, formatPrice, humanise } from "@/lib/utils/format";
-import { getLocale, getT } from "@/lib/i18n/server";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 /**
  * Operational overview, built as a visual report rather than a wall of numbers.
@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
   const session = await requireCapability("orders.view");
-  const locale = await getLocale();
+  const locale = await getAdminLocale();
   const t = await getT(locale);
   const [metrics, unread] = await Promise.all([
     getDashboardMetrics(30),

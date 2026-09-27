@@ -5,7 +5,7 @@ import { KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { unlockAdminAction } from "@/lib/actions/admin-gate";
-import { useErrorText, useT } from "@/components/i18n-provider";
+import { useErrorText, useI18n } from "@/components/i18n-provider";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 
 /**
@@ -20,7 +20,7 @@ export function AdminGateForm({
   brand?: { name: string; logo_url: string | null };
 }) {
   const errorText = useErrorText();
-  const t = useT();
+  const { t, dir } = useI18n();
   const [secret, setSecret] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
@@ -49,7 +49,7 @@ export function AdminGateForm({
   }
 
   return (
-    <div className="grid min-h-dvh place-items-center bg-ink-950 px-4">
+    <div dir={dir} className="grid min-h-dvh place-items-center bg-ink-950 px-4">
       <form
         onSubmit={onSubmit}
         noValidate

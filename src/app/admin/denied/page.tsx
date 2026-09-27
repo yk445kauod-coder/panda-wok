@@ -3,7 +3,7 @@ import { NotepadText, ShieldX } from "lucide-react";
 import { getAdminSession } from "@/lib/auth/session";
 import { capabilitiesFor } from "@/lib/auth/rbac";
 import { humanise } from "@/lib/utils/format";
-import { getLocale, getT } from "@/lib/i18n/server";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const metadata = {
   title: "Access denied",
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function AdminDeniedPage() {
   const session = await getAdminSession();
-  const t = await getT(await getLocale());
+  const t = await getT(await getAdminLocale());
   const capabilities = session?.role ? capabilitiesFor(session.role) : [];
 
   return (

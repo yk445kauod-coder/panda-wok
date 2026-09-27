@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireCapability } from "@/lib/auth/session";
 import { getKitchenQueue } from "@/lib/services/admin-orders";
-import { getLocale, getT } from "@/lib/i18n/server";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 import { OrderStatusControl } from "@/components/admin/order-status-control";
 import {
   KitchenLiveBoard,
@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function KitchenPage() {
   await requireCapability("kitchen.view");
-  const locale = await getLocale();
+  const locale = await getAdminLocale();
   const t = await getT(locale);
   const { fresh, cooking, ready, dispatching } = await getKitchenQueue();
 

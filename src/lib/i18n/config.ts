@@ -10,6 +10,15 @@ export type Locale = (typeof LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = "en";
 
+/**
+ * The ops console and the AI agent open in Arabic by default. Staff read the
+ * console during service, on a phone, in Egypt — English-first was an accident
+ * of the customer site's default, not a decision about the back office. An
+ * explicit switcher choice or a saved profile preference still wins; this is
+ * only the fallback when neither exists.
+ */
+export const ADMIN_DEFAULT_LOCALE: Locale = "ar";
+
 /** Cookie that remembers the visitor's choice across sessions. */
 export const LOCALE_COOKIE = "panda-wok.locale";
 

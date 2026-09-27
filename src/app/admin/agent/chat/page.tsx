@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Bot, Plus } from "lucide-react";
 import { requireCapability } from "@/lib/auth/session";
-import { getLocale, getT } from "@/lib/i18n/server";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 import { listAgentThreads, getAgentThread, createAgentThread } from "@/lib/services/agent-chat";
 import { AgentChat } from "@/components/admin/agent-chat";
 import { formatDateTime } from "@/lib/utils/format";
@@ -23,7 +23,7 @@ export default async function AgentChatPage({
 }) {
   const session = await requireCapability("ai.manage");
   const params = await searchParams;
-  const locale = await getLocale();
+  const locale = await getAdminLocale();
   const t = await getT(locale);
 
   const ownerId = session.actorId ?? null;

@@ -214,19 +214,20 @@ export async function runOpsReport(params: {
     const skillBlock = renderSkillContext(skillChunks);
 
     const prompt = [
-      "Analyse this live business snapshot and reply with JSON of the shape:",
+      "حلّل لقطة بيانات العمل الحقيقية دي، وردّ بـ JSON بالشكل ده بالظبط:",
       '{"headline": string, "summary": string, "recommendations": [{"title","detail","severity"}], "actions": [{"kind","title","rationale","payload"}]}',
-      `allowed action kinds: ${[...VALID_ACTION_KINDS].join(", ")}`,
+      `أنواع الإجراءات المسموحة: ${[...VALID_ACTION_KINDS].join(", ")}`,
       params.proposalsEnabled
-        ? "Propose at most 4 actions, each with a concrete payload."
-        : "Set actions to an empty array.",
-      "Every number you cite must appear in the snapshot.",
+        ? "اقترح 4 إجراءات كحد أقصى، وكل واحد بـ payload محدّد."
+        : "خلي actions مصفوفة فاضية.",
+      "اكتب كل النصوص بالعامية المصرية.",
+      "أي رقم تذكره لازم يكون موجود بالظبط في اللقطة دي. ممنوع التقدير أو التقريب أو اختراع أي رقم — لو رقم مش موجود قول إنه غير متاح.",
       // Tools are named, not executed: the agent states which read would settle
       // a question instead of the run pulling every table into context.
-      `Available read tools (name: purpose) —\n${renderToolCatalogue()}`,
-      memoryBlock ? `OWNER CONTEXT:\n${memoryBlock}` : null,
-      skillBlock ? `RELEVANT GUIDANCE:\n${skillBlock}` : null,
-      "SNAPSHOT:",
+      `أدوات القراءة المتاحة (الاسم: الغرض) —\n${renderToolCatalogue()}`,
+      memoryBlock ? `سياق المالك:\n${memoryBlock}` : null,
+      skillBlock ? `إرشادات ذات صلة:\n${skillBlock}` : null,
+      "اللقطة:",
       JSON.stringify(snapshot),
     ]
       .filter(Boolean)
@@ -238,8 +239,8 @@ export async function runOpsReport(params: {
           {
             role: "system",
             content:
-              "You are the operations analyst for Panda Wok, an Egyptian cloud kitchen. " +
-              "Reply with strict JSON only — no prose, no code fences. Never invent numbers.",
+              "أنت محلّل التشغيل لمطبخ Panda Wok السحابي في مصر. اردّ بـ JSON صارم فقط — بدون شرح حواليه وبدون علامات كود. " +
+              "اكتب بالعامية المصرية. ممنوع تمامًا اختلاق أي رقم: كل رقم لازم يكون موجود في اللقطة المرفقة.",
           },
           { role: "user", content: prompt },
         ],

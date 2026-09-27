@@ -105,7 +105,7 @@ export function AdminShell({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
-  const { locale, t } = useI18n();
+  const { locale, t, dir } = useI18n();
 
   // A destination with no capability is shown to every unlocked member (the
   // guide); otherwise the role must actually hold the capability.
@@ -137,7 +137,10 @@ export function AdminShell({
   }, [open]);
 
   return (
-    <div className="admin-scope flex min-h-dvh flex-col bg-rice-100 lg:flex-row">
+    <div
+      dir={dir}
+      className="admin-scope flex min-h-dvh flex-col bg-rice-100 lg:flex-row"
+    >
       {/* Mobile top bar */}
       <div className="sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-ink-900/10 bg-ink-950/95 px-3 pt-safe text-rice-100 backdrop-blur lg:hidden">
         <button

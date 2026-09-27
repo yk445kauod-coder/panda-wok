@@ -28,10 +28,10 @@ export type ChatTurn = {
 };
 
 const SUGGESTIONS = [
-  "How did we do yesterday?",
-  "Which dishes are unavailable right now?",
-  "What stock is low?",
-  "Show me the last 7 days of revenue.",
+  "عملنا إيه النهاردة؟",
+  "إيه الأطباق اللي مش متاحة دلوقتي؟",
+  "إيه اللي مخزونه قل؟",
+  "وريني إيراد آخر 7 أيام.",
 ];
 
 export function AgentChat({
