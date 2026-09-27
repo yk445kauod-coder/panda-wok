@@ -99,7 +99,7 @@ export function PopularMenu({
           {t("home.editorialEmptyList")}
         </p>
       ) : (
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {visible.map((entry, index) => (
             <Reveal
               as="li"
@@ -114,6 +114,7 @@ export function PopularMenu({
                 categoryName={entry.categoryName}
                 rating={ratings[entry.item.id] ?? null}
                 onBand={onBand}
+                compact
                 priority={index < 3}
               />
             </Reveal>

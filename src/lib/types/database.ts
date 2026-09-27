@@ -2348,6 +2348,7 @@ export type Database = {
       can_manage_marketing: { Args: never; Returns: boolean }
       can_manage_offers: { Args: never; Returns: boolean }
       can_manage_orders: { Args: never; Returns: boolean }
+      cancel_order: { Args: { p_order_id: string }; Returns: undefined }
       crm_customer_count: { Args: { p_search?: string }; Returns: number }
       crm_customers: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }

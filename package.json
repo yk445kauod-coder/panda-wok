@@ -16,7 +16,7 @@
     "db:list": "supabase migration list",
     "db:push": "supabase db push",
     "db:diff": "supabase db diff --linked",
-    "db:types": "supabase gen types typescript --linked --schema public > src/lib/types/database.ts",
+    "db:types": "supabase gen types typescript --linked --schema public > /tmp/panda-wok-db-types.ts && mv /tmp/panda-wok-db-types.ts src/lib/types/database.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

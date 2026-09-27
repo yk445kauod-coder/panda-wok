@@ -120,12 +120,13 @@ export default async function HomePage() {
   });
 
   // "Popular" is a real ordering, not a hand-picked list: the kitchen's featured
-  // flag first, then everything else in the order the admin set. The band shows
-  // the full published menu so the category filters have something to filter.
+  // flag first, then everything else in the order the admin set. Kept to six so
+  // the band stays a taste of the menu on a phone rather than a second full
+  // menu; "view the full menu" is one tap away.
   const popularItems = [...menu.items]
     .filter((item) => item.is_available)
     .sort((a, b) => Number(b.is_featured) - Number(a.is_featured))
-    .slice(0, 12)
+    .slice(0, 6)
     .map((item) => {
       const category = categoryById.get(item.category_id);
       return {
@@ -146,7 +147,10 @@ export default async function HomePage() {
     }));
 
   // Editorial rows are built from the kitchen's own category records, so
-  // whichever sections the admin has published are exactly the ones shown.
+  // whichever sections the admin has published are exactly the ones shown. Two
+  // rows is deliberate: the popular band above already shows the flagship dishes
+  // with prices, so a third editorial row pushed the page past ten phone screens
+  // and repeated the same dishes without adding anything.
   const editorialSections = visibleCategories
     .map((category) => {
       const items = menu.items.filter((item) => item.category_id === category.id);
@@ -163,7 +167,7 @@ export default async function HomePage() {
       };
     })
     .filter((section) => section.items.length > 1)
-    .slice(0, 3);
+    .slice(0, 2);
 
   const avgRating = computeAverageRating(ratings);
 
@@ -184,7 +188,7 @@ export default async function HomePage() {
         }}
       />
 
-      <AnnouncementBanner announcements={announcements} />
+      <AnnouncementBanner announcements={announcements} label={t("home.announcementLink")} />
 
       <IdentityBand
         brand={brand}
@@ -197,7 +201,7 @@ export default async function HomePage() {
       {featured.length > 0 ? (
         <section
           aria-labelledby="featured-heading"
-          className="mx-auto max-w-6xl px-4 py-10"
+          className="mx-auto max-w-6xl px-4 py-12"
         >
           <Reveal>
             <div className="flex items-end justify-between gap-4">
@@ -229,7 +233,7 @@ export default async function HomePage() {
       {visibleCategories.length > 0 ? (
         <section
           aria-labelledby="categories-heading"
-          className="mx-auto max-w-6xl px-4 py-6"
+          className="mx-auto max-w-6xl px-4 py-12"
         >
           <Reveal>
             <h2
@@ -272,7 +276,7 @@ export default async function HomePage() {
            inside use the on-band treatment. */
         <section
           aria-labelledby="popular-heading"
-          className="relative isolate mt-16 overflow-x-clip pb-14"
+          className="relative isolate mt-12 overflow-x-clip pb-12"
         >
           {/* One background layer carries both the band colour and the curved
               top edge, so the gradient runs across the curve instead of
@@ -283,7 +287,7 @@ export default async function HomePage() {
             className="band-vermilion band-layer band-layer-curve-top"
           />
           <AsanohaPanel className="pointer-events-none absolute inset-0 text-rice-50 opacity-[0.07]" />
-          <div className="relative mx-auto max-w-6xl px-4 pt-10">
+          <div className="relative mx-auto max-w-6xl px-4 pt-12">
             <Reveal>
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
@@ -344,7 +348,7 @@ export default async function HomePage() {
              scrollable overflow, so on a phone (where this section spans the
              full viewport) the pending transform widened the page by ~17px.
              Clipping the host contains it without changing the animation. */
-          className="relative mx-auto max-w-6xl overflow-x-clip px-4 py-16"
+          className="relative mx-auto max-w-6xl overflow-x-clip px-4 py-12"
         >
           <Reveal>
             <div className="max-w-2xl">

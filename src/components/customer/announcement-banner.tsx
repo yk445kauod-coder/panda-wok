@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Megaphone } from "lucide-react";
-import { Reveal } from "@/components/ui/reveal";
+import { AsanohaPanel } from "@/components/customer/asian-frames";
 import { cn } from "@/lib/utils/format";
 import type { AnnouncementRow } from "@/lib/services/content";
 
@@ -8,59 +8,95 @@ import type { AnnouncementRow } from "@/lib/services/content";
  * Tone classes for the four values the `announcements.tone` check allows. The
  * admin picks a tone from a fixed list, so an unknown value falls back to info
  * rather than rendering an unstyled strip.
+ *
+ * Each tone is a full band, not a translucent chip: a notice is a headline the
+ * page hangs off, so it reads as a solid field of colour. `text-rice-50` on a
+ * dark band is the pairing the hero and identity bands already use, which keeps
+ * the page coherent.
  */
 const TONE: Record<string, string> = {
-  info: "border-bamboo-500/30 bg-bamboo-500/10 text-bamboo-700",
-  success: "border-jade-500/30 bg-jade-500/10 text-jade-600",
-  warning: "border-miso-500/35 bg-miso-500/12 text-miso-600",
-  plum: "border-indigo-500/30 bg-indigo-500/10 text-indigo-600",
+  success: "band-jade text-rice-50",
+  info: "band-ink text-rice-50",
+  warning: "band-miso text-ink-900",
+  plum: "band-plum text-rice-50",
 };
 
 /**
- * Staff-authored announcements, rendered above the fold on the home page.
+ * Staff-authored announcements, rendered as a full-bleed band under the hero.
  *
  * The copy comes entirely from the `announcements` table, so the owner can post
- * or pull a notice from Admin -> Content without a deploy. Nothing is rendered
- * when there is no active announcement, which is the default state.
+ * or pull a notice from Admin -> Content without a deploy. Nothing renders when
+ * there is no active announcement, which is the default state.
+ *
+ * It sits between two dark sections (the ink hero above, the ink identity band
+ * below), so the band colour does real work: it is the change of material that
+ * tells the eye this is a deliberate message rather than a strip that fell
+ * between two blocks.
+ *
+ * When several notices are live at once they stack inside the one band and share
+ * its tone (taken from the first), because striping the band per row would read
+ * as several unrelated messages rather than one announcement block.
  */
 export function AnnouncementBanner({
   announcements,
+  label,
 }: {
   announcements: AnnouncementRow[];
+  label: string;
 }) {
   if (announcements.length === 0) return null;
 
+  const tone = TONE[announcements[0].tone] ?? TONE.info;
+
   return (
-    <section aria-label="Announcements" className="mx-auto max-w-6xl px-4 pt-4">
-      <Reveal>
-        <ul className="space-y-2">
+    <section
+      aria-label={label}
+      className={cn("announcement-band relative isolate overflow-hidden", tone)}
+    >
+      {/* Woven ground, the same motif the other bands carry. */}
+      <AsanohaPanel className="pointer-events-none absolute inset-0 text-rice-50 opacity-[0.08]" />
+
+      <div className="relative mx-auto flex max-w-6xl items-start gap-4 px-4 py-7 sm:items-center sm:gap-6 sm:py-8">
+        <span
+          aria-hidden="true"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-rice-50/15 ring-1 ring-rice-50/25 sm:size-12"
+        >
+          <Megaphone className="size-5 sm:size-6" />
+        </span>
+
+        <ul className="flex min-w-0 flex-1 flex-col divide-y divide-current/15">
           {announcements.map((row) => {
-            const className = cn(
-              "flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5",
-              TONE[row.tone] ?? TONE.info,
-            );
             const body = (
-              <span className="flex items-center gap-2.5">
-                <Megaphone className="size-4 shrink-0" aria-hidden="true" />
-                <span className="text-sm font-medium">{row.message}</span>
-              </span>
+              <>
+                <span className="min-w-0 flex-1 font-display text-lg leading-snug font-semibold text-balance sm:text-xl">
+                  {row.message}
+                </span>
+                {row.href ? (
+                  <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium opacity-90">
+                    {label}
+                    <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+                  </span>
+                ) : null}
+              </>
             );
 
             return (
-              <li key={row.id}>
+              <li key={row.id} className="py-3 first:pt-0 last:pb-0">
                 {row.href ? (
-                  <Link href={row.href} className={cn(className, "transition hover:brightness-[1.03]")}>
+                  <Link
+                    href={row.href}
+                    className="flex items-center justify-between gap-4 transition-opacity hover:opacity-90"
+                  >
                     {body}
-                    <ArrowRight className="size-4 shrink-0 rtl:rotate-180" aria-hidden="true" />
                   </Link>
                 ) : (
-                  <div className={className}>{body}</div>
+                  <div className="flex items-center justify-between gap-4">{body}</div>
                 )}
               </li>
             );
           })}
         </ul>
-      </Reveal>
+      </div>
     </section>
   );
 }

@@ -65,6 +65,7 @@
   --color-miso-300: #e7c182;
   --color-miso-500: #c2863a;
   --color-miso-600: #9d6620;
+  --color-miso-700: #7a4f18;
 
   /* 朱 shu vermilion — the primary. A lacquered lantern red, not a tech blue. */
   --color-vermilion-300: #f4c4ac;
@@ -558,6 +559,43 @@
       radial-gradient(70% 50% at 6% 0%, color-mix(in oklab, var(--color-miso-600) 30%, transparent), transparent 52%);
   }
 
+  /* Glazed green, for a good-news notice (free delivery, an offer, a reopening). */
+  .band-jade {
+    color: var(--color-rice-50);
+    background-color: var(--color-jade-700);
+    background-image:
+      radial-gradient(120% 90% at 14% 0%, color-mix(in oklab, var(--color-jade-500) 62%, transparent), transparent 62%),
+      radial-gradient(110% 80% at 92% 100%, color-mix(in oklab, var(--color-jade-800) 78%, transparent), transparent 64%);
+  }
+
+  /* Warm lacquer, for a caution notice. Dark enough that rice-50 copy on it
+     clears AA, so the same text treatment works across every tone. */
+  .band-miso {
+    color: var(--color-rice-50);
+    background-color: var(--color-miso-700);
+    background-image:
+      radial-gradient(120% 90% at 12% 0%, color-mix(in oklab, var(--color-miso-600) 70%, transparent), transparent 60%),
+      radial-gradient(110% 80% at 92% 100%, color-mix(in oklab, var(--color-ink-900) 55%, transparent), transparent 62%);
+  }
+
+  /* Deep ink-green, for an informational notice. Deliberately not Tailwind's
+     `indigo`, which is a saturated tech blue and off-brand next to the lacquer
+     palette the rest of the page uses. */
+  .band-plum {
+    color: var(--color-rice-50);
+    background-color: var(--color-ink-900);
+    background-image:
+      radial-gradient(120% 90% at 14% 0%, color-mix(in oklab, var(--color-jade-800) 70%, transparent), transparent 60%),
+      radial-gradient(110% 80% at 92% 100%, color-mix(in oklab, var(--color-ink-950) 70%, transparent), transparent 62%);
+  }
+
+  /* The announcement band. It is a chapter break in its own right, so it gets a
+     hairline top and bottom edge to separate it from the ink sections it sits
+     between rather than blending into them. */
+  .announcement-band {
+    border-block: 1px solid color-mix(in oklab, currentColor 18%, transparent);
+  }
+
   /* A woven seigaiha-ish arc pattern, drawn with gradients only. Tuned to sit
      on a coloured band as a texture, never as a foreground. */
   .pattern-arcs {
@@ -783,9 +821,15 @@
   50% { background-position: 0 12%, 0 6%, -60% 10%; }
   }
 
+  /* A slow vertical settle, the way a sheet of washi drops onto a desk.
+     Deliberately NOT a rotation: these surfaces span the full viewport width,
+     and a rotated box grows its *bounding* box by (height x sin θ) — at 0.35°
+     that is ~4px on a 614px banner and ~1px on the 64px header, which is
+     scrollable overflow and wobbles with the animation. Every pixel of it is
+     invisible; the only observable effect was a jittering scrollbar. */
   @keyframes washi-sway {
-  0%, 100% { transform: rotate(0.35deg); }
-  50% { transform: rotate(-0.35deg); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
   }
 
   /* Rice-paper sheet for the brand banner, mounted flush on the ink ground. */

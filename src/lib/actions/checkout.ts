@@ -93,8 +93,16 @@ export async function placeOrderAction(
 }
 
 /**
- * Customer-initiated cancellation. Only allowed while the kitchen has not
- * started cooking, which the database encodes as `order_is_editable`.
+ * Customer-initiated cancellation.
+ *
+ * Cancellation goes through the `cancel_order` RPC, **not** a plain `.update()`.
+ * `orders` has no customer UPDATE policy (only `orders_staff_update`), and under
+ * RLS an UPDATE that no policy admits matches zero rows while PostgREST still
+ * returns 204 with no error, so the old `.update()` reported success and
+ * cancelled nothing. A policy would also be too blunt: RLS cannot restrict
+ * columns, so it would let a customer rewrite `total` or `points_redeemed`. The
+ * definer RPC checks ownership and the `new`/`accepted` window, and writes only
+ * the cancellation fields.
  */
 export async function cancelOrderAction(
   orderId: string,
@@ -102,38 +110,36 @@ export async function cancelOrderAction(
   const session = await requireUser("/orders");
   const supabase = await createServerSupabase();
 
-  const { data: order, error: readError } = await supabase
-    .from("orders")
-    .select("id, status, user_id")
-    .eq("id", orderId)
-    .eq("user_id", session.user.id)
-    .maybeSingle();
+  const { error } = await supabase.rpc("cancel_order", { p_order_id: orderId });
 
-  if (readError || !order) {
-    return {
-      ok: false,
-      error: { code: "UNKNOWN", message: "We could not find that order." },
-    };
+  if (error) {
+    // The RPC raises a SQLSTATE rather than returning a row, so map the ones the
+    // customer can actually act on and let `toAppError` handle the rest.
+    const code =
+      error.code === "22023"
+        ? "FORBIDDEN"
+        : error.code === "P0002"
+          ? "ITEM_NOT_FOUND"
+          : undefined;
+
+    if (code === "FORBIDDEN") {
+      return {
+        ok: false,
+        error: {
+          code: "FORBIDDEN",
+          message:
+            "This order is already being prepared, so it can no longer be canceled. Please contact the kitchen.",
+        },
+      };
+    }
+    if (code === "ITEM_NOT_FOUND") {
+      return {
+        ok: false,
+        error: { code: "ITEM_NOT_FOUND", message: "We could not find that order." },
+      };
+    }
+    return actionError(error);
   }
-
-  if (!["new", "accepted"].includes(order.status)) {
-    return {
-      ok: false,
-      error: {
-        code: "FORBIDDEN",
-        message:
-          "This order is already being prepared, so it can no longer be canceled. Please contact the kitchen.",
-      },
-    };
-  }
-
-  const { error } = await supabase
-    .from("orders")
-    .update({ status: "canceled", cancel_reason: "Canceled by customer" })
-    .eq("id", orderId)
-    .eq("user_id", session.user.id);
-
-  if (error) return actionError(error);
 
   await logActivity(supabase, {
     userId: session.user.id,
@@ -143,6 +149,7 @@ export async function cancelOrderAction(
   });
 
   revalidatePath(`/orders/${orderId}`);
+  revalidatePath("/orders");
   revalidatePath("/account");
   return actionOk();
 }

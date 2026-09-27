@@ -42,6 +42,7 @@ export function DishCard({
   priority = false,
   rating,
   onBand = false,
+  compact = false,
   className,
 }: {
   item: MenuItem;
@@ -52,6 +53,11 @@ export function DishCard({
   /** Live average from `menu_item_ratings`; omit when the dish is unrated. */
   rating?: MenuRating | null;
   onBand?: boolean;
+  /**
+   * Tighter type, a squarer photo and a one-line description, so two cards fit
+   * side by side on a phone without the name or price crowding each other.
+   */
+  compact?: boolean;
   className?: string;
 }) {
   const t = makeTranslator(locale === "ar" ? ar : en);
@@ -81,7 +87,7 @@ export function DishCard({
           <img
             src={dishImageSrc(item.image_url, 480)}
             srcSet={dishImageSrcSet(item.image_url)}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
             alt={item.image_alt ?? name}
             width={480}
             height={360}
@@ -111,10 +117,11 @@ export function DishCard({
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col p-4">
+      <div className={cn("flex flex-1 flex-col", compact ? "p-3 sm:p-4" : "p-4")}>
         <h3
           className={cn(
-            "font-display text-lg leading-snug font-semibold",
+            "font-display leading-snug font-semibold",
+            compact ? "text-base sm:text-lg" : "text-lg",
             onBand ? "text-rice-50 group-hover:text-ink-900" : "text-ink-900",
           )}
         >
@@ -124,7 +131,8 @@ export function DishCard({
         {description ? (
           <p
             className={cn(
-              "mt-1.5 line-clamp-2 text-sm",
+              "mt-1.5",
+              compact ? "line-clamp-1 text-xs sm:text-sm" : "line-clamp-2 text-sm",
               onBand
                 ? "text-rice-100/75 group-hover:text-ink-700/85"
                 : "text-ink-700/80",
@@ -134,8 +142,9 @@ export function DishCard({
           </p>
         ) : null}
 
-        {/* Diet and provenance chips, capped at three so the row never wraps
-            onto a second line and unbalances the grid. */}
+        {/* Provenance and diet chips. In compact mode only the category shows,
+            because at two-up on a phone the flags wrap onto a second line and
+            make the tiles different heights. */}
         <div
           className={cn(
             "mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs",
@@ -143,41 +152,50 @@ export function DishCard({
           )}
         >
           {categoryName ? <span>{categoryName}</span> : null}
-          {item.is_spicy ? (
-            <span className="inline-flex items-center gap-1 text-chili-600">
-              <Flame className="size-3" aria-hidden="true" /> {t("dish.spicy")}
-            </span>
-          ) : null}
-          {item.is_vegan ? (
-            <span className="inline-flex items-center gap-1 text-jade-600">
-              <Leaf className="size-3" aria-hidden="true" /> {t("dish.vegan")}
-            </span>
-          ) : item.is_vegetarian ? (
-            <span className="inline-flex items-center gap-1 text-jade-600">
-              <Leaf className="size-3" aria-hidden="true" /> {t("dish.vegetarian")}
-            </span>
-          ) : null}
+          {compact ? null : (
+            <>
+              {item.is_spicy ? (
+                <span className="inline-flex items-center gap-1 text-chili-600">
+                  <Flame className="size-3" aria-hidden="true" /> {t("dish.spicy")}
+                </span>
+              ) : null}
+              {item.is_vegan ? (
+                <span className="inline-flex items-center gap-1 text-jade-600">
+                  <Leaf className="size-3" aria-hidden="true" /> {t("dish.vegan")}
+                </span>
+              ) : item.is_vegetarian ? (
+                <span className="inline-flex items-center gap-1 text-jade-600">
+                  <Leaf className="size-3" aria-hidden="true" /> {t("dish.vegetarian")}
+                </span>
+              ) : null}
+            </>
+          )}
         </div>
 
         {/* Footer: rating on the start edge, price on the end edge. `mt-auto`
-            pins it down so cards with unequal copy still line up. */}
+            pins it down so cards with unequal copy still line up. In compact mode
+            the rating is dropped — the price is what a thumb reaches for — so the
+            row cannot overflow a 160px tile. */}
         <div
           className={cn(
-            "mt-auto flex items-end justify-between gap-3 pt-4",
-            onBand && "border-t border-rice-100/15 group-hover:border-ink-900/10",
+            "mt-auto flex items-end justify-between gap-3",
+            compact ? "pt-3" : "pt-4",
+            !compact && onBand && "border-t border-rice-100/15 group-hover:border-ink-900/10",
           )}
         >
-          <StarRating
-            rating={rating}
-            tone={onBand ? "onBand" : "onLight"}
-            oneLabel={t("dish.ratingCountOne")}
-            countLabel={(count) => t("dish.ratingCount", { count })}
-            label={
-              rating
-                ? t("dish.ratingLabel", { rating: rating.average.toFixed(1) })
-                : undefined
-            }
-          />
+          {compact ? null : (
+            <StarRating
+              rating={rating}
+              tone={onBand ? "onBand" : "onLight"}
+              oneLabel={t("dish.ratingCountOne")}
+              countLabel={(count) => t("dish.ratingCount", { count })}
+              label={
+                rating
+                  ? t("dish.ratingLabel", { rating: rating.average.toFixed(1) })
+                  : undefined
+              }
+            />
+          )}
 
           <span className="flex flex-col items-end">
             {hasDiscount ? (
@@ -194,7 +212,8 @@ export function DishCard({
             ) : null}
             <span
               className={cn(
-                "font-display text-xl font-semibold tabular-nums",
+                "font-display font-semibold tabular-nums",
+                compact ? "text-lg sm:text-xl" : "text-xl",
                 onBand ? "text-rice-50 group-hover:text-vermilion-700" : "text-ink-900",
               )}
             >
@@ -204,11 +223,16 @@ export function DishCard({
         </div>
 
         {unavailable ? (
-          <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-chili-600">
+          <p
+            className={cn(
+              "inline-flex items-center gap-1.5 font-medium text-chili-600",
+              compact ? "mt-2 text-2xs" : "mt-3 text-xs",
+            )}
+          >
             <CircleSlash className="size-3.5" aria-hidden="true" />
             {t("dish.backOnMenu")}
           </p>
-        ) : (
+        ) : compact ? null : (
           <span
             className={cn(
               "mt-3 inline-flex items-center gap-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",

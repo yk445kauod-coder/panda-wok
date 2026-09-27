@@ -46,7 +46,7 @@ export const en = {
     add: "Add",
     inBasket: "In basket",
     photoSoon: "Photo coming soon",
-    priceNote: "Prices are confirmed on the server when you place the order.",
+    priceNote: "Prices are confirmed when you place the order.",
   },
 
   nav: {
@@ -60,7 +60,7 @@ export const en = {
     orders: "Orders",
     account: "Account",
     primary: "Primary",
-    explore: "Explore",
+    explore: "Menu & more",
     yourAccount: "Your account",
     orderTracking: "Order tracking",
     reachKitchen: "Reach the kitchen",
@@ -74,7 +74,7 @@ export const en = {
 
 
   footer: {
-    explore: "Explore",
+    explore: "Menu & more",
     account: "Your account",
     reachKitchen: "Reach the kitchen",
     contactPending: "Contact details are being finalised.",
@@ -97,19 +97,19 @@ export const en = {
     closedForOrders: "Closed for new orders",
     startOrder: "Start your order",
     viewMenu: "View the menu",
-    ourStory: "Our story",
+    ourStory: "About us",
     featuredHeading: "From the kitchen",
-    featuredSubheading: "Dishes the kitchen has marked as featured.",
+    featuredSubheading: "A few dishes we would point you to first.",
     fullMenu: "Full menu",
     browseBySection: "Browse by section",
     seeWholeMenu: "See the whole menu",
-    noDishesTitle: "No dishes published yet",
+    noDishesTitle: "No dishes on the menu yet",
     noDishesBody:
-      "Once the kitchen adds dishes they will appear here, with prices and allergen information.",
+      "As soon as we add dishes they will show up here, with prices and allergens.",
     identitySig: "{brand} · {cuisine} · {city}",
-    identityHeading: "What the kitchen cooks",
+    identityHeading: "What we cook",
     identityBody:
-      "These are the kitchen's own cuisine tags, taken from the live kitchen record rather than written into the page. The menu underneath is the authoritative list of what is actually available.",
+      "Cooked to order in a Chinese-style wok. The menu lists everything we can send you today, with prices.",
 
     /* Hero. Every number here is a live figure read from the database, so the
        hero never claims a stat the kitchen cannot back up. */
@@ -121,28 +121,33 @@ export const en = {
     heroStatsDishes: "dishes on the menu",
     heroStatRating: "customer rating",
 
+    /* Announcement band under the hero. `announcementLink` is the call to action
+       shown beside a staff notice that has an href (e.g. "Order now"). */
+    announcementLabel: "Announcement",
+    announcementLink: "Order now",
+
     /* Popular band. */
     eyebrowLabel: "Cooked to order",
-    popularHeading: "Popular right now",
-    popularSubheading: "The dishes the kitchen is proudest of this week.",
+    popularHeading: "Our picks",
+    popularSubheading: "Six dishes from the menu, starting with our picks.",
     popularFilterAll: "All",
-    popularExplore: "Explore the full menu",
+    popularExplore: "See the full menu",
 
     /* Editorial section on the home page. The two rows are built from the
        kitchen's own published categories — whichever sections the admin fills
        are the ones that appear — so there is no hardcoded dish copy here. */
-    editorialEyebrow: "What's trending",
-    editorialDiscover: "Discover",
-    editorialKitchenTitle: "Fresh from the wok",
+    editorialEyebrow: "Cooked to order",
+    editorialDiscover: "See the menu",
+    editorialKitchenTitle: "From our wok",
     editorialKitchenBody:
-      "A Chinese-inspired wok kitchen, cooked to order and sent out straight from the pass. Everything is made when you order it — nothing is held under a lamp.",
+      "A Chinese-inspired wok kitchen. We cook to order and send every dish out as soon as it is ready.",
     editorialLearnMore: "More about the kitchen",
-    editorialEmptyList: "The kitchen has not published dishes in this section yet.",
+    editorialEmptyList: "Nothing in this section yet.",
 
     /* Closing call to action. */
-    closingTitle: "Hungry yet?",
+    closingTitle: "Ready to order?",
     closingBody:
-      "The menu is cooked to order and delivered across {city}. Browse it, build your basket and we will take it from there.",
+      "We cook to order and deliver across {city}. Pick your dishes and we will take it from there.",
     closingCta: "Browse the menu",
     closingCall: "Call the kitchen",
     closingWhatsapp: "Chat on WhatsApp",
@@ -161,7 +166,7 @@ export const en = {
     updating: "updating…",
     emptyTitle: "The menu is empty",
     emptyBody:
-      "The kitchen has not published any dishes yet. Please check back shortly or contact us directly.",
+      "We have not put anything on the menu yet. Check back soon, or get in touch.",
     noMatchTitle: "No dishes match that",
     noMatchBody: "Try a different search term.",
     clearFilters: "Clear search",
@@ -183,9 +188,9 @@ export const en = {
     kcal: "{calories} kcal",
     containsNuts: "Contains nuts",
     ingredients: "Ingredients",
-    allergensHeading: "Allergens recorded for this dish",
+    allergensHeading: "Allergens in this dish",
     allergensDisclaimer:
-      "This list is what the kitchen has recorded and is not a guarantee. If you have a serious allergy, please confirm directly with us before ordering.",
+      "We record these allergens ourselves, so please treat them as a guide rather than a guarantee. For a serious allergy, check with us before you order.",
     cutOutReady: "Cut-out ready",
     cutOutAvailable: "Cut-out available",
     moreFrom: "More from {category}",
@@ -215,7 +220,7 @@ export const en = {
     maxExtras: "You can choose up to {count} extras. Deselect one first.",
     unavailableTitle: "This dish is unavailable right now.",
     unavailableBody:
-      "The kitchen has either run out or paused it. Please pick another dish, or try again later.",
+      "It has sold out or is paused right now. Try another dish, or check back later.",
     browseRest: "Browse the rest of the menu",
   },
 
@@ -232,7 +237,7 @@ export const en = {
     itemCountPlural: "{count} items",
     emptyTitle: "Your basket is empty",
     emptyBody:
-      "Add a few dishes and they will appear here. Your basket is saved on this device, so it survives a refresh.",
+      "Add a few dishes and they will show up here. Your basket is saved on this device, so a refresh will not lose it.",
     reduceQuantity: "Reduce {name} quantity",
     increaseQuantity: "Increase {name} quantity",
     summary: "Summary",
@@ -299,7 +304,7 @@ export const en = {
     reviewBasket: "Review your basket",
     addAnotherDish: "Add another dish",
     retrySafe:
-      "Retrying is safe: an order is only created once, even if you press the button twice.",
+      "Safe to retry — you will only get one order, even if you press the button twice.",
     placing: "Placing your order…",
     placeOrderWithTotal: "Place order · {total}",
     notAcceptingNow: "The kitchen is not accepting new orders right now.",
@@ -334,7 +339,7 @@ export const en = {
     subtitle: "Everything you have ordered from {brand}, newest first.",
     emptyTitle: "No orders yet",
     emptyBody:
-      "Once you place your first order it will appear here with live tracking.",
+      "Your first order will show up here, with live tracking.",
     inProgress: "In progress",
     history: "Order history",
     openLive: "Open the order to follow it live.",
@@ -347,7 +352,7 @@ export const en = {
     completeNoUpdates: "This order is complete and no longer updates.",
     orderPlaced: "Order placed",
     orderPlacedBody:
-      "The kitchen has received it. We will update this page as it progresses.",
+      "We have your order. This page updates as it moves.",
     etaHint: "Estimated about {minutes} minutes once preparation starts.",
     progress: "Progress",
     whatYouOrdered: "What you ordered",
@@ -368,6 +373,7 @@ export const en = {
       "This cannot be undone. Once the kitchen starts cooking, the order can no longer be canceled.",
     cancelYes: "Yes, cancel it",
     cancelKeep: "Keep order",
+    cancelFailed: "We could not cancel the order. Please try again.",
     liveUpdating: "Updating live",
     polling: "Checking for updates every 30 seconds",
     cancelling: "Cancelling…",
@@ -387,8 +393,8 @@ export const en = {
       failed: "Failed",
     },
     hints: {
-      new: "We have your order and the kitchen is about to review it.",
-      accepted: "The kitchen has accepted your order and will start soon.",
+      new: "We have your order and will take a look shortly.",
+      accepted: "We have accepted your order and will start cooking soon.",
       in_progress: "Your food is being cooked to order right now.",
       prepared: "Everything is packed and waiting for the rider.",
       out_for_delivery: "Your order has left the kitchen.",
@@ -526,15 +532,15 @@ export const en = {
     progressLabel: "Progress towards {tier}",
     highestTier: "You are on our highest tier. Thank you for ordering with us.",
     rewardsHeading: "Rewards",
-    noRewardsTitle: "No rewards published yet",
+    noRewardsTitle: "No rewards available right now",
     noRewardsBody:
-      "The kitchen has not published any rewards. Your points still accumulate.",
+      "There is nothing to spend your points on at the moment. They keep adding up.",
     availableUntil: "Available until {date}",
     pointsLabel: "points",
     rewardAvailable: "Available",
     rewardKeepEarning: "Keep earning",
     rewardsFootnote:
-      "Rewards are applied at checkout, where your balance is verified on the server.",
+      "Rewards are applied at checkout, so pick the one you want before you pay.",
     historyHeading: "Points history",
     noHistoryTitle: "No points activity yet",
     noHistoryBody: "Your first order will start your points history.",
@@ -556,7 +562,7 @@ export const en = {
     previousHeading: "What you have told us",
     signInTitle: "Sign in to send feedback",
     signInBody:
-      "We ask you to sign in so we can tie your feedback to your order and reply to you directly. It also stops anonymous spam from burying real messages.",
+      "Signing in lets us tie your feedback to your order and reply to you directly.",
     signInCta: "Sign in",
     signUpCta: "Create an account",
     preferNot: "Prefer not to sign in? Call or message us instead — details are on the ",
@@ -616,19 +622,19 @@ export const en = {
     title: "About {brand}",
     cloudKitchenHeading: "A cloud kitchen, not a dining room",
     cloudKitchenBody:
-      "We cook in a dedicated kitchen and send everything straight to you. That means no tables, no queues and no waiting room — just food made when you order it, and a smaller operation that can pay attention to detail.",
+      "We cook in a dedicated kitchen and send everything straight to you. No tables, no queues, no waiting room — just food made when you order it.",
     howWeCookHeading: "How we cook",
     howWeCookBody:
-      "Dishes are cooked to order and nothing is held under a lamp waiting to be chosen. Because everything is made to order, our prep times are honest rather than instant, and a busy night affects everyone equally.",
-    identityHeading: "What the kitchen cooks",
+      "Dishes are cooked to order, not held under a lamp. Prep takes a little longer because nothing is made in advance, and a busy night slows the whole kitchen down.",
+    identityHeading: "What we cook",
     identityBody:
-      "The tags below are the kitchen's own record of the cuisines it cooks — they are read from the live kitchen record, not written into this page. The menu is the authoritative list of what is actually available.",
+      "The cuisines we cook, in our own words. The menu shows what is on right now.",
     allergensHeading: "Allergens and honest labelling",
     allergensBody:
-      "Every dish page lists the allergens the kitchen has recorded, along with vegetarian, vegan and spicy markers. That information is what we know about our own preparation; it is not a guarantee, because suppliers and shared equipment can introduce traces. If you have a serious allergy, please speak to us directly before ordering.",
+      "Each dish page lists the allergens we know about, plus vegetarian, vegan and spicy markers. We cook in one kitchen where nuts, shellfish, gluten and soy are all handled, so traces are possible. If you have a serious allergy, talk to us before ordering.",
     whereHeading: "Where we are",
     whereBody:
-      "We cook in {area}{city}, {country}, and deliver across the city. Delivery fees, minimums and typical timings are listed on each order as you check out, and they are set by the kitchen rather than fixed in the code.",
+      "We cook in {area}{city}, {country}, and deliver across the city. Delivery fees, minimums and timings appear at checkout.",
     seeMenu: "See the menu",
     contactUs: "Contact us",
     fallbackTagline: "A cloud kitchen, cooking to order.",
@@ -686,54 +692,54 @@ export const en = {
       "Answers to the questions customers ask {brand} most: where we deliver, minimum order, allergens, payment and how to order online.",
     title: "Frequently asked questions",
     subtitle:
-      "Straight answers about ordering, delivery, allergens and payment. Every figure here is read from the kitchen's live settings, so it matches what checkout charges.",
+      "Answers on ordering, delivery, allergens and payment.",
     contactPrompt: "Still unsure about something?",
     contactLink: "Contact the kitchen",
     seeMenu: "See the menu",
     items: {
       where: {
         q: "Where does {brand} cook, and where do you deliver?",
-        a: "{brand} is a cloud kitchen in {city}, {country}. We deliver across {city}; the delivery fee is {fee} and delivery is free on orders over {freeOver}.",
+        a: "{brand} cooks in {city}, {country}, and delivers across the city. Delivery is {fee}, free over {freeOver}.",
       },
       order: {
         q: "How do I order online?",
-        a: "Add dishes to your basket, open checkout and confirm your address. The minimum order is {minOrder}. You can order as a guest or sign in to keep your order history and loyalty points.",
+        a: "Add dishes to your basket, open checkout and confirm your address. The minimum order is {minOrder}. You can order as a guest, or sign in to keep your order history and points.",
       },
       deliveryTime: {
         q: "How long does delivery take?",
-        a: "A typical delivery takes about {minutes} minutes including preparation. It is a guide rather than a promise, and depends on how busy the kitchen is.",
+        a: "About {minutes} minutes including preparation. Treat it as a guide — a busy night can push it out.",
       },
       collection: {
         q: "Can I collect my order instead of having it delivered?",
-        a: "No. We are a delivery-only cloud kitchen with no counter to collect from, so every order comes to your address.",
+        a: "No. We are delivery-only, with no counter to collect from, so every order comes to you.",
       },
       allergens: {
         q: "Can you tell me about allergens?",
-        a: "Dishes are labelled vegetarian and vegan where that applies. If you have a serious allergy, contact the kitchen before ordering: our food is prepared in a single kitchen where nuts, shellfish, gluten and soy are all handled.",
+        a: "Dishes are labelled vegetarian and vegan where that applies. If you have a serious allergy, talk to us before ordering: nuts, shellfish, gluten and soy are all handled in one kitchen.",
       },
       cuisine: {
         q: "What kind of food does {brand} serve?",
-        a: "{brand} cooks {cuisine} to order. The current menu is always the authoritative list of what is available.",
+        a: "{brand} cooks {cuisine} to order. The menu shows what is available right now.",
       },
       vegetarian: {
         q: "Are there vegetarian or vegan options?",
-        a: "Yes. Vegetarian and vegan dishes are labelled on the menu. You can filter the menu by dietary preference and each dish page lists what applies to it.",
+        a: "Yes — vegetarian and vegan dishes are labelled on the menu. You can filter for them, and each dish page lists what applies.",
       },
       payment: {
         q: "What payment methods do you accept?",
-        a: "All prices are shown in {currency}. Available payment methods are offered at checkout, and you will see the final total — including delivery and any tax — before you confirm.",
+        a: "All prices are in {currency}. You pick your payment method at checkout, and you see the final total — delivery and any tax included — before you confirm.",
       },
       hours: {
         q: "What are your opening hours?",
-        a: "Opening hours are being confirmed. Please check the contact page or call the kitchen before ordering outside usual mealtimes.",
+        a: "We are confirming our hours. Check the contact page or call us before ordering outside usual mealtimes.",
       },
       reservations: {
         q: "Can I book a table?",
-        a: "No. {brand} is a delivery-only cloud kitchen with no dining room, so there is nothing to reserve and nothing to collect.",
+        a: "No. We have no dining room, so there is nothing to reserve and nothing to collect.",
       },
       account: {
         q: "Do I need an account to order?",
-        a: "No. An account is optional; it keeps your order history, saved addresses and loyalty points. Orders placed as a guest can still be tracked with your order reference.",
+        a: "No — an account is optional. It saves your order history, addresses and points. Guest orders can still be tracked with your order reference.",
       },
     },
   },
@@ -741,7 +747,7 @@ export const en = {
   location: {
     metaTitle: "{brand} location and delivery area in {city}",
     metaDescription:
-      "Where {brand} cooks and which areas it delivers to in {city}. Delivery fees, minimum order and typical timings from the kitchen's own settings.",
+      "Where {brand} cooks and which areas it delivers to in {city}, with delivery fees, minimum order and typical timings.",
     title: "{brand} in {city}",
     subtitle:
       "{brand} is a delivery-only cloud kitchen: we cook in one kitchen and send everything to you.",
@@ -884,7 +890,7 @@ export const en = {
       INVALID_TOTAL:
         "The order total could not be calculated. Please review your basket and try again.",
       VALIDATION: "Some of the details are not valid. Please check and try again.",
-      NOT_FOUND: "That record no longer exists.",
+      NOT_FOUND: "We could not find that.",
       OFFLINE: "You appear to be offline. Your basket is saved on this device.",
       RATE_LIMITED: "Too many attempts. Please wait a moment and try again.",
       NOT_CONFIGURED: "This feature is not configured yet.",
@@ -916,7 +922,7 @@ export const en = {
     newConversation: "Start a new conversation",
     disclosure: "Replies are generated by an AI assistant.",
     error: "The assistant could not reply just now. Please try again.",
-    emptyState: "Ask a question to get started.",
+    emptyState: "Ask us anything about the menu or your order.",
   },
 
   status: {

@@ -23,13 +23,21 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
   async function cancel() {
     setPending(true);
     setError(null);
-    const result = await cancelOrderAction(orderId);
-    if (!result.ok) {
-      setError(errorText(result.error));
+    try {
+      const result = await cancelOrderAction(orderId);
+      if (!result.ok) {
+        setError(errorText(result.error));
+        return;
+      }
+      router.refresh();
+    } catch {
+      // A rejected action (dropped connection, stale deployment) means the call
+      // never returned a result; without this the button spun forever, which is
+      // the "nothing happens" half of the cancel complaint.
+      setError(t("orders.cancelFailed"));
+    } finally {
       setPending(false);
-      return;
     }
-    router.refresh();
   }
 
   if (!confirming) {
