@@ -15,6 +15,7 @@ import {
 } from "@/lib/ai/grounding";
 import { recall, renderMemoryContext } from "@/lib/agent/memory";
 import { retrieveSkills, renderSkillContext } from "@/lib/agent/skills";
+import { selectMenuCards, type AssistantMenuCard } from "@/lib/ai/menu-cards";
 
 /** Words that suggest the customer is asking about a specific dish or need. */
 const STOP_WORDS = new Set([
@@ -200,22 +201,9 @@ export function renderDeterministicAnswer(
 
   if (matchesRecommend || lines.length === 0) {
     if (lines.length === 0) {
-      const available = snapshot.items.filter((i) => i.available);
       lines.push(
-        `I can help with the ${snapshot.brand.name} menu, prices, allergens, delivery and loyalty points. Here is what is on right now:`,
+        `I can help with the ${snapshot.brand.name} menu, prices, allergens, delivery and loyalty points. Here are a few dishes — tap any card for the full detail:`,
       );
-      lines.push("");
-      const byCategory = new Map<string, typeof available>();
-      for (const item of available) {
-        const list = byCategory.get(item.category) ?? [];
-        list.push(item);
-        byCategory.set(item.category, list);
-      }
-      for (const [category, items] of byCategory) {
-        lines.push(
-          `${category}: ${items.map((i) => `${i.name} (${i.price} EGP)`).join(", ")}`,
-        );
-      }
     } else if (matchesRecommend) {
       const featured = snapshot.items.filter((i) => i.available).slice(0, 2);
       if (featured.length > 0) {
@@ -254,15 +242,40 @@ export type AssistantAnswer = {
  * recalled memory lines (a stated preference, a recurring request) and the
  * relevant skill chunks. Both are optional and fail open — a missing embedding
  * service simply means the answer is not personalised, never that it errors.
+ *
+ * The returned `cards` are selected here, from live rows, and handed to the UI
+ * alongside the prose. The model never sees or chooses them, so a dish card can
+ * only show a dish that actually exists.
  */
 export async function answerAssistantQuestion(params: {
   question: string;
   history?: ChatMessage[];
   systemInstruction: string;
   customerId?: string | null;
-}): Promise<{ result: AssistantAnswer; snapshot: GroundingSnapshot }> {
+  /** Slugs already shown in this conversation, so cards do not repeat. */
+  excludeSlugs?: string[];
+}): Promise<{
+  result: AssistantAnswer;
+  snapshot: GroundingSnapshot;
+  cards: AssistantMenuCard[];
+}> {
   const snapshot = await buildGroundingSnapshot();
   const dataBlock = renderSnapshot(snapshot);
+
+  // Chosen from the live snapshot before the model runs, so the prompt can tell
+  // it which dishes the UI is already showing. The model never chooses these —
+  // it is only told about them, which is why a card can never be a invented
+  // dish. The deterministic fallback gets the same cards as a model reply.
+  const cards = selectMenuCards(snapshot, params.question, {
+    exclude: params.excludeSlugs,
+    limit: 3,
+  });
+  const cardBlock =
+    cards.length > 0
+      ? `DISHES ALREADY SHOWN TO THE CUSTOMER AS CARDS (photo, name and price are on screen beneath your reply)\n` +
+        cards.map((c) => `- ${c.name}`).join("\n") +
+        `\nRefer to these by name only. Do not repeat their prices, do not list any other dish, and do not print a menu.`
+      : "";
 
   const [providers, binding, memories, skills] = await Promise.all([
     loadDbProviders(),
@@ -288,6 +301,7 @@ export async function answerAssistantQuestion(params: {
   if (memoryBlock) sections.push(`WHAT YOU REMEMBER ABOUT THIS CUSTOMER\n${memoryBlock}`);
   if (skillBlock) sections.push(`RELEVANT STAFF GUIDANCE\n${skillBlock}`);
   sections.push(`DATA\n----\n${dataBlock}\n----`);
+  if (cardBlock) sections.push(cardBlock);
   sections.push(`QUESTION: ${params.question}`);
 
   const messages: ChatMessage[] = [
@@ -315,5 +329,6 @@ export async function answerAssistantQuestion(params: {
       grounded: true,
     },
     snapshot,
+    cards,
   };
 }

@@ -32,9 +32,13 @@ export type GroundingSnapshot = {
   items: {
     slug: string;
     name: string;
+    /** Arabic name, used to match and render an Arabic question's dish cards. */
+    nameAr: string | null;
     category: string;
     price: number;
     description: string | null;
+    imageUrl: string | null;
+    imageAlt: string | null;
     available: boolean;
     spicy: boolean;
     vegetarian: boolean;
@@ -102,9 +106,12 @@ export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
     items: menu.items.map((item: MenuItem) => ({
       slug: item.slug,
       name: item.name_en,
+      nameAr: item.name_ar,
       category: categoryName.get(item.category_id) ?? "Menu",
       price: Number(item.price),
       description: item.description_en,
+      imageUrl: item.image_url,
+      imageAlt: item.image_alt,
       available: item.is_available,
       spicy: item.is_spicy,
       vegetarian: item.is_vegetarian,

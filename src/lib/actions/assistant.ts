@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth/session";
 import { assistantSchema } from "@/lib/validation/schemas";
 import { actionOk, type ActionResult } from "@/lib/actions/result";
 import { answerAssistantQuestion } from "@/lib/ai/assistant";
+import type { AssistantMenuCard } from "@/lib/ai/menu-cards";
 import { checkAssistantRateLimit, getPromptInstruction } from "@/lib/ai/guard";
 import { recordAiRequest } from "@/lib/ai/usage";
 import { logActivity } from "@/lib/activity/log";
@@ -19,19 +20,22 @@ Rules you must follow without exception:
 5. For allergy or medical questions, state clearly that the listed allergen data is not a guarantee and the customer must confirm with the kitchen.
 6. Be warm, concise and helpful. Reply in the language the customer used (English or Arabic).
 7. Do not take orders, accept payments or promise delivery times beyond the stated estimate.
+8. The chat automatically shows the customer real dish cards with photo, name and price beneath your reply. When the user message lists "DISHES ALREADY SHOWN...AS CARDS", refer to those by name only: do not repeat their prices, do not list any other dish, and do not paste a catalog or tell the customer to open the menu page.
+9. If there is no card list, recommend at most two dishes from the DATA block and let the cards (when present) carry the detail.
 
 Formatting (the answer is rendered as Markdown):
 - Lead with the direct answer in one short sentence, then add detail only if it helps.
-- When you mention dishes, put each on its own bullet: **Dish name** — price EGP — one clause on why it fits.
-- Use a short numbered list only for steps. Use **bold** for dish names and prices, not whole sentences.
+- Use a short numbered list only for steps. Use **bold** sparingly, for dish names, not whole sentences.
 - Never emit headings, tables, code blocks or images. Keep it to a few short lines.
-- Always mention prices in EGP. Prefer at most 4-5 suggestions unless the customer asks for more.`;
+- If you state a price, it must be the price in the DATA block, written in EGP. Do not re-list the dishes that already have a card.`;
 
 export type AssistantReply = {
   answer: string;
   provider: string;
   model: string;
   status: "ok" | "fallback";
+  /** Real dishes, selected server-side from the live menu, to render as cards. */
+  cards: AssistantMenuCard[];
 };
 
 /**
@@ -72,11 +76,12 @@ export async function askAssistantAction(
   const prompt = await getPromptInstruction("assistant.menu", FALLBACK_INSTRUCTION);
 
   try {
-    const { result } = await answerAssistantQuestion({
+    const { result, cards } = await answerAssistantQuestion({
       question: parsed.data.question,
       history: parsed.data.history,
       systemInstruction: prompt.instruction,
       customerId: userId,
+      excludeSlugs: parsed.data.excludeSlugs,
     });
 
     await recordAiRequest({
@@ -108,6 +113,7 @@ export async function askAssistantAction(
       provider: result.provider,
       model: result.model,
       status: result.status,
+      cards,
     });
   } catch (error) {
     return {

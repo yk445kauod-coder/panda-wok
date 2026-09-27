@@ -8,13 +8,17 @@ import { Button, Spinner } from "@/components/ui/button";
 import { Markdown } from "@/components/ui/markdown";
 import { askAssistantAction } from "@/lib/actions/assistant";
 import { useAssistant } from "@/components/panda/assistant-context";
+import { AssistantMenuCards } from "@/components/panda/assistant-menu-cards";
 import { cn } from "@/lib/utils/format";
 import { useErrorText } from "@/components/i18n-provider";
+import type { AssistantMenuCard } from "@/lib/ai/menu-cards";
 
 type Turn = {
   role: "user" | "assistant";
   content: string;
   status?: string;
+  /** Real dishes shown under this assistant turn, selected server-side. */
+  cards?: AssistantMenuCard[];
 };
 
 const SUGGESTIONS = [
@@ -105,12 +109,13 @@ export function PandaAssistant({
       setError(null);
       setInput("");
       const history = turns.slice(-6).map((t) => ({ role: t.role, content: t.content }));
+      const excludeSlugs = turns.flatMap((t) => t.cards?.map((c) => c.slug) ?? []);
       setTurns((current) => [...current, { role: "user", content: trimmed }]);
       setPending(true);
       setMoodState("thinking");
 
       try {
-        const result = await askAssistantAction({ question: trimmed, history });
+        const result = await askAssistantAction({ question: trimmed, history, excludeSlugs });
 
         if (!result.ok) {
           setError(errorText(result.error));
@@ -125,6 +130,7 @@ export function PandaAssistant({
             role: "assistant",
             content: result.data.answer,
             status: result.data.status,
+            cards: result.data.cards,
           },
         ]);
         setMoodState("speaking");
@@ -219,13 +225,17 @@ export function PandaAssistant({
                 <div
                   key={index}
                   className={cn(
-                    "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                    "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                    turn.cards && turn.cards.length > 0 ? "w-full max-w-full" : "max-w-[85%]",
                     turn.role === "user"
                       ? "ml-auto whitespace-pre-line bg-vermilion-600 text-rice-50"
                       : "border border-ink-900/8 bg-rice-100 text-ink-900",
                   )}
                 >
                   {turn.role === "user" ? turn.content : <Markdown>{turn.content}</Markdown>}
+                  {turn.role === "assistant" && turn.cards && turn.cards.length > 0 ? (
+                    <AssistantMenuCards cards={turn.cards} />
+                  ) : null}
                   {turn.role === "assistant" && turn.status === "fallback" ? (
                     <span className="mt-2 block border-t border-ink-900/8 pt-1.5 text-[11px] text-ink-700/60">
                       Answered directly from Panda Wok menu data.

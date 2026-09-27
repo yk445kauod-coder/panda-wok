@@ -474,6 +474,11 @@ export const assistantSchema = z.object({
     )
     .max(10)
     .default([]),
+  /**
+   * Slugs already shown as cards in this conversation. Used only to filter
+   * which real menu rows are re-selected, never as trusted content.
+   */
+  excludeSlugs: z.array(z.string().trim().min(1).max(120)).max(60).default([]),
 });
 
 export const conversationCreateSchema = z.object({
