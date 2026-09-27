@@ -200,7 +200,7 @@ export async function runOpsReport(params: {
   let provider = "deterministic";
   let model = "menu-grounded-rules";
   const headline = recommendations[0]?.title ?? "Business report";
-  let summary = recommendations.map((r) => r.detail).join(" ");
+  const summary = recommendations.map((r) => r.detail).join(" ");
   let actions = params.proposalsEnabled ? deterministicActions(recommendations) : [];
 
   if (chain.primary || chain.fallbacks.length > 0) {

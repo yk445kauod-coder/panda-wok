@@ -14,11 +14,26 @@ export const BRAND_LOGO_URL = "/panda-logo.svg";
 export const BRAND_ICON_URL = BRAND_LOGO_URL;
 
 /**
- * The script mark that heads the hero and the brand banner: the kitchen's wok,
- * named in Chinese. It is decorative (`aria-hidden`) and rendered in
- * `.font-kana`, which is a Mincho face — so each glyph must be one that face
- * actually ships. 中華 (traditional) is; 华 (simplified) is not, and would fall
- * back to a second font mid-mark. The Arabic locale shows the country name
- * instead, so it does not use this string.
+ * The script marks that sign the brand: the shop's name written in the two
+ * Asian scripts the kitchen belongs to, used as decoration (`aria-hidden`)
+ * wherever the brand is introduced.
+ *
+ * They render in `.font-kana`, a hand-built Mincho subset (see the note on
+ * `scripts/build-kana-font.mjs`). That face is Japanese, so every glyph must be
+ * one a Japanese Mincho actually ships — a simplified-only character (锅, 华)
+ * is absent and the browser substitutes a different font for that one glyph,
+ * which renders the mark half in one typeface and half in another. That is why
+ * these are 鍋 and 貓 (traditional forms), not 锅 / 猫.
+ *
+ * 熊猫 = "panda", 鍋 = "wok"/"pot" (also Japanese 鍋, the nabe the dish is named
+ * after). The Japanese mark uses katakana パンダ rather than kanji 熊猫, because
+ * that is how a Japanese menu would actually write it.
  */
-export const BRAND_SCRIPT_MARK = "中華";
+export const BRAND_SCRIPT_MARK_ZH = "熊猫鍋";
+export const BRAND_SCRIPT_MARK_JA = "パンダ鍋";
+
+/**
+ * @deprecated Kept as the Chinese mark so 中華-era call sites keep resolving;
+ * prefer `BRAND_SCRIPT_MARK_ZH`.
+ */
+export const BRAND_SCRIPT_MARK = BRAND_SCRIPT_MARK_ZH;

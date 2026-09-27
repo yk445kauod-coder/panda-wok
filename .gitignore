@@ -10,6 +10,9 @@ npm-debug.log*
 # next.js
 /.next/
 /out/
+
+# generated font-subset scratch (scripts/build-kana-font.mjs)
+/.fonts-tmp/
 next-env.d.ts
 
 # cloudflare / opennext

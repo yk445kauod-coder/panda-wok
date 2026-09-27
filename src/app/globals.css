@@ -18,7 +18,11 @@
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+4E2D, U+83EF, U+00B7;
+  /* Exactly the codepoints `public/fonts/kana-mark.woff2` carries — the Chinese
+     and Japanese brand marks plus the separator. Widening this to a range would
+     make the browser pick this font for glyphs it does not contain and paint
+     tofu, so keep it in step with `npm run fonts`. */
+  unicode-range: U+718A, U+732B, U+934B, U+30D1, U+30F3, U+30C0, U+00B7;
 }
 
 /*

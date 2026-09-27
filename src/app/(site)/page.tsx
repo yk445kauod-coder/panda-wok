@@ -26,7 +26,8 @@ import { BambooAmbience } from "@/components/customer/bamboo-ambience";
 import { AsanohaPanel } from "@/components/customer/asian-frames";
 import { SakuraField } from "@/components/customer/sakura-field";
 import { LeafField2D } from "@/components/customer/leaf-field-2d";
-import { BRAND_LOGO_URL, BRAND_SCRIPT_MARK } from "@/lib/brand";
+import { BRAND_LOGO_URL } from "@/lib/brand";
+import { BrandScriptMarks } from "@/components/customer/brand-script-marks";
 import { BrandBanner } from "@/components/customer/brand-banner";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { brandDescription, brandTagline } from "@/lib/i18n/brand";
@@ -475,12 +476,7 @@ function Hero({
             {t("home.heroEyebrow", { city: stats.city })}
           </p>
 
-          <p
-            className="font-kana mt-5 text-sm font-semibold tracking-[0.35em] text-vermilion-300"
-            aria-hidden="true"
-          >
-            {BRAND_SCRIPT_MARK}
-          </p>
+          <BrandScriptMarks className="mt-5 text-sm font-semibold tracking-[0.3em] text-vermilion-300" />
 
           <h1 className="mt-3 max-w-2xl font-display text-fluid-display font-bold text-rice-50 text-balance">
             {brand}

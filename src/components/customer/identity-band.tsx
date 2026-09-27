@@ -1,6 +1,6 @@
 import { Reveal } from "@/components/ui/reveal";
 import { BambooAmbience } from "@/components/customer/bamboo-ambience";
-import { BRAND_SCRIPT_MARK } from "@/lib/brand";
+import { BrandScriptMarks } from "@/components/customer/brand-script-marks";
 import type { T } from "@/lib/i18n/server";
 
 /**
@@ -71,12 +71,7 @@ export function IdentityBand({
           ))}
         </ul>
 
-        <p
-          aria-hidden="true"
-          className="mt-8 font-kana text-2xl tracking-[0.4em] text-rice-50/25"
-        >
-          {BRAND_SCRIPT_MARK}
-        </p>
+        <BrandScriptMarks className="mt-8 text-2xl tracking-[0.35em] text-rice-50/25" />
       </div>
     </section>
   );

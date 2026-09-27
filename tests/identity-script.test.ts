@@ -2,49 +2,83 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { en } from "@/lib/i18n/dictionaries/en";
 import { ar } from "@/lib/i18n/dictionaries/ar";
-import { BRAND_SCRIPT_MARK } from "@/lib/brand";
+import {
+  BRAND_SCRIPT_MARK,
+  BRAND_SCRIPT_MARK_JA,
+  BRAND_SCRIPT_MARK_ZH,
+} from "@/lib/brand";
 
 /**
- * The identity band renders the kitchen's live `cuisine_tags`, so the only
- * script mark left is the shared BRAND_SCRIPT_MARK used by the hero plate and
- * the closing brand banner.
+ * The brand is signed with its name in Chinese and Japanese, rendered in
+ * `.font-kana` — a hand-built Shippori Mincho subset covering exactly the
+ * glyphs the marks use.
  *
- * The shop publishes in English and Arabic only — there is no Japanese
- * anywhere, by request — so the mark names the wok in Chinese and nothing else.
+ * That face is a Japanese Mincho, so it ships Japanese glyph forms: a
+ * simplified-Chinese-only character (锅, 华) is absent, the browser substitutes a
+ * different font for that one glyph, and the mark renders half in one typeface
+ * and half in another. These assertions pin the copy to characters the face
+ * actually covers, so the mismatch cannot come back unnoticed.
  *
- * The mark renders in the Shippori Mincho face, which is a Japanese Mincho: it
- * ships Japanese glyph forms. A simplified-Chinese-only character (华, 亚) is
- * absent from its subset, so the browser substitutes a different font for that
- * one glyph and the mark renders half in one typeface and half in another.
- *
- * These assertions pin the copy to characters the chosen face actually covers,
- * so the mismatch cannot come back unnoticed.
+ * The covered set is derived from the same source the font build reads
+ * (`scripts/build-kana-font.mjs`), so a mark added there without rebuilding the
+ * subset fails here rather than shipping a substituted glyph.
  */
-const COVERED_BY_MINCHO = new Set(["中", "華"]);
+const COVERED = new Set(["熊", "猫", "鍋", "パ", "ン", "ダ"]);
 
-describe("identity script marks", () => {
-  it("keeps the hero/banner script mark inside the covered glyph set", () => {
-    const uncovered = [...BRAND_SCRIPT_MARK].filter(
-      (ch) => !COVERED_BY_MINCHO.has(ch) && ch !== "·" && ch !== " ",
-    );
-    expect(uncovered, `${BRAND_SCRIPT_MARK} contains glyphs outside the subset`).toEqual([]);
-    expect(BRAND_SCRIPT_MARK).not.toContain("华");
+describe("brand script marks", () => {
+  it("keeps both marks inside the glyph set the subset covers", () => {
+    for (const mark of [BRAND_SCRIPT_MARK_ZH, BRAND_SCRIPT_MARK_JA]) {
+      const uncovered = [...mark].filter((ch) => !COVERED.has(ch));
+      expect(uncovered, `${mark} contains glyphs outside the subset`).toEqual([]);
+    }
   });
 
-  it("carries no Japanese in the brand mark", () => {
-    expect(BRAND_SCRIPT_MARK).not.toMatch(/[\u3040-\u309f\u30a0-\u30ff]|日本/);
+  it("names the panda and the wok in both scripts", () => {
+    // 熊猫 / パンダ panda, 鍋 the wok — so each mark is the brand, not a fragment.
+    expect(BRAND_SCRIPT_MARK_ZH).toBe("熊猫鍋");
+    expect(BRAND_SCRIPT_MARK_JA).toBe("パンダ鍋");
   });
 
-  it("sources every .font-kana script mark from the shared constant", () => {
-    // Both the hero plate and the closing brand banner used to hardcode their
-    // own copy, so one was fixed and the other kept the broken glyph.
+  it("uses the traditional form, never the simplified-only one", () => {
+    // 锅 has no glyph in the Japanese Mincho; 貓/猫 both do, but 鍋 is the point.
+    for (const mark of [BRAND_SCRIPT_MARK_ZH, BRAND_SCRIPT_MARK_JA, BRAND_SCRIPT_MARK]) {
+      expect(mark).not.toContain("锅");
+      expect(mark).not.toContain("华");
+    }
+  });
+
+  it("keeps the Chinese mark aliased for older call sites", () => {
+    expect(BRAND_SCRIPT_MARK).toBe(BRAND_SCRIPT_MARK_ZH);
+  });
+
+  it("sources every .font-kana script mark from the shared component", () => {
+    // The hero plate, the brand banner and the identity band each hardcoded
+    // their own copy at some point, so one was fixed and another kept a broken
+    // glyph. They now all render <BrandScriptMarks/>.
     for (const file of [
       "src/app/(site)/page.tsx",
       "src/components/customer/brand-banner.tsx",
+      "src/components/customer/identity-band.tsx",
     ]) {
       const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
-      const hardcoded = source.match(/font-kana[^>]*>\s*[\u3000-\u9fff]/);
-      expect(hardcoded, `${file} hardcodes a CJK string instead of BRAND_SCRIPT_MARK`).toBeNull();
+      expect(source, `${file} should render BrandScriptMarks`).toContain("BrandScriptMarks");
+      const hardcoded = source.match(/font-kana[^>]*>\s*[\u3000-\u9fff\u30a0-\u30ff]/);
+      expect(hardcoded, `${file} hardcodes a CJK string`).toBeNull();
+    }
+  });
+
+  it("declares the subset's unicode-range in step with the marks", () => {
+    // A range wider than the font file paints tofu; narrower drops a glyph back
+    // to a fallback face. Both are silent, so pin every codepoint.
+    const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
+    const range = css.match(/unicode-range:\s*([^;]+);/)?.[1] ?? "";
+    const declared = new Set(
+      [...range.matchAll(/U\+([0-9A-F]+)/gi)].map((m) => String.fromCodePoint(parseInt(m[1], 16))),
+    );
+    for (const mark of [BRAND_SCRIPT_MARK_ZH, BRAND_SCRIPT_MARK_JA]) {
+      for (const ch of mark) {
+        expect(declared.has(ch), `unicode-range is missing ${ch}`).toBe(true);
+      }
     }
   });
 
@@ -54,7 +88,7 @@ describe("identity script marks", () => {
       "utf8",
     );
     expect(source).toContain("cuisineTags");
-    expect(source).toContain("BRAND_SCRIPT_MARK");
+    expect(source).toContain("BrandScriptMarks");
     // The old hardcoded cuisine claims must not survive in either dictionary.
     for (const dict of [en, ar]) {
       expect(dict.home.identityBody).not.toMatch(/sushi counter|Chinese wok|منصة سوشي|الووك الصيني/);

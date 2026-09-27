@@ -22,19 +22,28 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "public/fonts/kana-mark.woff2");
 const TMP = join(ROOT, ".fonts-tmp");
+const BRAND = join(ROOT, "src/lib/brand.ts");
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
-/** Codepoints that must survive into the subset, read from the brand constant. */
+/**
+ * Codepoints that must survive into the subset. Every brand script mark is read
+ * from source rather than hardcoded, so adding a mark cannot silently ship a
+ * glyph the subset does not carry.
+ */
 function brandCodepoints() {
-  const source = readFileSync(join(ROOT, "src/lib/brand.ts"), "utf8");
-  const match = source.match(/BRAND_SCRIPT_MARK\s*=\s*"([^"]+)"/);
-  if (!match) throw new Error("BRAND_SCRIPT_MARK not found in src/lib/brand.ts");
-  const mark = match[1];
+  const source = readFileSync(BRAND, "utf8");
+  const marks = [...source.matchAll(/BRAND_SCRIPT_MARK(?:_[A-Z]{2})?\s*=\s*"([^"]+)"/g)]
+    .map((m) => m[1])
+    // The deprecated alias re-declares the Chinese mark; skipping it keeps the
+    // "which marks exist" question answered by the two explicit constants.
+    .filter((mark, index, all) => all.indexOf(mark) === index);
+  if (marks.length === 0) throw new Error("No BRAND_SCRIPT_MARK* found in src/lib/brand.ts");
+  console.log(`Brand marks: ${marks.join(" / ")}`);
   const extra = ["\u00b7", " "]; // separator / space kept so tracking works
-  return [...new Set([...mark, ...extra])].map((ch) => ch.codePointAt(0));
+  return [...new Set([...marks.join(""), ...extra])].map((ch) => ch.codePointAt(0));
 }
 
 async function main() {
@@ -50,6 +59,7 @@ async function main() {
   // download the handful of chunks that actually carry the mark.
   const blocks = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1]);
   const wanted = new Set(codepoints);
+  const coveredBySource = new Set();
   const picks = [];
   for (const block of blocks) {
     const range = block.match(/unicode-range:\s*([^;}]+)/)?.[1];
@@ -66,9 +76,23 @@ async function main() {
         covered.add(parseInt(t, 16));
       }
     }
+    for (const c of wanted) if (covered.has(c)) coveredBySource.add(c);
     if ([...wanted].some((c) => covered.has(c))) picks.push(url);
   }
-  if (picks.length === 0) throw new Error("No Shippori Mincho subset covers the mark");
+
+  // A glyph the source face does not carry is the failure that keeps recurring:
+  // the build "succeeds", but the browser silently substitutes a second font for
+  // that one character and the mark renders half in each typeface. Fail loudly
+  // and name the offender instead of shipping a mismatched mark.
+  const missing = [...wanted].filter((c) => !coveredBySource.has(c));
+  if (missing.length > 0) {
+    const named = missing.map((c) => `${String.fromCodePoint(c)} (U+${c.toString(16).toUpperCase()})`);
+    throw new Error(
+      `Shippori Mincho does not cover: ${named.join(", ")}. ` +
+        "Pick a traditional form the Japanese Mincho ships (e.g. 鍋 not 锅) " +
+        "or switch to a face with the needed coverage.",
+    );
+  }
 
   mkdirSync(TMP, { recursive: true });
   const files = [];
@@ -86,7 +110,11 @@ async function main() {
   execFileSync("python3", ["-c", MERGE_PY, ...files, merged], { stdio: "inherit" });
 
   mkdirSync(dirname(OUT), { recursive: true });
-  execFileSync("pyftsubset", [
+  // `pyftsubset` is not always on PATH (a `pip install --user` puts it in
+  // ~/.local/bin); the module form always resolves, so prefer it.
+  execFileSync("python3", [
+    "-m",
+    "fontTools.subset",
     merged,
     `--unicodes=${unicodes.join(",")}`,
     "--flavor=woff2",
@@ -97,6 +125,11 @@ async function main() {
     "--drop-tables+=GSUB,GPOS,GDEF",
   ]);
 
+  // Verify what actually landed in the file, not what we asked for: a subsetter
+  // that quietly drops a glyph is exactly the silent-failure mode this script
+  // exists to prevent.
+  execFileSync("python3", ["-c", VERIFY_PY, OUT, ...unicodes], { stdio: "inherit" });
+
   const { size } = await import("node:fs").then((fs) => fs.statSync(OUT));
   console.log(`Wrote ${OUT} (${size} bytes)`);
 }
@@ -106,6 +139,21 @@ const MERGE_PY = `
 import sys
 from fontTools.merge import Merger
 Merger().merge(sys.argv[1:-1]).save(sys.argv[-1])
+`;
+
+/** Confirms the emitted woff2 carries every requested codepoint. */
+const VERIFY_PY = `
+import sys
+from fontTools.ttLib import TTFont
+path, *unicodes = sys.argv[1:]
+font = TTFont(path)
+cmap = set()
+for table in font["cmap"].tables:
+    cmap.update(table.cmap.keys())
+missing = [u for u in unicodes if int(u[2:], 16) not in cmap]
+if missing:
+    raise SystemExit("subset is missing: " + ", ".join(missing))
+print("verified %d codepoints present in %s" % (len(unicodes), path))
 `;
 
 main().catch((error) => {

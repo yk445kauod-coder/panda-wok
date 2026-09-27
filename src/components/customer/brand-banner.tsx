@@ -4,7 +4,7 @@ import { BrandLogo } from "@/components/layout/brand-logo";
 import { socialIcon, socialLabel, sortSocialEntries } from "@/components/icons/social";
 import { AsanohaPanel, BambooRails } from "@/components/customer/asian-frames";
 import { LeafField2D } from "@/components/customer/leaf-field-2d";
-import { BRAND_SCRIPT_MARK } from "@/lib/brand";
+import { BrandScriptMarks } from "@/components/customer/brand-script-marks";
 import type { T } from "@/lib/i18n/server";
 
 /**
@@ -50,9 +50,7 @@ export function BrandBanner({
         <h2 className="mt-6 font-display text-3xl font-bold text-ink-900 sm:text-4xl">
           {brand}
         </h2>
-        <p aria-hidden="true" className="font-kana mt-2 text-sm font-semibold tracking-[0.35em] text-vermilion-700">
-          {BRAND_SCRIPT_MARK}
-        </p>
+        <BrandScriptMarks className="mt-2 text-sm font-semibold tracking-[0.3em] text-vermilion-700" />
         <p className="mx-auto mt-4 max-w-xl text-base text-ink-700/90">{tagline}</p>
         {cuisine ? <p className="mt-2 text-sm text-ink-700/70">{cuisine} · {city}</p> : null}
 
