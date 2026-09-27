@@ -1364,3 +1364,60 @@ forms, etc. Translating those is the next chunk of the Arabic task, screen by
 screen against the `admin.*` dictionary namespace.
 
 
+
+## Agent grounding, Arabic-first admin, MCP presets (2026-09-26, session 10, commit 8edcd31)
+
+### The agent can no longer state a number no tool returned
+`src/lib/agent/grounding.ts` is the guard; `finaliseAnswer` in
+`conversation.ts` is where it is applied. Every `ok` tool observation is
+collected, and if the model's prose cites a money figure or a bare number >= 1000
+that appears in none of them, the prose is **withheld** and replaced with the raw
+tool summary plus a notice. Small counts (weekdays, "3 steps") and 4-digit years
+(1900-2200) are deliberately exempt so ordinary Arabic sentences are not eaten.
+Arabic-Indic digits are normalised to ASCII before matching. A prompt asks the
+model to behave; this makes the guarantee. Covered by `tests/agent-grounding`
+and `tests/agent-finalise`.
+
+Mid-loop provider failure is now surfaced: `providerError` is recorded and
+`NO_MODEL_MESSAGE` is prepended, so a partial transcript cannot read as "there
+was no data". The real live cause of the "fake revenue" complaint was the LLM
+inventing figures in chat, not the metrics: live revenue is genuinely 0 because
+the 3 live orders are all canceled/rejected/failed, and metrics only sum
+`finished`.
+
+### Admin defaults to Egyptian Arabic (storefront untouched)
+`getAdminLocale()` in `src/lib/i18n/server.ts` resolves cookie -> saved
+`profiles.locale` -> **Arabic**, and deliberately does **not** consult
+`Accept-Language`. This is the trap that was hit: an English browser still sends
+`accept-language: en`, so an Accept-Language fallback keeps the console English
+for the very people it is meant for. The storefront keeps `getLocale` and its
+English fallback. `admin/layout`, `admin/page`, `admin/denied`, `admin/kitchen`,
+and all three `admin/agent/*` pages now call `getAdminLocale`; the gate form and
+shell carry `dir`/RTL. The chat suggestions and both agent prompts (interactive
+`conversation.ts` SYSTEM_PROMPT and the scheduled `ops-agent.ts` analyst) are
+Egyptian Arabic. `crm-activity`-style quoted keys still apply.
+
+### MCP connectors are presets, not installs
+`src/lib/agent/mcp-presets.ts` exports Meta Ads, GitHub and Supabase with
+endpoint, transport, auth header, `secretRef` (**a name, never a value**) and a
+docs link. The picker in `mcp-server-manager.tsx` prefills the form; the owner
+still pastes the token, which goes to Vault via `set_ai_secret`. GitHub uses the
+PAT path because the hosted OAuth path needs a Copilot licence.
+
+**Dictionary-path bug fixed:** the manager called `t("admin.mcp.*")` while the
+keys live at `admin.agent.mcp.*`, so `catalogTitle` etc. rendered as raw key
+strings. `tsc` cannot catch this (the dictionary is typed as a whole and `t()`
+accepts any string) — the same failure mode as deleted keys. Grep the rendered
+page for `admin\.` when adding admin strings.
+
+### Verification pitfalls hit here
+`next start` warns and does not honour `output: standalone`; serve with
+`node .next/standalone/server.js`, or verify admin pages on `npm run dev` with a
+forged passcode cookie
+(`createHmac("sha256", "Panda2026:panda-wok-gate").update("open:admin")`).
+
+### Live menu (unchanged by this session, counted)
+18 categories / 90 items across two catalogues: the Chinese menu (10 cats,
+`external_id is null`) and the Japanese sushi menu (8 cats, `external_id` set).
+**Both are public and must stay visible.** 0 of 90 items have an image — photos
+are the real remaining menu job, uploaded one dish at a time to `menu-images`.
