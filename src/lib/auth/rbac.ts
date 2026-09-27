@@ -126,39 +126,44 @@ export function firstAccessibleHref(role: StaffRole | null | undefined): string 
 
 export const ADMIN_NAV: readonly {
   href: string;
+  /** English label, used as a fallback and for non-UI references. */
   label: string;
+  /** Key under `admin.nav.` in the dictionaries, for a translated label. */
+  labelKey: string;
+  /** Key under `admin.group.` in the dictionaries. */
+  groupKey: string;
   /** Omit to show the destination to every unlocked member. */
   capability?: Capability;
   group: string;
 }[] = [
-  { href: "/admin", label: "Overview", capability: "orders.view", group: "Operations" },
-  { href: "/admin/orders", label: "Orders", capability: "orders.view", group: "Operations" },
-  { href: "/admin/kitchen", label: "Kitchen", capability: "kitchen.view", group: "Operations" },
-  { href: "/admin/stock", label: "Stock", capability: "stock.manage", group: "Operations" },
-  { href: "/admin/menu", label: "Menu CMS", capability: "menu.manage", group: "Operations" },
-  { href: "/admin/categories", label: "Categories", capability: "menu.manage", group: "Operations" },
-  { href: "/admin/upsell", label: "Upselling", capability: "menu.manage", group: "Operations" },
-  { href: "/admin/offers", label: "Offers", capability: "menu.manage", group: "Operations" },
-  { href: "/admin/content", label: "Content", capability: "settings.manage", group: "Operations" },
-  { href: "/admin/crm", label: "Customers", capability: "crm.view", group: "CRM" },
-  { href: "/admin/crm/activity", label: "Activity", capability: "crm.view", group: "CRM" },
-  { href: "/admin/crm/segments", label: "Segments", capability: "crm.view", group: "CRM" },
-  { href: "/admin/crm/insights", label: "AI insights", capability: "crm.view", group: "CRM" },
-  { href: "/admin/loyalty", label: "Loyalty", capability: "loyalty.manage", group: "CRM" },
-  { href: "/admin/feedback", label: "Feedback", capability: "feedback.manage", group: "CRM" },
-  { href: "/admin/chat", label: "Chat", capability: "chat.manage", group: "CRM" },
-  { href: "/admin/broadcast", label: "Broadcast", capability: "broadcast.manage", group: "Growth" },
-  { href: "/admin/analytics", label: "Analytics", capability: "analytics.view", group: "Growth" },
-  { href: "/admin/ai", label: "AI centre", capability: "ai.manage", group: "Platform" },
-  { href: "/admin/ai/usage", label: "AI usage", capability: "ai.manage", group: "Platform" },
-  { href: "/admin/agent", label: "Ops agent", capability: "ai.manage", group: "Platform" },
-  { href: "/admin/users", label: "Team & users", capability: "users.manage", group: "Platform" },
-  { href: "/admin/exports", label: "Exports", capability: "exports.manage", group: "Platform" },
-  { href: "/admin/backups", label: "Backups", capability: "backups.view", group: "Platform" },
-  { href: "/admin/settings", label: "Settings", capability: "settings.manage", group: "Platform" },
+  { href: "/admin", label: "Overview", labelKey: "overview", capability: "orders.view", group: "Operations", groupKey: "operations" },
+  { href: "/admin/orders", label: "Orders", labelKey: "orders", capability: "orders.view", group: "Operations", groupKey: "operations" },
+  { href: "/admin/kitchen", label: "Kitchen", labelKey: "kitchen", capability: "kitchen.view", group: "Operations", groupKey: "operations" },
+  { href: "/admin/stock", label: "Stock", labelKey: "stock", capability: "stock.manage", group: "Operations", groupKey: "operations" },
+  { href: "/admin/menu", label: "Menu CMS", labelKey: "menu", capability: "menu.manage", group: "Operations", groupKey: "operations" },
+  { href: "/admin/categories", label: "Categories", labelKey: "categories", capability: "menu.manage", group: "Operations", groupKey: "operations" },
+  { href: "/admin/upsell", label: "Upselling", labelKey: "upsell", capability: "menu.manage", group: "Operations", groupKey: "operations" },
+  { href: "/admin/offers", label: "Offers", labelKey: "offers", capability: "menu.manage", group: "Operations", groupKey: "operations" },
+  { href: "/admin/content", label: "Content", labelKey: "content", capability: "settings.manage", group: "Operations", groupKey: "operations" },
+  { href: "/admin/crm", label: "Customers", labelKey: "crm", capability: "crm.view", group: "CRM", groupKey: "crm" },
+  { href: "/admin/crm/activity", label: "Activity", labelKey: "crm-activity", capability: "crm.view", group: "CRM", groupKey: "crm" },
+  { href: "/admin/crm/segments", label: "Segments", labelKey: "crm-segments", capability: "crm.view", group: "CRM", groupKey: "crm" },
+  { href: "/admin/crm/insights", label: "AI insights", labelKey: "crm-insights", capability: "crm.view", group: "CRM", groupKey: "crm" },
+  { href: "/admin/loyalty", label: "Loyalty", labelKey: "loyalty", capability: "loyalty.manage", group: "CRM", groupKey: "crm" },
+  { href: "/admin/feedback", label: "Feedback", labelKey: "feedback", capability: "feedback.manage", group: "CRM", groupKey: "crm" },
+  { href: "/admin/chat", label: "Chat", labelKey: "chat", capability: "chat.manage", group: "CRM", groupKey: "crm" },
+  { href: "/admin/broadcast", label: "Broadcast", labelKey: "broadcast", capability: "broadcast.manage", group: "Growth", groupKey: "growth" },
+  { href: "/admin/analytics", label: "Analytics", labelKey: "analytics", capability: "analytics.view", group: "Growth", groupKey: "growth" },
+  { href: "/admin/ai", label: "AI centre", labelKey: "ai", capability: "ai.manage", group: "Platform", groupKey: "platform" },
+  { href: "/admin/ai/usage", label: "AI usage", labelKey: "ai-usage", capability: "ai.manage", group: "Platform", groupKey: "platform" },
+  { href: "/admin/agent", label: "Ops agent", labelKey: "agent", capability: "ai.manage", group: "Platform", groupKey: "platform" },
+  { href: "/admin/users", label: "Team & users", labelKey: "users", capability: "users.manage", group: "Platform", groupKey: "platform" },
+  { href: "/admin/exports", label: "Exports", labelKey: "exports", capability: "exports.manage", group: "Platform", groupKey: "platform" },
+  { href: "/admin/backups", label: "Backups", labelKey: "backups", capability: "backups.view", group: "Platform", groupKey: "platform" },
+  { href: "/admin/settings", label: "Settings", labelKey: "settings", capability: "settings.manage", group: "Platform", groupKey: "platform" },
   // No capability: the guide is a reference every unlocked member should reach,
   // and it is how a member discovers what their own role is allowed to do.
-  { href: "/admin/guide", label: "Guide", group: "Help" },
+  { href: "/admin/guide", label: "Guide", labelKey: "guide", group: "Help", groupKey: "help" },
 ];
 
 /**
@@ -170,12 +175,13 @@ export const ADMIN_NAV: readonly {
 export const ADMIN_MOBILE_NAV: readonly {
   href: string;
   label: string;
+  labelKey: string;
   capability: Capability;
 }[] = [
-  { href: "/admin", label: "Home", capability: "orders.view" },
-  { href: "/admin/orders", label: "Orders", capability: "orders.view" },
-  { href: "/admin/kitchen", label: "Kitchen", capability: "kitchen.view" },
-  { href: "/admin/chat", label: "Chat", capability: "chat.manage" },
-  { href: "/admin/menu", label: "Menu", capability: "menu.manage" },
-  { href: "/admin/crm", label: "Customers", capability: "crm.view" },
+  { href: "/admin", label: "Home", labelKey: "home", capability: "orders.view" },
+  { href: "/admin/orders", label: "Orders", labelKey: "orders", capability: "orders.view" },
+  { href: "/admin/kitchen", label: "Kitchen", labelKey: "kitchen", capability: "kitchen.view" },
+  { href: "/admin/chat", label: "Chat", labelKey: "chat", capability: "chat.manage" },
+  { href: "/admin/menu", label: "Menu", labelKey: "menu", capability: "menu.manage" },
+  { href: "/admin/crm", label: "Customers", labelKey: "crm", capability: "crm.view" },
 ];

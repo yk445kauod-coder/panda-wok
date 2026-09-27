@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ADMIN_MOBILE_NAV, type Capability } from "@/lib/auth/rbac";
+import { useT } from "@/components/i18n-provider";
 import { cn } from "@/lib/utils/format";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -42,6 +43,7 @@ export function AdminBottomNav({
   onMore: () => void;
 }) {
   const pathname = usePathname();
+  const t = useT();
 
   const allowed = ADMIN_MOBILE_NAV.filter((item) =>
     capabilities.includes(item.capability),
@@ -52,7 +54,7 @@ export function AdminBottomNav({
 
   return (
     <nav
-      aria-label="Admin sections"
+      aria-label={t("admin.shell.sectionLabel")}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-rice-100/12 bg-ink-950/97 pb-safe backdrop-blur lg:hidden"
     >
       <ul className="mx-auto flex max-w-lg items-stretch">
@@ -82,7 +84,7 @@ export function AdminBottomNav({
                     </span>
                   ) : null}
                 </span>
-                <span className="truncate">{item.label}</span>
+                <span className="truncate">{t(`admin.nav.${item.labelKey}`)}</span>
                 {active ? (
                   <span
                     aria-hidden="true"
@@ -101,7 +103,7 @@ export function AdminBottomNav({
             className="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium text-rice-100/70 transition-colors hover:text-rice-50"
           >
             <MoreHorizontal className="size-5" aria-hidden="true" />
-            <span>More</span>
+            <span>{t("admin.nav.more")}</span>
           </button>
         </li>
       </ul>

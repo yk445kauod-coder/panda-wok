@@ -31,7 +31,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { ADMIN_NAV, ROLE_LABELS, type Capability, type StaffRole } from "@/lib/auth/rbac";
+import { ADMIN_NAV, type Capability, type StaffRole } from "@/lib/auth/rbac";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -75,6 +75,12 @@ const ICONS: Record<string, LucideIcon> = {
 
 const GROUP_ORDER = ["Operations", "CRM", "Growth", "Platform", "Help"];
 
+/** Map a nav group's English name to its dictionary key. */
+function groupKeyOf(group: string): string {
+  const item = ADMIN_NAV.find((entry) => entry.group === group);
+  return item?.groupKey ?? "operations";
+}
+
 /**
  * Admin navigation. The link list is filtered by the caller's capabilities, so
  * a role never sees a destination the server would bounce them away from.
@@ -99,7 +105,7 @@ export function AdminShell({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
 
   // A destination with no capability is shown to every unlocked member (the
   // guide); otherwise the role must actually hold the capability.
@@ -139,7 +145,7 @@ export function AdminShell({
           onClick={() => setOpen(true)}
           aria-expanded={open}
           aria-controls="admin-nav"
-          aria-label="Open navigation"
+          aria-label={t("admin.shell.openNav")}
           className="grid size-10 place-items-center rounded-lg border border-rice-100/20 text-rice-100"
         >
           <Menu className="size-5" aria-hidden="true" />
@@ -173,7 +179,7 @@ export function AdminShell({
       {open ? (
         <button
           type="button"
-          aria-label="Close navigation"
+          aria-label={t("admin.shell.closeNav")}
           onClick={() => setOpen(false)}
           className="fixed inset-0 z-40 bg-ink-950/50 backdrop-blur-sm lg:hidden"
         />
@@ -182,7 +188,7 @@ export function AdminShell({
       <nav
         id="admin-nav"
         ref={navRef}
-        aria-label="Admin sections"
+        aria-label={t("admin.shell.sectionLabel")}
         className={cn(
           "shrink-0 bg-ink-950 text-rice-100 lg:sticky lg:top-0 lg:block lg:h-dvh lg:w-64 lg:overflow-y-auto",
           // Below lg it is an off-canvas drawer: a full-height panel that slides
@@ -198,7 +204,7 @@ export function AdminShell({
               className="size-8 rounded-lg bg-rice-50/10 p-1"
             />
             <span className="font-display text-sm font-semibold text-rice-50">
-              Panda Wok Ops
+              {t("admin.shell.opsName")}
             </span>
           </div>
           <button
@@ -218,7 +224,7 @@ export function AdminShell({
           />
           <span className="min-w-0">
             <span className="block font-display text-sm font-semibold text-rice-50">
-              Panda Wok Ops
+              {t("admin.shell.opsName")}
             </span>
             <span className="block truncate text-2xs text-rice-300/70">
               {staffName}
@@ -235,10 +241,10 @@ export function AdminShell({
               initial={notifications}
               initialUnread={unreadCount}
               labels={{
-                title: "Notifications",
-                empty: "You are all caught up.",
-                markAll: "Clear",
-                open: "Open notifications",
+                title: t("admin.shell.notifications"),
+                empty: t("admin.shell.notificationsEmpty"),
+                markAll: t("admin.shell.clear"),
+                open: t("admin.shell.openNotifications"),
               }}
             />
           </div>
@@ -246,7 +252,7 @@ export function AdminShell({
 
         <div className="px-4 pt-3 lg:pb-1">
           <span className="inline-flex items-center rounded-full bg-rice-100/10 px-2 py-0.5 text-3xs font-semibold tracking-wide text-rice-200 uppercase">
-            {ROLE_LABELS[role]}
+            {t(`admin.role.${role}`)}
           </span>
         </div>
 
@@ -254,7 +260,7 @@ export function AdminShell({
           {groups.map((group) => (
             <div key={group}>
               <p className="px-2.5 text-3xs font-semibold tracking-wider text-rice-300/55 uppercase">
-                {group}
+                {t(`admin.group.${groupKeyOf(group)}`)}
               </p>
               <ul className="mt-1.5 space-y-0.5">
                 {allowed
@@ -279,7 +285,7 @@ export function AdminShell({
                           )}
                         >
                           <Icon className="size-4 shrink-0" aria-hidden="true" />
-                          <span className="truncate">{item.label}</span>
+                          <span className="truncate">{t(`admin.nav.${item.labelKey}`)}</span>
                         </Link>
                       </li>
                     );
@@ -295,7 +301,7 @@ export function AdminShell({
             onClick={() => setOpen(false)}
             className="block rounded-lg px-2.5 py-2 text-sm text-rice-200/75 hover:bg-rice-100/8 hover:text-rice-50"
           >
-            View the customer site
+            {t("admin.shell.viewSite")}
           </Link>
         </div>
       </nav>
@@ -304,7 +310,7 @@ export function AdminShell({
         <div className="hidden items-center justify-between gap-3 border-b border-ink-900/10 bg-rice-100/60 px-6 py-2.5 lg:flex">
           <div className="flex items-center gap-2 text-xs text-ink-700/75">
             <span className="inline-flex h-6 items-center rounded-full bg-vermilion-600/10 px-2.5 font-semibold tracking-wide text-vermilion-700 uppercase">
-              {ROLE_LABELS[role]}
+              {t(`admin.role.${role}`)}
             </span>
             <span className="truncate">{staffName}</span>
           </div>
@@ -313,7 +319,7 @@ export function AdminShell({
             className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-ink-700 transition-colors hover:bg-ink-900/6 hover:text-ink-900"
           >
             <ExternalLink className="size-3.5" aria-hidden="true" />
-            View the customer site
+            {t("admin.shell.viewSite")}
           </Link>
         </div>
         <div className="mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4 sm:py-5 lg:px-8 lg:py-8 lg:pb-8">
