@@ -1255,3 +1255,60 @@ pre-existing sandbox-only condition, identical on a clean tree.
 the repo secret remains unset. Manual: `CLOUDFLARE_API_TOKEN=… npm run pages:deploy`
 (branch `feature/panda-wok-platform` is the production branch).
 
+## Charts and the live two-menu state (2026-09-26, session 8, commit 5baa2fa)
+
+### Chart.js replaced every hand-rolled visual
+The admin overview and analytics pages used div-based bars and plain number
+walls. They now share `src/components/charts/*` (trend, donut, bar-list, gauge,
+radar, heatmap, sparkline) plus `stat-card.tsx`. `register.ts` is the single
+registration point; `chart-utils.ts` bridges the existing literal CSS tokens
+into Chart.js colours so the charts inherit the brand rather than a new palette.
+`react-chartjs-2` is the React binding.
+
+**The bug today that tsc and `next build` both approved:** the radar needs
+`RadialLinearScale` + `RadarController` registered. Without them the page
+compiles, builds, and then throws at render with `"radialLinear" is not a
+registered scale.` — a browser-only failure caught by the error boundary, not by
+any static check. Register those two alongside the rest.
+
+**How to verify a chart change:** `tsc`, lint and the build are necessary but
+blind to Chart.js runtime wiring. Render every chart with real values through a
+throwaway route, load it in a browser, and confirm both that the `<canvas>`
+elements exist and that nothing logged `not a registered`. The server HTML can
+contain 7 canvases while the client throws on the first paint of one of them,
+which is exactly what happened.
+
+Empty-DB caveat: the dashboard trend/heatmap/radar sit behind `noData`, so on
+the current (zero-order) live data they are *not* exercised. Do not read a clean
+`/admin` as proof the charts work — test with data.
+
+### The menu is now TWO catalogues, and both are live
+Earlier notes said "upload the Chinese menu" was outstanding. It is not: the DB
+holds 18 categories / 90 items.
+
+- **Chinese menu** — 10 categories `sort_order 0-9` (Appetizers to Drinks), 52
+  items, `external_id is null`.
+- **Japanese sushi menu** — 8 categories `sort_order 10-17` (RAW URA MAKI to
+  Sauces), 38 items, `external_id` set (`menu-item-N@I`).
+
+So `/menu` currently shows both kitchens to customers. If the brief is
+"Chinese only for now," hiding the Japanese side is
+`update categories set is_enabled = false where sort_order >= 10` plus the same
+for its items — reversible, and `is_enabled` is already a CMS flag.
+
+**Photos are the real gap, not content:** 0 of 90 items have an `image_url`.
+That is the one menu job that genuinely needs doing, and it is per-dish in the
+admin (the ImageKit endpoint is unreachable, so use the `menu-images` bucket
+upload, not a pasted URL).
+
+Prices live in `menu_items.price` (EGP, `numeric`); nothing is invented for
+display. Apps/mains are single-word rows ("Chicken", "Beef", "Meal 1") — if they
+need descriptive names that is an owner edit in the CMS, not a re-import
+(`scripts/import-menu.mjs` is insert-only and would duplicate the catalogue).
+
+### CMS entry points (unchanged, verified)
+`/admin/menu` = dish list + editor in one route (`?edit=<id>`); `/admin/categories`
+= category list + form, owns ordering. Both gate on `menu.manage`, both write
+through `src/lib/services/admin-catalog.ts` and `src/lib/actions/admin.ts`.
+Images: `uploadMenuImageAction` (bucket `menu-images`, <=8 MB) or a pasted URL.
+
