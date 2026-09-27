@@ -1201,3 +1201,57 @@ sheet — the admin CMS is the only entry point, one dish at a time.
 unique index; a partial index would break `ON CONFLICT` inference) and upserts,
 so re-running it is safe. `scripts/import-menu.mjs` still uses `.insert()` and
 must never be re-run to "refresh" — see the note above.
+
+## Admin UX + chat + service keys (2026-09-26, session 7)
+
+### Customer chat existed but was unreachable (fixed)
+`/(site)/chat` had been complete for a while — inbox, thread, realtime, server
+action — and was linked from **nowhere**: no header entry, no bottom-nav tab, no
+account shortcut. The feature was built and invisible. It is now the `nav.messages`
+tab in the mobile bottom nav, a header link for signed-in desktop users, and an
+account shortcut. The bottom-nav slot it took was `feedback`; feedback is still
+reachable from the header and `/contact`.
+
+**Lesson:** a route returning 200 is not a shipped feature. Before declaring a
+customer feature done, grep the customer chrome for its href.
+
+### Admin is phone-first now
+`AdminBottomNav` (`src/components/admin/admin-bottom-nav.tsx`) renders the first
+four capability-permitted entries of `ADMIN_MOBILE_NAV` plus a "More" button that
+opens the existing drawer. Below `lg` only; the desktop sidebar is unchanged. The
+admin `<main>` gained `pb-24` on small screens so the bar never covers the last
+row. Four tabs + More is the deliberate ceiling — more targets on a phone makes
+each too small to hit.
+
+### One chat hub, three routes collapsed
+`/admin/chat` is now a two-tab screen (Customers / Team) with combined unread
+badges. `/admin/messages` and `/admin/team-chat` are `redirect()` stubs to the
+right tab so existing links and notifications keep working — do not delete them
+without checking notification deep-links. `ADMIN_NAV` lost the duplicate
+"Messages"/"Team chat" entries.
+
+### Service API keys (already secure, now discoverable)
+The AI centre already had the whole chain: `ai_providers.secret_ref` names a key,
+`saveAiSecretAction` writes it into Supabase Vault via `set_ai_secret`,
+`resolveDbProvider` -> `resolveSecretValue` reads env first then Vault, and
+`listAiSecretHints` returns only a masked hint. It was simply buried. Now "API
+keys" sits directly under the provider chain and "Add a key" opens a service
+picker (Cloudflare Workers AI, OpenRouter, OpenAI-compatible, Gemini, Anthropic)
+that fills the exact variable name; custom names still typeable. Cloudflare
+Workers AI works either keylessly through the `workers/ai-api` binding or with an
+account API token — both paths exist in `provider.ts`.
+
+`Field` gained optional `value`/`onChange` (state-driven input). It stays
+uncontrolled when neither is passed, so no existing caller changed behaviour.
+
+### Verified
+`tsc --noEmit` clean; lint 0 errors / 11 warnings; `next build` green; dev smoke:
+`/` and `/menu` render `href="/chat"` and a Messages tab, `/admin` 200 (passcode
+gate), `/admin/team-chat` 200 (redirect). 140 tests pass; 3 test *files*
+(`ai-chain`, `ai-live`, `skill-sources`) fail to load without `.env.local` — a
+pre-existing sandbox-only condition, identical on a clean tree.
+
+**Deploy still blocked:** `CLOUDFLARE_API_TOKEN` is not in this environment and
+the repo secret remains unset. Manual: `CLOUDFLARE_API_TOKEN=… npm run pages:deploy`
+(branch `feature/panda-wok-platform` is the production branch).
+
