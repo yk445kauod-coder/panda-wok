@@ -7,6 +7,7 @@ import {
 import "./globals.css";
 import { siteUrl } from "@/lib/seo/metadata";
 import { ToastProvider } from "@/components/ui/toast";
+import { ConfirmProvider } from "@/components/ui/confirm";
 import { I18nProvider } from "@/components/i18n-provider";
 import { getDictionary, getLocale, getT } from "@/lib/i18n/server";
 import { getPublicSettings } from "@/lib/services/catalog";
@@ -156,7 +157,9 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <I18nProvider locale={locale} dict={dict}>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </ToastProvider>
         </I18nProvider>
       </body>
     </html>

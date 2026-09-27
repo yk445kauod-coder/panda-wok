@@ -4,6 +4,7 @@ import { createContext, useContext, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm";
 import { cn, slugify } from "@/lib/utils/format";
 import type { FormActionResult } from "@/lib/actions/result";
 
@@ -343,14 +344,21 @@ export function AdminButtonAction({
 }) {
   const router = useRouter();
   const errorText = useErrorText();
+  const { confirm: ask } = useConfirm();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState(false);
 
   async function run() {
-    if (confirm && !confirming) {
-      setConfirming(true);
-      return;
+    // A destructive action asks first, in a real dialog rather than a button
+    // that silently changes its own label. Cancelling returns without mutating.
+    if (confirm) {
+      const agreed = await ask({
+        title: confirm,
+        confirmLabel: "Go ahead",
+        cancelLabel: "Cancel",
+        tone: variant === "danger" ? "danger" : "warning",
+      });
+      if (!agreed) return;
     }
 
     setPending(true);
@@ -363,7 +371,6 @@ export function AdminButtonAction({
         setPending(false);
         return;
       }
-      setConfirming(false);
       setPending(false);
       router.refresh();
     } catch {
@@ -376,13 +383,13 @@ export function AdminButtonAction({
     <span className={cn("inline-flex flex-col items-start gap-1", className)}>
       <Button
         type="button"
-        variant={confirming ? "danger" : variant}
+        variant={variant}
         size={size}
         loading={pending}
         onClick={run}
         data-payload={payload === undefined ? undefined : ""}
       >
-        {confirming ? "Confirm?" : children}
+        {children}
       </Button>
       {error ? (
         <span role="alert" className="text-xs text-chili-600">

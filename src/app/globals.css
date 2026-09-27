@@ -917,3 +917,73 @@
   [data-motion="decorative"] { display: none !important; }
 }
 
+
+/*
+ * ── Admin console surface ──────────────────────────────────────────────────
+ * The console is a workspace, not a storefront: the washi paper, the glass
+ * lacquer, the bamboo textures and the ambient ground exist to sell food and
+ * only get in the way of reading a queue. Everything here is scoped under
+ * `.admin-scope` so the customer site keeps its identity untouched.
+ *
+ * The goal is calm and legible — flat near-white surfaces, one hairline border,
+ * a quiet shadow, and no texture — so the accent colour is reserved for state
+ * (a new ticket, an error) instead of decoration.
+ */
+@layer utilities {
+  .admin-scope {
+    background-color: var(--color-rice-100);
+  }
+
+  /* One flat surface for every panel, form, table wrapper and stat tile. */
+  .admin-scope .washi-panel,
+  .admin-scope .washi-paper,
+  .admin-scope .washi-banner,
+  .admin-scope .glass-bar,
+  .admin-scope .glass-card,
+  .admin-scope .hero-night,
+  .admin-scope .page-sheet {
+    background-image: none !important;
+    background-color: #fff;
+    border: 1px solid color-mix(in oklab, var(--color-ink-900) 9%, transparent);
+    box-shadow: 0 1px 2px color-mix(in oklab, var(--color-ink-900) 5%, transparent);
+    backdrop-filter: none;
+  }
+
+  .admin-scope .hero-night {
+    color: var(--color-ink-900);
+  }
+
+  /* Motif textures read as noise behind a data table. */
+  .admin-scope .asanoha,
+  .admin-scope .asanoha-light,
+  .admin-scope .bamboo-frame {
+    background-image: none !important;
+  }
+
+  /* The admin shell shares the page ground; keep it plain, not lantern-lit. */
+  .admin-scope .animate-sway,
+  .admin-scope .animate-leaf,
+  .admin-scope .animate-drift {
+    animation: none !important;
+  }
+}
+
+/* Smooth, momentum-friendly scrolling for the ops boards and any log surface. */
+.admin-scope .ops-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* The KDS is read from across a kitchen, so its type is a step up and its
+   number columns never reflow while a ticket's clock ticks. */
+.admin-scope .kds-board {
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.admin-scope .kds-board .tabular-nums,
+.admin-scope .kds-ticket {
+  font-variant-numeric: tabular-nums;
+}
+

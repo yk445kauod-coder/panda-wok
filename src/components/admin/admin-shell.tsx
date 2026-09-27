@@ -131,7 +131,7 @@ export function AdminShell({
   }, [open]);
 
   return (
-    <div className="flex min-h-dvh flex-col lg:flex-row">
+    <div className="admin-scope flex min-h-dvh flex-col bg-rice-100 lg:flex-row">
       {/* Mobile top bar */}
       <div className="sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-ink-900/10 bg-ink-950/95 px-3 pt-safe text-rice-100 backdrop-blur lg:hidden">
         <button
