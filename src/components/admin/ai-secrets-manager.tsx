@@ -6,8 +6,47 @@ import { Button } from "@/components/ui/button";
 import { AdminButtonAction, AdminForm, Field } from "@/components/admin/form-kit";
 import { deleteAiSecretAction, saveAiSecretAction } from "@/lib/actions/admin";
 import { formatDateTime } from "@/lib/utils/format";
+import { cn } from "@/lib/utils/format";
 
 export type SecretHint = { name: string; hint: string; updated_at: string };
+
+/**
+ * The services an admin is most likely to hold a key for. Picking one fills the
+ * key name so nobody has to remember the exact variable spelling. The kind is
+ * the `ai_providers.kind` a provider row should use with that key.
+ */
+const SERVICES = [
+  {
+    label: "Cloudflare Workers AI",
+    name: "AI_CLOUDFLARE_API_KEY",
+    kind: "cloudflare",
+    note: "Runs on the Cloudflare account's Workers AI binding.",
+  },
+  {
+    label: "OpenRouter",
+    name: "AI_OPENROUTER_API_KEY",
+    kind: "openrouter",
+    note: "One key, many models.",
+  },
+  {
+    label: "OpenAI (or compatible)",
+    name: "OPENAI_API_KEY",
+    kind: "openai_compatible",
+    note: "Also covers any OpenAI-compatible gateway.",
+  },
+  {
+    label: "Google Gemini",
+    name: "AI_GEMINI_API_KEY",
+    kind: "gemini",
+    note: "",
+  },
+  {
+    label: "Anthropic Claude",
+    name: "AI_ANTHROPIC_API_KEY",
+    kind: "anthropic",
+    note: "",
+  },
+] as const;
 
 /**
  * Credential manager for the AI centre. An admin stores or rotates a provider
@@ -20,9 +59,10 @@ export type SecretHint = { name: string; hint: string; updated_at: string };
  */
 export function AiSecretsManager({ secrets }: { secrets: SecretHint[] }) {
   const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
 
   return (
-    <section className="washi-panel p-4" aria-label="API credentials">
+    <section className="washi-panel p-4" aria-label="API keys">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-ink-900">
           <KeyRound className="size-4 text-jade-600" aria-hidden="true" />
@@ -31,7 +71,7 @@ export function AiSecretsManager({ secrets }: { secrets: SecretHint[] }) {
         {!adding ? (
           <Button type="button" size="sm" variant="outline" onClick={() => setAdding(true)}>
             <Plus className="size-3.5" aria-hidden="true" />
-            Add or rotate a key
+            Add a key
           </Button>
         ) : null}
       </div>
@@ -57,7 +97,9 @@ export function AiSecretsManager({ secrets }: { secrets: SecretHint[] }) {
               className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-rice-100/70 px-3 py-2"
             >
               <span className="min-w-0">
-                <span className="block font-mono text-sm text-ink-900">{secret.name}</span>
+                <span className="block break-all font-mono text-sm text-ink-900">
+                  {secret.name}
+                </span>
                 <span className="text-2xs text-ink-700/65">
                   {secret.hint} · updated {formatDateTime(secret.updated_at)}
                 </span>
@@ -76,32 +118,78 @@ export function AiSecretsManager({ secrets }: { secrets: SecretHint[] }) {
       )}
 
       {adding ? (
-        <div className="mt-3 rounded-xl border border-miso-500/25 bg-miso-500/5 p-3">
+        <div className="mt-4 space-y-3 rounded-xl border border-miso-500/25 bg-miso-500/5 p-3">
+          <div>
+            <p className="text-xs font-semibold tracking-wide text-ink-800 uppercase">
+              Which service?
+            </p>
+            <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+              {SERVICES.map((service) => {
+                const selected = name === service.name;
+                return (
+                  <li key={service.name}>
+                    <button
+                      type="button"
+                      onClick={() => setName(service.name)}
+                      aria-pressed={selected}
+                      className={cn(
+                        "w-full rounded-xl border px-3 py-2 text-start transition-colors",
+                        selected
+                          ? "border-vermilion-600 bg-vermilion-600/8"
+                          : "border-ink-900/12 bg-rice-50 hover:bg-rice-200",
+                      )}
+                    >
+                      <span className="block text-sm font-medium text-ink-900">
+                        {service.label}
+                      </span>
+                      {service.note ? (
+                        <span className="mt-0.5 block text-2xs text-ink-700/65">
+                          {service.note}
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
           <AdminForm
             action={saveAiSecretAction}
             submitLabel="Save key"
             options={{
               successMessage: "Key stored.",
               resetOnSuccess: true,
-              onSuccess: () => setAdding(false),
+              onSuccess: () => {
+                setAdding(false);
+                setName("");
+              },
             }}
           >
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field
-                name="name"
-                label="Key name"
-                placeholder="OPENROUTER_API_KEY"
-                hint="The name a provider's secret_ref points at."
-              />
-              <Field
-                name="value"
-                label="Key value"
-                type="password"
-                placeholder="paste the provider key"
-                hint="Stored encrypted; never displayed again."
-              />
-            </div>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(false)}>
+            <Field
+              name="name"
+              label="Key name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="AI_CLOUDFLARE_API_KEY"
+              hint="Pick a service above or type the name a provider's secret_ref uses."
+            />
+            <Field
+              name="value"
+              label="Key value"
+              type="password"
+              placeholder="paste the key"
+              hint="Stored encrypted; never displayed again."
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setAdding(false);
+                setName("");
+              }}
+            >
               Cancel
             </Button>
           </AdminForm>
@@ -110,3 +198,4 @@ export function AiSecretsManager({ secrets }: { secrets: SecretHint[] }) {
     </section>
   );
 }
+

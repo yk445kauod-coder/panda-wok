@@ -108,6 +108,8 @@ export default async function AdminAiPage() {
         </ol>
       </section>
 
+      <AiSecretsManager secrets={secrets} />
+
       <section className="washi-panel p-4" aria-label="Usage summary">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -206,8 +208,6 @@ export default async function AdminAiPage() {
           </div>
         </section>
       </div>
-
-      <AiSecretsManager secrets={secrets} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="washi-panel p-4" aria-label="System instructions">

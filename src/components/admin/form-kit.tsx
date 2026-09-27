@@ -137,6 +137,8 @@ export function Field({
   className,
   type = "text",
   defaultValue,
+  value,
+  onChange,
   placeholder,
   dir,
   required,
@@ -149,6 +151,10 @@ export function Field({
   className?: string;
   type?: string;
   defaultValue?: string;
+  /** Set `value` + `onChange` to drive the field from state; omit both for an
+   * uncontrolled field seeded by `defaultValue`. */
+  value?: string;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   dir?: "ltr" | "rtl";
   required?: boolean;
@@ -169,7 +175,9 @@ export function Field({
             type={type}
             dir={dir}
             required={required}
-            defaultValue={defaultValue}
+            defaultValue={value === undefined ? defaultValue : undefined}
+            value={value}
+            onChange={onChange}
             placeholder={placeholder}
             aria-invalid={message ? true : undefined}
             className={cn(
