@@ -1282,22 +1282,21 @@ Empty-DB caveat: the dashboard trend/heatmap/radar sit behind `noData`, so on
 the current (zero-order) live data they are *not* exercised. Do not read a clean
 `/admin` as proof the charts work — test with data.
 
-### The menu is TWO catalogues, and BOTH are public (Japanese was un-hidden)
-Earlier notes said "upload the Chinese menu" was outstanding. It is not: the DB
-holds 18 categories / 90 items, and **both** catalogues are live on `/menu`.
+### The menu is TWO catalogues, and BOTH are public
+The DB holds 18 categories / 90 items, and **both** catalogues are live on
+`/menu`. Neither is hidden and neither is to be disabled — this is the owner's
+menu.
 
-- **Chinese menu — PUBLIC.** 10 categories `sort_order 0-9` (Appetizers to
+- **Chinese menu.** 10 categories `sort_order 0-9` (Appetizers to
   Drinks), 52 items, `external_id is null`.
-- **Japanese sushi menu — PUBLIC.** 8 categories `sort_order 10-17` (RAW URA
+- **Japanese sushi menu.** 8 categories `sort_order 10-17` (RAW URA
   MAKI to Sauces), 38 items, `external_id` set (`menu-item-N@I`).
 
-**Correction, and a rule to keep:** a previous session hid the sushi side with
-`20260927170000_hide_japanese_menu.sql` (commit 21d7723), having *assumed* the
-Japanese menu was not ready. The owner did not want that. It was re-enabled by
-`20260927180000_restore_japanese_menu.sql` (verified live: all 18 categories
-`is_enabled = true`, 90 items intact, `/menu` renders the sushi sections again).
-The lesson: **do not hide or disable the owner's menu on an assumption.** Only
-hide on an explicit instruction, and hide with the flag rather than deleting.
+**Rule to keep: do not hide or disable the owner's menu on an assumption.** Both
+catalogues are meant to be visible together; flagging any of it off is a change
+the owner has not asked for. Hiding is reversible, but it is still a change — only
+flag content off on an explicit instruction, and flag rather than delete. See
+`docs/data-safety.md`.
 
 **Photos are the real gap, not content:** 0 of 90 items have an `image_url`.
 That is the one menu job that genuinely needs doing, and it is per-dish in the

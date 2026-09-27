@@ -17,15 +17,15 @@ one-off instruction. It is deliberately short because it admits no exceptions.
 3. **Hide, don't destroy.** When content should come off the site, use a flag —
    `is_enabled`, `is_available`, `is_published`, `is_active`. The row, its
    translations, its modifiers and its images stay in the database and a single
-   flag flip brings it back. Example in the repo: the Japanese sushi categories
-   were hidden by `20260927170000_hide_japanese_menu.sql` (`is_enabled = false`)
-   and later restored by `20260927180000_restore_japanese_menu.sql`
-   (`is_enabled = true`) — the flag round-trip cost nothing because nothing was
-   ever deleted.
+   flag flip brings it back. Example: a seasonal dish whose ingredients are out
+   of stock is set `is_available = false` rather than deleted — it returns the
+   moment it is back, with its price and copy intact.
 4. **Do not hide the owner's published content on an assumption.** Hiding is
    reversible, but a hidden dish is still a change the owner did not ask for.
    Only flag content off when the owner has explicitly said so; when in doubt,
-   leave it live and ask.
+   leave it live and ask. **Both catalogues are public and stay public** — the
+   Chinese menu and the Japanese sushi menu are live together on `/menu`, and
+   neither is to be disabled.
 5. **No re-import to "refresh".** `scripts/import-menu.mjs` is insert-only and
    would duplicate the catalogue. Do not run it to update an existing menu.
 6. **Idempotent and reversible.** Any migration that changes structure should be
@@ -53,13 +53,10 @@ only the schema is. Hiding is always reversible; deleting never is.
 ## Migration-ordering trap (learned the hard way)
 
 When you reverse a flag change with a **new** migration, its version must sort
-*after* the one it reverses. The restore migration here was first applied through
-the MCP tool, which stamped it `20260927145250` — numerically **before** the hide
-at `20260927170000` — so a fresh `supabase db reset` would have run *hide* last
-and re-hidden the menu. The committed filename is `20260927180000`, and the
-remote `schema_migrations` row was realigned to match.
-
-Rule: name the migration file with a timestamp later than the change it undoes,
+*after* the one it reverses. A restore migration once landed through the MCP tool
+with a timestamp numerically *before* the change it reversed, so a fresh
+`supabase db reset` would have applied them out of order. The fix is procedural:
+name the migration file with a timestamp later than the change it undoes,
 confirm `supabase migration list` shows no local-only / remote-only rows, and
 remember that the *filename* is the version — an MCP `apply_migration` supplies
 its own timestamp unless you control it.

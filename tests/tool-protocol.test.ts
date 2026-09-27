@@ -32,8 +32,11 @@ describe("toOpenAiTool", () => {
     expect(tool.type).toBe("function");
     expect(tool.function.name).toBe("set_menu_item_price");
     expect(tool.function.parameters.required).toEqual(["slug"]);
-    expect(tool.function.parameters.properties.price.type).toBe("number");
-    expect(tool.function.parameters.properties.status.enum).toEqual(["a", "b"]);
+    expect(tool.function.parameters.properties).toMatchObject({
+      slug: { type: "string" },
+      price: { type: "number" },
+      status: { type: "string", enum: ["a", "b"] },
+    });
     expect(tool.function.parameters.additionalProperties).toBe(false);
   });
 });
