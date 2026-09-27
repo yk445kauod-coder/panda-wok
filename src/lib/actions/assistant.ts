@@ -76,6 +76,7 @@ export async function askAssistantAction(
       question: parsed.data.question,
       history: parsed.data.history,
       systemInstruction: prompt.instruction,
+      customerId: userId,
     });
 
     await recordAiRequest({

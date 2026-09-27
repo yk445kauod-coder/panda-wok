@@ -151,6 +151,7 @@ export const ADMIN_NAV: readonly {
   { href: "/admin/analytics", label: "Analytics", capability: "analytics.view", group: "Growth" },
   { href: "/admin/ai", label: "AI centre", capability: "ai.manage", group: "Platform" },
   { href: "/admin/ai/usage", label: "AI usage", capability: "ai.manage", group: "Platform" },
+  { href: "/admin/agent", label: "Ops agent", capability: "ai.manage", group: "Platform" },
   { href: "/admin/users", label: "Team & users", capability: "users.manage", group: "Platform" },
   { href: "/admin/exports", label: "Exports", capability: "exports.manage", group: "Platform" },
   { href: "/admin/backups", label: "Backups", capability: "backups.view", group: "Platform" },

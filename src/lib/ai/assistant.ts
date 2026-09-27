@@ -13,6 +13,8 @@ import {
   renderSnapshot,
   type GroundingSnapshot,
 } from "@/lib/ai/grounding";
+import { recall, renderMemoryContext } from "@/lib/agent/memory";
+import { retrieveSkills, renderSkillContext } from "@/lib/agent/skills";
 
 /** Words that suggest the customer is asking about a specific dish or need. */
 const STOP_WORDS = new Set([
@@ -53,6 +55,8 @@ export function renderDeterministicAnswer(
   const matchesDelivery = /deliver|delivery|how long|eta|time|fee|minimum|min order/i.test(lower);
   const matchesLoyalty = /loyalty|points|reward|tier|discount/i.test(lower);
   const matchesContact = /contact|phone|call|whatsapp|email|reach|address|where/i.test(lower);
+  const matchesPay = /instapay|insta ?pay|pay|payment|wallet|transfer/i.test(lower);
+  const matchesOffers = /offer|deal|discount|promo|promotion|coupon|save|cheaper/i.test(lower);
   const matchesRecommend = /recommend|suggest|popular|best|favourite|favorite|try/i.test(lower);
 
   if (matchesDelivery) {
@@ -77,6 +81,32 @@ export function renderDeterministicAnswer(
         ? `You can reach ${snapshot.brand.name} on ${parts.join(", ")}.`
         : `A direct phone number has not been published on the site yet. Please use the contact page to send us a message and the kitchen will reply.`,
     );
+  }
+
+  if (matchesPay || matchesDelivery) {
+    if (snapshot.contact.instapayUrl) {
+      lines.push(`You can pay with InstaPay here: ${snapshot.contact.instapayUrl}`);
+    } else {
+      lines.push("Payment is cash on delivery; an InstaPay link is not published yet.");
+    }
+  }
+
+  if (matchesOffers || matchesCheap) {
+    if (snapshot.offers.length > 0) {
+      for (const offer of snapshot.offers) {
+        const value =
+          offer.kind === "percent"
+            ? `${offer.value}% off`
+            : `${offer.value} EGP off`;
+        lines.push(
+          `${offer.name}: ${value}${
+            offer.threshold > 0 ? ` on orders over ${offer.threshold} EGP` : " on any order"
+          }${offer.maxDiscount ? ` (up to ${offer.maxDiscount} EGP)` : ""}.`,
+        );
+      }
+    } else if (matchesOffers) {
+      lines.push("There are no offers running at the moment.");
+    }
   }
 
   if (matchesLoyalty) {
@@ -219,16 +249,32 @@ export type AssistantAnswer = {
  * Answers a customer question. The rendered snapshot is the only knowledge the
  * model receives, and the deterministic renderer is both the fallback and the
  * factual floor.
+ *
+ * `customerId`, when supplied, enables two cheap personalisation layers: a few
+ * recalled memory lines (a stated preference, a recurring request) and the
+ * relevant skill chunks. Both are optional and fail open — a missing embedding
+ * service simply means the answer is not personalised, never that it errors.
  */
 export async function answerAssistantQuestion(params: {
   question: string;
   history?: ChatMessage[];
   systemInstruction: string;
+  customerId?: string | null;
 }): Promise<{ result: AssistantAnswer; snapshot: GroundingSnapshot }> {
   const snapshot = await buildGroundingSnapshot();
   const dataBlock = renderSnapshot(snapshot);
 
-  const [providers, binding] = await Promise.all([loadDbProviders(), getWorkersAiBinding()]);
+  const [providers, binding, memories, skills] = await Promise.all([
+    loadDbProviders(),
+    getWorkersAiBinding(),
+    params.customerId
+      ? recall({ query: params.question, scope: "customer", subjectId: params.customerId })
+      : Promise.resolve([]),
+    retrieveSkills(params.question, 4),
+  ]);
+  const memoryBlock = renderMemoryContext(memories);
+  const skillBlock = renderSkillContext(skills);
+
   const chain = await buildDbProviderChain({ rows: providers, binding }, (request) => {
     // The deterministic provider recovers the raw question from the last user
     // turn and answers straight from the snapshot.
@@ -238,13 +284,16 @@ export async function answerAssistantQuestion(params: {
     return renderDeterministicAnswer(snapshot, lastUser?.content ?? "");
   });
 
+  const sections: string[] = [];
+  if (memoryBlock) sections.push(`WHAT YOU REMEMBER ABOUT THIS CUSTOMER\n${memoryBlock}`);
+  if (skillBlock) sections.push(`RELEVANT STAFF GUIDANCE\n${skillBlock}`);
+  sections.push(`DATA\n----\n${dataBlock}\n----`);
+  sections.push(`QUESTION: ${params.question}`);
+
   const messages: ChatMessage[] = [
     { role: "system", content: params.systemInstruction },
     ...(params.history ?? []),
-    {
-      role: "user",
-      content: `DATA\n----\n${dataBlock}\n----\n\nQUESTION: ${params.question}`,
-    },
+    { role: "user", content: sections.join("\n\n") },
   ];
 
   const request: CompletionRequest = {

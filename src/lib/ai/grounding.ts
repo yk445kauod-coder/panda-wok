@@ -2,6 +2,7 @@ import "server-only";
 
 import { getPublicMenu, getPublicSettings, getRestaurant } from "@/lib/services/catalog";
 import { getEnabledRewards } from "@/lib/services/catalog";
+import { listOffers } from "@/lib/services/admin-catalog";
 import type { MenuItem, Category } from "@/lib/services/catalog";
 
 export type GroundingSnapshot = {
@@ -17,6 +18,8 @@ export type GroundingSnapshot = {
     phoneSecondary: string | null;
     email: string | null;
     social: Record<string, string>;
+    /** Live InstaPay payment link, published from Admin → Settings. */
+    instapayUrl: string | null;
   };
   ordering: {
     minOrderTotal: number;
@@ -43,6 +46,8 @@ export type GroundingSnapshot = {
   rewards: { name: string; pointsCost: number; description: string | null }[];
   loyalty: { pointsPerCurrency: number; pointValue: number };
   paymentMethods: string[];
+  /** Enabled offers from the live DB, so the assistant can quote real promotions. */
+  offers: { name: string; kind: string; threshold: number; value: number; maxDiscount: number | null }[];
 };
 
 /**
@@ -51,12 +56,23 @@ export type GroundingSnapshot = {
  * price or claim that is not in the live database.
  */
 export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
-  const [menu, settings, restaurant, rewards] = await Promise.all([
+  const [menu, settings, restaurant, rewards, offers] = await Promise.all([
     getPublicMenu(),
     getPublicSettings(),
     getRestaurant(),
     getEnabledRewards(),
+    listOffers(),
   ]);
+
+  const enabledOffers = offers
+    .filter((o) => o.is_enabled)
+    .map((o) => ({
+      name: o.name_en,
+      kind: o.kind,
+      threshold: Number(o.threshold),
+      value: Number(o.value),
+      maxDiscount: o.max_discount === null ? null : Number(o.max_discount),
+    }));
 
   const categoryName = new Map<string, string>(
     menu.categories.map((c: Category) => [c.id, c.name_en]),
@@ -75,6 +91,7 @@ export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
       phoneSecondary: settings.support.phoneSecondary,
       email: settings.support.email,
       social: settings.support.social,
+      instapayUrl: settings.support.instapayUrl,
     },
     ordering: settings.ordering,
     categories: menu.categories.map((c) => ({
@@ -103,6 +120,7 @@ export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
     })),
     loyalty: settings.loyalty,
     paymentMethods: ["Cash on delivery", "InstaPay"],
+    offers: enabledOffers,
   };
 }
 
@@ -134,6 +152,9 @@ export function renderSnapshot(snapshot: GroundingSnapshot): string {
         socialEntries.map(([k, v]) => `${k} ${v}`).join(", "),
     );
   }
+  if (snapshot.contact.instapayUrl) {
+    lines.push(`InstaPay payment link: ${snapshot.contact.instapayUrl}`);
+  }
 
   lines.push("");
   lines.push("=== ORDERING ===");
@@ -149,6 +170,22 @@ export function renderSnapshot(snapshot: GroundingSnapshot): string {
     `Currently accepting orders: ${snapshot.ordering.acceptingOrders ? "yes" : "no"}`,
   );
   lines.push(`Payment: ${snapshot.paymentMethods.join(", ")}`);
+
+  if (snapshot.offers.length > 0) {
+    lines.push("");
+    lines.push("=== CURRENT OFFERS ===");
+    for (const offer of snapshot.offers) {
+      const value =
+        offer.kind === "percent"
+          ? `${offer.value}% off${offer.maxDiscount ? ` (up to ${offer.maxDiscount} EGP)` : ""}`
+          : `${offer.value} EGP off`;
+      lines.push(
+        `Offer: ${offer.name} — ${value}${
+          offer.threshold > 0 ? ` on orders over ${offer.threshold} EGP` : " on any order"
+        }`,
+      );
+    }
+  }
 
   lines.push("");
   lines.push("=== LOYALTY ===");

@@ -5,10 +5,9 @@ import { createServerSupabase, tryCreateAdminSupabase } from "@/lib/supabase/ser
 import { assertCapability } from "@/lib/auth/session";
 import { logAudit } from "@/lib/activity/log";
 import {
-  buildExport,
-  exportObjectPath,
   isExportDataset,
 } from "@/lib/export/build";
+import { createExportJob } from "@/lib/export/create";
 import { backupObjectPath, buildBackup } from "@/lib/backup/build";
 import {
   actionError,
@@ -1688,77 +1687,33 @@ export async function requestExportAction(
     );
   }
 
-  // The job row is created first so a failure leaves an auditable, failed row
-  // rather than nothing at all.
-  const { data: job, error: createError } = await admin
-    .from("exports")
-    .insert({
-      dataset: parsed.data.dataset,
-      format: parsed.data.format,
-      status: "running",
-      requested_by: session.actorId,
-    })
-    .select("id")
-    .single();
-
-  if (createError || !job) {
-    return actionError(createError ?? new Error("Could not queue the export."));
-  }
-
   try {
-    const built = await buildExport({
+    const { id, rows } = await createExportJob({
       dataset: parsed.data.dataset,
       format: parsed.data.format,
+      requestedBy: session.actorId,
     });
-
-    const path = exportObjectPath(job.id, built.extension);
-    const { error: uploadError } = await admin.storage
-      .from("exports")
-      .upload(path, built.body, {
-        contentType: built.mime,
-        upsert: true,
-      });
-
-    if (uploadError) throw new Error(uploadError.message);
-
-    const { error: finishError } = await admin
-      .from("exports")
-      .update({
-        status: "ready",
-        row_count: built.rows,
-        bytes: Buffer.byteLength(built.body, "utf8"),
-        storage_path: path,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", job.id);
-
-    if (finishError) throw new Error(finishError.message);
 
     await logAudit(admin, {
       actorId: session.actorId,
       actorRole: session.role,
       action: "export.created",
       entity: "exports",
-      entityId: job.id,
+      entityId: id,
       after: {
         dataset: parsed.data.dataset,
         format: parsed.data.format,
-        rows: built.rows,
+        rows,
       },
     });
 
     revalidatePath("/admin/exports");
-    return actionOk({ id: job.id, rows: built.rows });
+    return actionOk({ id, rows });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "The export could not be built.";
-
-    await admin
-      .from("exports")
-      .update({ status: "failed", error: message.slice(0, 500) })
-      .eq("id", job.id);
-
-    return actionFail("UNKNOWN", message);
+    return actionFail(
+      "UNKNOWN",
+      error instanceof Error ? error.message : "The export could not be built.",
+    );
   }
 }
 

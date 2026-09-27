@@ -21,7 +21,14 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "icons": "node scripts/generate-icons.mjs",
-    "fonts": "node scripts/build-kana-font.mjs"
+    "fonts": "node scripts/build-kana-font.mjs",
+    "skills:generate": "node scripts/generate-repo-skills.mjs",
+    "prebuild": "node scripts/generate-repo-skills.mjs",
+    "predev": "node scripts/generate-repo-skills.mjs",
+    "pretypecheck": "node scripts/generate-repo-skills.mjs",
+    "prepages:build": "node scripts/generate-repo-skills.mjs",
+    "prepreview": "node scripts/generate-repo-skills.mjs",
+    "predeploy": "node scripts/generate-repo-skills.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

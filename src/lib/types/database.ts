@@ -129,6 +129,78 @@ export type Database = {
           },
         ]
       }
+      agent_memory: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          kind: string
+          metadata: Json
+          scope: string
+          subject_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          scope?: string
+          subject_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          scope?: string
+          subject_id?: string | null
+        }
+        Relationships: []
+      }
+      agent_skills: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          embedding: string | null
+          heading: string | null
+          id: string
+          name: string
+          source: string
+          source_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          chunk_index?: number
+          content: string
+          created_at?: string
+          embedding?: string | null
+          heading?: string | null
+          id?: string
+          name: string
+          source?: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          heading?: string | null
+          id?: string
+          name?: string
+          source?: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_knowledge_sources: {
         Row: {
           content: string | null
@@ -1281,6 +1353,7 @@ export type Database = {
           created_at: string
           description_ar: string | null
           description_en: string | null
+          external_id: string | null
           has_transparent_png: boolean
           id: string
           image_alt: string | null
@@ -1315,6 +1388,7 @@ export type Database = {
           created_at?: string
           description_ar?: string | null
           description_en?: string | null
+          external_id?: string | null
           has_transparent_png?: boolean
           id?: string
           image_alt?: string | null
@@ -1349,6 +1423,7 @@ export type Database = {
           created_at?: string
           description_ar?: string | null
           description_en?: string | null
+          external_id?: string | null
           has_transparent_png?: boolean
           id?: string
           image_alt?: string | null
@@ -1616,6 +1691,158 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ops_agent_actions: {
+        Row: {
+          applied_at: string | null
+          applied_ref: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          error: string | null
+          id: string
+          kind: string
+          payload: Json
+          rationale: string | null
+          requested_by: string | null
+          requires_approval: boolean
+          run_id: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_ref?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          error?: string | null
+          id?: string
+          kind: string
+          payload?: Json
+          rationale?: string | null
+          requested_by?: string | null
+          requires_approval?: boolean
+          run_id?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_ref?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          error?: string | null
+          id?: string
+          kind?: string
+          payload?: Json
+          rationale?: string | null
+          requested_by?: string | null
+          requires_approval?: boolean
+          run_id?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_agent_actions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "ops_agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_agent_runs: {
+        Row: {
+          actions_proposed: number
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          headline: string | null
+          id: string
+          kind: string
+          model: string | null
+          provider: string | null
+          report: Json
+          started_at: string
+          status: string
+          summary: string | null
+          trigger: string
+        }
+        Insert: {
+          actions_proposed?: number
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          headline?: string | null
+          id?: string
+          kind: string
+          model?: string | null
+          provider?: string | null
+          report?: Json
+          started_at?: string
+          status?: string
+          summary?: string | null
+          trigger?: string
+        }
+        Update: {
+          actions_proposed?: number
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          headline?: string | null
+          id?: string
+          kind?: string
+          model?: string | null
+          provider?: string | null
+          report?: Json
+          started_at?: string
+          status?: string
+          summary?: string | null
+          trigger?: string
+        }
+        Relationships: []
+      }
+      ops_agent_settings: {
+        Row: {
+          backup_interval_hours: number
+          id: boolean
+          is_enabled: boolean
+          last_backup_at: string | null
+          last_report_at: string | null
+          proposals_enabled: boolean
+          report_interval_hours: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          backup_interval_hours?: number
+          id?: boolean
+          is_enabled?: boolean
+          last_backup_at?: string | null
+          last_report_at?: string | null
+          proposals_enabled?: boolean
+          report_interval_hours?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          backup_interval_hours?: number
+          id?: boolean
+          is_enabled?: boolean
+          last_backup_at?: string | null
+          last_report_at?: string | null
+          proposals_enabled?: boolean
+          report_interval_hours?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       order_items: {
         Row: {
@@ -2331,6 +2558,22 @@ export type Database = {
       }
     }
     Functions: {
+      add_agent_memory: {
+        Args: {
+          p_content: string
+          p_embedding: string
+          p_kind: string
+          p_metadata: Json
+          p_scope: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
+      agent_cron_tick: { Args: never; Returns: number }
+      approve_ops_action: {
+        Args: { p_id: string; p_note?: string }
+        Returns: undefined
+      }
       best_offer: {
         Args: { p_subtotal: number }
         Returns: {
@@ -2341,6 +2584,7 @@ export type Database = {
           offer_name_en: string
         }[]
       }
+      can_agent: { Args: never; Returns: boolean }
       can_backup: { Args: never; Returns: boolean }
       can_broadcast: { Args: never; Returns: boolean }
       can_export: { Args: never; Returns: boolean }
@@ -2404,6 +2648,18 @@ export type Database = {
         Returns: Database["public"]["Enums"]["staff_role"]
       }
       delete_ai_secret: { Args: { p_name: string }; Returns: boolean }
+      enqueue_ops_action: {
+        Args: {
+          p_kind: string
+          p_payload: Json
+          p_rationale: string
+          p_requires_approval?: boolean
+          p_run_id: string
+          p_title: string
+        }
+        Returns: string
+      }
+      ensure_agent_cron_token: { Args: never; Returns: boolean }
       feedback_count: {
         Args: {
           p_category?: Database["public"]["Enums"]["feedback_category"]
@@ -2413,6 +2669,10 @@ export type Database = {
         Returns: number
       }
       get_ai_secret: { Args: { p_name: string }; Returns: string }
+      gift_loyalty_points: {
+        Args: { p_points: number; p_reason: string; p_user_ids: string[] }
+        Returns: number
+      }
       has_role: {
         Args: { required: Database["public"]["Enums"]["staff_role"] }
         Returns: boolean
@@ -2436,7 +2696,38 @@ export type Database = {
         }
         Returns: undefined
       }
+      match_agent_memory: {
+        Args: {
+          p_match_count?: number
+          p_min_similarity?: number
+          p_query_embedding: string
+          p_scope?: string
+          p_subject_id?: string
+        }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          kind: string
+          scope: string
+          similarity: number
+        }[]
+      }
+      match_agent_skills: {
+        Args: {
+          p_match_count?: number
+          p_min_similarity?: number
+          p_query_embedding: string
+        }
+        Returns: {
+          content: string
+          heading: string
+          name: string
+          similarity: number
+        }[]
+      }
       next_order_number: { Args: never; Returns: string }
+      ops_agent_due: { Args: { p_kind?: string }; Returns: boolean }
       order_is_editable: {
         Args: { s: Database["public"]["Enums"]["order_status"] }
         Returns: boolean
@@ -2463,6 +2754,36 @@ export type Database = {
         }[]
       }
       recompute_stock_status: { Args: { item_id: string }; Returns: undefined }
+      record_agent_run: {
+        Args: {
+          p_actions_proposed: number
+          p_duration_ms: number
+          p_error: string
+          p_headline: string
+          p_kind: string
+          p_model: string
+          p_provider: string
+          p_report: Json
+          p_status: string
+          p_summary: string
+          p_trigger: string
+        }
+        Returns: string
+      }
+      reject_ops_action: {
+        Args: { p_id: string; p_note?: string }
+        Returns: undefined
+      }
+      replace_agent_skill: {
+        Args: {
+          p_chunks: Json
+          p_name: string
+          p_source: string
+          p_source_url: string
+        }
+        Returns: number
+      }
+      schedule_agent_cron: { Args: { p_base_url: string }; Returns: boolean }
       segment_user_ids: {
         Args: { p_segment: string; p_value?: number }
         Returns: string[]

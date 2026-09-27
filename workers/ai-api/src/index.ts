@@ -70,6 +70,7 @@ const worker = {
       system?: string;
       max_tokens?: number;
       temperature?: number;
+      text?: string | string[];
     };
     try {
       payload = await request.json();
@@ -77,12 +78,28 @@ const worker = {
       return json({ error: "invalid_json" }, 400);
     }
 
+    const model =
+      pathModel ?? payload.model ?? env.AI_DEFAULT_MODEL ?? DEFAULT_MODEL;
+
+    // Embeddings take { text } rather than { messages }. Detected by shape so a
+    // caller can request any embedding model (@cf/baai/bge-m3 etc.) through the
+    // same route without a second endpoint.
+    if (payload.text !== undefined && !Array.isArray(payload.messages)) {
+      try {
+        const result = await env.AI.run(model, { text: payload.text });
+        // The binding returns { data: number[][] } for embeddings; the app reads
+        // that directly.
+        return json({ result, model });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Workers AI request failed";
+        return json({ error: "ai_request_failed", detail: message }, 502);
+      }
+    }
+
     if (!Array.isArray(payload.messages) || payload.messages.length === 0) {
       return json({ error: "messages_required" }, 400);
     }
-
-    const model =
-      pathModel ?? payload.model ?? env.AI_DEFAULT_MODEL ?? DEFAULT_MODEL;
 
     try {
       const result = await env.AI.run(model, {

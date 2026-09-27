@@ -430,6 +430,31 @@ export const aiProviderSchema = z.object({
   maxRequestsPerMinute: z.coerce.number().int().min(1).max(10000).default(20),
 });
 
+export const opsAgentSettingsSchema = z.object({
+  isEnabled: z.coerce.boolean().default(true),
+  proposalsEnabled: z.coerce.boolean().default(true),
+  reportIntervalHours: z.coerce.number().int().min(1).max(720).default(24),
+  backupIntervalHours: z.coerce.number().int().min(1).max(720).default(168),
+});
+
+/** GitHub-only skill import. One URL per line; blanks are dropped. */
+export const skillImportSchema = z.object({
+  urls: z
+    .string()
+    .transform((value) =>
+      value
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean),
+    )
+    .pipe(
+      z
+        .array(z.string().url("Each line must be a valid URL"))
+        .min(1, "Paste at least one GitHub URL")
+        .max(10, "Import at most 10 URLs at a time"),
+    ),
+});
+
 export const aiPromptSchema = z.object({
   key: z.string().trim().min(2).max(60),
   systemInstruction: z.string().trim().min(20, "Give the model clear instructions").max(8000),
