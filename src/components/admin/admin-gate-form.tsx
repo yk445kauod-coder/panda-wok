@@ -5,7 +5,7 @@ import { KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { unlockAdminAction } from "@/lib/actions/admin-gate";
-import { useErrorText } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 
 /**
@@ -20,6 +20,7 @@ export function AdminGateForm({
   brand?: { name: string; logo_url: string | null };
 }) {
   const errorText = useErrorText();
+  const t = useT();
   const [secret, setSecret] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
@@ -59,7 +60,7 @@ export function AdminGateForm({
             brand={brand ?? { name: "Panda Wok", logo_url: null }}
             className="size-8"
           />
-          <span className="font-display text-lg font-semibold">Panda Wok Ops</span>
+          <span className="font-display text-lg font-semibold">{t("admin.gate.title")}</span>
         </div>
 
         <div
@@ -69,12 +70,9 @@ export function AdminGateForm({
           <KeyRound className="size-5" />
         </div>
         <h1 className="mt-3 font-display text-lg font-semibold text-ink-900">
-          Enter your access code
+          {t("admin.gate.label")}
         </h1>
-        <p className="mt-1 text-sm text-ink-700/80">
-          Owners use the ops passcode. Team members use the id the owner issued
-          them.
-        </p>
+        <p className="mt-1 text-sm text-ink-700/80">{t("admin.gate.hint")}</p>
 
         {error ? (
           <p role="alert" className="mt-4 rounded-xl border border-chili-500/30 bg-chili-500/8 p-3 text-sm text-chili-600">
@@ -83,7 +81,7 @@ export function AdminGateForm({
         ) : null}
 
         <label htmlFor="secret" className="sr-only">
-          Access code
+          {t("admin.gate.label")}
         </label>
         <input
           id="secret"
@@ -98,7 +96,7 @@ export function AdminGateForm({
         />
 
         <Button type="submit" size="lg" className="mt-4 w-full" loading={pending}>
-          {pending ? "Checking…" : "Unlock"}
+          {pending ? t("admin.gate.checking") : t("admin.gate.unlock")}
         </Button>
       </form>
     </div>

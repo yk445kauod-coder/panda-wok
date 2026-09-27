@@ -8,7 +8,7 @@ import { useConfirm } from "@/components/ui/confirm";
 import { cn, slugify } from "@/lib/utils/format";
 import type { FormActionResult } from "@/lib/actions/result";
 
-import { useErrorText } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 
 /**
  * Field-level messages returned by a failed action (e.g. "This slug is taken").
@@ -34,6 +34,7 @@ export function useAdminForm<T>(
 ) {
   const router = useRouter();
   const errorText = useErrorText();
+  const t = useT();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -54,7 +55,7 @@ export function useAdminForm<T>(
       result = await action(formData);
     } catch {
       // A thrown action means a transport or server fault, not a validation one.
-      setError("The server did not respond. Check your connection and try again.");
+      setError(t("admin.common.serverNoResponse"));
       setPending(false);
       return;
     }
@@ -67,7 +68,7 @@ export function useAdminForm<T>(
     }
 
     if (options?.resetOnSuccess) form.reset();
-    setDone(options?.successMessage ?? "Saved.");
+    setDone(options?.successMessage ?? t("admin.common.saved"));
     setPending(false);
     options?.onSuccess?.(result.data);
     router.refresh();
@@ -79,7 +80,7 @@ export function useAdminForm<T>(
 export function AdminForm({
   action,
   children,
-  submitLabel = "Save",
+  submitLabel,
   options,
   className,
   extraActions,
@@ -91,6 +92,7 @@ export function AdminForm({
   className?: string;
   extraActions?: React.ReactNode;
 }) {
+  const t = useT();
   const { submit, pending, error, done, fields } = useAdminForm(action, options);
 
   return (
@@ -120,7 +122,7 @@ export function AdminForm({
 
         <div className="flex flex-wrap items-center gap-2">
           <Button type="submit" loading={pending}>
-            {submitLabel}
+            {submitLabel ?? t("admin.common.save")}
           </Button>
           {extraActions}
         </div>
@@ -269,7 +271,7 @@ export function TextArea({
  */
 export function SlugField({
   name = "slug",
-  label = "URL slug",
+  label,
   hint,
   sourceName,
   defaultValue = "",
@@ -281,6 +283,7 @@ export function SlugField({
   sourceName: string;
   defaultValue?: string;
 }) {
+  const t = useT();
   const fieldErrors = useContext(FieldErrorsContext);
   const message = fieldErrors[name];
   const [value, setValue] = useState(defaultValue);
@@ -289,10 +292,10 @@ export function SlugField({
   return (
     <div>
       <label htmlFor={name} className="block text-sm font-medium text-ink-900">
-        {label}
+        {label ?? t("admin.common.slugLabel")}
       </label>
       <p className="mt-0.5 text-xs text-ink-700/65">
-        {hint ?? "Public address: /menu/your-slug. Filled from the English name; edit to override."}
+        {hint ?? t("admin.common.slugHint")}
       </p>
       <input
         id={name}
@@ -344,6 +347,7 @@ export function AdminButtonAction({
 }) {
   const router = useRouter();
   const errorText = useErrorText();
+  const t = useT();
   const { confirm: ask } = useConfirm();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -354,8 +358,8 @@ export function AdminButtonAction({
     if (confirm) {
       const agreed = await ask({
         title: confirm,
-        confirmLabel: "Go ahead",
-        cancelLabel: "Cancel",
+        confirmLabel: t("admin.common.goAhead"),
+        cancelLabel: t("admin.common.cancel"),
         tone: variant === "danger" ? "danger" : "warning",
       });
       if (!agreed) return;
@@ -374,7 +378,7 @@ export function AdminButtonAction({
       setPending(false);
       router.refresh();
     } catch {
-      setError("The server did not respond. Try again.");
+      setError(t("admin.common.serverTryAgain"));
       setPending(false);
     }
   }

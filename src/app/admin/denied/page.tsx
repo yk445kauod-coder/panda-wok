@@ -3,6 +3,7 @@ import { NotepadText, ShieldX } from "lucide-react";
 import { getAdminSession } from "@/lib/auth/session";
 import { capabilitiesFor } from "@/lib/auth/rbac";
 import { humanise } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n/server";
 
 export const metadata = {
   title: "Access denied",
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function AdminDeniedPage() {
   const session = await getAdminSession();
+  const t = await getT(await getLocale());
   const capabilities = session?.role ? capabilitiesFor(session.role) : [];
 
   return (
@@ -30,20 +32,20 @@ export default async function AdminDeniedPage() {
         </div>
 
         <h1 className="mt-4 font-display text-xl font-semibold text-ink-900">
-          This area is not available to your role
+          {t("admin.denied.title")}
         </h1>
 
         <p className="mx-auto mt-2 max-w-prose text-sm text-ink-700/80">
           {session?.role
-            ? `You are signed in as ${humanise(session.role)}, and that role does not include access to this page. Nothing is broken — the kitchen simply keeps different areas to different people.`
-            : "You do not have a staff role, so this page is not available."}
+            ? t("admin.denied.asRole", { role: humanise(session.role) })
+            : t("admin.denied.noRole")}
         </p>
 
         {capabilities.length > 0 ? (
           <div className="mt-4 rounded-xl border border-ink-900/10 bg-rice-50 p-3 text-left">
             <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ink-700/75">
               <NotepadText className="size-3.5" aria-hidden="true" />
-              What you can do
+              {t("admin.denied.canDo")}
             </p>
             <ul className="mt-2 flex flex-wrap gap-1.5">
               {capabilities.map((capability) => (
@@ -63,18 +65,18 @@ export default async function AdminDeniedPage() {
             href="/admin"
             className="rounded-xl bg-vermilion-600 px-4 py-2.5 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
           >
-            Back to the dashboard
+            {t("admin.denied.backDashboard")}
           </Link>
           <Link
             href="/menu"
             className="rounded-xl border border-ink-900/15 px-4 py-2.5 text-sm text-ink-800 hover:bg-rice-200"
           >
-            Go to the customer site
+            {t("admin.denied.goSite")}
           </Link>
         </div>
 
         <p className="mt-4 text-xs text-ink-700/60">
-          Need access? Ask an owner or admin to review your staff role.
+          {t("admin.denied.needAccess")}
         </p>
       </div>
     </div>

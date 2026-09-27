@@ -13,6 +13,7 @@ import { GaugeChart } from "@/components/charts/gauge-chart";
 import { RadarChart } from "@/components/charts/radar-chart";
 import { Heatmap } from "@/components/charts/heatmap";
 import { formatDateTime, formatNumber, formatPrice, humanise } from "@/lib/utils/format";
+import { getLocale, getT } from "@/lib/i18n/server";
 
 /**
  * Operational overview, built as a visual report rather than a wall of numbers.
@@ -23,6 +24,8 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
   const session = await requireCapability("orders.view");
+  const locale = await getLocale();
+  const t = await getT(locale);
   const [metrics, unread] = await Promise.all([
     getDashboardMetrics(30),
     countUnreadForStaff().catch(() => 0),
@@ -73,22 +76,26 @@ export default async function AdminOverviewPage() {
         <div className="relative flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-3xs font-semibold tracking-widest text-rice-300/70 uppercase">
-              {new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date())}
+              {new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(new Date())}
             </p>
             <h1 className="mt-1 font-display text-2xl font-semibold text-rice-50">
               {session.profile?.full_name
-                ? `Welcome back, ${session.profile.full_name.split(" ")[0]}`
-                : "Welcome to the kitchen"}
+                ? t("admin.dash.welcomeNamed", {
+                    name: session.profile.full_name.split(" ")[0],
+                  })
+                : t("admin.dash.welcomePlain")}
             </h1>
             <p className="mt-1 text-sm text-rice-200/85">
-              The last {metrics.windowDays} days at Panda Wok.
+              {t("admin.dash.window", { days: metrics.windowDays })}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {unread > 0 ? (
               <Link href="/admin/chat">
                 <Badge tone="indigo">
-                  {unread} unread message{unread === 1 ? "" : "s"}
+                  {unread === 1
+                    ? t("admin.dash.unreadOne", { count: unread })
+                    : t("admin.dash.unreadMany", { count: unread })}
                 </Badge>
               </Link>
             ) : null}
@@ -96,7 +103,7 @@ export default async function AdminOverviewPage() {
               href="/admin/orders?status=new"
               className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-vermilion-600 px-4 text-sm font-medium text-rice-50 transition-colors hover:bg-vermilion-700"
             >
-              Open the order queue
+              {t("admin.dash.openQueue")}
             </Link>
           </div>
         </div>
@@ -104,78 +111,90 @@ export default async function AdminOverviewPage() {
 
       {noData ? (
         <EmptyState
-          title="No orders yet in this window"
-          description="This is a live view of the database, so the charts stay empty until real orders arrive. Seed data is never invented for you."
+          title={t("admin.dash.noDataTitle")}
+          description={t("admin.dash.noDataBody")}
           action={
             <Link
               href="/menu"
               className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
             >
-              Check the customer site
+              {t("admin.dash.checkSite")}
             </Link>
           }
         />
       ) : null}
 
-      <section aria-label="Key figures" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={t("admin.dash.keyFigures")} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={Receipt}
-          label="Orders today"
+          label={t("admin.dash.ordersToday")}
           value={formatNumber(metrics.ordersToday)}
-          hint={`${formatNumber(metrics.ordersInWindow)} in ${metrics.windowDays} days`}
+          hint={t("admin.dash.inWindow", {
+            count: formatNumber(metrics.ordersInWindow),
+            days: metrics.windowDays,
+          })}
           trend={orderTrend}
         />
         <StatCard
           icon={Coins}
-          label="Revenue"
+          label={t("admin.dash.revenue")}
           value={formatPrice(metrics.revenueInWindow)}
-          hint={`Average ${formatPrice(metrics.avgOrderValue)} per order`}
+          hint={t("admin.dash.avgPerOrder", { value: formatPrice(metrics.avgOrderValue) })}
           trend={revenueTrend}
           tone="info"
         />
         <StatCard
           icon={Users}
-          label="Customers"
+          label={t("admin.dash.customers")}
           value={formatNumber(metrics.newCustomers + metrics.returningCustomers)}
-          hint={`${formatNumber(metrics.newCustomers)} new · ${formatNumber(metrics.returningCustomers)} returning`}
+          hint={t("admin.dash.newReturning", {
+            newCount: formatNumber(metrics.newCustomers),
+            returning: formatNumber(metrics.returningCustomers),
+          })}
           tone="success"
         />
         <StatCard
           icon={AlertTriangle}
-          label="Canceled"
+          label={t("admin.dash.canceled")}
           value={formatNumber(metrics.canceledOrders)}
-          hint={metrics.canceledOrders === 0 ? "None — good" : "Review the reasons below"}
+          hint={
+            metrics.canceledOrders === 0
+              ? t("admin.dash.canceledNone")
+              : t("admin.dash.reviewReasons")
+          }
           tone={metrics.canceledOrders > 0 ? "warning" : "neutral"}
         />
       </section>
 
-      <section className="washi-panel p-4 sm:p-5" aria-label="Revenue trend">
+      <section className="washi-panel p-4 sm:p-5" aria-label={t("admin.dash.revenueByDay")}>
         <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 className="font-display text-base font-semibold text-ink-900">
-              Revenue by day
+              {t("admin.dash.revenueByDay")}
             </h2>
             <p className="text-xs text-ink-700/70">
-              {metrics.windowDays}-day trend · hover or tap a point for the figure
+              {t("admin.dash.trendHint", { days: metrics.windowDays })}
             </p>
           </div>
-          <Badge tone="info">peak {formatPrice(Math.max(...revenueTrend, 0))}</Badge>
+          <Badge tone="info">
+            {t("admin.dash.peak", { value: formatPrice(Math.max(...revenueTrend, 0)) })}
+          </Badge>
         </div>
         <TrendChart
           data={metrics.revenueByDay.map((d) => ({ label: d.day, value: d.revenue }))}
-          title="Revenue by day"
+          title={t("admin.dash.revenueByDay")}
           valueKind="currency"
         />
       </section>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="washi-panel p-4 sm:p-5" aria-label="Order pipeline">
+        <section className="washi-panel p-4 sm:p-5" aria-label={t("admin.dash.pipeline")}>
           <h2 className="font-display text-base font-semibold text-ink-900">
-            Order pipeline
+            {t("admin.dash.pipeline")}
           </h2>
-          <p className="mb-3 text-xs text-ink-700/70">Current status mix</p>
+          <p className="mb-3 text-xs text-ink-700/70">{t("admin.dash.statusMix")}</p>
           <DonutChart
-            title="Order pipeline by status"
+            title={t("admin.dash.pipeline")}
             centerLabel={formatNumber(metrics.ordersInWindow)}
             data={metrics.statusBreakdown.map((row) => ({
               label: humanise(row.status),
@@ -184,13 +203,14 @@ export default async function AdminOverviewPage() {
           />
         </section>
 
-        <section className="washi-panel p-4 sm:p-5 lg:col-span-2" aria-label="Order rhythm">
+        <section
+          className="washi-panel p-4 sm:p-5 lg:col-span-2"
+          aria-label={t("admin.dash.rhythm")}
+        >
           <h2 className="font-display text-base font-semibold text-ink-900">
-            Order rhythm
+            {t("admin.dash.rhythm")}
           </h2>
-          <p className="mb-3 text-xs text-ink-700/70">
-            Orders per weekday, darker meaning busier. Hover a cell for the daily total.
-          </p>
+          <p className="mb-3 text-xs text-ink-700/70">{t("admin.dash.rhythmHint")}</p>
           <div className="grid gap-4 lg:grid-cols-2">
             <Heatmap
               cells={heatCells}
@@ -201,23 +221,28 @@ export default async function AdminOverviewPage() {
             />
             <div>
               <p className="mb-1 text-xs font-medium text-ink-700/75">
-                Revenue by weekday
+                {t("admin.dash.weekdayRevenue")}
               </p>
-              <RadarChart axes={radarAxes} title="Revenue by weekday" height={200} colorIndex={1} />
+              <RadarChart
+                axes={radarAxes}
+                title={t("admin.dash.weekdayRevenue")}
+                height={200}
+                colorIndex={1}
+              />
             </div>
           </div>
         </section>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="washi-panel p-4 sm:p-5" aria-label="Popular dishes">
+        <section className="washi-panel p-4 sm:p-5" aria-label={t("admin.dash.popularDishes")}>
           <h2 className="font-display text-base font-semibold text-ink-900">
-            Popular dishes
+            {t("admin.dash.popularDishes")}
           </h2>
-          <p className="mb-3 text-xs text-ink-700/70">By quantity sold in the window</p>
+          <p className="mb-3 text-xs text-ink-700/70">{t("admin.dash.byQuantity")}</p>
           <BarList
-            title="Popular dishes"
-            emptyLabel="No dish sales yet."
+            title={t("admin.dash.popularDishes")}
+            emptyLabel={t("admin.dash.noDishSales")}
             data={metrics.topItems.slice(0, 7).map((item) => ({
               label: item.name,
               value: item.quantity,
@@ -226,34 +251,35 @@ export default async function AdminOverviewPage() {
           />
         </section>
 
-        <section className="washi-panel p-4 sm:p-5" aria-label="Category mix">
+        <section className="washi-panel p-4 sm:p-5" aria-label={t("admin.dash.categoryMix")}>
           <h2 className="font-display text-base font-semibold text-ink-900">
-            Category mix
+            {t("admin.dash.categoryMix")}
           </h2>
-          <p className="mb-3 text-xs text-ink-700/70">Revenue by menu category</p>
+          <p className="mb-3 text-xs text-ink-700/70">{t("admin.dash.revenueByCategory")}</p>
           <BarList
-            title="Category mix"
+            title={t("admin.dash.categoryMix")}
             valueKind="currency"
-            emptyLabel="No category sales yet."
+            emptyLabel={t("admin.dash.noCategorySales")}
             data={metrics.categoryMix.slice(0, 7).map((row) => ({
               label: row.category,
               value: row.revenue,
-              note: `${row.quantity} sold`,
+              note: t("admin.dash.sold", { count: row.quantity }),
             }))}
           />
         </section>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="washi-panel p-4 sm:p-5" aria-label="Feedback">
-          <h2 className="font-display text-base font-semibold text-ink-900">Feedback</h2>
+        <section className="washi-panel p-4 sm:p-5" aria-label={t("admin.dash.feedback")}>
+          <h2 className="font-display text-base font-semibold text-ink-900">
+            {t("admin.dash.feedback")}
+          </h2>
           <p className="mb-3 text-xs text-ink-700/70">
-            {metrics.feedbackSummary.count} response
-            {metrics.feedbackSummary.count === 1 ? "" : "s"} in the window
+            {t("admin.dash.responses", { count: metrics.feedbackSummary.count })}
           </p>
           {metrics.feedbackSummary.count === 0 ? (
             <p className="py-5 text-center text-sm text-ink-700/65">
-              No feedback submitted yet.
+              {t("admin.dash.noFeedback")}
             </p>
           ) : (
             <div className="flex flex-col items-center gap-4 sm:flex-row">
@@ -261,7 +287,7 @@ export default async function AdminOverviewPage() {
                 value={metrics.feedbackSummary.averageRating}
                 max={5}
                 label={metrics.feedbackSummary.averageRating.toFixed(1)}
-                sublabel="out of 5"
+                sublabel={t("admin.dash.outOf5")}
                 colorIndex={1}
               />
               <ul className="w-full space-y-1.5">
@@ -295,32 +321,34 @@ export default async function AdminOverviewPage() {
               href="/admin/feedback"
               className="mt-3 inline-block text-xs font-medium text-vermilion-600"
             >
-              {metrics.feedbackSummary.openCount} awaiting a reply →
+              {t("admin.dash.awaitingReply", { count: metrics.feedbackSummary.openCount })}
             </Link>
           ) : null}
         </section>
 
-        <section className="washi-panel p-4 sm:p-5" aria-label="Loyalty">
+        <section className="washi-panel p-4 sm:p-5" aria-label={t("admin.dash.loyalty")}>
           <div className="mb-3 flex items-center justify-between gap-2">
             <div>
-              <h2 className="font-display text-base font-semibold text-ink-900">Loyalty</h2>
+              <h2 className="font-display text-base font-semibold text-ink-900">
+                {t("admin.dash.loyalty")}
+              </h2>
               <p className="text-xs text-ink-700/70">
-                {formatNumber(metrics.loyalty.members)} members
+                {t("admin.dash.members", { count: formatNumber(metrics.loyalty.members) })}
               </p>
             </div>
             <Link href="/admin/loyalty" className="text-xs font-medium text-vermilion-600">
-              Open
+              {t("admin.dash.open")}
             </Link>
           </div>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-xl bg-rice-100/70 p-3">
-              <dt className="text-xs text-ink-700/70">Points outstanding</dt>
+              <dt className="text-xs text-ink-700/70">{t("admin.dash.pointsOutstanding")}</dt>
               <dd className="mt-0.5 font-display text-lg font-semibold tabular-nums text-ink-900">
                 {formatNumber(metrics.loyalty.pointsOutstanding)}
               </dd>
             </div>
             <div className="rounded-xl bg-rice-100/70 p-3">
-              <dt className="text-xs text-ink-700/70">Cash collected</dt>
+              <dt className="text-xs text-ink-700/70">{t("admin.dash.cashCollected")}</dt>
               <dd className="mt-0.5 font-display text-lg font-semibold tabular-nums text-ink-900">
                 {formatPrice(metrics.cashCollected)}
               </dd>
@@ -329,7 +357,7 @@ export default async function AdminOverviewPage() {
           {metrics.loyalty.activeTiers.length > 0 ? (
             <div className="mt-3">
               <DonutChart
-                title="Loyalty members by tier"
+                title={t("admin.dash.loyalty")}
                 height={150}
                 data={metrics.loyalty.activeTiers.map((tier) => ({
                   label: humanise(tier.tier),
@@ -340,24 +368,26 @@ export default async function AdminOverviewPage() {
           ) : null}
         </section>
 
-        <section className="washi-panel p-4 sm:p-5" aria-label="Stock warnings">
+        <section className="washi-panel p-4 sm:p-5" aria-label={t("admin.dash.stock")}>
           <div className="mb-3 flex items-center justify-between gap-2">
             <div>
-              <h2 className="font-display text-base font-semibold text-ink-900">Stock</h2>
+              <h2 className="font-display text-base font-semibold text-ink-900">
+                {t("admin.dash.stock")}
+              </h2>
               <p className="text-xs text-ink-700/70">
                 {metrics.stockWarnings.length > 0
-                  ? `${metrics.stockWarnings.length} need attention`
-                  : "All above threshold"}
+                  ? t("admin.dash.needAttention", { count: metrics.stockWarnings.length })
+                  : t("admin.dash.allAbove")}
               </p>
             </div>
             <Link href="/admin/stock" className="text-xs font-medium text-vermilion-600">
-              Manage
+              {t("admin.dash.manage")}
             </Link>
           </div>
           {metrics.stockWarnings.length === 0 ? (
             <p className="flex items-center gap-2 py-5 text-sm text-ink-700/70">
               <PackageX className="size-4 text-jade-500" aria-hidden="true" />
-              No ingredient is low or out.
+              {t("admin.dash.noLowStock")}
             </p>
           ) : (
             <ul className="space-y-2.5">
@@ -399,8 +429,11 @@ export default async function AdminOverviewPage() {
       </div>
 
       <p className="text-xs text-ink-700/55">
-        Signed in as {session.profile?.full_name ?? session.email ?? "staff"} ·{" "}
-        {humanise(session.role)}. Figures refreshed {formatDateTime(new Date().toISOString())}.
+        {t("admin.dash.signedInAs", {
+          name: session.profile?.full_name ?? session.email ?? "staff",
+          role: humanise(session.role),
+          time: formatDateTime(new Date().toISOString()),
+        })}
       </p>
     </div>
   );
