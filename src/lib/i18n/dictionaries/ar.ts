@@ -61,6 +61,7 @@ export const ar: Dictionary = {
     basket: "السلة",
     orders: "طلباتي",
     account: "حسابي",
+    messages: "الرسائل",
     primary: "التنقّل الرئيسي",
     explore: "القائمة والمزيد",
     yourAccount: "حسابك",

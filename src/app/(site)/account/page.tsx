@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Award, MapPin, MessageSquare, Package, Receipt, Star, Wallet } from "lucide-react";
+import { Award, MapPin, MessageSquare, MessagesSquare, Package, Receipt, Star, Wallet } from "lucide-react";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/auth/session";
 import { getMyStats, getMyOrders, getMyAddresses } from "@/lib/services/orders";
@@ -200,6 +200,7 @@ export default async function AccountPage() {
       {/* Shortcuts */}
       <nav aria-label={t("account.shortcuts")} className="mt-5 grid grid-cols-2 gap-3">
         <ShortcutLink href="/orders" icon={Receipt} label={t("account.yourOrders")} />
+        <ShortcutLink href="/chat" icon={MessagesSquare} label={t("nav.messages")} />
         <ShortcutLink
           href="/account/addresses"
           icon={MapPin}

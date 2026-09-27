@@ -59,6 +59,7 @@ export const en = {
     basket: "Basket",
     orders: "Orders",
     account: "Account",
+    messages: "Messages",
     primary: "Primary",
     explore: "Menu & more",
     yourAccount: "Your account",

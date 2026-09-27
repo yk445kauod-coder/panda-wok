@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, UtensilsCrossed, ShoppingBag, MessageSquareHeart, User } from "lucide-react";
+import { Home, UtensilsCrossed, ShoppingBag, MessagesSquare, User } from "lucide-react";
 import { useCart } from "@/components/customer/cart-provider";
 import { useT } from "@/components/i18n-provider";
 import { cn } from "@/lib/utils/format";
@@ -11,7 +11,7 @@ const ITEMS = [
   { href: "/", labelKey: "nav.home", icon: Home, flag: null },
   { href: "/menu", labelKey: "nav.menu", icon: UtensilsCrossed, flag: "menu" },
   { href: "/cart", labelKey: "nav.basket", icon: ShoppingBag, flag: "ordering" },
-  { href: "/feedback", labelKey: "nav.feedback", icon: MessageSquareHeart, flag: "feedback" },
+  { href: "/chat", labelKey: "nav.messages", icon: MessagesSquare, flag: "chat" },
   { href: "/account", labelKey: "nav.account", icon: User, flag: "accounts" },
 ] as const;
 

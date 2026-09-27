@@ -31,6 +31,7 @@ function DesktopNav({
     { href: "/contact", label: t("nav.contact"), flag: null },
     { href: "/loyalty", label: t("nav.loyalty"), flag: "loyalty" },
     { href: "/feedback", label: t("nav.feedback"), flag: "feedback" },
+    { href: "/chat", label: t("nav.messages"), flag: "chat" },
   ].filter((l) => l.flag === null || flags[l.flag] !== false);
 
   return (
