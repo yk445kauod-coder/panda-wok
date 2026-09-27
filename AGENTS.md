@@ -1315,3 +1315,53 @@ need descriptive names that is an owner edit in the CMS, not a re-import
 through `src/lib/services/admin-catalog.ts` and `src/lib/actions/admin.ts`.
 Images: `uploadMenuImageAction` (bucket `menu-images`, <=8 MB) or a pasted URL.
 
+## Admin redesign: calm surfaces, dialogs, sound, KDS (2026-09-26, session 9)
+
+Brief: the console must be clear, clean, less decorative, easier, in Arabic; the
+KDS smoother with more animation, smooth scrolling, SweetAlert and a sound alert.
+
+### Surfaces are neutralised in one place
+`globals.css` has an `.admin-scope` block that flattens `.washi-panel`,
+`.washi-paper`, `.washi-banner`, `.glass-*`, `.hero-night`, `.page-sheet` to a
+single white panel, and strips `.asanoha` / `.asanoha-light` / `.bamboo-frame`
+textures and the sway/leaf/drift animations. `AdminShell` opts in by adding the
+class to its root div. **To restyle the whole console, edit that one block — do
+not hunt for decorative classes per page.** The customer site is untouched.
+
+### A real dialog replaces the two-tap confirm
+`ui/confirm.tsx` provides `ConfirmProvider` + `useConfirm()` → `confirm()` /
+`alert()` (promise-based). Mounted in `app/layout.tsx` inside `ToastProvider`.
+`AdminButtonAction`'s `confirm` prop now opens this dialog instead of relabelling
+the button to "Confirm?", so nothing changes under the cursor mid-click. Tone,
+focus, Escape and backdrop-to-cancel are handled. Use `useConfirm()` for any new
+destructive action; do not add `window.confirm`.
+
+### Sound is admin-only, and that is enforced by imports
+`lib/sound/ting.ts` synthesises a two-note "ting ting" with WebAudio (no asset).
+The only importer is `admin/kitchen-board.tsx`. The standing rule holds: **the
+customer site is silent — never import this under `(site)`.** The preference is
+a subscribable store read via `useSyncExternalStore` (not an effect) and stored
+in `localStorage` under `panda-wok.admin.sound`.
+
+### KDS
+`admin/kitchen-board.tsx` holds realtime + 12 s fallback polling, the arrival
+diff (new fresh-order ids → chime + toast + header pulse) and the Motion tickets.
+The page stays a server render and passes `signature` (comma-joined fresh ids).
+Tickets are `motion.li` with `layout`, so reorders slide. Copy is `kds.*` in the
+dictionaries (en + ar).
+
+### Two traps hit here
+1. **Hyphenated dictionary keys must be quoted.** `crm-activity: "…"` is invalid
+   TS; write `"crm-activity": "…"`. `tsc` catches it, but only after you add it.
+2. **`tsc`, lint and `next build` cannot see a browser-only failure** (the
+   earlier Chart.js radar bug is the canonical example). For anything animated,
+   sound-driven or canvas-based, render it and check the browser; static checks
+   are necessary, not sufficient.
+
+### Admin i18n status
+Shell chrome, nav, groups, roles and the KDS are translated (follows the locale
+cookie). **Screen bodies are still English-only** — orders, CRM, settings, menu
+forms, etc. Translating those is the next chunk of the Arabic task, screen by
+screen against the `admin.*` dictionary namespace.
+
+
