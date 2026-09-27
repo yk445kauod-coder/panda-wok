@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { FooterSocial } from "@/components/layout/mobile-footer";
@@ -31,6 +32,7 @@ function DesktopNav({
     { href: "/contact", label: t("nav.contact"), flag: null },
     { href: "/loyalty", label: t("nav.loyalty"), flag: "loyalty" },
     { href: "/feedback", label: t("nav.feedback"), flag: "feedback" },
+    { href: "/orders", label: t("nav.orderTracking"), flag: null },
     { href: "/chat", label: t("nav.messages"), flag: "chat" },
   ].filter((l) => l.flag === null || flags[l.flag] !== false);
 
@@ -120,10 +122,11 @@ export async function SiteHeader({
             ) : null}
             <Link
               href="/account"
-              className="rounded-lg border border-ink-900/12 px-3 py-2 text-sm text-ink-800 transition-colors hover:bg-ink-900/5"
+              className="hidden rounded-lg border border-ink-900/12 px-3 py-2 text-sm text-ink-800 transition-colors hover:bg-ink-900/5 md:inline-flex"
             >
               {t("nav.account")}
             </Link>
+            <MobileNav flags={flags} signedIn={Boolean(session)} />
           </div>
         </div>
       </header>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, UtensilsCrossed, ShoppingBag, MessagesSquare, User } from "lucide-react";
+import { Home, UtensilsCrossed, ShoppingBag, Receipt, User } from "lucide-react";
 import { useCart } from "@/components/customer/cart-provider";
 import { useT } from "@/components/i18n-provider";
 import { cn } from "@/lib/utils/format";
@@ -11,7 +11,7 @@ const ITEMS = [
   { href: "/", labelKey: "nav.home", icon: Home, flag: null },
   { href: "/menu", labelKey: "nav.menu", icon: UtensilsCrossed, flag: "menu" },
   { href: "/cart", labelKey: "nav.basket", icon: ShoppingBag, flag: "ordering" },
-  { href: "/chat", labelKey: "nav.messages", icon: MessagesSquare, flag: "chat" },
+  { href: "/orders", labelKey: "nav.orderTracking", icon: Receipt, flag: null },
   { href: "/account", labelKey: "nav.account", icon: User, flag: "accounts" },
 ] as const;
 
@@ -20,10 +20,11 @@ const ITEMS = [
  * entirely rather than rendered as dead links, and the basket tab is only
  * active when ordering is switched on.
  *
- * Feedback sits here rather than order tracking because the reviews, contact and
- * complaint surface is what a customer reaches for between orders; tracking is
- * a link from the account page and from an order confirmation, where the
- * customer arrives with a specific order in mind.
+ * This bar is deliberately the five verbs a customer repeats — browse, order,
+ * check the basket, track the current order, open the account. Everything else
+ * (chat, feedback, loyalty, addresses, location, FAQ, about, contact, privacy)
+ * lives in the header's `MobileNav` sheet so the tab count stays hittable at
+ * five and no page is left without a path to it.
  */
 export function BottomNav({ flags }: { flags: Record<string, boolean> }) {
   const pathname = usePathname();
