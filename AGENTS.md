@@ -1121,3 +1121,83 @@ client-side from a small JSON payload. Both change what crawlers see, so they
 are an owner decision, not a silent rewrite.
 
 
+
+
+## Notifications, team chat and the ops shell (2026-09-26, commit 39a77d8)
+
+### The staff bell was silently dead — passcode sessions have no `auth.uid()`
+`notifications` gained an audience split plus `list_my_notifications` /
+`count_unread_notifications` / mark-read RPCs that filter on `auth.uid()`. But
+**the ops console is unlocked with a passcode, not a Supabase session**, so
+`auth.uid()` is null there and every call returned `[]` / `0`. The bell looked
+permanently clean rather than broken, which is the same silent-empty failure
+mode as the `security_invoker` ratings view.
+
+Fix: the four RPCs take an optional `p_user_id` and use
+`coalesce(auth.uid(), p_user_id)`. The staff service resolves that id from the
+gate cookie server-side (`getAdminSession().actorId`) and calls through the
+service role. **The id never comes from the browser**, so a staff member cannot
+read another's feed.
+
+Two traps hit while writing this:
+1. Guarding the explicit id with `current_user = 'service_role'` **does not
+   work**: inside a `SECURITY DEFINER` function `current_user` is the function
+   *owner* (`postgres`), not the invoker. The guard was always false and the
+   bell stayed empty (verified: 4 rows present, RPC returned 0).
+   `coalesce(auth.uid(), p_user_id)` is the correct rule on its own, because a
+   session always pins the caller to their own uid.
+2. Probe with `set local role service_role` in a rolled-back transaction —
+   `count_unread_notifications('staff', <uuid>)` must return the real count
+   while the no-id form returns 0. That pair is the regression test.
+
+### Team chat is separate tables, on purpose
+`conversations`/`messages` are customer-owner-scoped (`conversations.user_id`
+FKs a customer, RLS is `auth.uid()`-based). Reusing them for staff-to-staff chat
+would need either a leak-prone policy rewrite or misuse of the customer column,
+so `team_threads` / `team_thread_members` / `team_messages` are new, with
+staff-only policies. One channel auto-joins every active staff member (trigger
+on `staff`), and DMs are deduped by an order-independent participant slug
+(`dm:<least>:<greatest>`) so opening a DM twice never forks the thread.
+
+Team chat is **not** on Realtime: the console has no anon key to open a channel
+with, so it refreshes the server component after a send instead.
+
+`lib/actions/team-chat.ts` and `lib/actions/notifications.ts` deliberately
+authorise via the gate (`assertCapability` / `getAdminSession`) rather than RLS,
+for the same no-`auth.uid()` reason.
+
+### Admin shell: `max-lg:` for the drawer
+The mobile nav was a `hidden`/`block` full-height block that pushed page content
+down the phone screen. It is now an off-canvas drawer (`max-lg:fixed
+max-lg:inset-y-0 max-lg:start-0` + `max-lg:-translate-x-full
+rtl:max-lg:translate-x-full`) with a backdrop, Escape, scroll lock and focus
+move. Closing on navigation is done in each link's `onClick`, **not** an effect
+watching `usePathname` — that pattern is a lint error
+(`setState` in an effect) and a cascading render.
+
+Same pattern for the bell's server re-sync: compare the props against a
+`useState` holder during render and `setState` there, instead of an effect.
+
+## Live menu state after the Japanese import (2026-09-26, counted)
+
+The menu now holds **two** catalogues, and they are numbered the same way, which
+is the confusing part:
+
+- **Chinese menu (imported later, 52 rows, `external_id is null`)**: 10
+  categories `sort_order 0-9` (Appetizers, Noodles, RICE, Main dishes, Set menu,
+  Fasting Meal, Special Offers, Box, Extra sauces, Drinks). EGP 20-1560.
+- **Japanese sushi menu (`20260927070000_japanese_sushi_menu.sql`, 38 rows,
+  `external_id is not null`)**: 8 categories `sort_order 10-17` (RAW/FRIED URA
+  MAKI, NIGIRI RAW/FRIED, COMBO FRIED/RAW, SALADS, Sauces). EGP 35-1540.
+
+Totals live: **18 categories, 90 items, 14 modifier groups, 53 options, 0 items
+with an image, 0 missing Arabic**. So the answer to "we still need the Chinese
+menu / the Japanese one" is: *both are in the database*. What is not done is
+photos (0 images on 90 items) and there is no bulk importer for an arbitrary
+sheet — the admin CMS is the only entry point, one dish at a time.
+
+### The Japanese seed is idempotent, unlike `scripts/import-menu.mjs`
+`20260927070000_japanese_sushi_menu.sql` keys on `menu_items.external_id` (plain
+unique index; a partial index would break `ON CONFLICT` inference) and upserts,
+so re-running it is safe. `scripts/import-menu.mjs` still uses `.insert()` and
+must never be re-run to "refresh" — see the note above.
