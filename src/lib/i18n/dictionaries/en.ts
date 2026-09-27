@@ -70,6 +70,10 @@ export const en = {
     location: "Location",
     faq: "FAQ",
     privacy: "Privacy",
+    notifications: "Notifications",
+    notificationsEmpty: "You are all caught up.",
+    notificationsClearAll: "Clear all",
+    notificationsOpen: "Open notifications",
   },
 
 

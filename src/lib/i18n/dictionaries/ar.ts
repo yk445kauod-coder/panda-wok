@@ -72,6 +72,10 @@ export const ar: Dictionary = {
     location: "الموقع",
     faq: "الأسئلة الشائعة",
     privacy: "الخصوصية",
+    notifications: "الإشعارات",
+    notificationsEmpty: "لا توجد إشعارات جديدة.",
+    notificationsClearAll: "تحديد الكل كمقروء",
+    notificationsOpen: "فتح الإشعارات",
   },
 
 

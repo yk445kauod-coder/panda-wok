@@ -16,6 +16,10 @@ import {
   type FormActionResult,
 } from "@/lib/actions/result";
 import { logActivity } from "@/lib/activity/log";
+import {
+  notifyCustomerOfStaffReply,
+  notifyStaffOfCustomerMessage,
+} from "@/lib/services/notifications";
 
 export async function submitFeedbackAction(
   formData: FormData,
@@ -148,6 +152,11 @@ export async function createConversationAction(
     entityId: conversation.id,
   });
 
+  await notifyStaffOfCustomerMessage({
+    conversationId: conversation.id,
+    preview: v.message,
+  });
+
   revalidatePath("/chat");
   return actionOk({ conversationId: conversation.id });
 }
@@ -219,6 +228,15 @@ export async function sendMessageAction(
       entityId: v.conversationId,
     });
 
+    // A customer message should reach the staff bell; an internal note is
+    // staff-only by definition and must never notify the customer's side.
+    if (isOwner && !v.isInternalNote) {
+      await notifyStaffOfCustomerMessage({
+        conversationId: v.conversationId,
+        preview: v.body,
+      });
+    }
+
     revalidatePath("/chat");
     revalidatePath(`/admin/chat/${v.conversationId}`);
     return actionOk();
@@ -245,6 +263,16 @@ export async function sendMessageAction(
     return actionFail("UNKNOWN", "This ops session cannot be attributed to a staff member.");
   }
 
+  const { data: conversation } = await admin
+    .from("conversations")
+    .select("id, user_id")
+    .eq("id", v.conversationId)
+    .maybeSingle();
+
+  if (!conversation) {
+    return { ok: false, error: { code: "FORBIDDEN", message: "Conversation not found." } };
+  }
+
   const { error } = await admin.from("messages").insert({
     conversation_id: v.conversationId,
     sender_id: senderId,
@@ -255,7 +283,18 @@ export async function sendMessageAction(
 
   if (error) return actionError(error);
 
+  // The reply tells the customer their thread moved, unless it is an internal
+  // note (which lives only inside the staff thread).
+  if (!v.isInternalNote && conversation.user_id) {
+    await notifyCustomerOfStaffReply({
+      userId: conversation.user_id,
+      conversationId: v.conversationId,
+      preview: v.body,
+    });
+  }
+
   revalidatePath(`/admin/chat/${v.conversationId}`);
+  revalidatePath("/chat");
   return actionOk();
 }
 

@@ -3,7 +3,13 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { FooterSocial } from "@/components/layout/mobile-footer";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { sortSocialEntries } from "@/components/icons/social";
+import { getSession } from "@/lib/auth/session";
+import {
+  countUnreadNotifications,
+  listMyNotifications,
+} from "@/lib/services/notifications";
 import { getLocale, getT } from "@/lib/i18n/server";
 import type { T } from "@/lib/i18n/server";
 
@@ -52,6 +58,17 @@ export async function SiteHeader({
   const locale = await getLocale();
   const t = await getT(locale);
 
+  // The bell only makes sense for a signed-in customer: an anonymous visitor
+  // has no rows and the RPCs would return nothing, but we skip the round-trip
+  // entirely and render no bell.
+  const session = await getSession();
+  const [notifications, unread] = session
+    ? await Promise.all([
+        listMyNotifications("customer", 20).catch(() => []),
+        countUnreadNotifications("customer").catch(() => 0),
+      ])
+    : [[], 0];
+
   return (
     <>
       <a
@@ -79,6 +96,19 @@ export async function SiteHeader({
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher current={locale} />
+            {session ? (
+              <NotificationBell
+                audience="customer"
+                initial={notifications}
+                initialUnread={unread}
+                labels={{
+                  title: t("nav.notifications"),
+                  empty: t("nav.notificationsEmpty"),
+                  markAll: t("nav.notificationsClearAll"),
+                  open: t("nav.notificationsOpen"),
+                }}
+              />
+            ) : null}
             {flags.ordering !== false ? (
               <Link
                 href="/cart"

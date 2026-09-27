@@ -147,6 +147,7 @@ export const ADMIN_NAV: readonly {
   { href: "/admin/loyalty", label: "Loyalty", capability: "loyalty.manage", group: "CRM" },
   { href: "/admin/feedback", label: "Feedback", capability: "feedback.manage", group: "CRM" },
   { href: "/admin/chat", label: "Messages", capability: "chat.manage", group: "CRM" },
+  { href: "/admin/team-chat", label: "Team chat", capability: "chat.manage", group: "CRM" },
   { href: "/admin/broadcast", label: "Broadcast", capability: "broadcast.manage", group: "Growth" },
   { href: "/admin/analytics", label: "Analytics", capability: "analytics.view", group: "Growth" },
   { href: "/admin/ai", label: "AI centre", capability: "ai.manage", group: "Platform" },

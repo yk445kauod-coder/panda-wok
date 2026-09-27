@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   BadgePercent,
@@ -34,6 +34,8 @@ import {
 import { ADMIN_NAV, ROLE_LABELS, type Capability, type StaffRole } from "@/lib/auth/rbac";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { NotificationBell } from "@/components/notifications/notification-bell";
+import type { AppNotification } from "@/lib/services/notifications";
 import { useI18n } from "@/components/i18n-provider";
 import { cn } from "@/lib/utils/format";
 
@@ -61,6 +63,8 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/analytics": Clock3,
   "/admin/ai": Bot,
   "/admin/ai/usage": Database,
+  "/admin/agent": Sparkles,
+  "/admin/team-chat": MessagesSquare,
   "/admin/users": Users,
   "/admin/exports": Download,
   "/admin/backups": Database,
@@ -79,16 +83,21 @@ export function AdminShell({
   capabilities,
   staffName,
   brand,
+  notifications = [],
+  unreadCount = 0,
   children,
 }: {
   role: StaffRole;
   capabilities: readonly Capability[];
   staffName: string;
   brand?: { name: string; logo_url: string | null };
+  notifications?: AppNotification[];
+  unreadCount?: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
   const { locale } = useI18n();
 
   // A destination with no capability is shown to every unlocked member (the
@@ -100,42 +109,107 @@ export function AdminShell({
     allowed.some((item) => item.group === group),
   );
 
+  // The mobile drawer leaves focus behind an overlay unless it is unwound:
+  // Escape closes it, background scroll is locked, and focus moves into the
+  // panel. Route changes close it from each link's own handler, so there is no
+  // effect watching the pathname.
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const first = navRef.current?.querySelector<HTMLElement>("a, button");
+    first?.focus();
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
       {/* Mobile top bar */}
-      <div className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-ink-900/10 bg-ink-950/92 px-4 pt-safe text-rice-100 backdrop-blur lg:hidden">
-        <Link href="/admin" className="flex h-14 items-center gap-2">
+      <div className="sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-ink-900/10 bg-ink-950/95 px-3 pt-safe text-rice-100 backdrop-blur lg:hidden">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-expanded={open}
+          aria-controls="admin-nav"
+          aria-label="Open navigation"
+          className="grid size-10 place-items-center rounded-lg border border-rice-100/20 text-rice-100"
+        >
+          <Menu className="size-5" aria-hidden="true" />
+        </button>
+        <Link href="/admin" className="flex min-w-0 items-center gap-2">
           <BrandLogo
             brand={brand ?? { name: "Panda Wok", logo_url: null }}
-            className="size-8"
+            className="size-7"
           />
-          <span className="font-display text-base font-semibold text-rice-50">
+          <span className="truncate font-display text-base font-semibold text-rice-50">
             Ops
           </span>
         </Link>
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher current={locale} variant="compact" />
-          <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          aria-expanded={open}
-          aria-controls="admin-nav"
-          aria-label={open ? "Close navigation" : "Open navigation"}
-          className="grid size-10 place-items-center rounded-lg border border-rice-100/20 text-rice-100"
-        >
-          {open ? <X className="size-5" /> : <Menu className="size-5" />}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <NotificationBell
+            audience="staff"
+            tone="dark"
+            initial={notifications}
+            initialUnread={unreadCount}
+            labels={{
+              title: "Notifications",
+              empty: "You are all caught up.",
+              markAll: "Clear",
+              open: "Open notifications",
+            }}
+          />
         </div>
       </div>
 
+      {/* Drawer backdrop (mobile only) */}
+      {open ? (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-40 bg-ink-950/50 backdrop-blur-sm lg:hidden"
+        />
+      ) : null}
+
       <nav
         id="admin-nav"
+        ref={navRef}
         aria-label="Admin sections"
         className={cn(
           "shrink-0 bg-ink-950 text-rice-100 lg:sticky lg:top-0 lg:block lg:h-dvh lg:w-64 lg:overflow-y-auto",
-          open ? "block border-b border-ink-900/10" : "hidden",
+          // Below lg it is an off-canvas drawer: a full-height panel that slides
+          // in over the page instead of pushing content down the screen.
+          "max-lg:fixed max-lg:inset-y-0 max-lg:start-0 max-lg:z-50 max-lg:w-72 max-lg:overflow-y-auto max-lg:shadow-2xl max-lg:transition-transform max-lg:duration-200",
+          open ? "max-lg:translate-x-0" : "max-lg:-translate-x-full rtl:max-lg:translate-x-full",
         )}
       >
+        <div className="flex items-center justify-between gap-2 px-4 pt-5 lg:hidden">
+          <div className="flex items-center gap-2.5">
+            <BrandLogo
+              brand={brand ?? { name: "Panda Wok", logo_url: null }}
+              className="size-8 rounded-lg bg-rice-50/10 p-1"
+            />
+            <span className="font-display text-sm font-semibold text-rice-50">
+              Panda Wok Ops
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close navigation"
+            className="grid size-9 place-items-center rounded-lg border border-rice-100/20 text-rice-100"
+          >
+            <X className="size-5" aria-hidden="true" />
+          </button>
+        </div>
+
         <div className="hidden items-center gap-2.5 px-4 pt-5 lg:flex">
           <BrandLogo
             brand={brand ?? { name: "Panda Wok", logo_url: null }}
@@ -151,8 +225,22 @@ export function AdminShell({
           </span>
         </div>
 
-        <div className="hidden px-4 pt-3 lg:block">
+        <div className="flex items-center justify-between gap-2 px-4 pt-3">
           <LanguageSwitcher current={locale} variant="compact" />
+          <div className="hidden lg:block">
+            <NotificationBell
+              audience="staff"
+              tone="dark"
+              initial={notifications}
+              initialUnread={unreadCount}
+              labels={{
+                title: "Notifications",
+                empty: "You are all caught up.",
+                markAll: "Clear",
+                open: "Open notifications",
+              }}
+            />
+          </div>
         </div>
 
         <div className="px-4 pt-3 lg:pb-1">
@@ -203,6 +291,7 @@ export function AdminShell({
         <div className="border-t border-rice-100/10 px-3 py-4">
           <Link
             href="/"
+            onClick={() => setOpen(false)}
             className="block rounded-lg px-2.5 py-2 text-sm text-rice-200/75 hover:bg-rice-100/8 hover:text-rice-50"
           >
             View the customer site
@@ -226,7 +315,9 @@ export function AdminShell({
             View the customer site
           </Link>
         </div>
-        <div className="mx-auto max-w-6xl px-4 py-5 lg:px-8 lg:py-8">{children}</div>
+        <div className="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-5 lg:px-8 lg:py-8">
+          {children}
+        </div>
       </main>
     </div>
   );

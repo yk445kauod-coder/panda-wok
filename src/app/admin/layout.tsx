@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getAdminSession } from "@/lib/auth/session";
 import { getPublicSettings } from "@/lib/services/catalog";
 import { capabilitiesFor, ROLE_LABELS } from "@/lib/auth/rbac";
+import { listStaffNotifications, countStaffUnread } from "@/lib/services/notifications";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminGateForm } from "@/components/admin/admin-gate-form";
 
@@ -41,12 +42,23 @@ export default async function AdminLayout({
   // capability (marketing has no orders.view, kitchen has no crm.view), so
   // requiring one would lock a legitimate member out of the whole console.
   // Each page guards itself, and this shell renders only what the role may open.
+  //
+  // The staff notification feed only exists once a member is inside the gate, so
+  // it is fetched here and handed to the shell's bell. A failure to load it must
+  // never block the console, hence the allSettled-style tolerance.
+  const [notifications, unread] = await Promise.all([
+    listStaffNotifications(20).catch(() => []),
+    countStaffUnread().catch(() => 0),
+  ]);
+
   return (
     <AdminShell
       role={adminSession.role}
       capabilities={capabilitiesFor(adminSession.role)}
       staffName={adminSession.profile?.full_name ?? ROLE_LABELS[adminSession.role]}
       brand={brand}
+      notifications={notifications}
+      unreadCount={unread}
     >
       {children}
     </AdminShell>

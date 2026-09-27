@@ -1590,8 +1590,10 @@ export type Database = {
       }
       notifications: {
         Row: {
+          audience: string
           body: string | null
           broadcast_id: string | null
+          category: string
           created_at: string
           id: number
           kind: string
@@ -1601,8 +1603,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          audience?: string
           body?: string | null
           broadcast_id?: string | null
+          category?: string
           created_at?: string
           id?: number
           kind: string
@@ -1612,8 +1616,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          audience?: string
           body?: string | null
           broadcast_id?: string | null
+          category?: string
           created_at?: string
           id?: number
           kind?: string
@@ -2455,6 +2461,97 @@ export type Database = {
           },
         ]
       }
+      team_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: number
+          sender_id: string | null
+          thread_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: number
+          sender_id?: string | null
+          thread_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: number
+          sender_id?: string | null
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "team_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_thread_members: {
+        Row: {
+          joined_at: string
+          last_read_at: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          last_read_at?: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          last_read_at?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_thread_members_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "team_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_threads: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          last_message_at: string
+          name: string
+          slug: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          last_message_at?: string
+          name: string
+          slug?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          last_message_at?: string
+          name?: string
+          slug?: string | null
+        }
+        Relationships: []
+      }
       upsell_rules: {
         Row: {
           created_at: string
@@ -2593,6 +2690,22 @@ export type Database = {
       can_manage_offers: { Args: never; Returns: boolean }
       can_manage_orders: { Args: never; Returns: boolean }
       cancel_order: { Args: { p_order_id: string }; Returns: undefined }
+      count_unread_notifications: {
+        Args: { p_audience?: string; p_user_id?: string }
+        Returns: number
+      }
+      create_notification: {
+        Args: {
+          p_audience: string
+          p_body?: string
+          p_category: string
+          p_kind: string
+          p_link?: string
+          p_title: string
+          p_user_id: string
+        }
+        Returns: number
+      }
       crm_customer_count: { Args: { p_search?: string }; Returns: number }
       crm_customers: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
@@ -2677,14 +2790,35 @@ export type Database = {
         Args: { required: Database["public"]["Enums"]["staff_role"] }
         Returns: boolean
       }
+      is_active_staff: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      is_team_member: { Args: { p_thread: string }; Returns: boolean }
+      join_staff_to_channel: { Args: { p_thread: string }; Returns: number }
       list_ai_secret_hints: {
         Args: never
         Returns: {
           hint: string
           name: string
           updated_at: string
+        }[]
+      }
+      list_my_notifications: {
+        Args: {
+          p_audience?: string
+          p_limit?: number
+          p_unread_only?: boolean
+          p_user_id?: string
+        }
+        Returns: {
+          body: string
+          category: string
+          created_at: string
+          id: number
+          kind: string
+          link: string
+          read_at: string
+          title: string
         }[]
       }
       log_audit_event: {
@@ -2694,6 +2828,14 @@ export type Database = {
           p_entity: string
           p_entity_id: string
         }
+        Returns: undefined
+      }
+      mark_all_notifications_read: {
+        Args: { p_audience?: string; p_user_id?: string }
+        Returns: undefined
+      }
+      mark_notification_read: {
+        Args: { p_id: number; p_user_id?: string }
         Returns: undefined
       }
       match_agent_memory: {
@@ -2727,6 +2869,18 @@ export type Database = {
         }[]
       }
       next_order_number: { Args: never; Returns: string }
+      notify_staff: {
+        Args: {
+          p_body?: string
+          p_category: string
+          p_kind: string
+          p_link?: string
+          p_roles: string[]
+          p_title: string
+        }
+        Returns: number
+      }
+      open_dm: { Args: { p_other: string }; Returns: string }
       ops_agent_due: { Args: { p_kind?: string }; Returns: boolean }
       order_is_editable: {
         Args: { s: Database["public"]["Enums"]["order_status"] }
