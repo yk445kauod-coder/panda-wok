@@ -146,8 +146,7 @@ export const ADMIN_NAV: readonly {
   { href: "/admin/crm/insights", label: "AI insights", capability: "crm.view", group: "CRM" },
   { href: "/admin/loyalty", label: "Loyalty", capability: "loyalty.manage", group: "CRM" },
   { href: "/admin/feedback", label: "Feedback", capability: "feedback.manage", group: "CRM" },
-  { href: "/admin/chat", label: "Messages", capability: "chat.manage", group: "CRM" },
-  { href: "/admin/team-chat", label: "Team chat", capability: "chat.manage", group: "CRM" },
+  { href: "/admin/chat", label: "Chat", capability: "chat.manage", group: "CRM" },
   { href: "/admin/broadcast", label: "Broadcast", capability: "broadcast.manage", group: "Growth" },
   { href: "/admin/analytics", label: "Analytics", capability: "analytics.view", group: "Growth" },
   { href: "/admin/ai", label: "AI centre", capability: "ai.manage", group: "Platform" },
@@ -160,4 +159,23 @@ export const ADMIN_NAV: readonly {
   // No capability: the guide is a reference every unlocked member should reach,
   // and it is how a member discovers what their own role is allowed to do.
   { href: "/admin/guide", label: "Guide", group: "Help" },
+];
+
+/**
+ * The handful of destinations a member reaches for during service, in
+ * preference order. A phone shows the first four the role may open as a bottom
+ * bar, plus a "More" control for the rest — so the everyday path is one tap and
+ * the long tail stays available without crowding the screen.
+ */
+export const ADMIN_MOBILE_NAV: readonly {
+  href: string;
+  label: string;
+  capability: Capability;
+}[] = [
+  { href: "/admin", label: "Home", capability: "orders.view" },
+  { href: "/admin/orders", label: "Orders", capability: "orders.view" },
+  { href: "/admin/kitchen", label: "Kitchen", capability: "kitchen.view" },
+  { href: "/admin/chat", label: "Chat", capability: "chat.manage" },
+  { href: "/admin/menu", label: "Menu", capability: "menu.manage" },
+  { href: "/admin/crm", label: "Customers", capability: "crm.view" },
 ];

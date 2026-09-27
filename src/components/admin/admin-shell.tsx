@@ -35,6 +35,7 @@ import { ADMIN_NAV, ROLE_LABELS, type Capability, type StaffRole } from "@/lib/a
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { AdminBottomNav } from "@/components/admin/admin-bottom-nav";
 import type { AppNotification } from "@/lib/services/notifications";
 import { useI18n } from "@/components/i18n-provider";
 import { cn } from "@/lib/utils/format";
@@ -186,7 +187,7 @@ export function AdminShell({
           "shrink-0 bg-ink-950 text-rice-100 lg:sticky lg:top-0 lg:block lg:h-dvh lg:w-64 lg:overflow-y-auto",
           // Below lg it is an off-canvas drawer: a full-height panel that slides
           // in over the page instead of pushing content down the screen.
-          "max-lg:fixed max-lg:inset-y-0 max-lg:start-0 max-lg:z-50 max-lg:w-72 max-lg:overflow-y-auto max-lg:shadow-2xl max-lg:transition-transform max-lg:duration-200",
+          "max-lg:fixed max-lg:inset-y-0 max-lg:start-0 max-lg:z-50 max-lg:w-72 max-lg:overflow-y-auto max-lg:pb-20 max-lg:shadow-2xl max-lg:transition-transform max-lg:duration-200",
           open ? "max-lg:translate-x-0" : "max-lg:-translate-x-full rtl:max-lg:translate-x-full",
         )}
       >
@@ -315,10 +316,16 @@ export function AdminShell({
             View the customer site
           </Link>
         </div>
-        <div className="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-5 lg:px-8 lg:py-8">
+        <div className="mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4 sm:py-5 lg:px-8 lg:py-8 lg:pb-8">
           {children}
         </div>
       </main>
+
+      <AdminBottomNav
+        capabilities={capabilities}
+        unreadCount={unreadCount}
+        onMore={() => setOpen(true)}
+      />
     </div>
   );
 }
