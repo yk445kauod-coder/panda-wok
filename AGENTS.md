@@ -1421,3 +1421,38 @@ forged passcode cookie
 `external_id is null`) and the Japanese sushi menu (8 cats, `external_id` set).
 **Both are public and must stay visible.** 0 of 90 items have an image — photos
 are the real remaining menu job, uploaded one dish at a time to `menu-images`.
+
+## Menu import: current truth and the safe path (2026-09-26, session 10)
+
+Corrections and additions to the older "drift" and "no bulk importer" notes
+above, which predate the Japanese sushi import:
+
+**Live menu now is 18 categories / 90 items**, counted live:
+- Chinese menu: 10 categories (`sort_order 0-9`), 52 items, `external_id is null`.
+- Japanese sushi menu: 8 categories (`sort_order 10-17`), 38 items,
+  `external_id` set (`menu-item-N@I`).
+Both are enabled and public. The older table (10 cats / 52 items) describes the
+Chinese catalogue alone — do not read it as the whole menu.
+
+**There is still no bulk import into the DB.** Two different scripts exist and
+neither is the right tool for a new sheet from the owner:
+- `scripts/import-menu.mjs` (sheet manifest) is **insert-only** and refuses to run
+  while `menu_items` has rows (it exits: "menu_items already holds 90 rows").
+  It keys on nothing, so it cannot update an existing dish.
+- `20260927070000_japanese_sushi_menu.sql` **is** idempotent: it upserts on
+  `menu_items.external_id`. It is the one safe re-runnable seed.
+
+**Uniqueness available for a safe upsert (verified live):**
+- `categories.slug` UNIQUE, `menu_items.slug` UNIQUE, `menu_items.external_id`
+  UNIQUE (plain unique index, so `ON CONFLICT` infers it).
+- `modifier_groups` and `modifier_options` have **only** a primary key — no
+  natural key. Re-syncing options needs a name match or a delete-and-recreate per
+  dish, or a sheet-supplied key added upstream.
+
+**Recommended path for "upload the Chinese menu + prices" (not yet built):**
+a Sheets/CSV importer that upserts `categories` by slug, then `menu_items` by
+slug (or by `external_id` when the sheet supplies one), then reconciles each
+dish's modifier groups by name. Preview the diff, then apply inside one
+transaction. A paste-to-server-action route that carries the service role is the
+wrong shape — keep service-role work in a script, capability-gated work in the
+admin action.
