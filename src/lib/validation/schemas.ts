@@ -417,7 +417,9 @@ export const restoreRequestSchema = z.object({
 export const aiProviderSchema = z.object({
   id: optionalUuid,
   name: z.string().trim().min(2, "Name is required").max(60),
-  kind: z.enum(["builtin", "openrouter", "cloudflare", "pollinations", "gemini", "anthropic", "openai_compatible"]).default("openai_compatible"),
+  kind: z
+    .enum(["builtin", "openrouter", "cloudflare", "pollinations", "gemini", "anthropic", "openai_compatible"])
+    .default("openai_compatible"),
   baseUrl: z.string().trim().url().nullable().optional().or(z.literal("").transform(() => null)),
   model: optionalText(120),
   secretRef: optionalText(120),

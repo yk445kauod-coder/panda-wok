@@ -178,10 +178,6 @@ function parseGemini(text: string): ParsedOk {
   };
 }
 
-function parsePollinations(text: string): ParsedOk {
-  return { text: text.trim(), promptTokens: null, completionTokens: null };
-}
-
 function parseCloudflare(text: string): ParsedOk {
   const raw = JSON.parse(text) as unknown;
   if (typeof raw === "string") return { text: raw.trim(), promptTokens: null, completionTokens: null };
@@ -326,17 +322,24 @@ export class RemoteProvider implements AiProvider {
       }
 
       case "pollinations": {
-        const { system, turns } = splitSystem(request);
-        const u = new URL(base || "https://text.pollinations.ai/");
-        u.searchParams.set("model", this.model);
-        u.searchParams.set("temperature", String(request.temperature));
-        u.searchParams.set("max_tokens", String(request.maxTokens));
-        if (system) u.searchParams.set("system", system);
+        // Pollinations' text API is OpenAI-compatible at `/openai` (verified
+        // live). The base URL is normalised to that route so a row that stores
+        // the bare host still works.
+        const root = (base || "https://text.pollinations.ai/openai").replace(/\/+$/, "");
+        const endpoint = /\/openai$/.test(root) ? `${root}/chat/completions` : `${root}/openai/chat/completions`;
         return {
-          endpoint: u.toString(),
-          headers: this.cfg.apiKey ? { authorization: `Bearer ${this.cfg.apiKey}` } : {},
-          body: { messages: turns },
-          parse: parsePollinations,
+          endpoint,
+          headers: {
+            "content-type": "application/json",
+            ...(this.cfg.apiKey ? { authorization: `Bearer ${this.cfg.apiKey}` } : {}),
+          },
+          body: {
+            model: this.model,
+            messages: request.messages,
+            temperature: request.temperature,
+            max_tokens: request.maxTokens,
+          },
+          parse: parseOpenAiLike,
         };
       }
 
@@ -659,42 +662,95 @@ export type AiRunResult = CompletionResult & {
 };
 
 /**
- * Runs the chain and reports the outcome. Errors from primary providers are
- * captured, not thrown, and the deterministic fallback answers instead.
+ * Runs the chain and reports the outcome. Every provider is tried in order —
+ * primary, then each fallback, then the deterministic floor — so one provider
+ * being down, rate-limited or over quota never surfaces to the customer as an
+ * error. Failures are collected into the returned `error` for the usage ledger
+ * but never thrown.
  */
 export async function runCompletion(
   chain: ProviderChain,
   request: CompletionRequest,
 ): Promise<AiRunResult> {
   const started = Date.now();
+  const attempts: AiProvider[] = [
+    ...(chain.primary ? [chain.primary] : []),
+    ...chain.fallbacks,
+  ];
 
-  if (chain.primary) {
+  const failures: string[] = [];
+  for (const provider of attempts) {
     try {
-      const result = await chain.primary.complete(request);
-      return { ...result, latencyMs: Date.now() - started, error: null };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "provider failed";
-      const fallback = await chain.fallback.complete(request);
+      const result = await provider.complete(request);
       return {
-        ...fallback,
+        ...result,
         latencyMs: Date.now() - started,
-        error: message,
+        // Keep a trace of what went wrong earlier, without failing the answer.
+        error: failures.length > 0 ? failures.join(" | ") : null,
       };
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : "provider failed");
     }
   }
 
+  // Nothing remote answered — answer deterministically, which is always correct
+  // and grounded, and report why in `error`.
   const result = await chain.fallback.complete(request);
-  return { ...result, latencyMs: Date.now() - started, error: null };
+  return {
+    ...result,
+    latencyMs: Date.now() - started,
+    error: failures.length > 0 ? failures.join(" | ") : null,
+  };
 }
 
 /* ------------------------------------------------------------------ */
 /* Database-driven providers (admin AI centre)                         */
 /* ------------------------------------------------------------------ */
 
-/** All provider kinds the admin may configure; every other kind was removed
- * from the app (the assistant only speaks Pollinations + Cloudflare Workers AI
+/** All provider kinds the admin may configure. Each maps to a wire shape in
+ * `RemoteProvider.buildSpec`, plus the keyless Workers AI binding.
  */
-export const DB_PROVIDER_KINDS = ["cloudflare", "pollinations", "openai_compatible"] as const;
+export const DB_PROVIDER_KINDS = [
+  "cloudflare",
+  "pollinations",
+  "openrouter",
+  "gemini",
+  "openai_compatible",
+] as const;
+
+/**
+ * Default model per remote kind, used when a row leaves `model` unset. These are
+ * free-tier models on purpose — the assistant's chain is meant to cost nothing.
+ * Verified live against each provider's model list on 2026-09-27; the earlier
+ * `gemini-2.0-flash` and `meta-llama/llama-3.3-70b-instruct:free` defaults had
+ * been retired and returned 404 / were absent, so they were replaced.
+ */
+const DEFAULT_MODEL_BY_KIND: Record<string, string> = {
+  openrouter: "nvidia/nemotron-3-super-120b-a12b:free",
+  gemini: "gemini-2.5-flash",
+  pollinations: "openai",
+  openai_compatible: "gpt-4o-mini",
+};
+
+/**
+ * Default base URL per remote kind. Pollinations' text API is OpenAI-compatible
+ * at `/openai`, so it rides the OpenAI wire shape rather than its own.
+ */
+const DEFAULT_BASE_URL_BY_KIND: Record<string, string> = {
+  openrouter: "https://openrouter.ai/api/v1",
+  pollinations: "https://text.pollinations.ai/openai",
+  gemini: "https://generativelanguage.googleapis.com/v1beta",
+};
+
+/** Kinds that cannot work without a credential. Every other kind may run on a
+ * public endpoint (pollinations) or the Worker's own binding (cloudflare). */
+const REQUIRES_KEY = new Set<string>(["openrouter", "gemini", "openai_compatible"]);
+
+/** Vault secret names the Cloudflare REST fallback reads by default. The keyless
+ * binding needs neither; these exist so Workers AI still works in an environment
+ * with no binding (e.g. plain local dev). */
+const CF_ACCOUNT_SECRET = "AI_CLOUDFLARE_ACCOUNT_ID";
+const CF_TOKEN_SECRET = "AI_CLOUDFLARE_API_TOKEN";
 
 /** Rows the runtime treats as configurable providers, plus an optional
  * detected Workers AI binding source. */
@@ -729,35 +785,65 @@ export async function resolveDbProvider(
   const kind = (row.kind ?? "openai_compatible") as string;
 
   if (kind === "cloudflare") {
+    // Preferred: the keyless Workers AI binding, which uses the Worker's own
+    // auth and needs no credential.
     const binding = opts.binding ?? (await getWorkersAiBinding());
-    if (!binding || typeof binding.ai !== "object" || binding.ai === null) return null;
+    if (binding && typeof binding.ai === "object" && binding.ai !== null) {
+      return new QuotaEnforcedProvider(
+        new CloudflareBindingProvider(binding.ai as never, {
+          model: row.model ?? null,
+          name: row.name,
+          envName: binding.envName,
+        }),
+        quota,
+      );
+    }
+
+    // Fallback: the same models over the REST API, which needs an account id and
+    // an API token. This is what makes Workers AI usable in plain `next dev`.
+    const accountId = await resolveSecretValue(CF_ACCOUNT_SECRET);
+    const apiToken = row.secret_ref
+      ? await resolveSecretValue(row.secret_ref)
+      : await resolveSecretValue(CF_TOKEN_SECRET);
+    const model = row.model ?? envBlock("cloudflare", "MODEL") ?? CF_BINDING_DEFAULT_MODEL;
+    if (!accountId || !apiToken || !model) return null;
+
     return new QuotaEnforcedProvider(
-      new CloudflareBindingProvider(binding.ai as never, {
-        model: row.model ?? null,
+      new RemoteProvider({
         name: row.name,
-        envName: binding.envName,
+        kind: "cloudflare",
+        model,
+        apiKey: apiToken,
+        baseUrl: `https://api.cloudflare.com/client/v4/accounts/${accountId}`,
       }),
       quota,
     );
   }
 
-  if (kind === "pollinations") {
-    const baseUrl = (row.base_url ?? envBlock("pollinations", "BASE_URL"))?.replace(/\/+$/, "");
+  // Every remaining kind is a plain HTTP provider. The wire shape is chosen by
+  // `kind`; base URL and model fall back to the kind's free-tier defaults, and
+  // the key is resolved from Vault (or the server env) via `secret_ref`.
+  if (DB_PROVIDER_KINDS.includes(kind as never)) {
     const apiKey = row.secret_ref ? await resolveSecretValue(row.secret_ref) : undefined;
-    const model = row.model ?? envBlock("pollinations", "MODEL") ?? "openai";
-    if (!baseUrl) return null;
-    return new QuotaEnforcedProvider(
-      new RemoteProvider({ name: row.name, kind: "pollinations", model, apiKey, baseUrl }),
-      quota,
-    );
-  }
+    if (REQUIRES_KEY.has(kind) && !apiKey) return null;
 
-  if (kind === "openai_compatible") {
-    const apiKey = row.secret_ref ? await resolveSecretValue(row.secret_ref) : undefined;
-    const baseUrl = row.base_url;
-    if (!apiKey || !baseUrl) return null;
+    const baseUrl =
+      row.base_url ??
+      envBlock(kind as AiProviderKind, "BASE_URL") ??
+      DEFAULT_BASE_URL_BY_KIND[kind] ??
+      null;
+    const model =
+      row.model ?? envBlock(kind as AiProviderKind, "MODEL") ?? DEFAULT_MODEL_BY_KIND[kind];
+    if (!model) return null;
+
     return new QuotaEnforcedProvider(
-      new RemoteProvider({ name: row.name, kind, model: row.model ?? "gpt-4o-mini", apiKey, baseUrl }),
+      new RemoteProvider({
+        name: row.name,
+        kind: kind as AiProviderKind,
+        model,
+        apiKey,
+        baseUrl: baseUrl ?? undefined,
+      }),
       quota,
     );
   }
@@ -765,10 +851,18 @@ export async function resolveDbProvider(
   return null;
 }
 
-/** Builds a chain where the primary+fallback come from ai_providers rows
- * (configured in the admin AI centre) —the binding is used when the top row
- * references "cloudflare" —and everything falls back to the deterministic
- * grounded floor, so the assistant never fabricates nor dies
+/**
+ * Builds the ordered provider chain from the `ai_providers` rows configured in
+ * the admin AI centre.
+ *
+ * Priority order is the contract: the lowest-priority enabled row that resolves
+ * to a working provider is the primary, and every other enabled row becomes an
+ * ordered fallback tried before the deterministic floor. `is_fallback` marks a
+ * row that may only ever answer when no non-fallback provider resolved, so a
+ * "last resort" row is never chosen as the primary while a real one exists.
+ *
+ * The deterministic provider is always the floor: an outage, an exhausted
+ * quota or a missing key degrades into a correct, database-grounded answer.
  */
 export async function buildDbProviderChain(
   selection: DbProviderSelection,
@@ -777,25 +871,38 @@ export async function buildDbProviderChain(
   const builtin = new DeterministicProvider(deterministicRender);
 
   const rows = selection.rows ?? ([] as DbProviderRow[]);
-  const enabledRows = rows.filter((r: DbProviderRow) => r.is_enabled).sort((a: DbProviderRow, b: DbProviderRow) => a.priority - b.priority);
+  const enabledRows = rows
+    .filter((r: DbProviderRow) => r.is_enabled)
+    .sort((a: DbProviderRow, b: DbProviderRow) => a.priority - b.priority);
 
   if (enabledRows.length === 0) {
     return { primary: null, fallbacks: [], fallback: builtin };
   }
 
+  // Resolve in priority order, keeping every provider that is actually usable.
+  // A row can fail to resolve (e.g. a cloudflare row with no Workers AI binding
+  // in this environment, or an openai_compatible row with no key); those are
+  // skipped rather than truncating the chain.
+  const resolved: { provider: AiProvider; isFallbackOnly: boolean }[] = [];
   for (const row of enabledRows) {
     const provider = await resolveDbProvider(row, { binding: selection.binding });
-    if (row.is_fallback && provider) continue;
-    if (provider) {
-      return { primary: provider, fallbacks: [], fallback: builtin };
-    }
+    if (provider) resolved.push({ provider, isFallbackOnly: row.is_fallback === true });
   }
 
-  for (const row of enabledRows.filter((r: DbProviderRow) => r.is_fallback)) {
-    const provider = await resolveDbProvider(row, { binding: selection.binding });
-    if (provider) {
-      return { primary: null, fallbacks: [provider], fallback: builtin };
-    }
+  const real = resolved.filter((r) => !r.isFallbackOnly);
+  const lastResort = resolved.filter((r) => r.isFallbackOnly);
+
+  if (real.length > 0) {
+    const [primary, ...rest] = real;
+    return {
+      primary: primary.provider,
+      fallbacks: [...rest.map((r) => r.provider), ...lastResort.map((r) => r.provider)],
+      fallback: builtin,
+    };
+  }
+
+  if (lastResort.length > 0) {
+    return { primary: null, fallbacks: lastResort.map((r) => r.provider), fallback: builtin };
   }
 
   return { primary: null, fallbacks: [], fallback: builtin };
