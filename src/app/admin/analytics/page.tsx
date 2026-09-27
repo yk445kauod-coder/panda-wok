@@ -13,6 +13,10 @@ import { getDashboardMetrics } from "@/lib/crm/insights";
 import { getFunnel } from "@/lib/crm/customers";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { TrendChart } from "@/components/charts/trend-chart";
+import { BarList } from "@/components/charts/bar-list";
+import { DonutChart } from "@/components/charts/donut-chart";
+import { GaugeChart } from "@/components/charts/gauge-chart";
 import { formatNumber, formatPrice, humanise } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
@@ -35,8 +39,6 @@ export default async function AdminAnalyticsPage() {
     { key: "checkoutUsers", label: "Started checkout", count: funnel.checkoutUsers },
     { key: "customers", label: "Placed an order", count: funnel.customers },
   ] as const;
-
-  const funnelTop = funnelStages[0]?.count ?? 0;
 
   return (
     <div className="space-y-6">
@@ -90,6 +92,23 @@ export default async function AdminAnalyticsPage() {
         />
       </section>
 
+      <section className="washi-panel p-4 sm:p-5" aria-label="Revenue trend">
+        <div className="mb-3">
+          <h2 className="font-display text-base font-semibold text-ink-900">
+            Revenue and orders over time
+          </h2>
+          <p className="text-xs text-ink-700/70">
+            Hover or tap a point for the exact figure.
+          </p>
+        </div>
+        <TrendChart
+          data={metrics.revenueByDay.map((d) => ({ label: d.day, value: d.revenue }))}
+          title="Revenue by day"
+          valueKind="currency"
+          height={240}
+        />
+      </section>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel
           title="Conversion funnel"
@@ -101,39 +120,18 @@ export default async function AdminAnalyticsPage() {
               customers browse.
             </p>
           ) : (
-            <ul className="space-y-2.5">
-              {funnelStages.map((stage, index) => {
+            <BarList
+              title="Conversion funnel"
+              height={Math.max(160, funnelStages.length * 40)}
+              data={funnelStages.map((stage, index) => {
                 const previous = funnelStages[index - 1]?.count;
-                const ofTop = funnelTop ? (stage.count / funnelTop) * 100 : 0;
                 const stepDrop =
                   previous && previous > 0
-                    ? Math.round((stage.count / previous) * 100)
-                    : null;
-                return (
-                  <li key={stage.key}>
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="text-ink-800">{stage.label}</span>
-                      <span className="flex items-center gap-2">
-                        <span className="tabular-nums text-ink-900">
-                          {formatNumber(stage.count)}
-                        </span>
-                        {stepDrop !== null ? (
-                          <span className="text-[11px] text-ink-700/60">
-                            {stepDrop}% of previous
-                          </span>
-                        ) : null}
-                      </span>
-                    </div>
-                    <div className="mt-1 h-2 overflow-hidden rounded-full bg-rice-200">
-                      <div
-                        className="h-full rounded-full bg-bamboo-500"
-                        style={{ width: `${Math.max(1, ofTop)}%` }}
-                      />
-                    </div>
-                  </li>
-                );
+                    ? `${Math.round((stage.count / previous) * 100)}% of previous`
+                    : undefined;
+                return { label: stage.label, value: stage.count, note: stepDrop };
               })}
-            </ul>
+            />
           )}
           <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-700/60">
             <Filter className="size-3" aria-hidden="true" />
@@ -155,25 +153,36 @@ export default async function AdminAnalyticsPage() {
           {metrics.topItems.length === 0 ? (
             <p className="text-sm text-ink-700/70">No dish sales yet.</p>
           ) : (
-            <ol className="divide-y divide-ink-900/8">
-              {metrics.topItems.slice(0, 8).map((item, index) => (
-                <li key={item.name} className="flex items-center gap-3 py-2">
-                  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-rice-200 text-xs font-semibold text-ink-800">
-                    {index + 1}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-ink-900">
-                    {item.name}
-                  </span>
-                  <span className="text-xs tabular-nums text-ink-700/70">
-                    {item.quantity} × · {formatPrice(item.revenue)}
-                  </span>
-                </li>
-              ))}
-            </ol>
+            <BarList
+              title="Popular dishes"
+              data={metrics.topItems.slice(0, 8).map((item) => ({
+                label: item.name,
+                value: item.quantity,
+                note: formatPrice(item.revenue),
+              }))}
+            />
           )}
         </Panel>
 
-        <div className="space-y-4">
+        <Panel title="Revenue by category" subtitle="Where the money comes from">
+          {metrics.categoryMix.length === 0 ? (
+            <p className="text-sm text-ink-700/70">No category sales yet.</p>
+          ) : (
+            <BarList
+              title="Revenue by category"
+              valueKind="currency"
+              data={metrics.categoryMix.slice(0, 8).map((row) => ({
+                label: row.category,
+                value: row.revenue,
+                note: `${row.quantity} sold`,
+              }))}
+            />
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-1">
           <Panel
             title="Loyalty"
             subtitle={`${formatNumber(metrics.loyalty.members)} members`}
@@ -198,15 +207,16 @@ export default async function AdminAnalyticsPage() {
               </div>
             </dl>
             {metrics.loyalty.activeTiers.length > 0 ? (
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {metrics.loyalty.activeTiers.map((tier) => (
-                  <li key={tier.tier}>
-                    <Badge tone="info">
-                      {humanise(tier.tier)} · {tier.count}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-3">
+                <DonutChart
+                  title="Loyalty members by tier"
+                  height={140}
+                  data={metrics.loyalty.activeTiers.map((tier) => ({
+                    label: humanise(tier.tier),
+                    value: tier.count,
+                  }))}
+                />
+              </div>
             ) : (
               <p className="mt-3 text-xs text-ink-700/60">No loyalty members yet.</p>
             )}
@@ -224,21 +234,50 @@ export default async function AdminAnalyticsPage() {
             {metrics.feedbackSummary.count === 0 ? (
               <p className="text-sm text-ink-700/70">No feedback in this window.</p>
             ) : (
-              <div className="flex items-baseline gap-2">
-                <Star className="size-5 text-miso-500" aria-hidden="true" />
-                <span className="text-2xl font-semibold tabular-nums text-ink-900">
-                  {metrics.feedbackSummary.averageRating.toFixed(1)}
-                </span>
-                <span className="text-sm text-ink-700/70">average rating</span>
-                {metrics.feedbackSummary.openCount > 0 ? (
-                  <Badge tone="warning" className="ml-auto">
-                    {metrics.feedbackSummary.openCount} open
-                  </Badge>
-                ) : (
-                  <Badge tone="success" className="ml-auto">
-                    All answered
-                  </Badge>
-                )}
+              <div className="flex flex-col items-center gap-4 sm:flex-row">
+                <GaugeChart
+                  value={metrics.feedbackSummary.averageRating}
+                  max={5}
+                  label={metrics.feedbackSummary.averageRating.toFixed(1)}
+                  sublabel="out of 5"
+                  colorIndex={1}
+                  size={140}
+                />
+                <div className="w-full">
+                  <ul className="space-y-1.5">
+                    {metrics.feedbackSummary.distribution.map((row) => {
+                      const share = metrics.feedbackSummary.count
+                        ? (row.count / metrics.feedbackSummary.count) * 100
+                        : 0;
+                      return (
+                        <li key={row.rating} className="flex items-center gap-2 text-xs">
+                          <span className="flex w-8 shrink-0 items-center gap-0.5 tabular-nums text-ink-700/75">
+                            {row.rating}
+                            <Star className="size-3 text-miso-500" aria-hidden="true" />
+                          </span>
+                          <span className="h-2 flex-1 overflow-hidden rounded-full bg-ink-900/8">
+                            <span
+                              className="block h-full rounded-full bg-miso-500"
+                              style={{ width: `${share}%` }}
+                            />
+                          </span>
+                          <span className="w-6 shrink-0 text-end tabular-nums text-ink-700/70">
+                            {row.count}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {metrics.feedbackSummary.openCount > 0 ? (
+                    <Badge tone="warning" className="mt-3">
+                      {metrics.feedbackSummary.openCount} awaiting a reply
+                    </Badge>
+                  ) : (
+                    <Badge tone="success" className="mt-3">
+                      All answered
+                    </Badge>
+                  )}
+                </div>
               </div>
             )}
           </Panel>
@@ -277,14 +316,6 @@ export default async function AdminAnalyticsPage() {
           </Panel>
         </div>
       </div>
-
-      <Panel title="Revenue by day" subtitle="Daily takings across the window">
-        {metrics.revenueByDay.length === 0 ? (
-          <p className="text-sm text-ink-700/70">No revenue recorded in this window.</p>
-        ) : (
-          <RevenueBars data={metrics.revenueByDay} />
-        )}
-      </Panel>
     </div>
   );
 }
@@ -378,39 +409,5 @@ function CategoryMix({
         </li>
       ))}
     </ul>
-  );
-}
-
-function RevenueBars({
-  data,
-}: {
-  data: { day: string; revenue: number; orders: number }[];
-}) {
-  const max = Math.max(...data.map((point) => point.revenue), 1);
-
-  return (
-    <div>
-      <div className="flex h-32 items-end gap-1" role="img" aria-label="Revenue by day">
-        {data.map((point) => (
-          <div
-            key={point.day}
-            className="group relative flex-1"
-            title={`${point.day}: ${formatPrice(point.revenue)} across ${point.orders} order${
-              point.orders === 1 ? "" : "s"
-            }`}
-          >
-            <div
-              className="w-full rounded-t bg-miso-500/70 transition-colors group-hover:bg-miso-600"
-              style={{ height: `${Math.max(2, (point.revenue / max) * 100)}%` }}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="mt-1 flex justify-between text-[10px] text-ink-700/55">
-        <span>{data[0]?.day}</span>
-        <span>peak {formatPrice(max)}</span>
-        <span>{data.at(-1)?.day}</span>
-      </div>
-    </div>
   );
 }
