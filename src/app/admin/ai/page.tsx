@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { RunStatusBadge } from "@/components/admin/run-status";
 import { formatDateTime, formatNumber, humanise } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminAiPage() {
   await requireCapability("ai.manage");
 
+  const t = await getT(await getAdminLocale());
   const [providers, prompts, usage, recent, secrets] = await Promise.all([
     listAiProviders(),
     listAiPrompts(),
@@ -44,31 +46,29 @@ export default async function AdminAiPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">AI centre</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.ai.title")}</h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            The assistant and CRM insights always answer from the live database. A
-            configured model only rephrases those facts — it is never the source of truth.
+            {t("admin.pages.ai.description")}
           </p>
         </div>
         <Badge tone={configured ? "success" : "info"}>
-          {configured ? "External provider configured" : "Deterministic mode"}
+          {configured ? t("admin.pages.ai.configured") : t("admin.pages.ai.deterministic")}
         </Badge>
       </header>
 
       <section className="washi-panel p-4" aria-label="Provider chain">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-ink-900">
           <ShieldCheck className="size-4 text-jade-600" aria-hidden="true" />
-          Provider chain
+          {t("admin.pages.ai.chain")}
         </h2>
         <p className="mt-1 text-sm text-ink-700/75">
-          Requests always resolve in this order. The deterministic provider cannot fail
-          and cannot invent a dish, price or availability — it renders only database rows.
+          {t("admin.pages.ai.chainHint")}
         </p>
 
         <ol className="mt-4 grid gap-3 lg:grid-cols-3">
           <ChainStep
             step="1"
-            title="Primary"
+            title={t("admin.pages.ai.primaryTitle")}
             tone="indigo"
             name={
               enabledProvider
@@ -86,7 +86,7 @@ export default async function AdminAiPage() {
           />
           <ChainStep
             step="2"
-            title="Fallback"
+            title={t("admin.pages.ai.fallbackTitle")}
             tone="info"
             name={
               fallbackProvider
@@ -98,12 +98,13 @@ export default async function AdminAiPage() {
           />
           <ChainStep
             step="3"
-            title="Safe deterministic fallback"
+            title={t("admin.pages.ai.safeTitle")}
             tone="success"
             name="menu-grounded-rules"
             emptyLabel=""
             note="Always available. Answers from menu, pricing and setting rows only."
             always
+            alwaysLabel={t("admin.pages.ai.alwaysOn")}
           />
         </ol>
       </section>
@@ -114,7 +115,7 @@ export default async function AdminAiPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-semibold text-ink-900">
-              Usage, last 30 days
+              {t("admin.pages.ai.usage")}
             </h2>
             <p className="text-xs text-ink-700/70">
               Counted from real AI request rows. With no external provider these are
@@ -148,7 +149,7 @@ export default async function AdminAiPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="washi-panel p-4" aria-label="Providers">
-          <h2 className="font-display text-lg font-semibold text-ink-900">Providers</h2>
+          <h2 className="font-display text-lg font-semibold text-ink-900">{t("admin.pages.ai.providers")}</h2>
           <p className="mt-1 flex items-start gap-1.5 text-xs text-ink-700/70">
             <KeyRound className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
             Only the environment variable name is stored. API keys are never written to the
@@ -158,8 +159,8 @@ export default async function AdminAiPage() {
           {providers.length === 0 ? (
             <EmptyState
               className="mt-3"
-              title="No providers registered"
-              description="Register a provider to record which model backs the assistant, or leave it empty to run deterministically."
+              title={t("admin.pages.ai.noProviders")}
+              description={t("admin.pages.ai.noProvidersBody")}
             />
           ) : (
             <ul className="mt-3 divide-y divide-ink-900/8">
@@ -169,9 +170,9 @@ export default async function AdminAiPage() {
                     <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-ink-900">
                       {provider.name}
                       {provider.is_enabled ? (
-                        <Badge tone="success">Enabled</Badge>
+                        <Badge tone="success">{t("admin.pages.ai.enabled")}</Badge>
                       ) : (
-                        <Badge tone="neutral">Disabled</Badge>
+                        <Badge tone="neutral">{t("admin.pages.ai.disabled")}</Badge>
                       )}
                       {provider.is_fallback ? <Badge tone="info">Fallback</Badge> : null}
                     </p>
@@ -212,7 +213,7 @@ export default async function AdminAiPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="washi-panel p-4" aria-label="System instructions">
           <h2 className="font-display text-lg font-semibold text-ink-900">
-            System instructions
+            {t("admin.pages.ai.prompts")}
           </h2>
           <p className="mt-1 text-xs text-ink-700/70">
             Editable prompts keyed by surface. An inactive prompt is ignored and the built-in
@@ -222,8 +223,8 @@ export default async function AdminAiPage() {
           {prompts.length === 0 ? (
             <EmptyState
               className="mt-3"
-              title="No custom prompts"
-              description="The assistant runs on its built-in, strictly grounded instruction until you add one."
+              title={t("admin.pages.ai.noPrompts")}
+              description={t("admin.pages.ai.noPromptsBody")}
             />
           ) : (
             <ul className="mt-3 space-y-3">
@@ -234,9 +235,9 @@ export default async function AdminAiPage() {
                       {prompt.key}
                     </code>
                     {prompt.is_active ? (
-                      <Badge tone="success">Active</Badge>
+                      <Badge tone="success">{t("admin.pages.ai.active")}</Badge>
                     ) : (
-                      <Badge tone="neutral">Inactive</Badge>
+                      <Badge tone="neutral">{t("admin.pages.ai.inactive")}</Badge>
                     )}
                     <span className="text-xs text-ink-700/60">
                       temp {Number(prompt.temperature)} · max {prompt.max_tokens} tokens
@@ -293,7 +294,7 @@ export default async function AdminAiPage() {
       <section className="washi-panel p-4" aria-label="Knowledge sources">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-ink-900">
           <Database className="size-4 text-ink-700/70" aria-hidden="true" />
-          Knowledge sources
+          {t("admin.pages.ai.sources")}
         </h2>
         <p className="mt-1 text-sm text-ink-700/75">
           The assistant is grounded in the live database: menu, categories, prices,
@@ -344,6 +345,7 @@ function ChainStep({
   note,
   tone,
   always = false,
+  alwaysLabel = "Always on",
 }: {
   step: string;
   title: string;
@@ -352,6 +354,7 @@ function ChainStep({
   note: string;
   tone: "indigo" | "info" | "success";
   always?: boolean;
+  alwaysLabel?: string;
 }) {
   return (
     <li className="rounded-xl border border-ink-900/10 bg-rice-50 p-3">
@@ -360,7 +363,7 @@ function ChainStep({
           {step}
         </span>
         <span className="text-sm font-medium text-ink-900">{title}</span>
-        {always ? <Badge tone={tone}>Always on</Badge> : null}
+        {always ? <Badge tone={tone}>{alwaysLabel}</Badge> : null}
       </div>
       <p className="mt-2 text-sm text-ink-900">
         {name ?? <span className="text-ink-700/60">{emptyLabel}</span>}

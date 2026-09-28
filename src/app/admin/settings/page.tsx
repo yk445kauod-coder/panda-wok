@@ -8,6 +8,7 @@ import {
 } from "@/components/admin/settings-forms";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatNumber } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminSettingsPage() {
   await requireCapability("settings.manage");
 
+  const t = await getT(await getAdminLocale());
   const [flags, settings] = await Promise.all([listFeatureFlags(), listSettings()]);
 
   const flagRows = flags as unknown as FeatureFlagRow[];
@@ -28,33 +30,30 @@ export default async function AdminSettingsPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold text-ink-900">Settings</h1>
+        <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.settings.title")}</h1>
         <p className="mt-1 text-sm text-ink-700/80">
-          Feature flags and business rules. Changes take effect on the next request — no
-          deploy needed.
+          {t("admin.pages.settings.description")}
         </p>
       </header>
 
-      <section aria-label="Feature flags">
+      <section aria-label={t("admin.pages.settings.flags")}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-display text-lg font-semibold text-ink-900">
             Feature flags{" "}
             <span className="text-sm font-normal text-ink-700/60">
-              ({formatNumber(enabledFlags)} of {formatNumber(flagRows.length)} on)
+              ({formatNumber(enabledFlags)} of {formatNumber(flagRows.length)} {t("admin.pages.settings.on")})
             </span>
           </h2>
         </div>
 
         <p className="mb-3 text-sm text-ink-700/80">
-          Turning a module off hides it from customer navigation and stops its customer-facing
-          surface — it degrades gracefully rather than breaking a page. Staff tooling and
-          existing data stay intact, so it can be switched back on at any time.
+          {t("admin.pages.settings.flagsHint")}
         </p>
 
         {flagRows.length === 0 ? (
           <EmptyState
-            title="No feature flags defined"
-            description="Flags are seeded with the platform. If this is empty, the database has not been seeded yet."
+            title={t("admin.pages.settings.noFlags")}
+            description={t("admin.pages.settings.noFlagsBody")}
           />
         ) : (
           <ul className="space-y-2">
@@ -67,7 +66,7 @@ export default async function AdminSettingsPage() {
 
       <section aria-label="Business settings">
         <h2 className="mb-3 font-display text-lg font-semibold text-ink-900">
-          Business settings
+          {t("admin.pages.settings.business")}
         </h2>
 
         <p className="mb-3 text-sm text-ink-700/80">
@@ -95,8 +94,8 @@ export default async function AdminSettingsPage() {
 
         {settingRows.length === 0 ? (
           <EmptyState
-            title="No settings found"
-            description="Business settings are seeded with the platform. If this is empty, the database has not been seeded yet."
+            title={t("admin.pages.settings.noSettings")}
+            description={t("admin.pages.settings.noSettingsBody")}
           />
         ) : (
           <SettingsForm settings={settingRows} />

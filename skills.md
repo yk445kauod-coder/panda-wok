@@ -52,3 +52,7 @@ so every line must earn its place. Add a skill only when it changes behaviour.
 - A roll is one menu item; 4 Pieces and 8 Pieces are selectable options, not separate dishes.
 - Quote the exact option price from the live menu. If a customer does not specify a piece count, ask which option they want rather than guessing.
 - Preserve the selected piece-count option when discussing or confirming an order; do not describe it as a second roll item.
+
+## Admin page localization (2026-09-28)
+
+The locale switcher now changes the main admin page content, not only the shell. Orders, menu CMS, stock, CRM, loyalty, settings, offers, upselling, content, analytics and the AI centre use `admin.pages.*`; operational status labels use `admin.term.*`. Keep new admin copy in both `src/lib/i18n/dictionaries/en.ts` and `ar.ts`, and use `getT(getAdminLocale())` in server pages or `useT()` in client components.

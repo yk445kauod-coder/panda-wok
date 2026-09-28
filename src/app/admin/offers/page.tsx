@@ -5,6 +5,7 @@ import { OfferForm } from "@/components/admin/offer-form";
 import { OfferList } from "@/components/admin/offer-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatNumber } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function AdminOffersPage({
   searchParams: Promise<{ edit?: string }>;
 }) {
   await requireCapability("menu.manage");
+  const t = await getT(await getAdminLocale());
   const params = await searchParams;
 
   const offers = await listOffers();
@@ -33,10 +35,9 @@ export default async function AdminOffersPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Offers</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.offers.title")}</h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            Automatic discounts applied at checkout when a basket reaches a value
-            you set — for example 50 off any order over 200.
+            {t("admin.pages.offers.description")}
           </p>
         </div>
         {params.edit ? (
@@ -44,30 +45,27 @@ export default async function AdminOffersPage({
             href="/admin/offers"
             className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
           >
-            New offer
+            {t("admin.pages.offers.new")}
           </Link>
         ) : null}
       </header>
 
       <p className="washi-panel p-3 text-sm text-ink-800">
-        Only one offer applies per order: the one that saves the customer the most.
-        Stacking them would let a basket discount below cost, so think of these as
-        competing alternatives rather than add-ons. Nothing here is shown to
-        customers until you create it — there are no default promotions.
+        {t("admin.pages.offers.notice")}
       </p>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <section
           className="washi-panel p-4"
-          aria-label={editing ? "Edit offer" : "Create an offer"}
+          aria-label={editing ? t("admin.pages.offers.edit") : t("admin.pages.offers.add")}
         >
           <h2 className="font-display text-lg font-semibold text-ink-900">
-            {editing ? `Edit ${editing.name_en}` : "Add an offer"}
+            {editing ? `${t("admin.pages.offers.edit")} ${editing.name_en}` : t("admin.pages.offers.add")}
           </h2>
           <p className="mt-1 text-sm text-ink-700/75">
             {editing
-              ? "Change the amount, the threshold or the name, then save."
-              : "Set how much comes off and the basket value that unlocks it."}
+              ? t("admin.pages.offers.editHint")
+              : t("admin.pages.offers.addHint")}
           </p>
           <div className="mt-4">
             <OfferForm offer={editing} />
@@ -89,8 +87,8 @@ export default async function AdminOffersPage({
 
           {offers.length === 0 ? (
             <EmptyState
-              title="No offers yet"
-              description="Create one to give customers a reason to reach a higher basket — for example 50 off orders over 200. It applies at checkout as soon as you save it."
+              title={t("admin.pages.offers.empty")}
+              description={t("admin.pages.offers.emptyBody")}
             />
           ) : (
             <OfferList offers={offers} />

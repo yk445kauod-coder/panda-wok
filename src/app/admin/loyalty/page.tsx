@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AdjustPointsForm } from "@/components/admin/customer-controls";
 import { formatDateTime, formatNumber, humanise } from "@/lib/utils/format";
 import type { Database } from "@/lib/types/database";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function AdminLoyaltyPage({
   searchParams: Promise<{ edit?: string }>;
 }) {
   await requireCapability("loyalty.manage");
+  const t = await getT(await getAdminLocale());
   const params = await searchParams;
 
   const supabase = await createServerSupabase();
@@ -75,38 +77,37 @@ export default async function AdminLoyaltyPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Loyalty</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.loyalty.title")}</h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            Points, tiers and rewards. Earning rules are settings, not constants, so the
-            programme can be retuned without a deployment.
+            {t("admin.pages.loyalty.description")}
           </p>
         </div>
-        <Badge tone="indigo">{formatNumber(pointsOutstanding)} points outstanding</Badge>
+        <Badge tone="indigo">{formatNumber(pointsOutstanding)} {t("admin.pages.loyalty.pointsOutstanding")}</Badge>
       </header>
 
-      <section aria-label="Loyalty summary" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Members" value={formatNumber(members)} hint="Accounts with a loyalty ledger" />
+      <section aria-label={t("admin.pages.loyalty.summary")} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label={t("admin.pages.loyalty.members")} value={formatNumber(members)} hint={t("admin.pages.loyalty.accounts")} />
         <Stat
-          label="Points outstanding"
+          label={t("admin.pages.loyalty.pointsOutstanding")}
           value={formatNumber(pointsOutstanding)}
-          hint="Owed to customers right now"
+          hint={t("admin.pages.loyalty.owed")}
         />
-        <Stat label="Lifetime points issued" value={formatNumber(lifetimeIssued)} />
+        <Stat label={t("admin.pages.loyalty.lifetime")} value={formatNumber(lifetimeIssued)} />
         <Stat
-          label="Members holding points"
+          label={t("admin.pages.loyalty.holding")}
           value={formatNumber(memberSegment?.count ?? redeemable.length)}
-          hint="Able to redeem today"
+          hint={t("admin.pages.loyalty.redeem")}
         />
       </section>
 
       <section className="washi-panel p-4" aria-label="Tiers">
-        <h2 className="font-display text-lg font-semibold text-ink-900">Tiers</h2>
+        <h2 className="font-display text-lg font-semibold text-ink-900">{t("admin.pages.loyalty.tiers")}</h2>
         <p className="mt-1 text-xs text-ink-700/70">
-          Tier thresholds are read from the loyalty settings below.
+          {t("admin.pages.loyalty.tierHint")}
         </p>
 
         {members === 0 ? (
-          <p className="mt-3 text-sm text-ink-700/70">No loyalty members yet.</p>
+          <p className="mt-3 text-sm text-ink-700/70">{t("admin.pages.loyalty.noMembers")}</p>
         ) : (
           <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {(["bronze", "silver", "gold", "platinum"] as LoyaltyTier[]).map((tier) => (
@@ -115,7 +116,7 @@ export default async function AdminLoyaltyPage({
                 <p className="mt-0.5 font-display text-xl font-semibold tabular-nums text-ink-900">
                   {formatNumber(tierCounts[tier] ?? 0)}
                 </p>
-                <p className="text-xs text-ink-700/65">members</p>
+                <p className="text-xs text-ink-700/65">{t("admin.pages.loyalty.memberUnit")}</p>
               </li>
             ))}
           </ul>
@@ -160,15 +161,15 @@ export default async function AdminLoyaltyPage({
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="washi-panel p-4" aria-label="Rewards">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="font-display text-lg font-semibold text-ink-900">Rewards</h2>
+            <h2 className="font-display text-lg font-semibold text-ink-900">{t("admin.pages.loyalty.rewards")}</h2>
             <Badge tone="neutral">{rewards.length}</Badge>
           </div>
 
           {rewards.length === 0 ? (
             <EmptyState
               className="mt-3"
-              title="No rewards configured"
-              description="Add a reward below so customers have something to redeem their points for."
+              title={t("admin.pages.loyalty.noRewards")}
+              description={t("admin.pages.loyalty.noRewardsBody")}
             />
           ) : (
             <ul className="mt-3 space-y-2">
@@ -182,9 +183,9 @@ export default async function AdminLoyaltyPage({
                       </span>
                     ) : null}
                     {reward.is_enabled ? (
-                      <Badge tone="success">Enabled</Badge>
+                      <Badge tone="success">{t("admin.pages.loyalty.enabled")}</Badge>
                     ) : (
-                      <Badge tone="neutral">Disabled</Badge>
+                      <Badge tone="neutral">{t("admin.pages.loyalty.disabled")}</Badge>
                     )}
                     <Badge tone="indigo">{formatNumber(reward.points_cost)} pts</Badge>
                   </div>

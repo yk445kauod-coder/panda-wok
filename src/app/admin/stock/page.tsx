@@ -9,6 +9,7 @@ import { StockItemForm, StockMovementForm } from "@/components/admin/stock-forms
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn, formatNumber, formatRelative, humanise } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export default async function AdminStockPage({
   searchParams: Promise<{ edit?: string }>;
 }) {
   await requireCapability("stock.manage");
+  const t = await getT(await getAdminLocale());
   const params = await searchParams;
 
   const [items, movements] = await Promise.all([
@@ -66,10 +68,9 @@ export default async function AdminStockPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Stock</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.stock.title")}</h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            Counts update from supplier deliveries, kitchen usage and stock takes. Every
-            change is logged below.
+            {t("admin.pages.stock.description")}
           </p>
         </div>
         {params.edit ? (
@@ -77,25 +78,25 @@ export default async function AdminStockPage({
             href="/admin/stock"
             className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
           >
-            Add new item
+            {t("admin.pages.stock.add")}
           </Link>
         ) : null}
       </header>
 
-      <section aria-label="Stock summary" className="grid gap-3 sm:grid-cols-3">
+      <section aria-label={t("admin.pages.stock.summary")} className="grid gap-3 sm:grid-cols-3">
         <div className="washi-panel p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-ink-700/60">OK</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums text-jade-600">
             {formatNumber(counts.ok)}
           </p>
-          <p className="text-xs text-ink-700/70">Above the reorder threshold</p>
+          <p className="text-xs text-ink-700/70">{t("admin.pages.stock.above")}</p>
         </div>
         <div className="washi-panel p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-ink-700/60">Low</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums text-miso-600">
             {formatNumber(counts.low)}
           </p>
-          <p className="text-xs text-ink-700/70">At or below threshold</p>
+          <p className="text-xs text-ink-700/70">{t("admin.pages.stock.atOrBelow")}</p>
         </div>
         <div className="washi-panel p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-ink-700/60">
@@ -104,11 +105,11 @@ export default async function AdminStockPage({
           <p className="mt-1 text-2xl font-semibold tabular-nums text-chili-600">
             {formatNumber(counts.out)}
           </p>
-          <p className="text-xs text-ink-700/70">Linked dishes may be hidden</p>
+          <p className="text-xs text-ink-700/70">{t("admin.pages.stock.hidden")}</p>
         </div>
       </section>
 
-      <section aria-label="Stock items">
+      <section aria-label={t("admin.pages.stock.items")}>
         <h2 className="mb-3 font-display text-lg font-semibold text-ink-900">
           Items{" "}
           <span className="text-sm font-normal text-ink-700/60">
@@ -118,8 +119,8 @@ export default async function AdminStockPage({
 
         {items.length === 0 ? (
           <EmptyState
-            title="No stock items yet"
-            description="Add the ingredients and consumables you track — for example chicken thigh, jasmine rice or chilli oil."
+            title={t("admin.pages.stock.empty")}
+            description={t("admin.pages.stock.emptyBody")}
           />
         ) : (
           <ul className="space-y-2">
@@ -147,7 +148,7 @@ export default async function AdminStockPage({
                         ) : null}
                         <Badge tone={tone}>{humanise(item.status)}</Badge>
                         {item.auto_link_availability ? (
-                          <Badge tone="info">Auto links dishes</Badge>
+                          <Badge tone="info">{t("admin.pages.stock.auto")}</Badge>
                         ) : null}
                       </div>
 
@@ -180,7 +181,7 @@ export default async function AdminStockPage({
                       href={`/admin/stock?edit=${item.id}`}
                       className="inline-flex h-9 shrink-0 items-center rounded-lg border border-ink-900/15 bg-rice-50/70 px-3 text-sm font-medium text-ink-900 hover:bg-rice-100"
                     >
-                      Edit
+                      {t("admin.pages.stock.edit")}
                     </Link>
                   </div>
                 </li>
@@ -193,10 +194,10 @@ export default async function AdminStockPage({
       <div className="grid gap-6 lg:grid-cols-2">
         <section
           className="washi-panel p-4"
-          aria-label={editing ? "Edit stock item" : "Add a stock item"}
+          aria-label={editing ? t("admin.pages.stock.editItem") : t("admin.pages.stock.addItem")}
         >
           <h2 className="font-display text-lg font-semibold text-ink-900">
-            {editing ? `Edit ${editing.name_en}` : "Add a stock item"}
+            {editing ? `${t("admin.pages.stock.edit")} ${editing.name_en}` : t("admin.pages.stock.addItem")}
           </h2>
           <p className="mt-1 text-sm text-ink-700/75">
             {editing
@@ -210,7 +211,7 @@ export default async function AdminStockPage({
 
         <section className="washi-panel p-4" aria-label="Record a stock movement">
           <h2 className="font-display text-lg font-semibold text-ink-900">
-            Record a movement
+            {t("admin.pages.stock.movement")}
           </h2>
           <p className="mt-1 text-sm text-ink-700/75">
             Stock in, stock out or an adjustment. A movement can automatically make linked
@@ -223,14 +224,14 @@ export default async function AdminStockPage({
         </section>
       </div>
 
-      <section aria-label="Recent stock movements">
+      <section aria-label={t("admin.pages.stock.recent")}>
         <h2 className="mb-3 font-display text-lg font-semibold text-ink-900">
-          Recent movements
+          {t("admin.pages.stock.recent")}
         </h2>
 
         {recentMovements.length === 0 ? (
           <EmptyState
-            title="No movements recorded"
+            title={t("admin.pages.stock.noMovements")}
             description="Movements appear here as soon as deliveries, usage or stock takes are logged."
           />
         ) : (

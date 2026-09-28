@@ -6,7 +6,6 @@ import {
   listAdminOrders,
 } from "@/lib/services/admin-orders";
 import type { OrderStatus } from "@/lib/services/admin-orders";
-import { ORDER_STATUS_LABELS } from "@/lib/services/order-status";
 import { Badge, Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
@@ -17,20 +16,21 @@ import {
 } from "@/components/ui/pagination";
 import { OrderStatusControl } from "@/components/admin/order-status-control";
 import { LiveOrdersFeed } from "@/components/admin/live-refresh";
-import { formatDateTime, formatPrice, humanise } from "@/lib/utils/format";
+import { formatDateTime, formatPrice } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
-const TABS: { key: OrderStatus | "active" | "all"; label: string }[] = [
-  { key: "active", label: "Active" },
-  { key: "new", label: "New" },
-  { key: "in_progress", label: "In progress" },
-  { key: "prepared", label: "Prepared" },
-  { key: "out_for_delivery", label: "Out for delivery" },
-  { key: "finished", label: "Finished" },
-  { key: "canceled", label: "Canceled" },
-  { key: "all", label: "All" },
+const TABS: { key: OrderStatus | "active" | "all" }[] = [
+  { key: "active" },
+  { key: "new" },
+  { key: "in_progress" },
+  { key: "prepared" },
+  { key: "out_for_delivery" },
+  { key: "finished" },
+  { key: "canceled" },
+  { key: "all" },
 ];
 
 export default async function AdminOrdersPage({
@@ -40,6 +40,7 @@ export default async function AdminOrdersPage({
 }) {
   await requireCapability("orders.view");
 
+  const t = await getT(await getAdminLocale());
   const params = await searchParams;
   const requested = params.status ?? "active";
   const status = TABS.some((tab) => tab.key === requested)
@@ -59,9 +60,9 @@ export default async function AdminOrdersPage({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Operations"
-        title="Orders"
-        description="Every status change is recorded with who made it and when."
+        eyebrow={t("admin.pages.orders.eyebrow")}
+        title={t("admin.pages.orders.title")}
+        description={t("admin.pages.orders.description")}
         actions={<LiveOrdersFeed />}
       />
 
@@ -69,7 +70,7 @@ export default async function AdminOrdersPage({
         <input type="hidden" name="status" value={status} />
         <div className="min-w-56 flex-1">
           <label htmlFor="order-search" className="block text-xs font-medium text-ink-800">
-            Order number
+            {t("admin.pages.orders.searchLabel")}
           </label>
           <input
             id="order-search"
@@ -80,19 +81,19 @@ export default async function AdminOrdersPage({
           />
         </div>
         <Button type="submit" size="md">
-          Search
+          {t("admin.pages.orders.search")}
         </Button>
         {params.q ? (
           <Link
             href={`/admin/orders?status=${status}`}
             className="inline-flex h-11 items-center rounded-xl border border-ink-900/15 px-4 text-sm text-ink-800 hover:bg-rice-200"
           >
-            Clear
+            {t("admin.pages.orders.clear")}
           </Link>
         ) : null}
       </form>
 
-      <nav aria-label="Filter by status" className="flex gap-2 overflow-x-auto pb-1">
+      <nav aria-label={t("admin.pages.orders.filter")} className="flex gap-2 overflow-x-auto pb-1">
         {TABS.map((tab) => {
           const count = counts[tab.key] ?? 0;
           const active = tab.key === status;
@@ -108,7 +109,7 @@ export default async function AdminOrdersPage({
                   : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
               )}
             >
-              {tab.label}
+              {tab.key === "active" ? t("admin.pages.orders.active") : tab.key === "all" ? t("admin.pages.orders.all") : t(`admin.term.orderStatus.${tab.key}`)}
               <span
                 className={cn(
                   "tabular-nums",
@@ -124,11 +125,11 @@ export default async function AdminOrdersPage({
 
       {orders.length === 0 ? (
         <EmptyState
-          title={params.q ? "No order matches that number" : "Nothing in this queue"}
+          title={params.q ? t("admin.pages.orders.emptySearch") : t("admin.pages.orders.empty")}
           description={
             params.q
-              ? "Check the number, or clear the search to see the whole queue."
-              : "Orders appear here the moment a customer confirms one."
+              ? t("admin.pages.orders.emptySearchBody")
+              : t("admin.pages.orders.emptyBody")
           }
         />
       ) : (
@@ -157,10 +158,10 @@ export default async function AdminOrdersPage({
                               : "info"
                       }
                     >
-                      {ORDER_STATUS_LABELS[order.status]}
+                      {t(`admin.term.orderStatus.${order.status}`)}
                     </Badge>
                     {order.payment_status !== "paid" ? (
-                      <Badge tone="warning">{humanise(order.payment_status)}</Badge>
+                      <Badge tone="warning">{t(`admin.term.paymentStatus.${order.payment_status}`)}</Badge>
                     ) : null}
                   </div>
 
@@ -179,8 +180,8 @@ export default async function AdminOrdersPage({
                   ) : null}
 
                   <p className="mt-1.5 text-xs text-ink-700/65">
-                    {formatDateTime(order.created_at)} · {humanise(order.fulfillment)} ·{" "}
-                    {humanise(order.payment_method)}
+                    {formatDateTime(order.created_at)} · {t(`admin.term.fulfilment.${order.fulfillment}`)} ·{" "}
+                    {t(`admin.term.paymentMethod.${order.payment_method}`)}
                   </p>
                 </div>
 
@@ -193,7 +194,7 @@ export default async function AdminOrdersPage({
                     href={`/admin/orders/${order.id}`}
                     className="text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
                   >
-                    Open order
+                    {t("admin.pages.orders.open")}
                   </Link>
                 </div>
               </div>

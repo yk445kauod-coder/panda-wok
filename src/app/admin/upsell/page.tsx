@@ -9,6 +9,7 @@ import { UpsellRuleForm } from "@/components/admin/upsell-form";
 import { UpsellRuleList } from "@/components/admin/upsell-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatNumber } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function AdminUpsellPage({
   searchParams: Promise<{ edit?: string }>;
 }) {
   await requireCapability("menu.manage");
+  const t = await getT(await getAdminLocale());
   const params = await searchParams;
 
   const [rules, items, categories] = await Promise.all([
@@ -57,10 +59,9 @@ export default async function AdminUpsellPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Upselling</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.upsell.title")}</h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            Rules decide what to suggest when a basket matches a category or a specific
-            dish. Suggestions are shown in the cart and at checkout.
+            {t("admin.pages.upsell.description")}
           </p>
         </div>
         {params.edit ? (
@@ -68,24 +69,22 @@ export default async function AdminUpsellPage({
             href="/admin/upsell"
             className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
           >
-            New rule
+            {t("admin.pages.upsell.new")}
           </Link>
         ) : null}
       </header>
 
       <p className="washi-panel p-3 text-sm text-ink-800">
-        Keep upselling light. One well-chosen add-on — a drink with a spicy wok dish, a side
-        with a main — reads as helpful. Several prompts on the same basket feel pushy and
-        depress repeat orders, so leave only a couple of active rules per trigger.
+        {t("admin.pages.upsell.notice")}
       </p>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <section
           className="washi-panel p-4"
-          aria-label={editing ? "Edit upsell rule" : "Create an upsell rule"}
+          aria-label={editing ? t("admin.pages.upsell.edit") : t("admin.pages.upsell.add")}
         >
           <h2 className="font-display text-lg font-semibold text-ink-900">
-            {editing ? `Edit ${editing.name}` : "Add a rule"}
+            {editing ? `${t("admin.pages.upsell.edit")} ${editing.name}` : t("admin.pages.upsell.add")}
           </h2>
           <p className="mt-1 text-sm text-ink-700/75">
             {editing
@@ -116,8 +115,8 @@ export default async function AdminUpsellPage({
 
           {rules.length === 0 ? (
             <EmptyState
-              title="No upsell rules yet"
-              description="Create one to offer a drink with a spicy dish, or a side with a main. Start with a single rule and measure before adding more."
+              title={t("admin.pages.upsell.empty")}
+              description={t("admin.pages.upsell.emptyBody")}
             />
           ) : (
             <UpsellRuleList rules={rules} lookup={lookup} />

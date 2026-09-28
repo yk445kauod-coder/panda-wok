@@ -89,7 +89,7 @@ Verified against the live database, not just the code:
 ## Codebase map (2026-09-23)
 
 - Customer app: src/app/(site)/* — home, menu, dish, cart, checkout, orders, tracking, account, loyalty, feedback, contact, about.
-- i18n: ALL customer pages run through `src/lib/i18n/` — `dictionaries/en.ts` + `dictionaries/ar.ts` (single source of truth for strings), `server.ts` (`getLocale`/`getT`), `config.ts` (`Locale`), `translate.ts`, `catalog.ts`, `orders.ts`, `loyalty.ts` (`tierLabel`). RTL handled by `dir=rtl` on `<html>` + Tailwind logical props (`text-end`, `ms-`, `me-`, `start/end`). Server components call `getT(locale)`; client components use `useT()` from `i18n-provider`. Localised customer pages so far: menu, dish, cart, checkout, orders+detail, account+addresses, feedback, loyalty. Admin is intentionally English-only.
+- i18n: ALL customer pages run through `src/lib/i18n/` — `dictionaries/en.ts` + `dictionaries/ar.ts` (single source of truth for strings), `server.ts` (`getLocale`/`getT`), `config.ts` (`Locale`), `translate.ts`, `catalog.ts`, `orders.ts`, `loyalty.ts` (`tierLabel`). RTL handled by `dir=rtl` on `<html>` + Tailwind logical props (`text-end`, `ms-`, `me-`, `start/end`). Server components call `getT(locale)`; client components use `useT()` from `i18n-provider`. Localised customer pages so far: menu, dish, cart, checkout, orders+detail, account+addresses, feedback, loyalty. Admin uses the shared i18n dictionary; page copy and operational labels must go through `admin.pages.*`, `admin.term.*` or `admin.common.*`.
 - Admin/CRM: src/app/admin/* — dashboard, orders, kitchen, users, CRM, segments, loyalty, feedback, broadcast, messages, AI centre, analytics, stock, upsell, menu CMS, settings, backups, exports. Guarded by src/middleware.ts (role-based), non-indexable.
 - Auth: src/app/auth/* + supabase SSR session via src/lib/supabase/*
 - Server actions = the API layer for mutations: src/lib/actions/* (there is NO src/lib/server-actions dir)
@@ -688,7 +688,7 @@ customer picks a point, the address fills in for confirmation.
 
 
 
-- Admin language switcher: AdminShell (client) now imports useI18n and mounts <LanguageSwitcher current={locale} variant="compact"/> on the mobile top bar and the desktop sidebar - the console follows the cookie like the customer app. Admin UI strings remain English by design.
+- Admin language switcher: AdminShell (client) now imports useI18n and mounts <LanguageSwitcher current={locale} variant="compact"/> on the mobile top bar and the desktop sidebar - the console follows the cookie like the customer app. Admin UI page copy now follows the shared locale cookie; new screens must use the `admin.*` dictionary instead of hardcoded visible English.
 
 
 
@@ -1463,3 +1463,7 @@ admin action.
 - `supabase/migrations/20260928000100_roll_piece_options.sql` consolidates the six duplicated raw sushi roll pairs into one `menu_items` row per roll with a required `Piece count` modifier group and 4/8-piece options. It preserves the existing live prices (including Philadelphia 215/410 EGP) as a base price plus option delta; it does not invent the example price 419.
 - The customer cart already snapshots modifiers into checkout payloads and order items. `src/components/customer/cart-provider.tsx` now keys quantity/removal operations by the full item-plus-modifier identity, so 4-piece and 8-piece selections cannot be merged accidentally.
 - AI grounding now includes every live modifier option and its resolved price in `src/lib/ai/grounding.ts`; `skills.md` records the assistant rule to ask for piece count when missing and quote the exact live option price.
+
+## Admin page localization (2026-09-28)
+
+The locale switcher now changes the main admin page content, not only the shell. Orders, menu CMS, stock, CRM, loyalty, settings, offers, upselling, content, analytics and the AI centre use `admin.pages.*`; operational status labels use `admin.term.*`. Keep new admin copy in both `src/lib/i18n/dictionaries/en.ts` and `ar.ts`, and use `getT(getAdminLocale())` in server pages or `useT()` in client components.

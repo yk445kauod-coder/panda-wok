@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils/format";
+import { useT } from "@/components/i18n-provider";
 
 /**
  * Keeps an ops board live. Subscribes to every order status change and new
@@ -20,6 +21,7 @@ export function LiveOrdersFeed({
   pollSeconds?: number;
 }) {
   const router = useRouter();
+  const t = useT();
   const [live, setLive] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastSync, setLastSync] = useState<number>(() => Date.now());
@@ -86,12 +88,12 @@ export function LiveOrdersFeed({
             live ? "animate-pulse-soft bg-jade-500" : "bg-miso-500",
           )}
         />
-        {live ? label : `Polling every ${pollSeconds}s`}
+        {live ? label : `${t("admin.pages.orders.polling")} ${pollSeconds}${t("admin.pages.orders.seconds")}`}
       </p>
       <button
         type="button"
         onClick={refresh}
-        aria-label="Refresh now"
+        aria-label={t("admin.pages.orders.refresh")}
         className="grid size-8 place-items-center rounded-lg border border-ink-900/12 text-ink-700 hover:bg-rice-100"
       >
         <RefreshCw

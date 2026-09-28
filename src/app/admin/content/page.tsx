@@ -19,6 +19,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatNumber } from "@/lib/utils/format";
 import { contentTablesReady } from "@/lib/actions/content-health";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -39,16 +40,17 @@ export default async function AdminContentPage({
   }>;
 }) {
   await requireCapability("settings.manage");
+  const t = await getT(await getAdminLocale());
   const params = await searchParams;
 
   const ready = await contentTablesReady();
   if (!ready) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-ink-900">Content</h1>
+        <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.content.title")}</h1>
         <EmptyState
-          title="Content tables are not available"
-          description="The content migration has not been applied to this environment. Apply pending migrations, then reload this page."
+          title={t("admin.pages.content.noTables")}
+          description={t("admin.pages.content.noTablesBody")}
         />
       </div>
     );
@@ -80,10 +82,9 @@ export default async function AdminContentPage({
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Content</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.content.title")}</h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            The words and delivery rules customers see. Edits go live on the next
-            request.
+            {t("admin.pages.content.description")}
           </p>
         </div>
         {editing ? (
@@ -91,15 +92,13 @@ export default async function AdminContentPage({
             href="/admin/content"
             className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
           >
-            New item
+            {t("admin.pages.content.new")}
           </Link>
         ) : null}
       </header>
 
       <p className="washi-panel p-3 text-sm text-ink-800">
-        English and Arabic are stored separately. If a page has no Arabic row it falls
-        back to the English copy rather than showing a blank section, so add the
-        translation when you can and the site stays whole in the meantime.
+        {t("admin.pages.content.notice")}
       </p>
 
       {/* ------------------------------------------------------- page copy */}
@@ -131,8 +130,8 @@ export default async function AdminContentPage({
           <div>
             {sections.length === 0 ? (
               <EmptyState
-                title="No sections yet"
-                description="The site keeps its built-in copy until you add a section, so an empty table is not an error."
+                title={t("admin.pages.content.noSections")}
+                description={t("admin.pages.content.noSectionsBody")}
               />
             ) : (
               <PageContentList rows={sections} />
@@ -166,8 +165,8 @@ export default async function AdminContentPage({
           <div>
             {faqs.length === 0 ? (
               <EmptyState
-                title="No FAQs yet"
-                description="Add the handful of questions customers actually ask — delivery, allergens, payment."
+                title={t("admin.pages.content.noFaqs")}
+                description={t("admin.pages.content.noFaqsBody")}
               />
             ) : (
               <FaqList rows={faqs} />
@@ -201,8 +200,8 @@ export default async function AdminContentPage({
           <div>
             {zones.length === 0 ? (
               <EmptyState
-                title="No zones yet"
-                description="Add a zone to document which neighbourhoods you serve and at what fee."
+                title={t("admin.pages.content.noZones")}
+                description={t("admin.pages.content.noZonesBody")}
               />
             ) : (
               <DeliveryZoneList rows={zones} />
@@ -236,8 +235,8 @@ export default async function AdminContentPage({
           <div>
             {announcements.length === 0 ? (
               <EmptyState
-                title="No announcements"
-                description="Nothing is scheduled. Add one when there is something customers need to know."
+                title={t("admin.pages.content.noAnnouncements")}
+                description={t("admin.pages.content.noAnnouncementsBody")}
               />
             ) : (
               <AnnouncementList rows={announcements} />

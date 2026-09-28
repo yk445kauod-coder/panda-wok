@@ -18,6 +18,7 @@ import { BarList } from "@/components/charts/bar-list";
 import { DonutChart } from "@/components/charts/donut-chart";
 import { GaugeChart } from "@/components/charts/gauge-chart";
 import { formatNumber, formatPrice, humanise } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminAnalyticsPage() {
   await requireCapability("analytics.view");
 
+  const t = await getT(await getAdminLocale());
   const [metrics, funnel] = await Promise.all([getDashboardMetrics(30), getFunnel(30)]);
 
   const hasOrders = metrics.ordersInWindow > 0;
@@ -44,44 +46,43 @@ export default async function AdminAnalyticsPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Analytics</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.analytics.title")}</h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            The last {metrics.windowDays} days. Only aggregated behaviour and orders are
-            measured — no personal profile is built from browsing.
+            {t("admin.pages.analytics.description", { days: metrics.windowDays })}
           </p>
         </div>
-        <Badge tone="neutral">Privacy-conscious aggregate reporting</Badge>
+        <Badge tone="neutral">{t("admin.pages.analytics.privacy")}</Badge>
       </header>
 
       {!hasOrders ? (
         <EmptyState
-          title="No orders in this window"
-          description="Figures stay at zero until real orders arrive. Nothing on this page is estimated or invented."
+          title={t("admin.pages.analytics.noOrders")}
+          description={t("admin.pages.analytics.noOrdersBody")}
         />
       ) : null}
 
-      <section aria-label="Headline figures" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={t("admin.pages.analytics.headline")} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Figure
           icon={<Receipt className="size-4" />}
-          label="Orders today"
+          label={t("admin.pages.analytics.ordersToday")}
           value={formatNumber(metrics.ordersToday)}
           hint={`${formatNumber(metrics.ordersInWindow)} in the window`}
         />
         <Figure
           icon={<Coins className="size-4" />}
-          label="Revenue"
+          label={t("admin.pages.analytics.revenue")}
           value={formatPrice(metrics.revenueInWindow)}
           hint={`Cash collected ${formatPrice(metrics.cashCollected)}`}
         />
         <Figure
           icon={<Users className="size-4" />}
-          label="Average order value"
+          label={t("admin.pages.analytics.avgValue")}
           value={formatPrice(metrics.avgOrderValue)}
           hint={`${formatNumber(metrics.newCustomers)} new · ${formatNumber(metrics.returningCustomers)} returning`}
         />
         <Figure
           icon={<AlertTriangle className="size-4" />}
-          label="Canceled orders"
+          label={t("admin.pages.analytics.canceled")}
           value={formatNumber(metrics.canceledOrders)}
           hint={
             metrics.ordersInWindow > 0
@@ -95,15 +96,15 @@ export default async function AdminAnalyticsPage() {
       <section className="washi-panel p-4 sm:p-5" aria-label="Revenue trend">
         <div className="mb-3">
           <h2 className="font-display text-base font-semibold text-ink-900">
-            Revenue and orders over time
+            {t("admin.pages.analytics.trend")}
           </h2>
           <p className="text-xs text-ink-700/70">
-            Hover or tap a point for the exact figure.
+            {t("admin.pages.analytics.exact")}
           </p>
         </div>
         <TrendChart
           data={metrics.revenueByDay.map((d) => ({ label: d.day, value: d.revenue }))}
-          title="Revenue by day"
+          title={t("admin.pages.analytics.trend")}
           valueKind="currency"
           height={240}
         />
@@ -111,8 +112,8 @@ export default async function AdminAnalyticsPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel
-          title="Conversion funnel"
-          subtitle="Distinct sessions at each stage, last 30 days"
+          title={t("admin.pages.analytics.funnel")}
+          subtitle={t("admin.pages.analytics.funnelSubtitle")}
         >
           {funnel.visitors === 0 && funnel.customers === 0 ? (
             <p className="text-sm text-ink-700/70">
@@ -121,7 +122,7 @@ export default async function AdminAnalyticsPage() {
             </p>
           ) : (
             <BarList
-              title="Conversion funnel"
+              title={t("admin.pages.analytics.funnel")}
               height={Math.max(160, funnelStages.length * 40)}
               data={funnelStages.map((stage, index) => {
                 const previous = funnelStages[index - 1]?.count;
@@ -139,9 +140,9 @@ export default async function AdminAnalyticsPage() {
           </p>
         </Panel>
 
-        <Panel title="Orders by category" subtitle="Quantity sold in the window">
+        <Panel title={t("admin.pages.analytics.categories")} subtitle={t("admin.pages.analytics.categorySubtitle")}>
           {metrics.topItems.length === 0 ? (
-            <p className="text-sm text-ink-700/70">No dish sales yet.</p>
+            <p className="text-sm text-ink-700/70">{t("admin.pages.analytics.noDishSales")}</p>
           ) : (
             <CategoryMix items={metrics.topItems} />
           )}
@@ -149,12 +150,12 @@ export default async function AdminAnalyticsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Popular dishes" subtitle="Best sellers by quantity">
+        <Panel title={t("admin.pages.analytics.popular")} subtitle={t("admin.pages.analytics.popularSubtitle")}>
           {metrics.topItems.length === 0 ? (
-            <p className="text-sm text-ink-700/70">No dish sales yet.</p>
+            <p className="text-sm text-ink-700/70">{t("admin.pages.analytics.noDishSales")}</p>
           ) : (
             <BarList
-              title="Popular dishes"
+              title={t("admin.pages.analytics.popular")}
               data={metrics.topItems.slice(0, 8).map((item) => ({
                 label: item.name,
                 value: item.quantity,
@@ -164,12 +165,12 @@ export default async function AdminAnalyticsPage() {
           )}
         </Panel>
 
-        <Panel title="Revenue by category" subtitle="Where the money comes from">
+        <Panel title={t("admin.pages.analytics.revenueCategory")} subtitle={t("admin.pages.analytics.revenueSubtitle")}>
           {metrics.categoryMix.length === 0 ? (
-            <p className="text-sm text-ink-700/70">No category sales yet.</p>
+            <p className="text-sm text-ink-700/70">{t("admin.pages.analytics.noCategorySales")}</p>
           ) : (
             <BarList
-              title="Revenue by category"
+              title={t("admin.pages.analytics.revenueCategory")}
               valueKind="currency"
               data={metrics.categoryMix.slice(0, 8).map((row) => ({
                 label: row.category,
@@ -184,23 +185,23 @@ export default async function AdminAnalyticsPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-1">
           <Panel
-            title="Loyalty"
+            title={t("admin.pages.analytics.loyalty")}
             subtitle={`${formatNumber(metrics.loyalty.members)} members`}
             action={
               <Link href="/admin/loyalty" className="text-xs font-medium text-vermilion-600">
-                Manage
+                {t("admin.pages.analytics.manage")}
               </Link>
             }
           >
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <dt className="text-xs text-ink-700/70">Points outstanding</dt>
+                <dt className="text-xs text-ink-700/70">{t("admin.pages.analytics.points")}</dt>
                 <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink-900">
                   {formatNumber(metrics.loyalty.pointsOutstanding)}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-ink-700/70">Cash collected</dt>
+                <dt className="text-xs text-ink-700/70">{t("admin.pages.analytics.cash")}</dt>
                 <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink-900">
                   {formatPrice(metrics.cashCollected)}
                 </dd>
@@ -209,7 +210,7 @@ export default async function AdminAnalyticsPage() {
             {metrics.loyalty.activeTiers.length > 0 ? (
               <div className="mt-3">
                 <DonutChart
-                  title="Loyalty members by tier"
+                  title={t("admin.pages.analytics.tierChart")}
                   height={140}
                   data={metrics.loyalty.activeTiers.map((tier) => ({
                     label: humanise(tier.tier),
@@ -218,21 +219,21 @@ export default async function AdminAnalyticsPage() {
                 />
               </div>
             ) : (
-              <p className="mt-3 text-xs text-ink-700/60">No loyalty members yet.</p>
+              <p className="mt-3 text-xs text-ink-700/60">{t("admin.pages.analytics.noLoyaltyMembers")}</p>
             )}
           </Panel>
 
           <Panel
-            title="Feedback"
+            title={t("admin.pages.analytics.feedback")}
             subtitle={`${metrics.feedbackSummary.count} responses`}
             action={
               <Link href="/admin/feedback" className="text-xs font-medium text-vermilion-600">
-                Open inbox
+                {t("admin.pages.analytics.openInbox")}
               </Link>
             }
           >
             {metrics.feedbackSummary.count === 0 ? (
-              <p className="text-sm text-ink-700/70">No feedback in this window.</p>
+              <p className="text-sm text-ink-700/70">{t("admin.pages.analytics.noFeedback")}</p>
             ) : (
               <div className="flex flex-col items-center gap-4 sm:flex-row">
                 <GaugeChart
@@ -283,11 +284,11 @@ export default async function AdminAnalyticsPage() {
           </Panel>
 
           <Panel
-            title="Stock warnings"
+            title={t("admin.pages.analytics.stock")}
             subtitle={`${metrics.stockWarnings.length} need attention`}
             action={
               <Link href="/admin/stock" className="text-xs font-medium text-vermilion-600">
-                Manage stock
+                {t("admin.pages.analytics.manageStock")}
               </Link>
             }
           >

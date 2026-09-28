@@ -9,6 +9,7 @@ import {
 import { MenuItemForm } from "@/components/admin/menu-item-form";
 import { MenuItemRow, HiddenNotice } from "@/components/admin/menu-item-row";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function AdminMenuPage({
   searchParams: Promise<{ edit?: string }>;
 }) {
   await requireCapability("menu.manage");
+  const t = await getT(await getAdminLocale());
   const params = await searchParams;
 
   const [categories, items] = await Promise.all([
@@ -49,10 +51,9 @@ export default async function AdminMenuPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Menu CMS</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.menu.title")}</h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            Changes here update the public menu, its metadata and its structured data
-            immediately.
+            {t("admin.pages.menu.description")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -61,35 +62,35 @@ export default async function AdminMenuPage({
               href="/admin/menu"
               className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
             >
-              New dish
+              {t("admin.pages.menu.new")}
             </Link>
           ) : null}
           <Link
             href="/admin/categories"
             className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
           >
-            Manage categories
+            {t("admin.pages.menu.categories")}
           </Link>
         </div>
       </header>
 
-      <section className="washi-panel p-4" aria-label={editing ? "Edit dish" : "Create a dish"}>
+      <section className="washi-panel p-4" aria-label={editing ? t("admin.pages.menu.edit") : t("admin.pages.menu.create")}>
         <h2 className="font-display text-lg font-semibold text-ink-900">
-          {editing ? `Edit ${editing.name_en}` : "Add a dish"}
+          {editing ? `${t("admin.pages.menu.edit")} ${editing.name_en}` : t("admin.pages.menu.add")}
         </h2>
         <p className="mt-1 text-sm text-ink-700/75">
           {categories.length === 0
             ? "Create a category first — every dish belongs to one."
             : editing
-              ? "Update any field and save. The public page picks it up on the next request."
-              : "Fill in at least the English name, slug, category and price."}
+              ? t("admin.pages.menu.update")
+              : t("admin.pages.menu.fill")}
         </p>
 
         <div className="mt-4">
           {categories.length === 0 ? (
             <EmptyState
-              title="No categories yet"
-              description="A dish must belong to a category. Create one, then come back here."
+              title={t("admin.pages.menu.noCategories")}
+              description={t("admin.pages.menu.noCategoriesBody")}
               action={
                 <Link href="/admin/categories" className="text-sm font-medium text-vermilion-600">
                   Create a category
@@ -120,14 +121,14 @@ export default async function AdminMenuPage({
             href="/admin/categories"
             className="text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
           >
-            Reorder categories
+            {t("admin.pages.menu.reorder")}
           </Link>
         </div>
 
         {items.length === 0 ? (
           <EmptyState
-            title="The menu is empty"
-            description="Add your first dish above. It will appear on the public menu straight away."
+            title={t("admin.pages.menu.empty")}
+            description={t("admin.pages.menu.emptyBody")}
           />
         ) : (
           <div className="space-y-5">
@@ -172,7 +173,7 @@ export default async function AdminMenuPage({
             {orphans.length > 0 ? (
               <div>
                 <h3 className="pt-2 font-display text-base font-semibold text-ink-900">
-                  Uncategorised
+                  {t("admin.pages.menu.uncategorised")}
                 </h3>
                 <ul className="mt-2 space-y-2">
                   {orphans.map((item) => (
