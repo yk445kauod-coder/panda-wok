@@ -142,7 +142,7 @@ export function CartView({
                   <button
                     type="button"
                     onClick={() => {
-                      setQuantity(line.menuItemId, line.quantity - 1);
+                      setQuantity(line, line.quantity - 1);
                     }}
                     aria-label={t("cart.reduceQuantity", { name: line.name })}
                     className="grid size-9 place-items-center text-ink-800"
@@ -155,7 +155,7 @@ export function CartView({
                   <button
                     type="button"
                     onClick={() => {
-                      setQuantity(line.menuItemId, line.quantity + 1);
+                      setQuantity(line, line.quantity + 1);
                     }}
                     disabled={line.quantity >= Math.min(line.maxQuantity || 20, 20)}
                     aria-label={t("cart.increaseQuantity", { name: line.name })}
@@ -168,7 +168,7 @@ export function CartView({
                 <button
                   type="button"
                   onClick={() => {
-                    remove(line.menuItemId);
+                    remove(line);
                   }}
                   className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-chili-600 hover:bg-chili-500/8"
                 >

@@ -46,6 +46,7 @@ export type GroundingSnapshot = {
     containsNuts: boolean;
     allergens: string[];
     calories: number | null;
+    options: { group: string; name: string; nameAr: string | null; price: number }[];
   }[];
   rewards: { name: string; pointsCost: number; description: string | null }[];
   loyalty: { pointsPerCurrency: number; pointValue: number };
@@ -119,6 +120,14 @@ export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
       containsNuts: item.contains_nuts,
       allergens: item.allergens ?? [],
       calories: item.calories,
+      options: (item.modifier_groups ?? []).flatMap((group) =>
+        (group.modifier_options ?? []).map((option) => ({
+          group: group.name_en,
+          name: option.name_en,
+          nameAr: option.name_ar,
+          price: Number(item.price) + Number(option.price_delta),
+        })),
+      ),
     })),
     rewards: rewards.map((r) => ({
       name: r.name_en,
@@ -221,7 +230,10 @@ export function renderSnapshot(snapshot: GroundingSnapshot): string {
       lines.push(
         `  ${item.name} (${item.slug}) — ${item.price} EGP — ${flags.join(", ")}` +
           (item.allergens.length > 0 ? ` — allergens: ${item.allergens.join(", ")}` : "") +
-          (item.description ? ` — ${item.description}` : ""),
+          (item.description ? ` — ${item.description}` : "") +
+          (item.options.length > 0
+            ? ` — options: ${item.options.map((option) => `${option.group}: ${option.name} = ${option.price} EGP`).join("; ")}`
+            : ""),
       );
     }
   }

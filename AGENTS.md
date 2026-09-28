@@ -1456,3 +1456,10 @@ dish's modifier groups by name. Preview the diff, then apply inside one
 transaction. A paste-to-server-action route that carries the service role is the
 wrong shape — keep service-role work in a script, capability-gated work in the
 admin action.
+
+
+## Roll piece-count consolidation (2026-09-28)
+
+- `supabase/migrations/20260928000100_roll_piece_options.sql` consolidates the six duplicated raw sushi roll pairs into one `menu_items` row per roll with a required `Piece count` modifier group and 4/8-piece options. It preserves the existing live prices (including Philadelphia 215/410 EGP) as a base price plus option delta; it does not invent the example price 419.
+- The customer cart already snapshots modifiers into checkout payloads and order items. `src/components/customer/cart-provider.tsx` now keys quantity/removal operations by the full item-plus-modifier identity, so 4-piece and 8-piece selections cannot be merged accidentally.
+- AI grounding now includes every live modifier option and its resolved price in `src/lib/ai/grounding.ts`; `skills.md` records the assistant rule to ask for piece count when missing and quote the exact live option price.

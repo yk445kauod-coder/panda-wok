@@ -65,7 +65,9 @@ export type MenuItem = Pick<
   | "seo_title"
   | "seo_description"
   | "seo_keywords"
->;
+> & {
+  modifier_groups?: ModifierGroupWithOptions[];
+};
 
 export type MenuItemWithCategory = MenuItem & {
   categories: Pick<CategoryRow, "id" | "name_en" | "name_ar" | "slug" | "sort_order"> | null;
@@ -94,6 +96,7 @@ const PUBLIC_CATEGORY_COLUMNS =
 
 const PUBLIC_ITEM_COLUMNS =
   "id, category_id, name_en, name_ar, slug, description_en, description_ar, price, compare_at_price, is_available, is_featured, is_spicy, is_vegetarian, is_vegan, contains_nuts, prep_minutes, calories, allergens, ingredients, image_url, image_alt, has_transparent_png, sort_order, seo_title, seo_description, seo_keywords";
+const PUBLIC_ITEM_WITH_MODIFIERS_COLUMNS = `${PUBLIC_ITEM_COLUMNS}, modifier_groups (id, menu_item_id, name_en, name_ar, min_select, max_select, is_required, sort_order, modifier_options (id, group_id, name_en, name_ar, price_delta, is_available, sort_order))`;
 
 /**
  * Public catalogue reads go through the anon/authenticated client so RLS is
@@ -120,7 +123,7 @@ export async function getPublicMenu(): Promise<{
     getPublicCategories(),
     supabase
       .from("menu_items")
-      .select(PUBLIC_ITEM_COLUMNS)
+      .select(PUBLIC_ITEM_WITH_MODIFIERS_COLUMNS)
       .eq("is_archived", false)
       .order("sort_order", { ascending: true }),
   ]);

@@ -35,6 +35,12 @@ function tokenise(text: string): string[] {
     .filter((t) => t.length > 2 && !STOP_WORDS.has(t));
 }
 
+function priceText(item: GroundingSnapshot["items"][number]): string {
+  return item.options.length > 0
+    ? item.options.map((option) => `${option.name}: ${option.price} EGP`).join(", ")
+    : `${item.price} EGP`;
+}
+
 /**
  * The deterministic answer. It is generated purely by matching the question
  * against live menu and settings data, so it can never state anything the
@@ -154,7 +160,7 @@ export function renderDeterministicAnswer(
         item.vegan ? "vegan" : item.vegetarian ? "vegetarian" : null,
       ].filter(Boolean);
       lines.push(
-        `${item.name} — ${item.price} EGP (${item.category})${flags.length ? `, ${flags.join(", ")}` : ""}. ${item.description ?? ""}`.trim(),
+        `${item.name} — ${priceText(item)} (${item.category})${flags.length ? `, ${flags.join(", ")}` : ""}. ${item.description ?? ""}`.trim(),
       );
       if (matchesAllergens && item.allergens.length > 0) {
         lines.push(`  Recorded allergens: ${item.allergens.join(", ")}.`);
@@ -173,7 +179,7 @@ export function renderDeterministicAnswer(
     const spicyItems = snapshot.items.filter((i) => i.spicy && i.available);
     lines.push(
       spicyItems.length > 0
-        ? `Spicy options include ${spicyItems.map((i) => `${i.name} (${i.price} EGP)`).join(", ")}.`
+        ? `Spicy options include ${spicyItems.map((i) => `${i.name} (${priceText(i)})`).join(", ")}.`
         : "We do not currently have any dish marked as spicy on the menu.",
     );
   }
@@ -182,7 +188,7 @@ export function renderDeterministicAnswer(
     const vegItems = snapshot.items.filter((i) => (i.vegetarian || i.vegan) && i.available);
     lines.push(
       vegItems.length > 0
-        ? `Vegetarian or vegan options include ${vegItems.map((i) => `${i.name} (${i.price} EGP)`).join(", ")}.`
+        ? `Vegetarian or vegan options include ${vegItems.map((i) => `${i.name} (${priceText(i)})`).join(", ")}.`
         : "We do not currently have any dish marked vegetarian on the menu.",
     );
   }
@@ -194,7 +200,7 @@ export function renderDeterministicAnswer(
       .slice(0, 3);
     if (cheapest.length > 0) {
       lines.push(
-        `Lighter spend options: ${cheapest.map((i) => `${i.name} at ${i.price} EGP`).join(", ")}.`,
+        `Lighter spend options: ${cheapest.map((i) => `${i.name} at ${priceText(i)}`).join(", ")}.`,
       );
     }
   }
@@ -209,7 +215,7 @@ export function renderDeterministicAnswer(
       if (featured.length > 0) {
         lines.push("");
         lines.push(
-          `If you want a starting point: ${featured.map((i) => `${i.name} at ${i.price} EGP`).join(" or ")}.`,
+          `If you want a starting point: ${featured.map((i) => `${i.name} at ${priceText(i)}`).join(" or ")}.`,
         );
       }
     }

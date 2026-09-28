@@ -45,3 +45,10 @@ so every line must earn its place. Add a skill only when it changes behaviour.
 - Never expose another customer's data. Memory is scoped per customer.
 - Service-role access stays server-side. No key ever reaches the browser.
 - Log decisions, not secrets: no tokens, passwords or personal data in logs.
+
+
+## Roll piece-count options (2026-09-28)
+
+- A roll is one menu item; 4 Pieces and 8 Pieces are selectable options, not separate dishes.
+- Quote the exact option price from the live menu. If a customer does not specify a piece count, ask which option they want rather than guessing.
+- Preserve the selected piece-count option when discussing or confirming an order; do not describe it as a second roll item.

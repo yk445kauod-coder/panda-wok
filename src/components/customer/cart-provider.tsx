@@ -30,8 +30,8 @@ type CartContextValue = {
   lines: CartLine[];
   hydrated: boolean;
   add: (line: Omit<CartLine, "quantity">, quantity?: number) => void;
-  setQuantity: (menuItemId: string, quantity: number) => void;
-  remove: (menuItemId: string) => void;
+  setQuantity: (line: CartLine, quantity: number) => void;
+  remove: (line: CartLine) => void;
   clear: () => void;
   subtotal: number;
   itemCount: number;
@@ -41,7 +41,7 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 /** Modifier selection is part of a line's identity: same dish, different extras. */
-function lineKey(menuItemId: string, modifiers: CartLine["modifiers"]) {
+export function cartLineKey(menuItemId: string, modifiers: CartLine["modifiers"]) {
   const ids = modifiers.map((m) => m.id).sort().join(",");
   return `${menuItemId}::${ids}`;
 }
@@ -100,9 +100,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const add = useCallback((line: Omit<CartLine, "quantity">, quantity = 1) => {
     setLines((current) => {
-      const key = lineKey(line.menuItemId, line.modifiers);
+      const key = cartLineKey(line.menuItemId, line.modifiers);
       const index = current.findIndex(
-        (l) => lineKey(l.menuItemId, l.modifiers) === key,
+        (l) => cartLineKey(l.menuItemId, l.modifiers) === key,
       );
       const cap = Math.min(line.maxQuantity || 20, 100);
       if (index >= 0) {
@@ -117,11 +117,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const setQuantity = useCallback((menuItemId: string, quantity: number) => {
+  const setQuantity = useCallback((target: CartLine, quantity: number) => {
+    const targetKey = cartLineKey(target.menuItemId, target.modifiers);
     setLines((current) =>
       current
         .map((line) =>
-          line.menuItemId === menuItemId
+          cartLineKey(line.menuItemId, line.modifiers) === targetKey
             ? {
                 ...line,
                 quantity: Math.max(
@@ -135,8 +136,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
-  const remove = useCallback((menuItemId: string) => {
-    setLines((current) => current.filter((l) => l.menuItemId !== menuItemId));
+  const remove = useCallback((target: CartLine) => {
+    const targetKey = cartLineKey(target.menuItemId, target.modifiers);
+    setLines((current) =>
+      current.filter((line) => cartLineKey(line.menuItemId, line.modifiers) !== targetKey),
+    );
   }, []);
 
   const clear = useCallback(() => setLines([]), []);
