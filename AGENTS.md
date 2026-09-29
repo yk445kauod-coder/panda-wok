@@ -2195,3 +2195,79 @@ new category's `name_ja` is left null on purpose — dropping the column is stil
 Deploy credentials are not in this environment (`CLOUDFLARE_API_TOKEN` absent), so
 the DB change is live immediately while this repo note ships with the next push.
 
+## The ops agent never called a single tool (2026-09-29)
+
+The agent looked healthy — it answered in Arabic, with numbers — while it had
+executed **zero** tools. The numbers were the model's own prose. Three
+independent defects, all silent:
+
+1. **`QuotaEnforcedProvider` did not declare `completeWithTools`.** The agent loop
+   probes the *wrapper* for that method (`supportsTools`), and the wrapper only
+   forwarded `complete`. So every provider in the chain reported "cannot call
+   tools", `nextTurn` sent no `tools` field, and the loop degraded to prose on the
+   first step. The wrapped `RemoteProvider` had the method the whole time. Fixed
+   by forwarding it (and declaring `toolCapable` through the wrapper), with the
+   quota floor answered as `{...floor, toolCalls: []}` so enforcement still holds.
+   **This is the class of bug no static check catches** — the method was optional
+   on the interface, so omitting it was valid TypeScript.
+
+2. **Cloudflare's REST reply was not unwrapped.** The API nests the completion
+   under `result`; handing the raw envelope to `parseToolTurnOpenAiLike` yields
+   zero calls and empty text — indistinguishable from a model that declined a
+   tool. Now unwrapped before parsing.
+
+3. **Gemini could not call tools at all**, yet `agentic` routing puts
+   `gemini-free` first. `completeWithTools` is declared on the shared remote class
+   for every kind, so Gemini *looked* capable and then threw. Two fixes: a real
+   `completeWithGeminiTools` (`functionDeclarations` in, `functionCall` parts
+   out), and an explicit `toolCapable` flag so `selectToolProvider` can skip a
+   provider that cannot do tools instead of discovering it one failed call at a
+   time. Gemini is tool-capable now, so the routed primary is used as intended.
+
+**`toolCapable` exists because probing the method is not enough.** The remote
+class declares `completeWithTools` for every kind; only the wire shape decides
+whether it works. Declare the capability, do not infer it.
+
+### The loop now walks the chain on a provider error
+A mid-loop provider failure used to `break` and discard the rest of the chain.
+It now shifts to the next provider once, and **clears `providerError` on a
+successful call** — otherwise a recovered answer rendered the "no model"
+notice. The step-budget return reports `active`, not the routed primary.
+
+### The agent's ops reads must not depend on a request
+`listStockItems` / `listOffers` are staff-RLS tables. Reading them through
+`createServerSupabase()` works on `/admin` only because the middleware sets
+`x-pw-path` and that function elevates — so the **scheduled report throws
+"`headers` was called outside a request scope"**, and the cron route (no
+`x-pw-path`) silently reads zero rows. Both look like "there is no data". They
+now go through `staffTableClient()` (service role, request client as fallback).
+Same reasoning as the deliverables note: a background agent has no request.
+
+### Verification
+`tests/agent-tool-calling.test.ts` (16, no network) pins the wrapper delegation,
+the `toolCapable` contract, `selectToolProvider` ordering, both parsers and the
+Cloudflare unwrap. `tests/agent-live.test.ts` (opt-in `AI_LIVE=1`) is the test
+that would have caught this: it asserts `steps.length > 0`, because an answer
+alone proves nothing — the model can write a confident sentence with no data.
+Verified live: chain picks `gemini-free`, the loop runs `menu_summary` →
+`orders_metrics` → `business_settings`, and the Arabic answer's figures are all
+grounded. 282 tests pass, lint 0 errors, build green.
+
+## Combo mix category (2026-09-29, owner request)
+
+`combo mix 48 pieces` now sits alone in its own `Combo mix` / `كومبو ميكس`
+category, ordered with the other combos. Applied live and committed as two
+migrations, both **additive and idempotent**:
+
+- `20260929215322_combo_mix_category.sql` — inserts the category if absent, then
+  repoints the one dish. Nothing deleted; `COMBO RAW` keeps its other four dishes
+  and both catalogues stay public.
+- `20260929215655_combo_mix_category_order.sql` — reordering only: `Combo mix`
+  moves to `sort_order` 16, after `COMBO RAW` (15), with `SALADS` (17) and
+  `Sauces` (18) shifting down. No name, price, dish or flag touched.
+
+Live result: 19 categories, 84 dishes, `combo-mix` at 16 holding exactly
+`combo-mix-48-pieces` (EGP 1540, available). Per the standing rule this is the
+owner's own instruction, so it was applied — the general prohibition on writing
+menu rows still holds for anything not explicitly requested.
+

@@ -4,8 +4,10 @@ import type { Capability } from "@/lib/auth/rbac";
 import {
   buildDbProviderChain,
   loadDbProviders,
+  providerSupportsTools,
   type AiProvider,
   type ChatMessage,
+  type ProviderChain,
 } from "@/lib/ai/provider";
 import {
   parseToolArguments,
@@ -109,7 +111,24 @@ const NO_MODEL_MESSAGE =
 
 /** Providers that can call tools natively; otherwise the model gets no tools. */
 function supportsTools(provider: AiProvider): boolean {
-  return typeof provider.completeWithTools === "function";
+  return providerSupportsTools(provider);
+}
+
+/**
+ * Picks the provider that should run the tool loop.
+ *
+ * The chain is ordered by the owner's routing, which may put a provider first
+ * that cannot do native tool calling (Gemini speaks a different envelope). This
+ * prefers the first tool-capable provider in the chain so the loop gets real
+ * tools, and only falls back to the routed primary when nothing in the chain
+ * can call tools — in which case `nextTurn` sends no tools and the answer is
+ * honest prose rather than a fabricated one.
+ */
+export function selectToolProvider(chain: ProviderChain): AiProvider {
+  const ordered = [chain.primary, ...chain.fallbacks].filter(
+    (p): p is AiProvider => p !== null,
+  );
+  return ordered.find((p) => supportsTools(p)) ?? chain.primary ?? chain.fallbacks[0] ?? chain.fallback;
 }
 
 /**
@@ -199,7 +218,12 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
     NO_MODEL_MESSAGE,
     "agentic",
   );
-  const provider = chain.primary ?? chain.fallbacks[0] ?? chain.fallback;
+  // The routed primary may be unable to call tools, so pick the first provider
+  // that can. Everything else in the chain stays reachable as a fallback.
+  const provider = selectToolProvider(chain);
+  const retryProviders = [chain.primary, ...chain.fallbacks].filter(
+    (p): p is AiProvider => p !== null && p !== provider,
+  );
 
   const steps: AgentStep[] = [];
   // Every payload a tool returned, kept so the final answer can be checked
@@ -207,19 +231,30 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
   // against, which is exactly why an answer must not be built from one.
   const observations: unknown[] = [];
   let providerError: string | null = null;
+  let active = provider;
 
   for (let step = 0; step < maxSteps; step += 1) {
     let turn: Awaited<ReturnType<typeof nextTurn>>;
     try {
-      turn = await nextTurn(provider, messages, tools, { temperature: 0.3, maxTokens: 900 });
+      turn = await nextTurn(active, messages, tools, { temperature: 0.3, maxTokens: 900 });
     } catch (error) {
-      // A provider hiccup mid-loop must not discard the work already done: stop
-      // and let the caller see the steps that succeeded. Record the failure so
-      // the answer can say the model was unreachable rather than imply the data
-      // was empty.
+      // A provider hiccup mid-loop must not discard the work already done. Walk
+      // the remaining providers once — a chain whose primary cannot do tool
+      // calling (or is down) still gets a usable answer from the next one —
+      // and only then stop, recording the failure so the answer can say the
+      // model was unreachable rather than imply the data was empty.
+      const next = retryProviders.shift();
+      if (next) {
+        providerError = error instanceof Error ? error.message : "model call failed";
+        active = next;
+        continue;
+      }
       providerError = error instanceof Error ? error.message : "model call failed";
       break;
     }
+    // The call succeeded, so any earlier failure was recovered by the fallback.
+    // Leaving it set would make a good answer render the "no model" notice.
+    providerError = null;
 
     if (turn.toolCalls.length === 0) {
       return {
@@ -350,12 +385,13 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
   }
 
   // Step budget exhausted: return what we have rather than pretending to finish.
+  // Report the provider that was actually answering, not the routed primary.
   return {
     answer: finaliseAnswer("", steps, observations, providerError),
     steps,
-    provider: provider.name,
-    model: provider.model,
-    fallback: provider.kind === "builtin",
+    provider: active.name,
+    model: active.model,
+    fallback: active.kind === "builtin",
     pendingApproval: steps.filter((s) => s.status === "pending_approval"),
   };
 }

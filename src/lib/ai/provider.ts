@@ -2,6 +2,7 @@ import "server-only";
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import {
+  parseToolArguments,
   parseToolTurnOpenAiLike,
   toOpenAiTool,
   type ToolSpec,
@@ -76,6 +77,17 @@ export interface AiProvider {
   readonly name: string;
   readonly model: string;
   readonly kind: "builtin" | "remote" | "bound";
+  /**
+   * Whether this provider's wire shape accepts the OpenAI `tools` field.
+   *
+   * `completeWithTools` alone is not a reliable signal: the method is declared
+   * on the shared remote class, so a Gemini provider exposes it and then throws
+   * because Gemini speaks a different envelope. Declaring the capability
+   * explicitly lets the agent loop choose a provider that will actually work
+   * instead of discovering the mismatch one failed call at a time. `undefined`
+   * means "not stated" and callers fall back to probing the method.
+   */
+  readonly toolCapable?: boolean;
   complete(request: CompletionRequest): Promise<CompletionResult>;
   /**
    * Completes a request that may call tools. Optional: a provider without
@@ -84,6 +96,19 @@ export interface AiProvider {
    * provider (including the deterministic floor) usable by the agent.
    */
   completeWithTools?(request: CompletionRequest): Promise<ToolCompletionResult>;
+}
+
+/**
+ * Whether a provider can drive the agent loop's native tool calling.
+ *
+ * Prefers the provider's own `toolCapable` declaration and falls back to
+ * probing the method for providers that do not state it. The fallback alone is
+ * not sufficient — the shared remote class declares `completeWithTools` for
+ * every kind, including Gemini, whose call then throws.
+ */
+export function providerSupportsTools(provider: AiProvider): boolean {
+  if (typeof provider.toolCapable === "boolean") return provider.toolCapable;
+  return typeof provider.completeWithTools === "function";
 }
 
 /** Rough token estimate used only for usage accounting when a provider omits it. */
@@ -177,6 +202,107 @@ export class RemoteRequestFailure extends Error {
     super(`Provider ${provider} responded ${status}${detail ? `: ${detail.slice(0, 200)}` : ""}`);
     this.name = "RemoteRequestFailure";
   }
+}
+/**
+ * Unwraps a Cloudflare REST response into the OpenAI-like body that
+ * `parseToolTurnOpenAiLike` expects.
+ *
+ * The REST API nests the chat completion under `result` and also mirrors the
+ * tool calls at `result.tool_calls`. Handing the raw envelope to the parser
+ * yields zero tool calls and empty text — indistinguishable from a model that
+ * chose not to use a tool — so the unwrap has to happen before parsing.
+ */
+function unwrapCloudflareTurn(raw: unknown): Record<string, unknown> {
+  const outer = raw as Record<string, unknown> | null;
+  const result = outer?.result;
+  const body =
+    result && typeof result === "object" ? (result as Record<string, unknown>) : outer ?? {};
+
+  if (Array.isArray(body.choices)) return body;
+
+  // Some models answer through the flat `result.tool_calls` mirror with no
+  // `choices` array. Rebuild the OpenAI shape so one parser handles both.
+  if (Array.isArray(body.tool_calls)) {
+    return {
+      choices: [
+        {
+          message: {
+            content: (body.response as string | null) ?? null,
+            tool_calls: body.tool_calls,
+          },
+        },
+      ],
+      usage: body.usage,
+    };
+  }
+  return body;
+}
+
+
+
+/**
+ * Parses a Gemini `generateContent` reply, including `functionCall` parts.
+ *
+ * Gemini expresses a tool call as a `functionCall` part rather than the OpenAI
+ * `tool_calls` array. Without this the routed primary would answer with a tool
+ * *intent* the loop could not see, so the call had to be skipped entirely.
+ */
+export function parseGeminiTurn(payload: unknown): {
+  text: string;
+  toolCalls: { id: string; name: string; arguments: string }[];
+  promptTokens: number | null;
+  completionTokens: number | null;
+} {
+  const body = payload as {
+    candidates?: { content?: { parts?: { text?: string; functionCall?: { name?: string; args?: unknown } }[] } }[];
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+  };
+  const parts = body.candidates?.[0]?.content?.parts ?? [];
+  const text = parts.map((p) => p.text ?? "").join("").trim();
+  const toolCalls = parts
+    .filter((p) => p.functionCall?.name)
+    .map((p, index) => ({
+      id: `call_${index}`,
+      name: p.functionCall!.name as string,
+      arguments: JSON.stringify(p.functionCall!.args ?? {}),
+    }));
+  return {
+    text,
+    toolCalls,
+    promptTokens: body.usageMetadata?.promptTokenCount ?? null,
+    completionTokens: body.usageMetadata?.candidatesTokenCount ?? null,
+  };
+}
+
+/** Maps ToolSpecs into Gemini's `functionDeclarations` shape. */
+export function toGeminiTools(tools: { name: string; description: string; parameters: Record<string, unknown> }[]) {
+  return [
+    {
+      functionDeclarations: tools.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: {
+          type: "object",
+          properties: Object.fromEntries(
+            Object.entries(tool.parameters).map(([key, param]) => {
+              const p = param as { type?: string; description?: string; enum?: unknown[] };
+              return [
+                key,
+                {
+                  type: p.type ?? "string",
+                  description: p.description,
+                  ...(p.enum ? { enum: p.enum } : {}),
+                },
+              ];
+            }),
+          ),
+          required: Object.entries(tool.parameters)
+            .filter(([, param]) => (param as { required?: boolean }).required)
+            .map(([key]) => key),
+        },
+      })),
+    },
+  ];
 }
 
 function parseOpenAiLike(text: string): ParsedOk {
@@ -276,10 +402,12 @@ export class RemoteProvider implements AiProvider {
   readonly kind = "remote" as const;
   readonly name: string;
   readonly model: string;
+  readonly toolCapable: boolean;
 
   constructor(private readonly cfg: RemoteProviderConfig) {
     this.name = cfg.name;
     this.model = cfg.model;
+    this.toolCapable = TOOL_CAPABLE_KINDS.has(cfg.kind);
   }
 
   async complete(request: CompletionRequest): Promise<CompletionResult> {
@@ -304,9 +432,14 @@ export class RemoteProvider implements AiProvider {
    * Tool-aware completion. Only the OpenAI-shaped kinds support `tools`
    * natively; Gemini and Anthropic use different envelopes, so they are not
    * offered this method and the agent loop falls back to fenced JSON for them.
+   *
+   * Keep the accepted kinds in step with `TOOL_CAPABLE_KINDS`, which the agent
+   * loop consults *before* calling this — a mismatch would silently remove a
+   * provider from tool use rather than fail loudly.
    */
   async completeWithTools(request: CompletionRequest): Promise<ToolCompletionResult> {
-    if (!["openrouter", "openai_compatible", "pollinations", "cloudflare"].includes(this.cfg.kind)) {
+    if (this.cfg.kind === "gemini") return this.completeWithGeminiTools(request);
+    if (!TOOL_CAPABLE_KINDS.has(this.cfg.kind)) {
       throw new Error(`${this.cfg.kind} does not implement native tool calling`);
     }
     const spec = this.buildSpec(request);
@@ -324,7 +457,70 @@ export class RemoteProvider implements AiProvider {
       const detail = await response.text().catch(() => "");
       throw new RemoteRequestFailure(this.name, response.status, detail);
     }
-    const turn = parseToolTurnOpenAiLike(JSON.parse(await response.text()));
+    const rawBody = JSON.parse(await response.text()) as unknown;
+    const turn = parseToolTurnOpenAiLike(
+      (this.cfg.kind === "cloudflare" ? unwrapCloudflareTurn(rawBody) : rawBody) as never,
+    );
+    return {
+      text: turn.text,
+      toolCalls: turn.toolCalls,
+      provider: this.name,
+      model: this.model,
+      promptTokens: turn.promptTokens,
+      completionTokens: turn.completionTokens,
+      estimatedCost: estimateCostUsd(this.model, turn.promptTokens, turn.completionTokens),
+      status: "ok",
+    };
+  }
+
+  /**
+   * Gemini's native tool calling. The wire shape differs from OpenAI's on both
+   * sides: tools go in as `functionDeclarations`, and a call comes back as a
+   * `functionCall` part rather than a `tool_calls` array.
+   *
+   * The tool result must be echoed back as a `functionResponse` turn; Gemini
+   * rejects a bare text turn as the answer to a function call, which is why the
+   * loop's tool messages are translated here instead of reused verbatim.
+   */
+  private async completeWithGeminiTools(
+    request: CompletionRequest,
+  ): Promise<ToolCompletionResult> {
+    const base = (this.cfg.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta").replace(/\/$/, "");
+    const endpoint = `${base}/models/${this.model}:generateContent?key=${encodeURIComponent(this.cfg.apiKey ?? "")}`;
+
+    const system = request.messages.find((m) => m.role === "system")?.content ?? null;
+    // The loop already replays tool results as `user` messages containing JSON,
+    // and echoes the assistant's calls on `toolCalls`, so both sides map over
+    // without a separate `tool` role to translate.
+    const contents = request.messages
+      .filter((m) => m.role !== "system")
+      .map((m) => {
+        if (m.role === "assistant" && m.toolCalls?.length) {
+          return {
+            role: "model",
+            parts: m.toolCalls.map((c) => ({
+              functionCall: { name: c.name, args: parseToolArguments(c.arguments) },
+            })),
+          };
+        }
+        return { role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] };
+      });
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        contents,
+        ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
+        ...(request.tools?.length ? { tools: toGeminiTools(request.tools as never) } : {}),
+        generationConfig: { temperature: request.temperature, maxOutputTokens: request.maxTokens },
+      }),
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw new RemoteRequestFailure(this.name, response.status, detail);
+    }
+    const turn = parseGeminiTurn(JSON.parse(await response.text()));
     return {
       text: turn.text,
       toolCalls: turn.toolCalls,
@@ -745,6 +941,7 @@ export class QuotaEnforcedProvider implements AiProvider {
   readonly name: string;
   readonly model: string;
   readonly kind: "remote" | "bound";
+  readonly toolCapable: boolean;
   private readonly inner: AiProvider;
   private readonly opts: {
     monthlyTokenQuota: number | null;
@@ -763,9 +960,35 @@ export class QuotaEnforcedProvider implements AiProvider {
     this.name = inner.name;
     this.model = inner.model;
     this.kind = inner.kind as "remote" | "bound";
+    this.toolCapable = providerSupportsTools(inner);
   }
 
   async complete(request: CompletionRequest): Promise<CompletionResult> {
+    const floor = await this.quotaFloor();
+    if (floor) return floor;
+    return this.inner.complete(request);
+  }
+
+  /**
+   * Tool-aware completion, delegated to the wrapped provider.
+   *
+   * This must be declared whenever the inner provider supports it. The agent
+   * loop probes the *wrapper* for this method, so omitting it made every
+   * provider look incapable of tool calling and the loop never executed a
+   * single tool — it degraded to prose the model invented. Quota enforcement
+   * still applies, answered by the deterministic floor instead of the model.
+   */
+  async completeWithTools(request: CompletionRequest): Promise<ToolCompletionResult> {
+    if (!this.inner.completeWithTools) {
+      throw new Error(`${this.name} does not implement native tool calling`);
+    }
+    const floor = await this.quotaFloor();
+    if (floor) return { ...floor, toolCalls: [] };
+    return this.inner.completeWithTools(request);
+  }
+
+  /** Returns the deterministic floor result when a quota is exhausted, else null. */
+  private async quotaFloor(): Promise<CompletionResult | null> {
     const usage = await getAiProviderUsage({ name: this.inner.name, kind: this.inner.kind });
     const minuteLimit = Math.max(1, this.opts.maxRequestsPerMinute);
     if (usage.minuteRequests >= minuteLimit ||
@@ -783,7 +1006,7 @@ export class QuotaEnforcedProvider implements AiProvider {
         status: "fallback",
       };
     }
-    return this.inner.complete(request);
+    return null;
   }
 }
 
@@ -876,6 +1099,18 @@ const DEFAULT_BASE_URL_BY_KIND: Record<string, string> = {
 /** Kinds that cannot work without a credential. Every other kind may run on a
  * public endpoint (pollinations) or the Worker's own binding (cloudflare). */
 const REQUIRES_KEY = new Set<string>(["openrouter", "gemini", "openai_compatible"]);
+
+/** Kinds whose wire shape accepts tool definitions, so a provider of this kind
+ * can drive the agent loop's native tool calling. Gemini speaks a different
+ * envelope (`functionDeclarations` / `functionCall`) and is handled by
+ * `completeWithGeminiTools` rather than the OpenAI path. */
+export const TOOL_CAPABLE_KINDS: ReadonlySet<string> = new Set([
+  "openrouter",
+  "openai_compatible",
+  "pollinations",
+  "cloudflare",
+  "gemini",
+]);
 
 /** Vault secret names the Cloudflare REST fallback reads by default. The keyless
  * binding needs neither; these exist so Workers AI still works in an environment

@@ -100,12 +100,31 @@ export async function listAdminCategories(): Promise<AdminCategory[]> {
   });
 }
 
+/**
+ * Client for reads that only ever run for staff: the admin console, and the ops
+ * agent both in its chat screen and in background runs (the scheduled report,
+ * which has no HTTP request at all).
+ *
+ * The admin console is opened with the passcode gate rather than a Supabase
+ * session, so these tables' staff-RLS policies authorise nothing there. The
+ * request-scoped client works only because the middleware flags `/admin` with
+ * `x-pw-path` and `createServerSupabase()` elevates on it — which means a
+ * background run throws "`headers` was called outside a request scope", and the
+ * cron route (no `x-pw-path`) silently reads zero rows. Both look like "there is
+ * no data". Authorisation for these reads is the gate, so the service role is
+ * the honest client; `createServerSupabase()` remains the fallback for a
+ * deployment without a service key.
+ */
+async function staffTableClient() {
+  return tryCreateAdminSupabase() ?? (await createServerSupabase());
+}
+
 export type AdminStockItem = Database["public"]["Tables"]["stock_items"]["Row"] & {
   linked_items: number;
 };
 
 export async function listStockItems(): Promise<AdminStockItem[]> {
-  const supabase = await createServerSupabase();
+  const supabase = await staffTableClient();
 
   const { data, error } = await supabase
     .from("stock_items")
@@ -405,7 +424,7 @@ export type AdminOffer = Database["public"]["Tables"]["offers"]["Row"];
  * disabled promotion is still editable. Ordered the way checkout ranks them.
  */
 export async function listOffers() {
-  const supabase = await createServerSupabase();
+  const supabase = await staffTableClient();
   const { data, error } = await supabase
     .from("offers")
     .select("*")
