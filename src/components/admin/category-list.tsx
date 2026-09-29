@@ -7,6 +7,7 @@ import { AdminButtonAction } from "@/components/admin/form-kit";
 import { Badge } from "@/components/ui/button";
 import type { AdminCategory } from "@/lib/services/admin-catalog";
 import { formatNumber } from "@/lib/utils/format";
+import { useT } from "@/components/i18n-provider";
 
 export type CategoryRow = Pick<
   AdminCategory,
@@ -25,6 +26,7 @@ export type CategoryRow = Pick<
  * between two existing ones without renumbering the whole list.
  */
 export function CategoryList({ categories }: { categories: CategoryRow[] }) {
+  const t = useT();
   return (
     <ul className="space-y-2">
       {categories.map((category) => (
@@ -40,7 +42,9 @@ export function CategoryList({ categories }: { categories: CategoryRow[] }) {
                     {category.name_ar}
                   </span>
                 ) : null}
-                {!category.is_enabled ? <Badge tone="danger">Hidden</Badge> : null}
+                {!category.is_enabled ? (
+                  <Badge tone="danger">{t("admin.pages.categories.hidden")}</Badge>
+                ) : null}
               </div>
 
               <p className="mt-0.5 text-xs text-ink-700/70">
@@ -51,10 +55,15 @@ export function CategoryList({ categories }: { categories: CategoryRow[] }) {
                   /menu/{category.slug}
                 </a>
                 {" · "}
-                {formatNumber(category.item_count)}{" "}
-                {category.item_count === 1 ? "dish" : "dishes"}
+                {category.item_count === 1
+                  ? t("admin.pages.categories.dishCount", {
+                      count: formatNumber(category.item_count),
+                    })
+                  : t("admin.pages.categories.dishCountPlural", {
+                      count: formatNumber(category.item_count),
+                    })}
                 {" · "}
-                position {category.sort_order}
+                {t("admin.pages.categories.position", { value: category.sort_order })}
               </p>
             </div>
 
@@ -65,9 +74,11 @@ export function CategoryList({ categories }: { categories: CategoryRow[] }) {
                 size="sm"
               >
                 <ArrowUp className="size-3.5" aria-hidden="true" />
-                <span className="sr-only">Move {category.name_en} up</span>
+                <span className="sr-only">
+                  {t("admin.pages.categories.moveUp", { name: category.name_en })}
+                </span>
                 <span aria-hidden="true" className="sm:hidden">
-                  Up
+                  {t("admin.pages.categories.up")}
                 </span>
               </AdminButtonAction>
               <AdminButtonAction
@@ -76,9 +87,11 @@ export function CategoryList({ categories }: { categories: CategoryRow[] }) {
                 size="sm"
               >
                 <ArrowDown className="size-3.5" aria-hidden="true" />
-                <span className="sr-only">Move {category.name_en} down</span>
+                <span className="sr-only">
+                  {t("admin.pages.categories.moveDown", { name: category.name_en })}
+                </span>
                 <span aria-hidden="true" className="sm:hidden">
-                  Down
+                  {t("admin.pages.categories.down")}
                 </span>
               </AdminButtonAction>
 
@@ -87,27 +100,27 @@ export function CategoryList({ categories }: { categories: CategoryRow[] }) {
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-ink-900/15 bg-rice-50/70 px-3 text-sm font-medium text-ink-900 hover:bg-rice-100"
               >
                 <Pencil className="size-3.5" aria-hidden="true" />
-                Edit
+                {t("admin.pages.categories.edit")}
               </Link>
 
               <AdminButtonAction
                 action={() => deleteCategoryAction(category.id)}
                 variant="ghost"
                 size="sm"
-                confirm={`Delete ${category.name_en}? It holds ${formatNumber(
-                  category.item_count,
-                )} dish${category.item_count === 1 ? "" : "es"} — move or archive those dishes first, or the delete will be refused.`}
+                confirm={t("admin.pages.categories.deleteConfirm", {
+                  name: category.name_en,
+                  count: formatNumber(category.item_count),
+                })}
               >
                 <Trash2 className="size-3.5" aria-hidden="true" />
-                Delete
+                {t("admin.pages.categories.delete")}
               </AdminButtonAction>
             </div>
           </div>
 
           {category.item_count > 0 ? (
             <p className="mt-2 rounded-lg bg-rice-200/60 px-2.5 py-1.5 text-xs text-ink-800">
-              Dishes must be moved to another category (or archived) before this can be
-              deleted.
+              {t("admin.pages.categories.deleteBlocked")}
             </p>
           ) : null}
         </li>

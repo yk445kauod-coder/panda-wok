@@ -6,6 +6,7 @@ import { CategoryForm } from "@/components/admin/category-form";
 import { CategoryList, type CategoryRow } from "@/components/admin/category-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatNumber } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function AdminCategoriesPage({
 }) {
   await requireCapability("menu.manage");
   const params = await searchParams;
+  const t = await getT(await getAdminLocale());
 
   const categories = await listAdminCategories();
   const editing: AdminCategory | null = params.edit
@@ -42,10 +44,11 @@ export default async function AdminCategoriesPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Categories</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">
+            {t("admin.pages.categories.title")}
+          </h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            Categories group the menu and give each one a public page at /menu/&lt;slug&gt;.
-            Order here, then slot dishes in from the Menu CMS.
+            {t("admin.pages.categories.description")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -54,55 +57,61 @@ export default async function AdminCategoriesPage({
               href="/admin/categories"
               className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
             >
-              New category
+              {t("admin.pages.categories.newCategory")}
             </Link>
           ) : null}
           <Link
             href="/admin/menu"
             className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
           >
-            Manage dishes
+            {t("admin.pages.categories.manageDishes")}
           </Link>
         </div>
       </header>
 
       <section
         className="washi-panel p-4"
-        aria-label={editing ? "Edit category" : "Create a category"}
+        aria-label={
+          editing
+            ? t("admin.pages.categories.editCategory")
+            : t("admin.pages.categories.createCategory")
+        }
       >
         <h2 className="font-display text-lg font-semibold text-ink-900">
-          {editing ? `Edit ${editing.name_en}` : "Add a category"}
+          {editing
+            ? t("admin.pages.categories.editHeading", { name: editing.name_en })
+            : t("admin.pages.categories.addHeading")}
         </h2>
         <p className="mt-1 text-sm text-ink-700/75">
           {editing
-            ? "Update any field and save. The public menu and its page pick it up on the next request."
-            : "The English name and slug are required; everything else can follow later."}
+            ? t("admin.pages.categories.editHint")
+            : t("admin.pages.categories.createHint")}
         </p>
         <div className="mt-4">
           <CategoryForm category={editing} />
         </div>
       </section>
 
-      <section aria-label="All categories">
+      <section aria-label={t("admin.pages.categories.all")}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-ink-900">
             <ArrowUpDown className="size-4 text-ink-700/60" aria-hidden="true" />
-            All categories{" "}
+            {t("admin.pages.categories.all")}{" "}
             <span className="text-sm font-normal text-ink-700/60">
               ({formatNumber(categories.length)})
             </span>
           </h2>
           {hidden > 0 ? (
             <span className="text-xs text-ink-700/70">
-              {formatNumber(hidden)} hidden from customers
+              {t("admin.pages.categories.hiddenCount", { count: formatNumber(hidden) })}
             </span>
           ) : null}
         </div>
 
         {rows.length === 0 ? (
           <EmptyState
-            title="No categories yet"
-            description="A dish must belong to a category. Add the first one above — for example Wok, Rice & Noodles or Drinks."
+            title={t("admin.pages.categories.empty")}
+            description={t("admin.pages.categories.emptyBody")}
           />
         ) : (
           <CategoryList categories={rows} />
