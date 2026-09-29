@@ -51,7 +51,7 @@ export default {
       ASSET_FILE.test(pathname);
     if (looksLikeAsset && typeof env?.ASSETS !== "undefined") {
       const asset = await env.ASSETS.fetch(request);
-      if (asset.status !== 404) return tag(asset, "asset");
+      if (asset.status !== 404) return asset;
     }
 
     const handler = opennext.fetch ?? opennext.default?.fetch;
@@ -84,32 +84,21 @@ export default {
       const cacheKey = new Request(toCacheUrl(request.url, variant), { method: "GET" });
 
       const hit = await cache.match(cacheKey);
-      if (hit) return tag(hit, "hit");
+      if (hit) return withCacheStatus(hit, "HIT");
 
       const response = await handler(request, env, ctx);
       if (response.status === 200 && isHtml(response)) {
         const cacheable = new Response(response.body, response);
         cacheable.headers.set("Cache-Control", EDGE_CACHE_CONTROL);
         ctx.waitUntil(cache.put(cacheKey, cacheable.clone()));
-        return tag(withCacheStatus(cacheable, "MISS"), "miss", variant);
+        return withCacheStatus(cacheable, "MISS");
       }
-      return tag(response, "uncacheable-response");
+      return response;
     }
 
-    return tag(await handler(request, env, ctx), cacheUsable ? "skip-path" : "no-cache-api");
+    return handler(request, env, ctx);
   },
 };
-
-/**
- * Diagnostic marker. `x-pw-branch` names the path the request took so a live
- * request can be traced; `x-edge-cache` reports MISS/HIT for cached responses.
- * Both are inert metadata and do not change the body.
- */
-function tag(response, branch, variant) {
-  const headers = new Headers(response.headers);
-  headers.set("x-pw-branch", variant ? `${branch}:${variant}` : branch);
-  return new Response(response.body, { status: response.status, headers });
-}
 
 /** The cookie names a request carries, for the cache decision. */
 function parseCookieNames(header) {

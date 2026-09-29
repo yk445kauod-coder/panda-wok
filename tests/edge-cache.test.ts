@@ -63,6 +63,8 @@ describe("isCacheableRequest", () => {
 
   it("does not cache non-GET, RSC or prefetch requests", () => {
     expect(isCacheableRequest({ ...anon, method: "POST" })).toBe(false);
+    // HEAD is not a document fetch; caching it would also poison the key.
+    expect(isCacheableRequest({ ...anon, method: "HEAD" })).toBe(false);
     expect(isCacheableRequest({ ...anon, hasRscHeader: true })).toBe(false);
     expect(isCacheableRequest({ ...anon, hasPrefetchHeader: true })).toBe(false);
   });
