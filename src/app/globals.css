@@ -325,9 +325,15 @@
     border-radius: var(--radius-xl);
     border: 1px solid color-mix(in oklab, var(--color-ink-900) 12%, transparent);
     background-color: var(--color-rice-50);
+    /* Explicit, not inherited: a light field must never take its text colour
+       from a dark ancestor. */
+    color: var(--color-ink-900);
     padding-inline: 0.75rem;
     font-size: 0.875rem;
     outline: none;
+  }
+  .input::placeholder {
+    color: color-mix(in oklab, var(--color-ink-700) 60%, transparent);
   }
   .input:focus {
     border-color: var(--color-miso-500);
@@ -813,42 +819,67 @@
      below the copy. The hero's own glows stay *behind* the photo, so a hero
      with no photo is pixel-identical to the pre-photo design.
 
+     The wash is deliberately light so the photograph stays a photograph. What
+     sets the floor is not the average brightness of the photo (it is very dark)
+     but its *highlights*: there is a small set of near-pure-white pixels
+     (~0.5% of the frame, around x 17-44% / y 63-73% of the source, i.e. the
+     lower-middle of the hero where the stats row sits). Cream on pure white
+     needs ~0.57 ink alpha for 4.5:1, so the lower part of the wash keeps a
+     heavier floor while the upper/middle — where the headline sits over dark
+     photo — opens up and lets the image read.
+
      Below the lg breakpoint the hero is one column and the copy spans the full
-     width, so the wash stays deep across it and the photo reads as texture
-     under the type. Every stop here still measures >17:1 against cream, and the
-     photograph is dark to begin with (peak luminance 98/255), so even the
-     lightest stop is safe. */
+     width, so the wash stays even across it. */
   .hero-wash {
-    background-image: linear-gradient(
-      165deg,
-      color-mix(in oklab, var(--color-ink-950) 80%, transparent) 0%,
-      color-mix(in oklab, var(--color-ink-950) 68%, transparent) 46%,
-      color-mix(in oklab, var(--color-ink-900) 58%, transparent) 100%
-    );
+    background-image:
+      /* protects the lower copy where the photo's highlights are */
+      linear-gradient(
+        to bottom,
+        transparent 34%,
+        color-mix(in oklab, var(--color-ink-950) 52%, transparent) 100%
+      ),
+      linear-gradient(
+        165deg,
+        color-mix(in oklab, var(--color-ink-950) 68%, transparent) 0%,
+        color-mix(in oklab, var(--color-ink-950) 54%, transparent) 50%,
+        color-mix(in oklab, var(--color-ink-900) 40%, transparent) 100%
+      );
   }
 
   @media (min-width: 1024px) {
     /* At lg the hero splits into two columns and the copy takes the left ~55%,
-       so the wash can open towards the right where the photo's subject and the
-       ringed plate sit. Measured across the text column it stays >17:1. */
+       so the wash opens towards the right where the photo's subject and the
+       ringed plate sit, while the left column keeps the text legible. */
     .hero-wash {
-      background-image: linear-gradient(
-        100deg,
-        color-mix(in oklab, var(--color-ink-950) 84%, transparent) 0%,
-        color-mix(in oklab, var(--color-ink-950) 58%, transparent) 44%,
-        color-mix(in oklab, var(--color-ink-900) 24%, transparent) 100%
-      );
+      background-image:
+        linear-gradient(
+          to bottom,
+          transparent 34%,
+          color-mix(in oklab, var(--color-ink-950) 52%, transparent) 100%
+        ),
+        linear-gradient(
+          100deg,
+          color-mix(in oklab, var(--color-ink-950) 70%, transparent) 0%,
+          color-mix(in oklab, var(--color-ink-950) 44%, transparent) 46%,
+          color-mix(in oklab, var(--color-ink-900) 12%, transparent) 100%
+        );
     }
 
     /* In RTL the copy takes the right column, so the wash mirrors with it —
        otherwise Arabic text would sit on the *open* end of the gradient. */
     [dir="rtl"] .hero-wash {
-      background-image: linear-gradient(
-        260deg,
-        color-mix(in oklab, var(--color-ink-950) 84%, transparent) 0%,
-        color-mix(in oklab, var(--color-ink-950) 58%, transparent) 44%,
-        color-mix(in oklab, var(--color-ink-900) 24%, transparent) 100%
-      );
+      background-image:
+        linear-gradient(
+          to bottom,
+          transparent 34%,
+          color-mix(in oklab, var(--color-ink-950) 52%, transparent) 100%
+        ),
+        linear-gradient(
+          260deg,
+          color-mix(in oklab, var(--color-ink-950) 70%, transparent) 0%,
+          color-mix(in oklab, var(--color-ink-950) 44%, transparent) 46%,
+          color-mix(in oklab, var(--color-ink-900) 12%, transparent) 100%
+        );
     }
   }
 
@@ -991,6 +1022,11 @@
 @layer utilities {
   .admin-scope {
     background-color: var(--color-rice-100);
+    /* The customer shell sets cream text on an ink ground (body { color }).
+       The console inverts only the *surface*, so without this every form
+       control inherited cream text on a near-white field and read at 1.07:1 —
+       invisible. Resetting the colour here is what makes the console legible. */
+    color: var(--color-ink-900);
   }
 
   /* One flat surface for every panel, form, table wrapper and stat tile. */

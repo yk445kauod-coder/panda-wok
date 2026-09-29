@@ -1811,3 +1811,49 @@ photo would need a stronger wash, so re-measure if the owner swaps it.
 photo) and `LeafField2D` 9 → 11, so the sakura reads against the photo and not
 just against flat ink. The site remains silent by design — no audio was added.
 
+
+## Admin form text was invisible (2026-09-29) — 1.07:1 on every field
+
+**Every form control in the ops console had cream text on a near-white field.**
+Not a subtle low-contrast issue: `color: rgb(247,243,232)` (rice-100) on
+`background: rgb(253,251,245)` (rice-50) = **1.07:1**, i.e. the labels a staff
+member types into were effectively blank. It also hit **the gate form's own
+passcode field**, so `/admin` could not be unlocked by anyone.
+
+**Root cause is an inherited colour, not a bad class.** The customer shell sets
+`body { background: ink-950; color: var(--foreground) }` where `--foreground` is
+rice-100 (cream). The console's restyle (`792b841`) scoped `.admin-scope` with
+`background-color: var(--color-rice-100)` and **never reset `color`**, so
+everything inside the console inherited cream from `body`. `.input` and the
+inline `bg-rice-50` fields then paired that cream text with a light background.
+The defect is entirely inside the console — it was *not* introduced by the hero
+work, and the customer surface was never affected.
+
+**Fix (two layers):**
+1. `.admin-scope` now sets `color: var(--color-ink-900)` — the console inverts
+   the surface, so it must invert the text colour with it. This is the actual
+   fix: 396 controls across 19 admin routes.
+2. `.input` now sets `color` and `::placeholder` explicitly instead of
+   inheriting, and the gate input carries `text-ink-900`. Belt-and-braces so a
+   light field can never again take its text colour from a dark ancestor.
+
+**How it was found, and the method worth reusing.** Eyeballing never surfaced
+this; a computed-style sweep did. `scripts/`-style CDP harness (written to
+`/tmp/sweep.mjs`): launch `chromium --headless=new --remote-debugging-port=9222`,
+then for each route walk every `input,textarea,select`, composite the element's
+background over its ancestors (so translucent/`bg-*` stacks resolve correctly),
+and compare against `getComputedStyle().color` with the WCAG formula. It reported
+`color`, effective background, ratio, and the offending class list. Run over
+every route x {en,ar} x {1440,390}. Result: **19/22 routes broken before, 0 after**
+(the `ar/1440` column was clean before only because the Arabic admin re-renders
+after the sweep had already moved on).
+
+Two traps this exposed, worth keeping:
+- **`background-color` on a scope is not a theme.** If a container flips the
+  surface but not the foreground, every inherited `color` silently points at the
+  wrong palette. When scoping a dark app into a light console (or vice versa),
+  set both or neither.
+- **A shared `.input` class that omits `color` is a landmine.** It is correct
+  only while every consumer happens to sit under an ink-text ancestor. State the
+  colour explicitly.
+

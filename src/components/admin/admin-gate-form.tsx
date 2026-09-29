@@ -92,7 +92,7 @@ export function AdminGateForm({
           autoFocus
           onChange={(event) => setSecret(event.target.value)}
           aria-invalid={error ? true : undefined}
-          className="mt-4 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-center text-sm tracking-[0.3em] outline-none focus:border-miso-500"
+          className="mt-4 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-center text-sm tracking-[0.3em] text-ink-900 outline-none focus:border-miso-500"
         />
 
         <Button type="submit" size="lg" className="mt-4 w-full" loading={pending}>
