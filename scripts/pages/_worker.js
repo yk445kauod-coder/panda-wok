@@ -64,10 +64,34 @@ export default {
 
     // temp diagnostic
     if (pathname.startsWith("/__pw_health")) {
+      const cookieNames = parseCookieNames(request.headers.get("cookie"));
+      const snapshot = {
+        method: request.method,
+        pathname,
+        cookieNames,
+        acceptLanguage: request.headers.get("accept-language"),
+        accept: request.headers.get("accept"),
+        hasRscHeader: request.headers.has("rsc"),
+        hasPrefetchHeader:
+          request.headers.has("next-router-prefetch") ||
+          request.headers.has("next-router-state-tree"),
+        hasAuthorization: request.headers.has("authorization"),
+      };
+      const probe = { ...snapshot, pathname: "/menu" };
+      const probe2 = { ...snapshot, pathname: request.headers.get("x-probe-path") || "/menu" };
       return marker2(
-        new Response(JSON.stringify({ ok: true, cache: typeof caches !== "undefined" && Boolean(caches.default) }), {
-          headers: { "content-type": "application/json" },
-        }),
+        new Response(
+          JSON.stringify({
+            ok: true,
+            cacheApi: typeof caches !== "undefined" && Boolean(caches.default),
+            snapshot,
+            cacheableForMenu: isCacheableRequest(probe),
+            probe2Path: probe2.pathname,
+            cacheableProbe2: isCacheableRequest(probe2),
+            cacheableForHome: isCacheableRequest({ ...snapshot, pathname: "/" }),
+          }),
+          { headers: { "content-type": "application/json" } },
+        ),
       );
     }
 
