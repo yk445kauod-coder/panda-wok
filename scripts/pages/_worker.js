@@ -39,107 +39,77 @@ const ASSET_FILE =
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
-    const marker = (response) => {
-      const headers = new Headers(response.headers);
-      const cacheOk = typeof caches !== "undefined" && Boolean(caches.default);
-      headers.set("x-pw-worker", cacheOk ? "1+cache" : "1-nocache");
-      return new Response(response.body, { status: response.status, headers });
-    };
 
     if (SERVER_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
       return new Response("Not found", { status: 404 });
     }
 
+    // A local file on disk (/_next/static/*, fonts, images, public/*) is served
+    // straight from ASSETS, never cached by us.
     const looksLikeAsset =
       ASSET_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
       ASSET_FILE.test(pathname);
-
     if (looksLikeAsset && typeof env?.ASSETS !== "undefined") {
       const asset = await env.ASSETS.fetch(request);
-      if (asset.status !== 404) return asset;
+      if (asset.status !== 404) return tag(asset, "asset");
     }
 
     const handler = opennext.fetch ?? opennext.default?.fetch;
-    const marker2 = marker;
 
-    // temp diagnostic
-    if (pathname.startsWith("/__pw_health")) {
-      const cookieNames = parseCookieNames(request.headers.get("cookie"));
-      const snapshot = {
-        method: request.method,
-        pathname,
-        cookieNames,
-        acceptLanguage: request.headers.get("accept-language"),
-        accept: request.headers.get("accept"),
-        hasRscHeader: request.headers.has("rsc"),
-        hasPrefetchHeader:
-          request.headers.has("next-router-prefetch") ||
-          request.headers.has("next-router-state-tree"),
-        hasAuthorization: request.headers.has("authorization"),
-      };
-      const probe = { ...snapshot, pathname: "/menu" };
-      const probe2 = { ...snapshot, pathname: request.headers.get("x-probe-path") || "/menu" };
-      return marker2(
-        new Response(
-          JSON.stringify({
-            ok: true,
-            cacheApi: typeof caches !== "undefined" && Boolean(caches.default),
-            snapshot,
-            cacheableForMenu: isCacheableRequest(probe),
-            probe2Path: probe2.pathname,
-            cacheableProbe2: isCacheableRequest(probe2),
-            cacheableForHome: isCacheableRequest({ ...snapshot, pathname: "/" }),
-          }),
-          { headers: { "content-type": "application/json" } },
-        ),
-      );
-    }
+    const snapshot = {
+      method: request.method,
+      pathname,
+      cookieNames: parseCookieNames(request.headers.get("cookie")),
+      acceptLanguage: request.headers.get("accept-language"),
+      accept: request.headers.get("accept"),
+      hasRscHeader: request.headers.has("rsc"),
+      hasPrefetchHeader:
+        request.headers.has("next-router-prefetch") ||
+        request.headers.has("next-router-state-tree"),
+      hasAuthorization: request.headers.has("authorization"),
+    };
 
     // Edge cache for anonymous public pages. During a rush this is the
     // difference between every hit running the Worker and the CDN answering
     // them: only a miss or a stale hit reaches Next, and a stale page is served
     // immediately while it revalidates in the background.
-    if (typeof caches !== "undefined" && caches.default) {
-      const snapshot = {
-        method: request.method,
-        pathname,
-        cookieNames: parseCookieNames(request.headers.get("cookie")),
+    const cacheUsable = typeof caches !== "undefined" && Boolean(caches.default);
+
+    if (cacheUsable && isCacheableRequest(snapshot)) {
+      const cache = caches.default;
+      const variant = localeVariant({
+        cookieLocale: cookieValue(request.headers.get("cookie"), "panda-wok.locale"),
         acceptLanguage: request.headers.get("accept-language"),
-        accept: request.headers.get("accept"),
-        hasRscHeader: request.headers.has("rsc"),
-        hasPrefetchHeader:
-          request.headers.has("next-router-prefetch") ||
-          request.headers.has("next-router-state-tree"),
-        hasAuthorization: request.headers.has("authorization"),
-      };
+      });
+      const cacheKey = new Request(toCacheUrl(request.url, variant), { method: "GET" });
 
-      if (isCacheableRequest(snapshot)) {
-        const url = new URL(request.url);
-        const variant = localeVariant({
-          cookieLocale: cookieValue(request.headers.get("cookie"), "panda-wok.locale"),
-          acceptLanguage: request.headers.get("accept-language"),
-        });
-        url.searchParams.set("__pw_lang", variant);
-        const cacheKey = new Request(url.toString(), { method: "GET" });
-        const cache = caches.default;
+      const hit = await cache.match(cacheKey);
+      if (hit) return tag(hit, "hit");
 
-        const hit = await cache.match(cacheKey);
-        if (hit) return marker(withCacheStatus(hit, "HIT"));
-
-        const response = await handler(request, env, ctx);
-        if (response.status === 200 && isHtml(response)) {
-          const cacheable = new Response(response.body, response);
-          cacheable.headers.set("Cache-Control", EDGE_CACHE_CONTROL);
-          ctx.waitUntil(cache.put(cacheKey, cacheable.clone()));
-          return marker(withCacheStatus(cacheable, "MISS"));
-        }
-        return marker(response);
+      const response = await handler(request, env, ctx);
+      if (response.status === 200 && isHtml(response)) {
+        const cacheable = new Response(response.body, response);
+        cacheable.headers.set("Cache-Control", EDGE_CACHE_CONTROL);
+        ctx.waitUntil(cache.put(cacheKey, cacheable.clone()));
+        return tag(withCacheStatus(cacheable, "MISS"), "miss", variant);
       }
+      return tag(response, "uncacheable-response");
     }
 
-    return marker(await handler(request, env, ctx));
+    return tag(await handler(request, env, ctx), cacheUsable ? "skip-path" : "no-cache-api");
   },
 };
+
+/**
+ * Diagnostic marker. `x-pw-branch` names the path the request took so a live
+ * request can be traced; `x-edge-cache` reports MISS/HIT for cached responses.
+ * Both are inert metadata and do not change the body.
+ */
+function tag(response, branch, variant) {
+  const headers = new Headers(response.headers);
+  headers.set("x-pw-branch", variant ? `${branch}:${variant}` : branch);
+  return new Response(response.body, { status: response.status, headers });
+}
 
 /** The cookie names a request carries, for the cache decision. */
 function parseCookieNames(header) {
@@ -165,7 +135,7 @@ function isHtml(response) {
   return (response.headers.get("content-type") ?? "").includes("text/html");
 }
 
-/** Marks whether Cloudflare served this copy from the edge cache. */
+/** Marks a response as served from the edge cache. */
 function withCacheStatus(response, status) {
   const headers = new Headers(response.headers);
   headers.set("x-edge-cache", status);
