@@ -1,5 +1,11 @@
 # Panda Wok menu sheet
 
+> **⛔ Do not touch the live menu database.** Running `menu:import:apply` writes
+> menu rows, so it needs the owner's explicit, written request for that exact
+> change. Do not run it to "refresh" or "sync" the menu, and never delete a dish
+> with it. The only normal write path is the owner editing one dish at a time in
+> `/admin`. See `docs/data-safety.md`.
+
 One row per dish. You edit this in Excel/Sheets, then run the importer.
 
 ## Round trip (the safe way)

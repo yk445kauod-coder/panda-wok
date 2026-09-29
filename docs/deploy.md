@@ -1,5 +1,10 @@
 # Deployment & CI (Phase 2)
 
+> **⛔ Menu database is off-limits.** A deploy ships code, never menu rows. No
+> step here writes to `categories`, `menu_items`, `menu_images`,
+> `modifier_groups`, `modifier_options` or `upsell_rules`. Only the owner edits
+> the menu, one dish at a time, in `/admin`. See `docs/data-safety.md`.
+
 ## 1. Topology (verified live)
 
 - Live URL: **https://panda-wok.pages.dev** — served by the Cloudflare Pages

@@ -8,6 +8,49 @@ This block is written and re-added by `next dev` ŌĆö verify at `node_modules/
 
 <!-- END:nextjs-agent-rules -->
 
+## ⛔ قاعدة المنيو — ممنوع أي حد يلعب في داتابيز المنيو
+
+**قاعدة ثابتة لكل الجلسات، من غير استثناء.** (English below.)
+
+- **ممنوع تمامًا** أي حذف (`DELETE` / `DROP` / `TRUNCATE`) ولا أي تعديل على
+  بيانات المنيو الحية: `categories`, `menu_items`, `menu_images`,
+  `modifier_groups`, `modifier_options`, `upsell_rules` — لا أسعار، لا أسماء،
+  لا صور، لا ترتيب.
+- **ممنوع** تشغيل أي سكربت استيراد/تصدير أو migration بيلمس صفوف المنيو
+  (`scripts/import-menu.mjs` insert-only وبيقفل نفسه، و`scripts/import-menu-csv.mjs`
+  بيكتب). مفيش "إعادة رفع لتحديث المنيو" من غير طلب صريح.
+- **مفيش استنتاج ولا تجميل:** ممنوع تأليف أو تعديل صنف/سعر من عندك. أي رقم
+  أو اسم بيتكتب لازم يكون من المالك بالظبط.
+- **التعديل الطبيعي من `/admin` بس** (طبق طبق، بإيد بني آدم وبسياق كامل).
+- **الإخفاء بدل الحذف:** لو صنف لازم يخرج من الموقع استخدم العلم
+  (`is_available = false` / `is_enabled = false`) — الصف وترجماته وصوره تفضل
+  في الداتابيز وترجع بقلب علم واحد.
+- **لو مهمة شكلها محتاجة تعديل/حذف في المنيو: قف واسأل المالك الأول**، واذكر
+  بالظبط اللي هيتغيّر، واعرض البديل بالإخفاء.
+- **المنيوهان الاتنين عامّين ويفضلوا عامّين:** الصيني والياباني (سوشي) شغّالين
+  مع بعض على `/menu`، وممنوع تعطيل أي واحد فيهم.
+
+See `docs/data-safety.md` for the full standing policy.
+
+### ⛔ Menu database: do not touch (English)
+
+**A standing rule for every session, no exceptions.**
+
+- **Never** delete (`DELETE` / `DROP` / `TRUNCATE`) and **never** update live menu
+  data: `categories`, `menu_items`, `menu_images`, `modifier_groups`,
+  `modifier_options`, `upsell_rules` — no prices, names, images or ordering.
+- **Never** run an import/export script or a migration that writes menu rows
+  unless the owner asked for that exact change in writing. There is no
+  "re-import to refresh the menu".
+- **Never invent** a dish, price or name. Every value must come from the owner.
+- The **only** normal write path is `/admin` (one dish at a time, by a human,
+  with full context).
+- **Hide, don't delete:** use a flag (`is_available = false` / `is_enabled = false`).
+- If a task seems to require touching the menu, **stop and ask the owner first**.
+- **Both catalogues are public and stay public** — the Chinese menu and the
+  Japanese sushi menu are live together on `/menu`; neither is to be disabled.
+
+
 ## Audit findings (2026-09-23, live project)
 
 Verified against the live database, not just the code:

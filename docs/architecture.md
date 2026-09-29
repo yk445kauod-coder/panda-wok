@@ -1,5 +1,10 @@
 # Panda Wok — Architecture Plan (Phase 3)
 
+> **⛔ Menu database is off-limits.** The menu tables (`categories`,
+> `menu_items`, `menu_images`, `modifier_groups`, `modifier_options`,
+> `upsell_rules`) are never written by an agent or a script — only by the owner
+> editing one dish at a time in `/admin`. See `docs/data-safety.md`.
+
 > **STATUS: implemented.** The content tables in §2 exist live and are edited at
 > `/admin/content`; the design/motion work landed in Phase 4. The §8 decisions are
 > resolved — see the status block at the end of this document. No data was deleted

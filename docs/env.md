@@ -1,5 +1,10 @@
 # Environment & secrets inventory (Phase 1)
 
+> **⛔ Menu database is off-limits.** Nothing in this inventory writes menu rows.
+> `categories`, `menu_items`, `menu_images`, `modifier_groups`,
+> `modifier_options` and `upsell_rules` are edited only by the owner, one dish at
+> a time, in `/admin`. See `docs/data-safety.md`.
+
 Every environment variable the code reads, where it belongs, and how it is
 verified. **No secret value appears in this file, in the repo, or in any build
 artefact.**

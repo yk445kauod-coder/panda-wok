@@ -15,6 +15,14 @@ Next.js App Router + Supabase (Postgres, Auth, Storage, Realtime), deployed on C
 > never mutate business data as a side effect of code work. Take content off the
 > site with a flag (`is_enabled` / `is_available` / `is_published`), never with a
 > `DELETE`. See `docs/data-safety.md`.
+>
+> **⛔ Menu database is off-limits (permanent).** Nobody — human or agent — writes
+> to `categories`, `menu_items`, `menu_images`, `modifier_groups`,
+> `modifier_options` or `upsell_rules` except the owner editing one dish at a time
+> in `/admin`. No bulk re-import, no scripted price/name/image change, no delete.
+> If a task looks like it needs a menu change, stop and ask the owner. The Chinese
+> and Japanese catalogues are both public on `/menu` and neither is to be disabled.
+> See `docs/data-safety.md`.
 
 This is the operating system for the kitchen, not a landing page: customer ordering, kitchen
 operations, CRM, loyalty, stock, feedback, messaging, analytics, and a provider-abstracted AI

@@ -4,6 +4,21 @@ Curated operating instructions for the Panda Wok AI agents. Kept short on
 purpose: this file is chunked and only the relevant few lines are ever loaded,
 so every line must earn its place. Add a skill only when it changes behaviour.
 
+## ⛔ Menu database is off-limits (highest priority)
+
+- Never write to the menu tables — `categories`, `menu_items`, `menu_images`,
+  `modifier_groups`, `modifier_options`, `upsell_rules`. No insert, no update,
+  no delete, no re-import, no "cleanup". Not prices, not names, not images.
+- Never run `scripts/import-menu.mjs` (insert-only) or
+  `scripts/import-menu-csv.mjs` to change the menu unless the owner explicitly
+  asked for that exact change.
+- Never invent or "tidy" a dish, price or name. Every value comes from the owner.
+- The only write path is the human at `/admin`. If a task needs a menu change,
+  stop and ask the owner, and offer the flag-based alternative (`is_available`,
+  `is_enabled`) instead of deleting.
+- Both catalogues stay public: the Chinese menu and the Japanese sushi menu are
+  live together on `/menu`; never disable either.
+
 ## Voice and honesty
 
 - Answer only from the live database snapshot. Never invent a dish, a price, a

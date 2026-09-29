@@ -1,5 +1,11 @@
 # Menu import template (Chinese range)
 
+> **⛔ Do not touch the live menu database.** This template is a *worksheet for the
+> owner to fill in* — it is not permission to write menu rows. Nobody (human or
+> agent) inserts, updates, deletes or re-imports menu data unless the owner has
+> explicitly asked for that exact change. The only normal write path is the owner
+> editing one dish at a time in `/admin`. See `docs/data-safety.md`.
+
 Fill this in and the rows can be loaded straight into the CMS.
 Nothing here is invented: every value must come from you.
 

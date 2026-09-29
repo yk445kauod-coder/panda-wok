@@ -1,5 +1,10 @@
 # Panda Wok — Baseline (Phase 0)
 
+> **⛔ Menu database is off-limits.** Nothing in this engagement — and nothing in
+> any later session — writes to `categories`, `menu_items`, `menu_images`,
+> `modifier_groups`, `modifier_options` or `upsell_rules`. Only the owner edits
+> the menu, one dish at a time, in `/admin`. See `docs/data-safety.md`.
+
 Snapshot of the project **as it exists today**, taken before any change in this
 engagement. Everything below was verified against the code, the live Supabase
 project (`xjbtsryidznsxqlynmfa`), and the live deployment

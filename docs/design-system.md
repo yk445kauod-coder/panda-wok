@@ -1,5 +1,10 @@
 # Panda Wok — design system
 
+> **⛔ Menu database is off-limits.** UI work styles what is in the database; it
+> never writes it. No change here touches `categories`, `menu_items`,
+> `menu_images`, `modifier_groups`, `modifier_options` or `upsell_rules`. Only the
+> owner edits the menu, one dish at a time, in `/admin`. See `docs/data-safety.md`.
+
 Short reference for the customer-facing UI. It documents what is actually in
 `src/app/globals.css` and the components, so the next change starts from the
 real tokens rather than inventing new ones.

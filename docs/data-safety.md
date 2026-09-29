@@ -3,6 +3,30 @@
 This is a standing operating rule for every session on this repository, not a
 one-off instruction. It is deliberately short because it admits no exceptions.
 
+## ⛔ The menu database is off-limits — nobody touches it
+
+This is the sharpest edge of the rule, stated first because it is the one most
+likely to be crossed "helpfully":
+
+**Nobody — human or agent — writes to the menu tables. Ever.**
+
+- Tables: `categories`, `menu_items`, `menu_images`, `modifier_groups`,
+  `modifier_options`, `upsell_rules`.
+- No insert, no update, no delete, no re-import, no "cleanup", no price sync, no
+  name or image rewrite — **unless the owner has explicitly asked, in writing,
+  for that specific change**.
+- The **only** normal write path is a human editing one dish at a time in
+  `/admin`. An agent does not bulk-edit the menu, and does not run
+  `scripts/import-menu.mjs` (insert-only) or `scripts/import-menu-csv.mjs`
+  (`--apply`) to change it.
+- If a task appears to need a menu change, **stop and ask the owner first**, state
+  exactly what would change, and offer the flag-based alternative
+  (`is_available = false` / `is_enabled = false`).
+- Both catalogues are public and stay public — the Chinese menu and the Japanese
+  sushi menu are live together on `/menu`; never disable either.
+
+The rest of this document is the general policy this rule is a special case of.
+
 ## The rule
 
 **Nothing is ever deleted. Data is never tampered with.**
