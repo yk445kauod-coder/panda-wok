@@ -6,7 +6,8 @@ import { BroadcastComposer } from "@/components/admin/broadcast-composer";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { RunStatusBadge, isRunInFlight } from "@/components/admin/run-status";
-import { formatDateTime, formatNumber, humanise } from "@/lib/utils/format";
+import { formatDateTime, formatNumber } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function AdminBroadcastPage({
 }) {
   await requireCapability("broadcast.manage");
   const params = await searchParams;
+  const t = await getT(await getAdminLocale());
 
   const [segments, history] = await Promise.all([
     segmentOverview(),
@@ -42,20 +44,23 @@ export default async function AdminBroadcastPage({
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-ink-900">Broadcast</h1>
+        <h1 className="text-2xl font-semibold text-ink-900">
+          {t("admin.pages.broadcast.title")}
+        </h1>
         <p className="mt-1 text-sm text-ink-700/80">
-          Message a segment of customers. Nothing is sent until you review the audience
-          and confirm.
+          {t("admin.pages.broadcast.description")}
         </p>
       </header>
 
-      <section className="washi-panel p-4" aria-label="Compose a broadcast">
+      <section
+        className="washi-panel p-4"
+        aria-label={t("admin.pages.broadcast.compose")}
+      >
         <h2 className="font-display text-lg font-semibold text-ink-900">
-          New broadcast
+          {t("admin.pages.broadcast.newBroadcast")}
         </h2>
         <p className="mt-1 text-sm text-ink-700/75">
-          The recipient count is resolved from live data at send time, so it may differ
-          slightly from the estimate shown while composing.
+          {t("admin.pages.broadcast.countNote")}
         </p>
 
         <div className="mt-4">
@@ -64,28 +69,32 @@ export default async function AdminBroadcastPage({
             defaultSegmentValue={SEGMENT_DEFAULT_VALUE[defaultSegment] ?? 30}
             segments={segments.map((segment) => ({
               key: segment.segment,
-              label: segment.label,
+              label: t(`admin.term.segment.${segment.segment}`),
               count: segment.count,
-              valueLabel: SEGMENT_VALUE_LABELS[segment.segment],
+              valueLabel: SEGMENT_VALUE_LABELS[segment.segment]
+                ? segment.segment === "inactive"
+                  ? t("admin.pages.segments.valueDays")
+                  : t("admin.pages.segments.valueSpend")
+                : undefined,
               defaultValue: SEGMENT_DEFAULT_VALUE[segment.segment] ?? 30,
             }))}
           />
         </div>
       </section>
 
-      <section aria-label="Audience sizes">
+      <section aria-label={t("admin.pages.broadcast.audienceSizes")}>
         <h2 className="font-display text-lg font-semibold text-ink-900">
-          Audience sizes
+          {t("admin.pages.broadcast.audienceSizes")}
         </h2>
         <p className="mt-1 text-sm text-ink-700/75">
-          Live counts for every segment. These are the same numbers the composer shows.
+          {t("admin.pages.broadcast.audienceSizesHint")}
         </p>
 
         {segments.every((segment) => segment.count === 0) ? (
           <EmptyState
             className="mt-4"
-            title="No customers to segment yet"
-            description="Segments fill up as customers create accounts and place orders. Nothing here is simulated."
+            title={t("admin.pages.broadcast.empty")}
+            description={t("admin.pages.broadcast.emptyBody")}
           />
         ) : (
           <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -94,12 +103,17 @@ export default async function AdminBroadcastPage({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-ink-900">
-                      {segment.label}
+                      {t(`admin.term.segment.${segment.segment}`)}
                     </p>
                     {SEGMENT_VALUE_LABELS[segment.segment] ? (
                       <p className="text-xs text-ink-700/65">
-                        {SEGMENT_VALUE_LABELS[segment.segment]}:{" "}
-                        {SEGMENT_DEFAULT_VALUE[segment.segment]}
+                        {t("admin.pages.broadcast.threshold", {
+                          label:
+                            segment.segment === "inactive"
+                              ? t("admin.pages.segments.valueDays")
+                              : t("admin.pages.segments.valueSpend"),
+                          value: SEGMENT_DEFAULT_VALUE[segment.segment] ?? 30,
+                        })}
                       </p>
                     ) : null}
                   </div>
@@ -111,7 +125,7 @@ export default async function AdminBroadcastPage({
                   href={`/admin/broadcast?segment=${segment.segment}`}
                   className="mt-2 inline-block text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
                 >
-                  Compose for this segment
+                  {t("admin.pages.broadcast.composeFor")}
                 </a>
               </li>
             ))}
@@ -119,17 +133,19 @@ export default async function AdminBroadcastPage({
         )}
       </section>
 
-      <section aria-label="Broadcast history">
-        <h2 className="font-display text-lg font-semibold text-ink-900">History</h2>
+      <section aria-label={t("admin.pages.broadcast.history")}>
+        <h2 className="font-display text-lg font-semibold text-ink-900">
+          {t("admin.pages.broadcast.history")}
+        </h2>
         <p className="mt-1 text-sm text-ink-700/75">
-          Every broadcast ever sent, with the audience it actually reached.
+          {t("admin.pages.broadcast.historyHint")}
         </p>
 
         {history.length === 0 ? (
           <EmptyState
             className="mt-4"
-            title="No broadcasts sent yet"
-            description="Your first announcement will be recorded here with its audience and delivery counts."
+            title={t("admin.pages.broadcast.noHistory")}
+            description={t("admin.pages.broadcast.noHistoryBody")}
           />
         ) : (
           <ul className="mt-3 space-y-3">
@@ -142,25 +158,35 @@ export default async function AdminBroadcastPage({
                         {broadcast.title}
                       </span>
                       <RunStatusBadge status={broadcast.status} />
-                      <Badge tone="neutral">{humanise(broadcast.channel)}</Badge>
+                      <Badge tone="neutral">
+                        {t(`admin.term.broadcastChannel.${broadcast.channel}`)}
+                      </Badge>
                     </div>
                     <p className="mt-1 whitespace-pre-wrap text-xs text-ink-800/85">
                       {broadcast.body}
                     </p>
                     <p className="mt-1.5 text-xs text-ink-700/65">
-                      {broadcast.audience_label ?? "Audience not recorded"} ·{" "}
-                      {formatNumber(broadcast.sent_count)} sent
+                      {broadcast.audience_label ??
+                        t("admin.pages.broadcast.noAudience")}{" "}
+                      ·{" "}
+                      {t("admin.pages.broadcast.sentCount", {
+                        count: formatNumber(broadcast.sent_count),
+                      })}
                       {broadcast.failed_count > 0
-                        ? ` · ${formatNumber(broadcast.failed_count)} failed`
+                        ? ` · ${t("admin.pages.broadcast.failedCount", {
+                            count: formatNumber(broadcast.failed_count),
+                          })}`
                         : ""}
                       {broadcast.sent_at
                         ? ` · ${formatDateTime(broadcast.sent_at)}`
-                        : ` · created ${formatDateTime(broadcast.created_at)}`}
+                        : ` · ${t("admin.pages.broadcast.created", {
+                            when: formatDateTime(broadcast.created_at),
+                          })}`}
                     </p>
                   </div>
 
                   {isRunInFlight(broadcast.status) ? (
-                    <Badge tone="info">Delivering…</Badge>
+                    <Badge tone="info">{t("admin.pages.broadcast.delivering")}</Badge>
                   ) : null}
                 </div>
               </li>

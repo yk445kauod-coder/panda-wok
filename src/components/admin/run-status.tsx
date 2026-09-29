@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/button";
 import { humanise } from "@/lib/utils/format";
+import { useT } from "@/components/i18n-provider";
 
 type Tone = "neutral" | "success" | "warning" | "danger" | "info";
 
@@ -31,5 +32,8 @@ export function isRunInFlight(status: string | null | undefined): boolean {
 }
 
 export function RunStatusBadge({ status }: { status: string | null | undefined }) {
-  return <Badge tone={runStatusTone(status)}>{humanise(status)}</Badge>;
+  const t = useT();
+  const key = `admin.term.runStatus.${status ?? ""}`;
+  const label = t(key);
+  return <Badge tone={runStatusTone(status)}>{label === key ? humanise(status) : label}</Badge>;
 }
