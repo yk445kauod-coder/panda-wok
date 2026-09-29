@@ -27,6 +27,7 @@ import { AsanohaPanel } from "@/components/customer/asian-frames";
 import { SakuraField } from "@/components/customer/sakura-field";
 import { LeafField2D } from "@/components/customer/leaf-field-2d";
 import { BRAND_LOGO_URL } from "@/lib/brand";
+import { dishImageSrc, dishImageSrcSet } from "@/lib/images/responsive";
 import { BrandScriptMarks } from "@/components/customer/brand-script-marks";
 import { BrandBanner } from "@/components/customer/brand-banner";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -180,6 +181,7 @@ export default async function HomePage() {
         acceptingOrders={settings.ordering.acceptingOrders}
         hasMenu={menu.items.length > 0}
         logoUrl={BRAND_LOGO_URL}
+        heroUrl={settings.brand.hero_url}
         locale={locale}
         t={t}
         stats={{
@@ -437,6 +439,7 @@ function Hero({
   acceptingOrders,
   hasMenu,
   logoUrl,
+  heroUrl,
   locale,
   t,
   stats,
@@ -446,6 +449,7 @@ function Hero({
   acceptingOrders: boolean;
   hasMenu: boolean;
   logoUrl: string;
+  heroUrl: string | null;
   locale: string;
   t: T;
   stats: {
@@ -456,12 +460,34 @@ function Hero({
 }) {
   return (
     <section className="hero-night relative overflow-hidden border-b border-rice-100/10">
+      {heroUrl ? (
+        <>
+          {/* The photo sits behind everything else, so the asanoha weave and the
+              lantern glows read as light on top of the room rather than pasted
+              over it. Plain `<img>`, not `next/image`: the optimizer is disabled
+              site-wide and the srcSet below is built from ImageKit's own CDN. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={dishImageSrc(heroUrl, 1600)}
+            srcSet={dishImageSrcSet(heroUrl)}
+            sizes="100vw"
+            alt=""
+            aria-hidden="true"
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 size-full object-cover object-[62%_64%]"
+          />
+          {/* Keeps cream copy legible over the photograph. */}
+          <div aria-hidden="true" className="hero-wash absolute inset-0" />
+        </>
+      ) : null}
+
       <AsanohaPanel className="asanoha-light opacity-[0.28]" />
       <BambooAmbience locale={locale} />
-      {/* Petals and bamboo-green leaves drift over the ink, so the wok kitchen
-          carries motion without a second cuisine claim. */}
-      <SakuraField density={0.7} />
-      <LeafField2D count={9} />
+      {/* Petals and bamboo-green leaves drift over the photo and the ink alike,
+          so the wok kitchen carries motion without a second cuisine claim. */}
+      <SakuraField density={1.15} />
+      <LeafField2D count={11} />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 animate-hero-rise sm:py-20 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <div>

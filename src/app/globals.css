@@ -809,6 +809,49 @@
     box-shadow: inset 0 3px 0 var(--color-vermilion-500);
   }
 
+  /* Grades the hero photo into the ink ground. It sits above the photo and
+     below the copy. The hero's own glows stay *behind* the photo, so a hero
+     with no photo is pixel-identical to the pre-photo design.
+
+     Below the lg breakpoint the hero is one column and the copy spans the full
+     width, so the wash stays deep across it and the photo reads as texture
+     under the type. Every stop here still measures >17:1 against cream, and the
+     photograph is dark to begin with (peak luminance 98/255), so even the
+     lightest stop is safe. */
+  .hero-wash {
+    background-image: linear-gradient(
+      165deg,
+      color-mix(in oklab, var(--color-ink-950) 80%, transparent) 0%,
+      color-mix(in oklab, var(--color-ink-950) 68%, transparent) 46%,
+      color-mix(in oklab, var(--color-ink-900) 58%, transparent) 100%
+    );
+  }
+
+  @media (min-width: 1024px) {
+    /* At lg the hero splits into two columns and the copy takes the left ~55%,
+       so the wash can open towards the right where the photo's subject and the
+       ringed plate sit. Measured across the text column it stays >17:1. */
+    .hero-wash {
+      background-image: linear-gradient(
+        100deg,
+        color-mix(in oklab, var(--color-ink-950) 84%, transparent) 0%,
+        color-mix(in oklab, var(--color-ink-950) 58%, transparent) 44%,
+        color-mix(in oklab, var(--color-ink-900) 24%, transparent) 100%
+      );
+    }
+
+    /* In RTL the copy takes the right column, so the wash mirrors with it —
+       otherwise Arabic text would sit on the *open* end of the gradient. */
+    [dir="rtl"] .hero-wash {
+      background-image: linear-gradient(
+        260deg,
+        color-mix(in oklab, var(--color-ink-950) 84%, transparent) 0%,
+        color-mix(in oklab, var(--color-ink-950) 58%, transparent) 44%,
+        color-mix(in oklab, var(--color-ink-900) 24%, transparent) 100%
+      );
+    }
+  }
+
  /* ---- Washi paper band (header / bottom nav) -----------------------
      Rice paper is the "card" the ink rests on: a warm off-white sheet with a
      subtle fibre grain and a soft lit edge. The sheet *moves*: a gentle

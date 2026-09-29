@@ -1754,3 +1754,60 @@ item revenue" (215 of 405).
 .report_interval_hours` (24 = daily, 168 = weekly) plus `agent_automations`
 `cadence: daily | weekly | monthly | interval`. No new scheduler was needed.
 
+
+## Home hero photo + sakura (2026-09-29)
+
+The home hero can carry an owner-supplied background photo. It is a **setting,
+not a code path**: `brand.hero_url` (public) is read by `getPublicSettings` and
+rendered by the hero. `brand.banner_url` was read but rendered nowhere — a dead
+key; `brand.hero_url` is the one actually wired.
+
+- **The admin surface already existed.** `listSettings` selects every row and
+  `SettingsForm` groups rows by the prefix before the first dot, so adding the
+  row is the *entire* admin work — no component, no page, no deploy. Verified:
+  `/admin/settings` renders `<input id="setting-brand-hero_url">` prefilled.
+- **Absence is meaningful.** The `<img>` and the wash render only when the value
+  is set, and the hero's own lantern glows sit *behind* the photo layer, so a
+  hero with no photo is pixel-identical to the pre-photo design. Clearing the
+  value is a valid way to remove the photo.
+- **ImageKit is a supported image host now.** `src/lib/images/responsive.ts`
+  only rewrote Unsplash URLs, so an ImageKit hero was served raw (~285 KB) on
+  every load. `imagekitSrc()` emits `?tr=w-<w>,q-70,f-webp,c-at_max`. `c-at_max`
+  ("do not enlarge") is load-bearing: `w-1600` from a 941px original otherwise
+  returns an upscaled 1600×2843 (191 KB) instead of the sharp 941×1672 (109 KB).
+  Live variants measured: 400px 33 KB, 800px 88 KB, 1200px 107 KB.
+- **The hero uses an `<img>`, not a CSS background.** A background cannot carry
+  `srcSet`/`sizes`, and Next's optimizer is disabled site-wide
+  (`images.unoptimized`), so the `<img>` + ImageKit CDN is the only way to ship
+  a width-tuned WebP. `fetchPriority="high"`, `decoding="async"`,
+  `alt=""`/`aria-hidden` (decorative), `object-cover object-[62%_64%]`.
+- **Focal point is measured, not guessed.** The photo is portrait (941×1672) and
+  the hero is wide. Row-wise detail analysis put the brightest subject at 62-84%
+  of the height, so `object-position: 62% 64%` crops to the subject rather than
+  the empty upper half.
+
+### The legibility wash, and why it is breakpoint-aware
+`globals.css` `.hero-wash` sits above the photo and below the copy. It has two
+regimes because the hero's layout changes at `lg`:
+
+- below 1024px the hero is one column and copy spans the full width, so the wash
+  stays deep across it (165deg, 80%→68%→58% ink);
+- at ≥1024px the copy takes the left column, so the wash opens to the right
+  (100deg, 84%→58%→24%) where the photo's subject and the ringed plate sit.
+
+`[dir="rtl"] .hero-wash` mirrors the angle (260deg), because in Arabic the copy
+column is on the right and would otherwise sit on the open end.
+
+**Contrast was measured on real rendered pixels, not the gradient maths.**
+Screenshot at 1920×1080, background pixels only (anything below luminance 0.25):
+median 0.004, p99 0.139, and the brightest background column at 66% across —
+i.e. exactly where the wash opens. Cream headline measures **19.3:1** and the
+body copy 15:1, both far above the 7:1 AAA bar. The photo reads as texture
+(stddev 0.02) rather than being flattened to ink. This holds because the source
+photograph is very dark to begin with (peak luminance 98/255) — a *bright* hero
+photo would need a stronger wash, so re-measure if the owner swaps it.
+
+`SakuraField density` went 0.7 → 1.15 (petals are drawn on a canvas above the
+photo) and `LeafField2D` 9 → 11, so the sakura reads against the photo and not
+just against flat ink. The site remains silent by design — no audio was added.
+

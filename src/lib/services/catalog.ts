@@ -260,6 +260,7 @@ export type PublicSettings = {
     logo_url: string | null;
     favicon_url: string | null;
     banner_url: string | null;
+    hero_url: string | null;
   };
   support: {
     phone: string | null;
@@ -338,6 +339,7 @@ export const getPublicSettings = cache(async (): Promise<PublicSettings> => {
       logo_url: toNullableText(map.get("brand.logo_url")),
       favicon_url: toNullableText(map.get("brand.favicon_url")),
       banner_url: toNullableText(map.get("brand.banner_url")),
+      hero_url: toNullableText(map.get("brand.hero_url")),
     },
     support: {
       phone: toNullableText(map.get("support.phone")),
