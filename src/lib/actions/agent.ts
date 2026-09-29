@@ -17,6 +17,10 @@ import {
   persistOpsReport,
   runOpsReport,
 } from "@/lib/agent/ops-agent";
+import {
+  createDeliverable,
+  isDeliverableKind,
+} from "@/lib/agent/deliverables";
 import { REPO_SKILL_SOURCES } from "@/lib/agent/repo-skills.generated";
 import { importGithubSkills, syncSkillSources } from "@/lib/agent/skill-sources";
 import { remember } from "@/lib/agent/memory";
@@ -30,6 +34,41 @@ import { remember } from "@/lib/agent/memory";
  * and the actor to hold `ai.manage`. Even for an owner, approving reads the
  * stored payload rather than trusting anything from the browser.
  */
+
+/**
+ * Produces one deliverable on demand and stores it. This is the manual half of
+ * the scheduled report: instead of only reading prose, the owner gets a real
+ * file (a sales sheet, a menu-engineering report, a reorder CSV) they can open.
+ */
+export async function runDeliverableAction(
+  formData: FormData,
+): Promise<FormActionResult<{ id: string; title: string; rowCount: number }>> {
+  const session = await assertCapability("ai.manage");
+
+  const kind = String(formData.get("kind") ?? "").trim();
+  if (!isDeliverableKind(kind)) {
+    return actionFail("VALIDATION", "Unknown deliverable type.");
+  }
+
+  try {
+    const result = await createDeliverable({ kind, createdBy: session.actorId });
+
+    const supabase = await createServerSupabase();
+    await logAudit(supabase, {
+      actorId: session.actorId,
+      actorRole: session.role,
+      action: "ops_agent.deliverable_created",
+      entity: "agent_artifacts",
+      entityId: result.id,
+      after: { kind, rowCount: result.rowCount },
+    });
+
+    revalidatePath("/admin/agent");
+    return actionOk({ id: result.id, title: result.title, rowCount: result.rowCount });
+  } catch (error) {
+    return actionError(error);
+  }
+}
 
 /** Runs a report on demand, persisting it and queueing fresh proposals. */
 export async function runAgentNowAction(): Promise<FormActionResult<{ runId: string }>> {

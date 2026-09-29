@@ -11,6 +11,15 @@ import {
 import { AgentControls } from "@/components/admin/agent-controls";
 import { AgentActionCard } from "@/components/admin/agent-action-card";
 import { AgentSkillsPanel } from "@/components/admin/agent-skills-panel";
+import {
+  AgentDeliverables,
+  type DeliverableOption,
+  type DeliverableRow,
+} from "@/components/admin/agent-deliverables";
+import {
+  getDeliverableDownloadUrls,
+  listDeliverables,
+} from "@/lib/agent/deliverables";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDateTime, humanise } from "@/lib/utils/format";
@@ -38,6 +47,41 @@ export default async function AdminAgentPage() {
     countAgentMemory(),
     getAgentBaseUrl(),
   ]);
+
+  const deliverables = await listDeliverables(30);
+  const readyPaths = deliverables
+    .filter((d) => d.status === "ready" && d.storage_path)
+    .map((d) => d.storage_path as string);
+  const urlsByPath = await getDeliverableDownloadUrls(readyPaths);
+  // The panel keys downloads by row id; map the signed URLs back to it.
+  const downloadUrls: Record<string, string> = {};
+  for (const d of deliverables) {
+    const url = d.storage_path ? urlsByPath[d.storage_path] : undefined;
+    if (url) downloadUrls[d.id] = url;
+  }
+
+  const deliverableOptions: DeliverableOption[] = [
+    { kind: "daily_sales", label: "Daily sales sheet", description: "Today's orders, revenue, average order and top dishes." },
+    { kind: "weekly_kpi", label: "Weekly KPI digest", description: "This week against last week: revenue, orders, customers, cancellations." },
+    { kind: "menu_engineering", label: "Menu engineering report", description: "Stars, plowhorses, puzzles and dogs from 30 days of sales." },
+    { kind: "stock_reorder", label: "Stock reorder sheet", description: "A CSV of what is low or out, with quantities to order." },
+    { kind: "eod_reconciliation", label: "End-of-day reconciliation", description: "Money taken in the last 24 hours, split by payment method." },
+    { kind: "winback_draft", label: "Win-back campaign draft", description: "Opted-in customers who went quiet, with a message draft." },
+    { kind: "pricing_review", label: "Pricing review", description: "Lowest-contribution dishes with their list price." },
+  ];
+
+  const deliverableRows: DeliverableRow[] = deliverables.map((d) => ({
+    id: d.id,
+    kind: d.kind,
+    title: d.title,
+    summary: d.summary,
+    format: d.format,
+    status: d.status,
+    bytes: d.bytes,
+    row_count: d.row_count,
+    error: d.error,
+    created_at: d.created_at,
+  }));
 
   const pending = actions.filter((a) => a.status === "proposed");
   const approved = actions.filter((a) => a.status === "approved");
@@ -74,6 +118,12 @@ export default async function AdminAgentPage() {
       />
 
       <AgentSkillsPanel skills={skills} memoryCount={memoryCount} baseUrl={baseUrl} />
+
+      <AgentDeliverables
+        options={deliverableOptions}
+        artifacts={deliverableRows}
+        downloadUrls={downloadUrls}
+      />
 
       <section className="washi-panel p-4" aria-label="Approval queue">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-ink-900">

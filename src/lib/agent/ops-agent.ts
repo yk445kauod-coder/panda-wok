@@ -17,6 +17,12 @@ import { retrieveSkills, renderSkillContext } from "@/lib/agent/skills";
 import { renderToolCatalogue } from "@/lib/agent/tools";
 import { findUngroundedFigures } from "@/lib/agent/grounding";
 import { createExportJob, type ExportDataset } from "@/lib/export/create";
+import {
+  createDeliverable,
+  isDeliverableKind,
+  renderDeliverableCatalogue,
+  type DeliverableKind,
+} from "@/lib/agent/deliverables";
 import type { Json } from "@/lib/types/database";
 
 /**
@@ -40,7 +46,8 @@ export type OpsAgentActionKind =
   | "price_review"
   | "menu_gap"
   | "loyalty_tuning"
-  | "export";
+  | "export"
+  | "deliverable";
 
 const VALID_ACTION_KINDS: ReadonlySet<string> = new Set<OpsAgentActionKind>([
   "newsletter",
@@ -51,6 +58,7 @@ const VALID_ACTION_KINDS: ReadonlySet<string> = new Set<OpsAgentActionKind>([
   "menu_gap",
   "loyalty_tuning",
   "export",
+  "deliverable",
 ]);
 
 /** Mirrors the datasets `create_export()` accepts, so a bad kind fails early. */
@@ -145,6 +153,17 @@ export function deterministicActions(
     title: "Record this week's insights in the console",
     rationale: "Makes the analysis visible to every admin, not only the run log.",
     payload: { count: insights.length },
+  });
+
+  // A standing offer to produce the menu-engineering report. It is the single
+  // most operational document the agent can render from live sales, so it is
+  // proposed on every run unless the owner turns proposals off.
+  actions.push({
+    kind: "deliverable",
+    title: "Produce the menu engineering report",
+    rationale:
+      "Classifies every selling dish into stars, plowhorses, puzzles and dogs from 30 days of real sales.",
+    payload: { deliverable: "menu_engineering" },
   });
 
   // A standing "the data is available" proposal. Exporting is read-only and
@@ -275,6 +294,10 @@ export async function runOpsReport(params: {
       // Tools are named, not executed: the agent states which read would settle
       // a question instead of the run pulling every table into context.
       `أدوات القراءة المتاحة (الاسم: الغرض) —\n${renderToolCatalogue()}`,
+      // The agent can file a document, not only describe one. Naming the exact
+      // kinds keeps a proposal actionable (the apply handler validates them).
+      `المستندات اللي تقدر تنتجها (kind: الوصف) —\n${renderDeliverableCatalogue()}`,
+      "لو اقترحت إنتاج مستند، استخدم النوع الحالي: {\"kind\":\"deliverable\",\"title\":...,\"rationale\":...,\"payload\":{\"deliverable\":\"<one of the kinds above>\"}}",
       memoryBlock ? `سياق المالك:\n${memoryBlock}` : null,
       skillBlock ? `إرشادات ذات صلة:\n${skillBlock}` : null,
       "اللقطة:",
@@ -512,6 +535,22 @@ export async function applyOpsAction(action: {
         requestedBy: action.approvedBy,
       });
       return { ref: `export:${id}:${rows}` };
+    }
+
+    case "deliverable": {
+      // Approving renders the document and stores it. Every deliverable is a
+      // read-only snapshot (a sheet, a report, a draft), so applying one has no
+      // effect on orders, prices or the menu — the human still decides whether to
+      // act on what the document says.
+      const kind = String(action.payload.deliverable ?? "").trim();
+      if (!isDeliverableKind(kind)) {
+        throw new Error(`"${kind}" is not a deliverable the agent can produce.`);
+      }
+      const result = await createDeliverable({
+        kind: kind as DeliverableKind,
+        createdBy: action.approvedBy,
+      });
+      return { ref: `deliverable:${result.id}:${result.rowCount}` };
     }
 
     default:

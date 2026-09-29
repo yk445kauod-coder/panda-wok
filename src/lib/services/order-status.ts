@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createServerSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
 import { getPublicSettings } from "@/lib/services/catalog";
 import type { CheckoutConfig, OfferRule } from "@/lib/services/checkout-math";
 
@@ -17,18 +17,22 @@ export * from "@/lib/services/order-workflow";
  */
 export async function getCheckoutConfig(): Promise<CheckoutConfig> {
   const settings = await getPublicSettings();
-  const supabase = await createServerSupabase();
 
-  // tax.rate and max qty are intentionally not public settings, so read the
-  // numeric defaults through the settings table as staff would. When the caller
-  // is a customer these keys are absent and we fall back to the same defaults
-  // that place_order uses, keeping the preview honest.
+  // tax.rate and max qty are deliberately not public settings, so a customer
+  // session cannot select them. Read them through the service role instead of
+  // guessing a default: `place_order` resolves them authoritatively, and a
+  // customer-visible preview that falls back to a stale default (it used to
+  // assume 14% after the rate was set to 0) shows tax the kitchen does not
+  // charge. Falls back to the request client only when the key is absent.
+  const admin = tryCreateAdminSupabase();
+  const supabase = admin ?? (await createServerSupabase());
+
   const { data } = await supabase
     .from("settings")
     .select("key, value")
     .in("key", ["tax.rate", "ordering.max_qty_per_item"]);
 
-  const map = new Map((data ?? []).map((r) => [r.key, r.value]));
+  const map = new Map((data ?? []).map((r: { key: string; value: unknown }) => [r.key, r.value]));
   const readNumber = (key: string, fallback: number) => {
     const v = map.get(key);
     if (typeof v === "number") return v;
@@ -42,7 +46,9 @@ export async function getCheckoutConfig(): Promise<CheckoutConfig> {
     deliveryFee: settings.ordering.deliveryFee,
     etaMinutes: settings.ordering.etaMinutes,
     acceptingOrders: settings.ordering.acceptingOrders,
-    taxRate: readNumber("tax.rate", 0.14),
+    // No tax is inferred when the row is unreadable: the live rate is 0 and a
+    // hardcoded non-zero default is exactly how the checkout drifted from the till.
+    taxRate: readNumber("tax.rate", 0),
     maxQtyPerItem: readNumber("ordering.max_qty_per_item", 20),
     loyaltyPointValue: settings.loyalty.pointValue,
     pointsPerCurrency: settings.loyalty.pointsPerCurrency,

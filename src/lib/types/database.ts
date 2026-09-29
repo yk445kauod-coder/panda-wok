@@ -129,6 +129,68 @@ export type Database = {
           },
         ]
       }
+      agent_artifacts: {
+        Row: {
+          bytes: number | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          data: Json
+          error: string | null
+          format: string
+          id: string
+          kind: string
+          row_count: number | null
+          run_id: string | null
+          status: string
+          storage_path: string | null
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          bytes?: number | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          error?: string | null
+          format?: string
+          id?: string
+          kind: string
+          row_count?: number | null
+          run_id?: string | null
+          status?: string
+          storage_path?: string | null
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          bytes?: number | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          error?: string | null
+          format?: string
+          id?: string
+          kind?: string
+          row_count?: number | null
+          run_id?: string | null
+          status?: string
+          storage_path?: string | null
+          summary?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_artifacts_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "ops_agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_automations: {
         Row: {
           at_hour: number
@@ -2966,6 +3028,10 @@ export type Database = {
         Returns: string
       }
       ensure_agent_cron_token: { Args: never; Returns: boolean }
+      fail_artifact: {
+        Args: { p_error: string; p_id: string }
+        Returns: undefined
+      }
       feedback_count: {
         Args: {
           p_category?: Database["public"]["Enums"]["feedback_category"]
@@ -2973,6 +3039,15 @@ export type Database = {
           p_status?: Database["public"]["Enums"]["feedback_status"]
         }
         Returns: number
+      }
+      finish_artifact: {
+        Args: {
+          p_bytes: number
+          p_id: string
+          p_row_count: number
+          p_storage_path: string
+        }
+        Returns: undefined
       }
       get_ai_secret: { Args: { p_name: string }; Returns: string }
       gift_loyalty_points: {
@@ -3073,6 +3148,18 @@ export type Database = {
         }
         Returns: number
       }
+      open_artifact: {
+        Args: {
+          p_created_by?: string
+          p_data: Json
+          p_format: string
+          p_kind: string
+          p_run_id?: string
+          p_summary: string
+          p_title: string
+        }
+        Returns: string
+      }
       open_dm: { Args: { p_other: string }; Returns: string }
       ops_agent_due: { Args: { p_kind?: string }; Returns: boolean }
       order_is_editable: {
@@ -3084,6 +3171,23 @@ export type Database = {
         Returns: boolean
       }
       place_order: {
+        Args: {
+          p_address_id?: string
+          p_customer_note?: string
+          p_fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
+          p_idempotency_key: string
+          p_items: Json
+          p_payment_method?: Database["public"]["Enums"]["payment_method"]
+          p_points_redeem?: number
+        }
+        Returns: {
+          order_id: string
+          order_number: string
+          reused: boolean
+          total: number
+        }[]
+      }
+      place_order_internal: {
         Args: {
           p_address_id?: string
           p_customer_note?: string
@@ -3155,6 +3259,10 @@ export type Database = {
       set_ai_secret: {
         Args: { p_description?: string; p_name: string; p_value: string }
         Returns: string
+      }
+      setting_flag: {
+        Args: { p_default?: boolean; p_key: string }
+        Returns: boolean
       }
       setting_numeric: {
         Args: { p_default: number; p_key: string }

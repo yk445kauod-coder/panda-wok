@@ -1997,3 +1997,49 @@ horizontal overflow). At `lg` it returns to the leading edge because the
 two-column layout puts the copy in one column. Note the hero *stats* strip
 (`dl`) stays `text-start` at every width by design — it is a data table, not
 copy.
+
+## Ops agent deliverables (2026-09-29)
+
+The ops agent can now *produce documents*, not only propose changes. Deliverables
+render from the live database, are stored in the private `artifacts` bucket, and
+are downloadable from Admin -> AI ops (signed URLs).
+
+- `src/lib/agent/deliverables.ts` — seven kinds: `daily_sales`, `weekly_kpi`,
+  `menu_engineering`, `stock_reorder`, `winback_draft`, `pricing_review`,
+  `eod_reconciliation`. `createDeliverable()` opens an `agent_artifacts` row
+  (`building`), renders, uploads, then marks it `ready`; a failure marks it
+  `failed` with the message, so a crash is auditable rather than invisible.
+- **Read them with the service client, never `createServerSupabase()`.** The
+  first version called `listStockItems()`/`listAdminMenuItems()`, which read
+  request headers; every render outside an HTTP request (the scheduled agent, a
+  test) threw *"`headers` was called outside a request scope"*. A background
+  agent has no request, so a deliverable must not depend on one.
+- **The DB types are the contract.** `open_artifact`/`finish_artifact` take the
+  run/actor ids as `uuid default null`, so the generated types mark them optional
+  (`p_run_id?: string`). Passing an explicit `undefined` is what the optional
+  signature wants; do not reintroduce a non-defaulted `uuid` parameter or the
+  call fails typecheck again.
+- **Do not chain `.catch()` on a PostgREST builder** — it is a thenable, not a
+  real Promise, so `.catch` does not exist. Use `.then(ok, err)`.
+- The agent proposes a `deliverable` action (`payload.deliverable` is one of the
+  kinds); approving it renders and files the document. Read-only by design — a
+  document never changes an order, price or menu. Constraint migration
+  `20260929201000_agent_deliverable_action.sql` adds `deliverable` to
+  `ops_agent_actions.kind`.
+- Verified live: all seven kinds render against real data (menu engineering
+  classified 4 selling dishes into stars/plowhorses), and the full
+  create -> render -> upload -> list -> download -> delete cycle round-trips with
+  zero leftovers in `agent_artifacts` or the bucket.
+
+## Checkout tax actually shows 0 now (2026-09-29)
+
+`getCheckoutConfig()` fell back to a hardcoded **14%** when `tax.rate` was not
+readable, because `tax.rate` is not a public setting. After the rate was set to 0
+the customer preview still showed 14% tax while `place_order` charged 0 — the
+preview and the charge disagreed. It now reads the key through the **service
+role** (`tryCreateAdminSupabase()`), falling back to the request client only if no
+service key is configured, so the preview matches the authoritative value.
+
+`delivery.fee` / `delivery.free_over` are live at 0 and are already public
+settings, so they need no special read path; both are editable in Admin ->
+Settings (verified by a set -> read -> revert round-trip).
