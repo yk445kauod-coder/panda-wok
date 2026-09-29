@@ -39,6 +39,12 @@ const ASSET_FILE =
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
+    const marker = (response) => {
+      const headers = new Headers(response.headers);
+      const cacheOk = typeof caches !== "undefined" && Boolean(caches.default);
+      headers.set("x-pw-worker", cacheOk ? "1+cache" : "1-nocache");
+      return new Response(response.body, { status: response.status, headers });
+    };
 
     if (SERVER_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
       return new Response("Not found", { status: 404 });
@@ -54,6 +60,16 @@ export default {
     }
 
     const handler = opennext.fetch ?? opennext.default?.fetch;
+    const marker2 = marker;
+
+    // temp diagnostic
+    if (pathname.startsWith("/__pw_health")) {
+      return marker2(
+        new Response(JSON.stringify({ ok: true, cache: typeof caches !== "undefined" && Boolean(caches.default) }), {
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    }
 
     // Edge cache for anonymous public pages. During a rush this is the
     // difference between every hit running the Worker and the CDN answering
@@ -84,20 +100,20 @@ export default {
         const cache = caches.default;
 
         const hit = await cache.match(cacheKey);
-        if (hit) return withCacheStatus(hit, "HIT");
+        if (hit) return marker(withCacheStatus(hit, "HIT"));
 
         const response = await handler(request, env, ctx);
         if (response.status === 200 && isHtml(response)) {
           const cacheable = new Response(response.body, response);
           cacheable.headers.set("Cache-Control", EDGE_CACHE_CONTROL);
           ctx.waitUntil(cache.put(cacheKey, cacheable.clone()));
-          return withCacheStatus(cacheable, "MISS");
+          return marker(withCacheStatus(cacheable, "MISS"));
         }
-        return response;
+        return marker(response);
       }
     }
 
-    return handler(request, env, ctx);
+    return marker(await handler(request, env, ctx));
   },
 };
 
