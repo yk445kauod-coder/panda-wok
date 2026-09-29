@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Phone, StickyNote } from "lucide-react";
 import { requireCapability } from "@/lib/auth/session";
 import { getAdminOrder } from "@/lib/services/admin-orders";
-import { ORDER_STATUS_LABELS } from "@/lib/services/order-status";
 import { Badge } from "@/components/ui/button";
 import { OrderStatusControl } from "@/components/admin/order-status-control";
 import { safeJson } from "@/lib/utils/format";
-import { formatDateTime, formatPrice, humanise } from "@/lib/utils/format";
+import { formatDateTime, formatPrice } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +43,7 @@ export default async function AdminOrderDetailPage({
 }) {
   const { orderId } = await params;
   await requireCapability("orders.view");
+  const t = await getT(await getAdminLocale());
 
   const order = await getAdminOrder(orderId);
   if (!order) notFound();
@@ -63,15 +64,16 @@ export default async function AdminOrderDetailPage({
         className="inline-flex items-center gap-1.5 text-sm text-ink-700 hover:text-ink-900"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
-        All orders
+        {t("admin.pages.orderDetail.allOrders")}
       </Link>
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-ink-900">#{order.order_number}</h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            Placed {formatDateTime(order.created_at)} · {humanise(order.fulfillment)} ·{" "}
-            {humanise(order.payment_method)}
+            {t("admin.pages.orderDetail.placed")} {formatDateTime(order.created_at)} ·{" "}
+            {t(`admin.term.fulfilment.${order.fulfillment}`)} ·{" "}
+            {t(`admin.term.paymentMethod.${order.payment_method}`)}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge
@@ -83,28 +85,29 @@ export default async function AdminOrderDetailPage({
                     : "info"
               }
             >
-              {ORDER_STATUS_LABELS[order.status]}
+              {t(`admin.term.orderStatus.${order.status}`)}
             </Badge>
             <Badge tone={order.payment_status === "paid" ? "success" : "warning"}>
-              Payment: {humanise(order.payment_status)}
+              {t("admin.pages.orderDetail.paymentPrefix")}{" "}
+              {t(`admin.term.paymentStatus.${order.payment_status}`)}
             </Badge>
-            <Badge>{order.item_count} items</Badge>
+            <Badge>{t("admin.pages.orderDetail.itemsCount", { count: order.item_count })}</Badge>
           </div>
         </div>
 
         <div className="w-full max-w-xs space-y-2">
           <div className="washi-panel px-4 py-3">
-            <p className="text-xs text-ink-700/70">Order total</p>
+            <p className="text-xs text-ink-700/70">{t("admin.pages.orderDetail.orderTotal")}</p>
             <p className="font-display text-xl font-semibold tabular-nums text-ink-900">
               {formatPrice(order.total)}
             </p>
             <dl className="mt-1 space-y-0.5 text-xs text-ink-700/75">
               <div className="flex justify-between">
-                <dt>Subtotal</dt>
+                <dt>{t("admin.pages.orderDetail.subtotal")}</dt>
                 <dd className="tabular-nums">{formatPrice(order.subtotal)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt>Delivery</dt>
+                <dt>{t("admin.pages.orderDetail.delivery")}</dt>
                 <dd className="tabular-nums">{formatPrice(order.delivery_fee)}</dd>
               </div>
             </dl>
@@ -115,9 +118,9 @@ export default async function AdminOrderDetailPage({
       </header>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="washi-panel p-4" aria-label="Items">
+        <section className="washi-panel p-4" aria-label={t("admin.pages.orderDetail.ariaItems")}>
           <h2 className="font-display text-base font-semibold text-ink-900">
-            What to cook
+            {t("admin.pages.orderDetail.whatToCook")}
           </h2>
           <ul className="mt-3 divide-y divide-ink-900/8">
             {order.items.map((item) => (
@@ -154,13 +157,16 @@ export default async function AdminOrderDetailPage({
         </section>
 
         <div className="space-y-4">
-          <section className="washi-panel p-4" aria-label="Customer and delivery">
+          <section
+            className="washi-panel p-4"
+            aria-label={t("admin.pages.orderDetail.ariaCustomerDelivery")}
+          >
             <h2 className="font-display text-base font-semibold text-ink-900">
-              Customer &amp; delivery
+              {t("admin.pages.orderDetail.customerDelivery")}
             </h2>
 
             <p className="mt-3 text-sm font-medium text-ink-900">
-              {order.customer_name ?? "Unnamed customer"}
+              {order.customer_name ?? t("admin.pages.orderDetail.unnamedCustomer")}
             </p>
             {order.customer_phone ? (
               <a
@@ -177,9 +183,15 @@ export default async function AdminOrderDetailPage({
                 <span>
                   {[
                     address.address_line,
-                    address.building ? `Building ${address.building}` : null,
-                    address.floor ? `Floor ${address.floor}` : null,
-                    address.apartment ? `Apt ${address.apartment}` : null,
+                    address.building
+                      ? t("admin.pages.orderDetail.building", { value: address.building })
+                      : null,
+                    address.floor
+                      ? t("admin.pages.orderDetail.floor", { value: address.floor })
+                      : null,
+                    address.apartment
+                      ? t("admin.pages.orderDetail.apartment", { value: address.apartment })
+                      : null,
                   ]
                     .filter(Boolean)
                     .join(", ")}
@@ -189,14 +201,16 @@ export default async function AdminOrderDetailPage({
                     <>
                       <br />
                       <span className="text-ink-700/75">
-                        Landmark: {address.landmark}
+                        {t("admin.pages.orderDetail.landmark")} {address.landmark}
                       </span>
                     </>
                   ) : null}
                   {address.notes ? (
                     <>
                       <br />
-                      <span className="text-ink-700/75">Notes: {address.notes}</span>
+                      <span className="text-ink-700/75">
+                        {t("admin.pages.orderDetail.notesPrefix")} {address.notes}
+                      </span>
                     </>
                   ) : null}
                 </span>
@@ -210,30 +224,33 @@ export default async function AdminOrderDetailPage({
                 className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-jade-700 hover:text-jade-800"
               >
                 <MapPin className="size-4" aria-hidden="true" />
-                Open shared pin in Maps
+                {t("admin.pages.orderDetail.openPin")}
               </a>
             ) : null}
 
             {!mapUrl ? (
               <p className="mt-2 text-xs text-ink-700/60">
-                No map pin shared with this address.
+                {t("admin.pages.orderDetail.noPin")}
               </p>
             ) : null}
 
             {order.customer_note ? (
               <p className="mt-3 rounded-lg bg-miso-300/25 px-3 py-2 text-sm text-ink-800">
-                Customer note: {order.customer_note}
+                {t("admin.pages.orderDetail.customerNote")} {order.customer_note}
               </p>
             ) : null}
           </section>
 
-          <section className="washi-panel p-4" aria-label="Status history">
+          <section
+            className="washi-panel p-4"
+            aria-label={t("admin.pages.orderDetail.ariaStatusHistory")}
+          >
             <h2 className="font-display text-base font-semibold text-ink-900">
-              Status history
+              {t("admin.pages.orderDetail.statusHistory")}
             </h2>
             {order.history.length === 0 ? (
               <p className="mt-2 text-sm text-ink-700/70">
-                No transitions recorded yet.
+                {t("admin.pages.orderDetail.noHistory")}
               </p>
             ) : (
               <ol className="mt-3 space-y-3">
@@ -246,12 +263,14 @@ export default async function AdminOrderDetailPage({
                     <div>
                       <p className="text-ink-900">
                         {entry.from_status
-                          ? `${ORDER_STATUS_LABELS[entry.from_status]} → ${ORDER_STATUS_LABELS[entry.to_status]}`
-                          : ORDER_STATUS_LABELS[entry.to_status]}
+                          ? `${t(`admin.term.orderStatus.${entry.from_status}`)} → ${t(`admin.term.orderStatus.${entry.to_status}`)}`
+                          : t(`admin.term.orderStatus.${entry.to_status}`)}
                       </p>
                       <p className="text-xs text-ink-700/70">
                         {formatDateTime(entry.created_at)}
-                        {entry.changed_by_role ? ` · ${humanise(entry.changed_by_role)}` : ""}
+                        {entry.changed_by_role
+                          ? ` · ${t(`admin.term.role.${entry.changed_by_role}`)}`
+                          : ""}
                       </p>
                       {entry.note ? (
                         <p className="mt-0.5 text-xs text-ink-800/85">{entry.note}</p>

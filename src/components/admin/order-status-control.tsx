@@ -4,12 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { updateOrderStatusAction } from "@/lib/actions/admin";
-import { useErrorText } from "@/components/i18n-provider";
-import {
-  ORDER_STATUS_LABELS,
-  allowedTransitions,
-  type OrderStatus,
-} from "@/lib/services/order-workflow";
+import { useErrorText, useT } from "@/components/i18n-provider";
+import { allowedTransitions, type OrderStatus } from "@/lib/services/order-workflow";
 
 /**
  * Status control for one order. Only transitions the state machine permits are
@@ -26,6 +22,7 @@ export function OrderStatusControl({
 }) {
   const router = useRouter();
   const errorText = useErrorText();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const [pending, setPending] = useState<OrderStatus | null>(null);
@@ -58,7 +55,7 @@ export function OrderStatusControl({
       setOpen(false);
       router.refresh();
     } catch {
-      setError(errorText({ code: "UNKNOWN", message: "Network error" }));
+      setError(t("admin.pages.orderStatusControl.networkError"));
     } finally {
       setPending(null);
     }
@@ -67,7 +64,9 @@ export function OrderStatusControl({
   if (options.length === 0) {
     return (
       <p className="text-xs text-ink-700/65">
-        {ORDER_STATUS_LABELS[current]} is final — no further changes.
+        {t("admin.pages.orderStatusControl.final", {
+          status: t(`admin.term.orderStatus.${current}`),
+        })}
       </p>
     );
   }
@@ -83,7 +82,7 @@ export function OrderStatusControl({
             disabled={pending !== null}
             className="rounded-lg bg-vermilion-600 px-2.5 py-1.5 text-xs font-medium text-rice-50 hover:bg-vermilion-700 disabled:opacity-60"
           >
-            {pending === status ? "…" : `→ ${ORDER_STATUS_LABELS[status]}`}
+            {pending === status ? "…" : `→ ${t(`admin.term.orderStatus.${status}`)}`}
           </button>
         ))}
       </div>
@@ -98,7 +97,7 @@ export function OrderStatusControl({
         aria-expanded={open}
         className="inline-flex h-10 w-full items-center justify-between rounded-xl border border-ink-900/15 bg-rice-50 px-3 text-sm text-ink-900 hover:bg-rice-100"
       >
-        <span>Change status</span>
+        <span>{t("admin.pages.orderStatusControl.changeStatus")}</span>
         <ChevronDown
           className={`size-4 transition-transform ${open ? "rotate-180" : ""}`}
           aria-hidden="true"
@@ -109,14 +108,14 @@ export function OrderStatusControl({
         <div className="washi-panel space-y-3 p-3">
           <div>
             <label htmlFor={`note-${orderId}`} className="block text-xs font-medium text-ink-800">
-              Note for the customer (optional)
+              {t("admin.pages.orderStatusControl.noteLabel")}
             </label>
             <input
               id={`note-${orderId}`}
               value={note}
               onChange={(event) => setNote(event.target.value)}
               maxLength={300}
-              placeholder="Rider is stuck in traffic"
+              placeholder={t("admin.pages.orderStatusControl.notePlaceholder")}
               className="mt-1 h-10 w-full rounded-lg border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
             />
           </div>
@@ -138,7 +137,9 @@ export function OrderStatusControl({
                       : "rounded-lg bg-vermilion-600 px-3 py-2 text-xs font-medium text-rice-50 hover:bg-vermilion-700 disabled:opacity-60"
                   }
                 >
-                  {pending === status ? "Updating…" : ORDER_STATUS_LABELS[status]}
+                  {pending === status
+                    ? t("admin.pages.orderStatusControl.updating")
+                    : t(`admin.term.orderStatus.${status}`)}
                 </button>
               );
             })}
