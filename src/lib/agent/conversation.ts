@@ -191,10 +191,13 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
     { role: "user", content: input.question },
   ];
 
+  // The operator agent is the "agentic" workload: multi-step tool loops and
+  // document work, so it is routed to the strongest free model the owner keys.
   const chain = await buildDbProviderChain({ rows: await loadDbProviders(), binding: null }, () =>
     // The deterministic floor answers with an honest "I have no model" line;
     // the loop below still runs so the transcript shows the attempt.
     NO_MODEL_MESSAGE,
+    "agentic",
   );
   const provider = chain.primary ?? chain.fallbacks[0] ?? chain.fallback;
 

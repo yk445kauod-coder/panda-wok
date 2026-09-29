@@ -656,8 +656,38 @@ export type DbProviderRow = {
   priority: number;
   monthly_token_quota: number | null;
   max_requests_per_minute: number;
+  /**
+   * Task-based routing: `{ task -> priority }`. A provider is eligible for
+   * every task; for a task present here its priority is the map value instead
+   * of the base `priority` (lower runs first). A task absent from the map uses
+   * the base priority, and an empty map means "eligible everywhere at the base
+   * priority" — the pre-routing single-chain behaviour.
+   */
+  routes?: Record<string, number> | null;
   config?: unknown;
 };
+
+/**
+ * The workloads the provider chain can be routed for. Kept in sync with the
+ * task vocabulary in `20260929210000_ai_task_routing.sql`; callers pass one of
+ * these to `buildDbProviderChain`.
+ *
+ *  - chat    customer assistant + operator chat: short, tool-light.
+ *  - ops     scheduled ops agent: recurring daily/weekly reports.
+ *  - agentic multi-step operator agent: tool loops and document generation.
+ */
+export const AI_TASKS = ["chat", "ops", "agentic"] as const;
+export type AiTask = (typeof AI_TASKS)[number];
+
+/**
+ * The priority a provider runs at for a task. A task keyed in `routes` uses the
+ * map value; otherwise the base `priority`. Exported so the admin console and
+ * the tests share the exact rule the runtime uses.
+ */
+export function routePriority(row: Pick<DbProviderRow, "priority" | "routes">, task: AiTask): number {
+  const mapped = row.routes?.[task];
+  return typeof mapped === "number" && Number.isFinite(mapped) ? mapped : row.priority;
+}
 
 /** Requests counting a provider's usage for quota enforcement. Reads the
  * usage ledger rather than an in-memory store, so it survives restarts and is
@@ -954,27 +984,37 @@ export async function resolveDbProvider(
 
 /**
  * Builds the ordered provider chain from the `ai_providers` rows configured in
- * the admin AI centre.
+ * the admin AI centre, for one task (see `AiTask`).
  *
- * Priority order is the contract: the lowest-priority enabled row that resolves
- * to a working provider is the primary, and every other enabled row becomes an
- * ordered fallback tried before the deterministic floor. `is_fallback` marks a
- * row that may only ever answer when no non-fallback provider resolved, so a
- * "last resort" row is never chosen as the primary while a real one exists.
+ * Priority order is the contract: for the given task, the lowest-priority
+ * enabled row that resolves to a working provider is the primary, and every
+ * other enabled row becomes an ordered fallback tried before the deterministic
+ * floor. A row's priority for a task is `routePriority(row, task)` — the
+ * `routes` map value when the task is keyed there, else the base `priority`.
+ * `is_fallback` marks a row that may only ever answer when no non-fallback
+ * provider resolved, so a "last resort" row is never chosen as the primary
+ * while a real one exists.
  *
- * The deterministic provider is always the floor: an outage, an exhausted
- * quota or a missing key degrades into a correct, database-grounded answer.
+ * Routing means a provider missing its key for this task simply drops out and
+ * the next routed row takes over, so a task with no configured provider still
+ * lands on the shared providers and then the deterministic floor. An outage, an
+ * exhausted quota or a missing key degrades into a correct, database-grounded
+ * answer rather than an error.
  */
 export async function buildDbProviderChain(
   selection: DbProviderSelection,
   deterministicRender: (request: CompletionRequest) => string,
+  task: AiTask = "chat",
 ): Promise<ProviderChain> {
   const builtin = new DeterministicProvider(deterministicRender);
 
   const rows = selection.rows ?? ([] as DbProviderRow[]);
   const enabledRows = rows
     .filter((r: DbProviderRow) => r.is_enabled)
-    .sort((a: DbProviderRow, b: DbProviderRow) => a.priority - b.priority);
+    .sort(
+      (a: DbProviderRow, b: DbProviderRow) =>
+        routePriority(a, task) - routePriority(b, task) || a.priority - b.priority,
+    );
 
   if (enabledRows.length === 0) {
     return { primary: null, fallbacks: [], fallback: builtin };
@@ -1019,15 +1059,23 @@ export async function loadDbProviders(): Promise<DbProviderRow[]> {
     const { data, error } = await admin
       .from("ai_providers")
       .select(
-        "kind,name,model,base_url,secret_ref,is_enabled,is_fallback,priority,monthly_token_quota,max_requests_per_minute,config",
+        "kind,name,model,base_url,secret_ref,is_enabled,is_fallback,priority,monthly_token_quota,max_requests_per_minute,routes,config",
       )
       .order("priority", { ascending: true });
     if (error) return [];
-    return (data ?? []).map((r: DbProviderRow) => ({
-      ...r,
-      is_enabled: r.is_enabled ?? false,
-      is_fallback: r.is_fallback ?? false,
-    }) as DbProviderRow);
+    return (data ?? []).map((raw) => {
+      const r = raw as unknown as DbProviderRow;
+      return {
+        ...r,
+        is_enabled: r.is_enabled ?? false,
+        is_fallback: r.is_fallback ?? false,
+        // Normalise a null/garbage map to {} so routePriority always has an object.
+        routes:
+          r.routes && typeof r.routes === "object" && !Array.isArray(r.routes)
+            ? (r.routes as Record<string, number>)
+            : {},
+      } as DbProviderRow;
+    });
   } catch {
     return [];
   }

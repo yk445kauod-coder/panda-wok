@@ -43,6 +43,7 @@ import {
 } from "@/lib/validation/schemas";
 import { placeholderEmailFor } from "@/lib/auth/phone";
 import { escapeLike, randomId } from "@/lib/utils/format";
+import { AI_TASKS } from "@/lib/ai/provider";
 import { paymentStatusFor } from "@/lib/services/order-workflow";
 
 /** Narrow guard shared by the single-row mutations. */
@@ -1916,6 +1917,7 @@ export async function saveAiProviderAction(
     priority: formData.get("priority") || 100,
     monthlyTokenQuota: formData.get("monthlyTokenQuota") || null,
     maxRequestsPerMinute: formData.get("maxRequestsPerMinute") || 20,
+    routes: parseRoutes(formData),
   });
   if (!parsed.success) return toFormError(parsed.error);
 
@@ -1933,6 +1935,7 @@ export async function saveAiProviderAction(
     priority: parsed.data.priority,
     monthly_token_quota: parsed.data.monthlyTokenQuota ?? null,
     max_requests_per_minute: parsed.data.maxRequestsPerMinute,
+    routes: parsed.data.routes,
   };
 
   const result = parsed.data.id
@@ -2091,4 +2094,20 @@ function parseList(value: FormDataEntryValue | null): string[] {
     .map((part) => part.trim())
     .filter(Boolean)
     .slice(0, 30);
+}
+
+/**
+ * Reads the per-task routing fields (`route_<task>`) off the provider form.
+ * A blank field means "not routed for this task", so it is dropped and the
+ * provider falls back to its base priority for that task.
+ */
+function parseRoutes(formData: FormData): Record<string, number> {
+  const routes: Record<string, number> = {};
+  for (const task of AI_TASKS) {
+    const raw = formData.get(`route_${task}`);
+    if (typeof raw !== "string" || raw.trim() === "") continue;
+    const value = Number(raw);
+    if (Number.isFinite(value)) routes[task] = Math.max(0, Math.min(9999, Math.trunc(value)));
+  }
+  return routes;
 }

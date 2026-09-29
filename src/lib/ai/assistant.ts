@@ -294,6 +294,8 @@ export async function answerAssistantQuestion(params: {
   const memoryBlock = renderMemoryContext(memories);
   const skillBlock = renderSkillContext(skills);
 
+  // The customer assistant is the "chat" workload: short, tool-light, so it is
+  // routed to whatever the owner keys as `chat` (OpenRouter first when present).
   const chain = await buildDbProviderChain({ rows: providers, binding }, (request) => {
     // The deterministic provider recovers the raw question from the last user
     // turn and answers straight from the snapshot.
@@ -301,7 +303,7 @@ export async function answerAssistantQuestion(params: {
       .reverse()
       .find((m) => m.role === "user");
     return renderDeterministicAnswer(snapshot, lastUser?.content ?? "");
-  });
+  }, "chat");
 
   const sections: string[] = [];
   if (memoryBlock) sections.push(`WHAT YOU REMEMBER ABOUT THIS CUSTOMER\n${memoryBlock}`);

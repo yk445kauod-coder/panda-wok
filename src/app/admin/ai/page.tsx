@@ -20,6 +20,13 @@ import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
+/** Reads one task's priority out of a provider's jsonb `routes` map, if set. */
+function readRoutePriority(routes: unknown, task: string): number | null {
+  if (!routes || typeof routes !== "object" || Array.isArray(routes)) return null;
+  const value = (routes as Record<string, unknown>)[task];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 /**
  * AI administration centre. Providers, prompts and the chain are managed here.
  * Credentials are never handled by the browser: a provider row stores the name
@@ -165,31 +172,53 @@ export default async function AdminAiPage() {
           ) : (
             <ul className="mt-3 divide-y divide-ink-900/8">
               {providers.map((provider) => (
-                <li key={provider.id} className="flex items-start justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-ink-900">
-                      {provider.name}
-                      {provider.is_enabled ? (
-                        <Badge tone="success">{t("admin.pages.ai.enabled")}</Badge>
-                      ) : (
-                        <Badge tone="neutral">{t("admin.pages.ai.disabled")}</Badge>
-                      )}
-                      {provider.is_fallback ? <Badge tone="info">Fallback</Badge> : null}
-                    </p>
-                    <p className="mt-0.5 text-xs text-ink-700/70">
-                      {humanise(provider.kind)}
-                      {provider.model ? ` · ${provider.model}` : ""}
-                      {provider.priority ? ` · priority ${provider.priority}` : ""}
-                    </p>
-                    <p className="mt-0.5 text-xs text-ink-700/60">
-                      {provider.secret_ref
-                        ? `Key from env: ${provider.secret_ref}`
-                        : "No key required (builtin)"}
-                      {provider.monthly_token_quota
-                        ? ` · quota ${formatNumber(provider.monthly_token_quota)} tokens/month`
-                        : ""}
-                    </p>
+                <li key={provider.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-ink-900">
+                        {provider.name}
+                        {provider.is_enabled ? (
+                          <Badge tone="success">{t("admin.pages.ai.enabled")}</Badge>
+                        ) : (
+                          <Badge tone="neutral">{t("admin.pages.ai.disabled")}</Badge>
+                        )}
+                        {provider.is_fallback ? <Badge tone="info">Fallback</Badge> : null}
+                      </p>
+                      <p className="mt-0.5 text-xs text-ink-700/70">
+                        {humanise(provider.kind)}
+                        {provider.model ? ` · ${provider.model}` : ""}
+                        {provider.priority ? ` · priority ${provider.priority}` : ""}
+                      </p>
+                      <p className="mt-0.5 text-xs text-ink-700/60">
+                        {provider.secret_ref
+                          ? `Key from env: ${provider.secret_ref}`
+                          : "No key required (builtin)"}
+                        {provider.monthly_token_quota
+                          ? ` · quota ${formatNumber(provider.monthly_token_quota)} tokens/month`
+                          : ""}
+                      </p>
+                      <ul className="mt-1 flex flex-wrap gap-1.5">
+                        {(["chat", "ops", "agentic"] as const)
+                          .filter((task) => typeof readRoutePriority(provider.routes, task) === "number")
+                          .map((task) => (
+                            <li
+                              key={task}
+                              className="rounded-full bg-ink-900/6 px-2 py-0.5 text-[11px] text-ink-800"
+                            >
+                              {task} · {readRoutePriority(provider.routes, task)}
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
                   </div>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs font-medium text-jade-600">
+                      Edit
+                    </summary>
+                    <div className="mt-2 rounded-xl border border-ink-900/10 p-3">
+                      <AiProviderForm provider={provider} />
+                    </div>
+                  </details>
                 </li>
               ))}
             </ul>

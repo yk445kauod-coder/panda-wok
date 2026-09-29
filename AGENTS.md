@@ -2043,3 +2043,57 @@ service key is configured, so the preview matches the authoritative value.
 `delivery.fee` / `delivery.free_over` are live at 0 and are already public
 settings, so they need no special read path; both are editable in Admin ->
 Settings (verified by a set -> read -> revert round-trip).
+
+## Task-based model routing, and the AI centre was invisible (2026-09-29)
+
+### The AI centre silently showed nothing (fixed)
+`/admin/ai` rendered "لا يوجد مزودون مسجلون" while five `ai_providers` rows were
+live. Two independent defects, both the same class of silent-empty bug:
+
+1. **`RunStatusBadge` called the client hook `useT()` from a server component.**
+   `src/components/admin/run-status.tsx` is a server component (imported by
+   `admin/ai`, `admin/ai/usage`, `admin/backups`, `admin/broadcast`,
+   `admin/exports`, all server pages). With no usage rows the component never
+   mounted and the page looked fine; the moment `ai_requests` had data it threw
+   *"Attempted to call useT() from the server but useT is on the client"* and the
+   whole `/admin/ai` render failed. Fixed: `RunStatusBadge` is now `async` and
+   uses `await getT(await getAdminLocale())`. **A component that is neither
+   `"use client"` nor obviously server-side is the trap — check its importers.**
+
+2. **The AI tables are `has_role('admin')` RLS, but the console has no session.**
+   `ai_providers`/`ai_prompts`/`ai_requests`/`ai_usage_daily`/`ai_knowledge_sources`
+   and every `agent_*`/`ops_agent_*` table are `authenticated`-only, so a
+   passcode-gate console (no `auth.uid()`) reads zero rows. **This is already
+   handled centrally** — `createServerSupabase()` elevates any request whose
+   `x-pw-path` header starts with `/admin` to the service role, and the
+   middleware sets that header (and strips it everywhere else). So a service
+   layer that calls `createServerSupabase()` is fine on `/admin`; the bug was
+   purely the `useT()` crash, which aborted the render *after* the queries had
+   returned. Do not "fix" these reads by switching to `tryCreateAdminSupabase()`
+   — that was tried, verified unnecessary, and reverted.
+
+### Routing
+`ai_providers.routes` (jsonb, migration `20260929210000_ai_task_routing.sql`) is a
+`{task -> priority}` map. `routePriority(row, task)` (exported from
+`src/lib/ai/provider.ts`) returns `routes[task]` when present, else the row's base
+`priority`; `buildDbProviderChain({rows,binding}, fallback, task)` sorts by it.
+`AI_TASKS = ["chat","ops","agentic"]`. A missing task key means "eligible at the
+base priority", so an untouched row behaves exactly as before and an empty `{}`
+is the old single-chain behaviour.
+
+Live routing (applied by the migration, ids resolved by name):
+- `agentic` (hard, tool-using, documents) -> `gemini-free` first (10)
+- `ops` (daily/weekly reports) -> `workers-ai` binding first (10)
+- `chat` -> `openrouter-free` first when its key is present (10)
+- `pollinations` keeps `{}` (shared free fallback at base priority 20);
+  `deterministic` is fallback-only and stays the floor.
+Callers tag their chain: `assistant.ts` -> `"chat"`, `conversation.ts` ->
+`"agentic"`, `ops-agent.ts` -> `"ops"`.
+
+Admin surface: `AiProviderForm` carries a **Routing** fieldset
+(`route_chat`/`route_ops`/`route_agentic`), and each provider row in `/admin/ai`
+shows its route badges plus an **Edit** `<details>` that mounts the form with the
+row's current values. `parseRoutes()` in `lib/actions/admin.ts` keeps only
+`AI_TASKS` keys with finite values (clamped 0-9999).
+`tests/ai-task-routing.test.ts` pins the ordering contract with no network.
+

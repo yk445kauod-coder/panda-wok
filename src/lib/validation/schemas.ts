@@ -428,6 +428,10 @@ export const aiProviderSchema = z.object({
   priority: z.coerce.number().int().min(0).max(9999).default(100),
   monthlyTokenQuota: z.coerce.number().int().min(0).nullable().optional(),
   maxRequestsPerMinute: z.coerce.number().int().min(1).max(10000).default(20),
+  // Per-task routing: { task -> priority }. A missing task uses `priority`.
+  // Keys are validated against AI_TASKS when the form is parsed, so the schema
+  // accepts any numeric map and `parseRoutes` keeps only the known tasks.
+  routes: z.record(z.string(), z.coerce.number().int().min(0).max(9999)).default({}),
 });
 
 export const opsAgentSettingsSchema = z.object({

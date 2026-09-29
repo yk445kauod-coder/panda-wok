@@ -262,6 +262,7 @@ export async function runOpsReport(params: {
 
   const chain = await buildDbProviderChain({ rows: await loadDbProviders(), binding: null }, () =>
     JSON.stringify({ headline: "", summary: "", recommendations: [], actions: [] }),
+    "ops",
   );
 
   let provider = "deterministic";

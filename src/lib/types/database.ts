@@ -477,6 +477,7 @@ export type Database = {
           monthly_token_quota: number | null
           name: string
           priority: number
+          routes: Json
           secret_ref: string | null
           updated_at: string
         }
@@ -493,6 +494,7 @@ export type Database = {
           monthly_token_quota?: number | null
           name: string
           priority?: number
+          routes?: Json
           secret_ref?: string | null
           updated_at?: string
         }
@@ -509,6 +511,7 @@ export type Database = {
           monthly_token_quota?: number | null
           name?: string
           priority?: number
+          routes?: Json
           secret_ref?: string | null
           updated_at?: string
         }

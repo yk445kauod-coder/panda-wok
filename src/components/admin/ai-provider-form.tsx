@@ -11,6 +11,37 @@ type Provider = Database["public"]["Tables"]["ai_providers"]["Row"];
 const KINDS = ["builtin", "openrouter", "cloudflare", "pollinations", "gemini", "anthropic", "openai_compatible"] as const;
 
 /**
+ * The routed workloads. Kept in sync with `AI_TASKS` in `src/lib/ai/provider.ts`
+ * and the task vocabulary in the routing migration; the labels explain what each
+ * one means so an operator keys the right provider without reading the code.
+ */
+const TASKS: { key: string; label: string; hint: string }[] = [
+  {
+    key: "chat",
+    label: "Chat",
+    hint: "Customer assistant and operator chat — short, tool-light.",
+  },
+  {
+    key: "ops",
+    label: "Daily reports (ops)",
+    hint: "Scheduled ops agent: recurring daily and weekly reports.",
+  },
+  {
+    key: "agentic",
+    label: "Agentic / documents",
+    hint: "Multi-step tool use and document generation — the hard work.",
+  },
+];
+
+/** Reads one task's priority out of a provider's `routes` map, if set. */
+function readRoute(routes: unknown, task: string): number | null {
+  if (!routes || typeof routes !== "object" || Array.isArray(routes)) return null;
+  const value = (routes as Record<string, unknown>)[task];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+
+/**
  * Create/edit form for an AI provider. Only the *name* of the environment
  * variable holding the key is ever sent — no credential is read from or written
  * to the browser. The kind "builtin" is the deterministic, database-grounded
@@ -109,6 +140,29 @@ export function AiProviderForm({ provider }: { provider: Provider | null }) {
           defaultValue={String(provider?.max_requests_per_minute ?? 20)}
         />
       </div>
+
+      <fieldset className="rounded-xl border border-ink-900/12 bg-rice-50 p-3">
+        <legend className="px-1 text-sm font-medium text-ink-900">Routing</legend>
+        <p className="mb-3 text-xs text-ink-700/65">
+          Leave a task blank to use the base priority above. Lower runs first, so a
+          task set to 10 beats a task left blank at 100.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {TASKS.map((task) => (
+            <div key={task.key} className="text-xs text-ink-700/80">
+              <span className="block font-medium text-ink-900">{task.label}</span>
+              <span className="mt-0.5 block text-[11px] text-ink-700/60">{task.hint}</span>
+              <Field
+                name={`route_${task.key}`}
+                label="Priority"
+                type="number"
+                defaultValue={String(readRoute(provider?.routes, task.key) ?? "")}
+                placeholder="—"
+              />
+            </div>
+          ))}
+        </div>
+      </fieldset>
 
       {kind !== "builtin" ? (
         <p className="flex items-start gap-2 rounded-xl bg-miso-500/10 p-3 text-xs text-miso-600">
