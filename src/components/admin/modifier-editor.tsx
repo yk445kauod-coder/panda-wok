@@ -12,7 +12,7 @@ import {
   saveModifierOptionAction,
   toggleModifierOptionAction,
 } from "@/lib/actions/admin";
-import { useErrorText } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import type { AdminModifierGroup } from "@/lib/services/admin-catalog";
 
 /**
@@ -32,26 +32,26 @@ export function ModifierEditor({
   groups: AdminModifierGroup[];
 }) {
   const [addingGroup, setAddingGroup] = useState(false);
+  const t = useT();
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-display text-base font-semibold text-ink-900">
-          Extras &amp; options{" "}
+          {t("admin.pages.optionsEditor.title")}{" "}
           <span className="text-sm font-normal text-ink-700/60">({groups.length})</span>
         </h3>
         {!addingGroup ? (
           <Button type="button" size="sm" variant="outline" onClick={() => setAddingGroup(true)}>
             <Plus className="size-3.5" aria-hidden="true" />
-            Add a group
+            {t("admin.pages.optionsEditor.addGroup")}
           </Button>
         ) : null}
       </div>
 
       {groups.length === 0 && !addingGroup ? (
         <p className="rounded-xl bg-rice-200/60 px-3 py-2 text-xs text-ink-800">
-          No extras yet. Add a group such as &ldquo;Size&rdquo; or &ldquo;Add an
-          extra&rdquo; — customers choose from it on the dish page.
+          {t("admin.pages.optionsEditor.empty")}
         </p>
       ) : null}
 
@@ -62,19 +62,26 @@ export function ModifierEditor({
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-ink-900">{group.name_en}</p>
                 <p className="mt-0.5 text-xs text-ink-700/70">
-                  {group.max_select === 1 ? "Choose one" : `Choose up to ${group.max_select}`}
-                  {group.min_select > 0 ? ` · at least ${group.min_select}` : " · optional"}
-                  {group.is_required ? " · required" : ""}
+                  {group.max_select === 1
+                    ? t("admin.pages.optionsEditor.chooseOne")
+                    : t("admin.pages.optionsEditor.chooseUpTo", { max: group.max_select })}
+                  {group.min_select > 0
+                    ? ` · ${t("admin.pages.optionsEditor.atLeast", { min: group.min_select })}`
+                    : ` · ${t("admin.pages.optionsEditor.optional")}`}
+                  {group.is_required ? ` · ${t("admin.pages.optionsEditor.required")}` : ""}
                 </p>
               </div>
               <AdminButtonAction
                 action={() => deleteModifierGroupAction(group.id)}
                 variant="ghost"
                 size="sm"
-                confirm={`Delete "${group.name_en}" and its ${group.modifier_options.length} option(s)?`}
+                confirm={t("admin.pages.optionsEditor.deleteGroupConfirm", {
+                  name: group.name_en,
+                  count: group.modifier_options.length,
+                })}
               >
                 <Trash2 className="size-3.5" aria-hidden="true" />
-                Delete group
+                {t("admin.pages.optionsEditor.deleteGroup")}
               </AdminButtonAction>
             </div>
 
@@ -115,6 +122,7 @@ function OptionRow({
   option: AdminModifierGroup["modifier_options"][number];
 }) {
   const router = useRouter();
+  const t = useT();
   const errorText = useErrorText();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,7 +147,7 @@ function OptionRow({
           <span className="ms-2 text-xs text-ink-700/70 tabular-nums">
             {Number(option.price_delta) > 0
               ? `+${Number(option.price_delta).toFixed(2)}`
-              : "included"}
+              : t("admin.pages.optionsEditor.included")}
           </span>
         </span>
         <div className="flex shrink-0 items-center gap-2">
@@ -151,16 +159,18 @@ function OptionRow({
               onChange={(event) => toggle(event.target.checked)}
               className="size-3.5 accent-vermilion-600"
             />
-            {busy ? "Saving…" : "In stock"}
+            {busy ? t("admin.pages.optionsEditor.saving") : t("admin.pages.optionsEditor.inStock")}
           </label>
           <AdminButtonAction
             action={() => deleteModifierOptionAction(option.id)}
             variant="ghost"
             size="sm"
-            confirm={`Remove "${option.name_en}"?`}
+            confirm={t("admin.pages.optionsEditor.removeConfirm", { name: option.name_en })}
           >
             <Trash2 className="size-3.5" aria-hidden="true" />
-            <span className="sr-only">Remove {option.name_en}</span>
+            <span className="sr-only">
+              {t("admin.pages.optionsEditor.remove", { name: option.name_en })}
+            </span>
           </AdminButtonAction>
         </div>
       </div>
@@ -181,34 +191,39 @@ function GroupForm({
   menuItemId: string;
   onDone: () => void;
 }) {
+  const t = useT();
   return (
     <AdminForm
       action={saveModifierGroupAction}
-      submitLabel="Create group"
-      options={{ successMessage: "Group added.", onSuccess: onDone }}
+      submitLabel={t("admin.pages.optionsEditor.groupForm.submit")}
+      options={{ successMessage: t("admin.pages.optionsEditor.groupForm.success"), onSuccess: onDone }}
       extraActions={
         <Button type="button" variant="ghost" size="sm" onClick={onDone}>
-          Cancel
+          {t("admin.common.cancel")}
         </Button>
       }
     >
       <input type="hidden" name="menuItemId" value={menuItemId} />
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field name="nameEn" label="Group name (English)" placeholder="Add an extra" />
-        <Field name="nameAr" label="Group name (Arabic)" dir="rtl" />
+        <Field
+          name="nameEn"
+          label={t("admin.pages.optionsEditor.groupForm.nameEn")}
+          placeholder={t("admin.pages.optionsEditor.groupForm.nameEnPlaceholder")}
+        />
+        <Field name="nameAr" label={t("admin.pages.optionsEditor.groupForm.nameAr")} dir="rtl" />
         <Field
           name="minSelect"
-          label="Minimum"
+          label={t("admin.pages.optionsEditor.groupForm.min")}
           type="number"
           defaultValue="0"
-          hint="0 = optional."
+          hint={t("admin.pages.optionsEditor.groupForm.minHint")}
         />
         <Field
           name="maxSelect"
-          label="Maximum"
+          label={t("admin.pages.optionsEditor.groupForm.max")}
           type="number"
           defaultValue="1"
-          hint="1 = choose one; higher = multi-select."
+          hint={t("admin.pages.optionsEditor.groupForm.maxHint")}
         />
       </div>
     </AdminForm>
@@ -218,26 +233,31 @@ function GroupForm({
 /** Inline "add an option" form for a group. */
 function OptionForm({ groupId }: { groupId: string }) {
   const router = useRouter();
+  const t = useT();
   return (
     <AdminForm
       action={saveModifierOptionAction}
-      submitLabel="Add option"
+      submitLabel={t("admin.pages.optionsEditor.optionForm.submit")}
       options={{
-        successMessage: "Option added.",
+        successMessage: t("admin.pages.optionsEditor.optionForm.success"),
         resetOnSuccess: true,
         onSuccess: () => router.refresh(),
       }}
     >
       <input type="hidden" name="groupId" value={groupId} />
       <div className="grid gap-3 sm:grid-cols-3">
-        <Field name="nameEn" label="Option (English)" placeholder="Extra cheese" />
-        <Field name="nameAr" label="Option (Arabic)" dir="rtl" />
+        <Field
+          name="nameEn"
+          label={t("admin.pages.optionsEditor.optionForm.nameEn")}
+          placeholder={t("admin.pages.optionsEditor.optionForm.nameEnPlaceholder")}
+        />
+        <Field name="nameAr" label={t("admin.pages.optionsEditor.optionForm.nameAr")} dir="rtl" />
         <Field
           name="priceDelta"
-          label="Price + (EGP)"
+          label={t("admin.pages.optionsEditor.optionForm.price")}
           type="number"
           defaultValue="0"
-          hint="0 = included."
+          hint={t("admin.pages.optionsEditor.optionForm.priceHint")}
         />
       </div>
     </AdminForm>

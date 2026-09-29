@@ -14,7 +14,7 @@ import { AdminButtonAction } from "@/components/admin/form-kit";
 import { Badge } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils/format";
 
-import { useErrorText } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 type Row = {
   id: string;
   name_en: string;
@@ -48,6 +48,7 @@ function visibilityOf(item: Row): MenuItemVisibility {
  */
 export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: string | null }) {
   const router = useRouter();
+  const t = useT();
   const errorText = useErrorText();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -84,9 +85,9 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
   }
 
   const states: { key: MenuItemVisibility; label: string }[] = [
-    { key: "live", label: "Live" },
-    { key: "sold_out", label: "Out of stock" },
-    { key: "hidden", label: "Hidden" },
+    { key: "live", label: t("admin.pages.menu.visibility.live") },
+    { key: "sold_out", label: t("admin.pages.menu.visibility.outOfStock") },
+    { key: "hidden", label: t("admin.pages.menu.visibility.hidden") },
   ];
 
   return (
@@ -120,14 +121,22 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
                 {item.name_ar}
               </span>
             ) : null}
-            {visibility === "hidden" ? <Badge tone="danger">Hidden</Badge> : null}
-            {visibility === "sold_out" ? <Badge tone="warning">Out of stock</Badge> : null}
-            {item.is_featured ? <Badge tone="indigo">Featured</Badge> : null}
-            {item.has_transparent_png ? <Badge tone="info">Transparent PNG</Badge> : null}
+            {visibility === "hidden" ? (
+              <Badge tone="danger">{t("admin.pages.menu.visibility.hidden")}</Badge>
+            ) : null}
+            {visibility === "sold_out" ? (
+              <Badge tone="warning">{t("admin.pages.menu.visibility.outOfStock")}</Badge>
+            ) : null}
+            {item.is_featured ? (
+              <Badge tone="indigo">{t("admin.pages.menu.featured")}</Badge>
+            ) : null}
+            {item.has_transparent_png ? (
+              <Badge tone="info">{t("admin.pages.menu.transparentPng")}</Badge>
+            ) : null}
           </div>
 
           <p className="mt-0.5 text-xs text-ink-700/70">
-            {categoryName ?? "No category"} · /menu/{item.slug}
+            {categoryName ?? t("admin.pages.menu.noCategory")} · /menu/{item.slug}
           </p>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -138,7 +147,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
             {/* One control, three honest states. */}
             <div
               role="radiogroup"
-              aria-label={`Visibility for ${item.name_en}`}
+              aria-label={t("admin.pages.menu.visibilityLabel", { name: item.name_en })}
               className="inline-flex overflow-hidden rounded-lg border border-ink-900/15"
             >
               {states.map((state) => {
@@ -163,7 +172,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
               })}
             </div>
             {busy === "visibility" ? (
-              <span className="text-xs text-ink-700/70">Saving…</span>
+              <span className="text-xs text-ink-700/70">{t("admin.pages.menu.saving")}</span>
             ) : null}
 
             <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-ink-800">
@@ -175,7 +184,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
                 className="size-3.5 accent-vermilion-600"
               />
               <Star className="size-3" aria-hidden="true" />
-              {busy === "is_featured" ? "Saving…" : "Featured"}
+              {busy === "is_featured" ? t("admin.pages.menu.saving") : t("admin.pages.menu.featured")}
             </label>
 
             <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-ink-800">
@@ -186,7 +195,9 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
                 onChange={(event) => toggle("has_transparent_png", event.target.checked)}
                 className="size-3.5 accent-vermilion-600"
               />
-              {busy === "has_transparent_png" ? "Saving…" : "Transparent PNG"}
+              {busy === "has_transparent_png"
+                ? t("admin.pages.menu.saving")
+                : t("admin.pages.menu.transparentPng")}
             </label>
           </div>
 
@@ -202,7 +213,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
             href={`/admin/menu?edit=${item.id}`}
             className="rounded-lg border border-ink-900/15 px-3 py-1.5 text-center text-xs font-medium text-ink-800 hover:bg-rice-200"
           >
-            Edit
+            {t("admin.pages.menu.edit")}
           </a>
           <AdminButtonAction
             action={() => duplicateMenuItemAction(item.id)}
@@ -210,7 +221,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
             variant="ghost"
           >
             <Copy className="size-3.5" aria-hidden="true" />
-            Copy
+            {t("admin.pages.menu.copy")}
           </AdminButtonAction>
           {item.is_archived ? (
             <AdminButtonAction
@@ -219,17 +230,17 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
               size="sm"
             >
               <Eye className="size-3.5" aria-hidden="true" />
-              Restore
+              {t("admin.pages.menu.restore")}
             </AdminButtonAction>
           ) : (
             <AdminButtonAction
               action={() => deleteMenuItemAction(item.id)}
               variant="ghost"
               size="sm"
-              confirm="Hide this dish from customers? It is kept in the database and in past orders, and you can restore it any time."
+              confirm={t("admin.pages.menu.hideConfirm")}
             >
               <EyeOff className="size-3.5" aria-hidden="true" />
-              Hide
+              {t("admin.pages.menu.hide")}
             </AdminButtonAction>
           )}
         </div>
@@ -239,12 +250,12 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
 }
 
 export function HiddenNotice({ count }: { count: number }) {
+  const t = useT();
   if (count === 0) return null;
   return (
     <p className="flex items-center gap-2 rounded-xl bg-rice-200/70 px-3 py-2 text-xs text-ink-800">
       <EyeOff className="size-3.5" aria-hidden="true" />
-      {count} hidden dish{count === 1 ? "" : "es"} — not shown to customers, still
-      in the database and in past orders.
+      {t("admin.pages.menu.hiddenNotice", { count })}
     </p>
   );
 }
