@@ -15,6 +15,7 @@ import { listStockItems } from "@/lib/services/admin-catalog";
 import { recall, renderMemoryContext, remember } from "@/lib/agent/memory";
 import { retrieveSkills, renderSkillContext } from "@/lib/agent/skills";
 import { renderToolCatalogue } from "@/lib/agent/tools";
+import { findUngroundedFigures } from "@/lib/agent/grounding";
 import { createExportJob, type ExportDataset } from "@/lib/export/create";
 import type { Json } from "@/lib/types/database";
 
@@ -160,6 +161,50 @@ export function deterministicActions(
 }
 
 /**
+ * Accepts a model reply only when every figure in it exists in the snapshot.
+ *
+ * The prompt asks for Egyptian-Arabic prose, but the model's numbers are
+ * untrusted — the same reasoning as the chat agent's `finaliseAnswer`. A reply
+ * that cites a figure the snapshot does not contain is rejected whole, so a
+ * single invented percentage cannot reach the owner; the deterministic report
+ * stands instead. Exported for tests.
+ */
+export function pickGroundedReport(params: {
+  parsed: Record<string, unknown>;
+  rawText: string;
+  snapshot: unknown;
+  fallback: { headline: string; summary: string; recommendations: OpsReport["recommendations"] };
+}): { headline: string; summary: string; recommendations: OpsReport["recommendations"]; grounded: boolean } {
+  const grounded = findUngroundedFigures(params.rawText, [params.snapshot]).length === 0;
+  if (!grounded) return { ...params.fallback, grounded: false };
+
+  const headline = typeof params.parsed.headline === "string" ? params.parsed.headline.trim() : "";
+  const summary = typeof params.parsed.summary === "string" ? params.parsed.summary.trim() : "";
+
+  const recs = Array.isArray(params.parsed.recommendations) ? params.parsed.recommendations : [];
+  const cleaned = recs
+    .map((entry) => {
+      const r = entry as Record<string, unknown>;
+      const title = typeof r.title === "string" ? r.title.trim() : "";
+      if (!title) return null;
+      const severity = String(r.severity ?? "low").toLowerCase();
+      return {
+        title: title.slice(0, 200),
+        detail: String(r.detail ?? "").slice(0, 1000),
+        severity: ["low", "medium", "high"].includes(severity) ? severity : "low",
+      };
+    })
+    .filter((r): r is { title: string; detail: string; severity: string } => r !== null);
+
+  return {
+    headline: headline ? headline.slice(0, 200) : params.fallback.headline,
+    summary: summary ? summary.slice(0, 2000) : params.fallback.summary,
+    recommendations: cleaned.length > 0 ? cleaned : params.fallback.recommendations,
+    grounded: true,
+  };
+}
+
+/**
  * Builds the report from live data. Observation and metrics always happen;
  * `proposalsEnabled` only gates whether actions are attached.
  */
@@ -174,11 +219,14 @@ export async function runOpsReport(params: {
     listStockItems(),
   ]);
 
-  const recommendations = buildDeterministicInsights(insightData).map((i) => ({
+  const deterministicRecs = buildDeterministicInsights(insightData).map((i) => ({
     title: i.title,
     detail: [i.observation, i.suggestedAction].filter(Boolean).join(" "),
     severity: i.confidence === "high" ? "high" : i.confidence === "medium" ? "medium" : "low",
   }));
+  // The grounded floor. The model may replace these with sharper Arabic findings,
+  // but only ones that pass the grounding check below.
+  let recommendations = deterministicRecs;
 
   const lowStock = stock
     .filter((s) => s.status === "low" || s.status === "out")
@@ -199,15 +247,17 @@ export async function runOpsReport(params: {
 
   let provider = "deterministic";
   let model = "menu-grounded-rules";
-  const headline = recommendations[0]?.title ?? "Business report";
-  const summary = recommendations.map((r) => r.detail).join(" ");
-  let actions = params.proposalsEnabled ? deterministicActions(recommendations) : [];
+  // Model prose overrides these when it passes the grounding check; until then
+  // the deterministic wording stands.
+  let headlineOut = deterministicRecs[0]?.title ?? "Business report";
+  let summaryOut = deterministicRecs.map((r) => r.detail).join(" ");
+  let actions = params.proposalsEnabled ? deterministicActions(deterministicRecs) : [];
 
   if (chain.primary || chain.fallbacks.length > 0) {
     // Cheap, task-relevant context: a few recalled owner memories and the few
     // skill chunks that match this run, never a full document dump.
     const [ownerMemory, skillChunks] = await Promise.all([
-      recall({ query: `ops report ${headline}`, scope: "owner", matchCount: 4 }),
+      recall({ query: `ops report ${headlineOut}`, scope: "owner", matchCount: 4 }),
       retrieveSkills("operations report analysis proposals", 4),
     ]);
     const memoryBlock = renderMemoryContext(ownerMemory);
@@ -252,6 +302,30 @@ export async function runOpsReport(params: {
 
       const parsed = parseJsonObject(run.text);
       if (parsed) {
+        // The prompt asks for Arabic prose, but until now only `actions` was
+        // read: the model's headline/summary/recommendations were discarded and
+        // the deterministic English strings were stored instead, which is why a
+        // run could report provider "workers-ai" and still be English.
+        const picked = pickGroundedReport({
+          parsed,
+          rawText: run.text,
+          snapshot,
+          fallback: {
+            headline: headlineOut,
+            summary: summaryOut,
+            recommendations: deterministicRecs,
+          },
+        });
+        if (!picked.grounded) {
+          console.warn(
+            "[ops-agent] model reply cited figures absent from the snapshot; keeping the deterministic report",
+          );
+        } else {
+          headlineOut = picked.headline;
+          summaryOut = picked.summary;
+          recommendations = picked.recommendations;
+        }
+
         if (params.proposalsEnabled) {
           const raw = Array.isArray(parsed.actions) ? parsed.actions : [];
           const cleaned = raw
@@ -269,7 +343,7 @@ export async function runOpsReport(params: {
               };
             })
             .filter((a): a is ProposedAction => a !== null);
-          actions = cleaned.length > 0 ? cleaned : deterministicActions(recommendations);
+          actions = cleaned.length > 0 ? cleaned : deterministicActions(deterministicRecs);
         }
       }
     } catch (error) {
@@ -283,8 +357,8 @@ export async function runOpsReport(params: {
 
   return {
     report: {
-      headline,
-      summary,
+      headline: headlineOut,
+      summary: summaryOut,
       metrics: metrics as unknown as Record<string, unknown>,
       recommendations,
       actions,

@@ -297,7 +297,7 @@ export type InsightsReport = {
   aiNarrative: string | null;
 };
 
-type InsightData = {
+export type InsightData = {
   windowDays: number;
   totals: { orders: number; revenue: number; avgOrderValue: number; canceled: number };
   pairs: { a: string; b: string; count: number }[];
@@ -867,10 +867,16 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
 
   if (data.categoryMix.length > 0) {
     const top = data.categoryMix[0];
-    const share = Math.round((top.revenue / Math.max(data.totals.revenue, 1)) * 100);
+    // Share is measured against the same orders the mix was built from. Using
+    // `totals.revenue` here was wrong twice over: that figure counts only
+    // *finished* orders while the mix sums every non-cancelled one, and the
+    // `Math.max(..., 1)` floor turned an empty finished-revenue window into a
+    // denominator of 1 — a live run reported "about 19000% of finished revenue".
+    const mixTotal = data.categoryMix.reduce((sum, c) => sum + c.revenue, 0);
+    const share = mixTotal > 0 ? Math.round((top.revenue / mixTotal) * 100) : 0;
     out.push({
       title: `Category concentration: ${top.category}`,
-      observation: `${top.category} generated ${top.revenue} EGP, about ${share}% of finished revenue in the window.`,
+      observation: `${top.category} generated ${top.revenue} EGP, about ${share}% of item revenue in the window.`,
       evidence: data.categoryMix
         .slice(0, 4)
         .map((c) => `${c.category}: ${c.revenue} EGP across ${c.quantity} units`),
