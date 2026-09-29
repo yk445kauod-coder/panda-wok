@@ -7,7 +7,8 @@ import { getMyOrders } from "@/lib/services/orders";
 import { listFeedbackAdmin, listStaff } from "@/lib/services/admin-catalog";
 import { Badge } from "@/components/ui/button";
 import { BlockUserControl, StaffRoleForm } from "@/components/admin/customer-controls";
-import { formatDate, formatDateTime, formatNumber, formatPrice, humanise } from "@/lib/utils/format";
+import { formatDate, formatDateTime, formatNumber, formatPrice } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function CrmCustomerPage({
   const { userId } = await params;
   const session = await requireCapability("crm.view");
   const canGrantPrivileged = session.role === "owner";
+  const t = await getT(await getAdminLocale());
 
   const customer = await getCrmCustomer(userId);
   if (!customer) notFound();
@@ -46,13 +48,13 @@ export default async function CrmCustomerPage({
         className="inline-flex items-center gap-1.5 text-sm text-ink-700 hover:text-ink-900"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
-        All customers
+        {t("admin.pages.customerProfile.allCustomers")}
       </Link>
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-ink-900">
-            {customer.full_name ?? "Unnamed customer"}
+            {customer.full_name ?? t("admin.pages.customerProfile.unnamed")}
           </h1>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-ink-800">
             {customer.phone ? (
@@ -75,17 +77,26 @@ export default async function CrmCustomerPage({
             ) : null}
           </div>
           <p className="mt-1 text-xs text-ink-700/65">
-            Joined {formatDate(customer.created_at)}
+            {t("admin.pages.customerProfile.joined")} {formatDate(customer.created_at)}
             {customer.last_seen_at
-              ? ` · last seen ${formatDateTime(customer.last_seen_at)}`
+              ? ` · ${t("admin.pages.customerProfile.lastSeen")} ${formatDateTime(customer.last_seen_at)}`
               : ""}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {customer.is_blocked ? <Badge tone="danger">Blocked</Badge> : null}
-            {customer.marketing_opt_in ? <Badge tone="info">Marketing opt-in</Badge> : null}
-            {customer.order_count >= 3 ? <Badge tone="success">Loyal</Badge> : null}
+            {customer.is_blocked ? (
+              <Badge tone="danger">{t("admin.pages.customerProfile.blocked")}</Badge>
+            ) : null}
+            {customer.marketing_opt_in ? (
+              <Badge tone="info">{t("admin.pages.customerProfile.marketingOptIn")}</Badge>
+            ) : null}
+            {customer.order_count >= 3 ? (
+              <Badge tone="success">{t("admin.pages.customerProfile.loyal")}</Badge>
+            ) : null}
             <Badge tone="indigo">
-              {humanise(customer.tier)} · {formatNumber(customer.points_balance)} points
+              {t(`admin.term.tier.${customer.tier}`)} ·{" "}
+              {t("admin.pages.customerProfile.pointsSuffix", {
+                count: formatNumber(customer.points_balance),
+              })}
             </Badge>
           </div>
         </div>
@@ -94,28 +105,45 @@ export default async function CrmCustomerPage({
           <BlockUserControl
             userId={customer.user_id}
             isBlocked={customer.is_blocked}
-            name={customer.full_name ?? "This customer"}
+            name={customer.full_name ?? t("admin.pages.customerProfile.unnamed")}
           />
         </div>
       </header>
 
-      <section aria-label="Customer metrics" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="Orders" value={formatNumber(customer.order_count)} />
-        <Metric label="Lifetime spend" value={formatPrice(customer.lifetime_value)} />
-        <Metric label="Average order" value={formatPrice(customer.avg_order_value)} />
+      <section
+        aria-label={t("admin.pages.customerProfile.metrics")}
+        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      >
         <Metric
-          label="Days since last order"
+          label={t("admin.pages.customerProfile.orders")}
+          value={formatNumber(customer.order_count)}
+        />
+        <Metric
+          label={t("admin.pages.customerProfile.lifetimeSpend")}
+          value={formatPrice(customer.lifetime_value)}
+        />
+        <Metric
+          label={t("admin.pages.customerProfile.averageOrder")}
+          value={formatPrice(customer.avg_order_value)}
+        />
+        <Metric
+          label={t("admin.pages.customerProfile.daysSince")}
           value={
             customer.days_since_last_order === null
-              ? "Never ordered"
+              ? t("admin.pages.customerProfile.neverOrdered")
               : String(customer.days_since_last_order)
           }
         />
       </section>
 
       {customer.favorite_items && customer.favorite_items.length > 0 ? (
-        <section className="washi-panel p-4" aria-label="Favourite items">
-          <h2 className="font-display text-base font-semibold text-ink-900">Usually orders</h2>
+        <section
+          className="washi-panel p-4"
+          aria-label={t("admin.pages.customerProfile.favouriteItems")}
+        >
+          <h2 className="font-display text-base font-semibold text-ink-900">
+            {t("admin.pages.customerProfile.usuallyOrders")}
+          </h2>
           <ul className="mt-2 flex flex-wrap gap-2">
             {customer.favorite_items.map((item) => (
               <li key={item}>
@@ -127,16 +155,23 @@ export default async function CrmCustomerPage({
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="washi-panel p-4" aria-label="Orders">
+        <section
+          className="washi-panel p-4"
+          aria-label={t("admin.pages.customerProfile.orders")}
+        >
           <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-base font-semibold text-ink-900">Recent orders</h2>
+            <h2 className="font-display text-base font-semibold text-ink-900">
+              {t("admin.pages.customerProfile.recentOrders")}
+            </h2>
             <Link href="/admin/orders" className="text-xs font-medium text-vermilion-600">
-              Order queue
+              {t("admin.pages.customerProfile.orderQueue")}
             </Link>
           </div>
 
           {orders.length === 0 ? (
-            <p className="mt-2 text-sm text-ink-700/70">This customer has not ordered yet.</p>
+            <p className="mt-2 text-sm text-ink-700/70">
+              {t("admin.pages.customerProfile.noOrders")}
+            </p>
           ) : (
             <ul className="mt-3 divide-y divide-ink-900/8">
               {orders.map((order) => (
@@ -149,7 +184,8 @@ export default async function CrmCustomerPage({
                       #{order.order_number}
                     </Link>
                     <p className="text-xs text-ink-700/70">
-                      {formatDateTime(order.created_at)} · {humanise(order.status)}
+                      {formatDateTime(order.created_at)} ·{" "}
+                      {t(`admin.term.orderStatus.${order.status}`)}
                     </p>
                   </div>
                   <span className="shrink-0 text-sm tabular-nums text-ink-800">
@@ -161,12 +197,17 @@ export default async function CrmCustomerPage({
           )}
         </section>
 
-        <section className="washi-panel p-4" aria-label="Activity timeline">
-          <h2 className="font-display text-base font-semibold text-ink-900">Activity</h2>
+        <section
+          className="washi-panel p-4"
+          aria-label={t("admin.pages.customerProfile.activityTimeline")}
+        >
+          <h2 className="font-display text-base font-semibold text-ink-900">
+            {t("admin.pages.customerProfile.activity")}
+          </h2>
 
           {activity.length === 0 ? (
             <p className="mt-2 text-sm text-ink-700/70">
-              No recorded activity for this customer.
+              {t("admin.pages.customerProfile.noActivity")}
             </p>
           ) : (
             <ol className="mt-3 space-y-3">
@@ -177,7 +218,9 @@ export default async function CrmCustomerPage({
                     className="mt-1.5 size-2 shrink-0 rounded-full bg-bamboo-500"
                   />
                   <div className="min-w-0">
-                    <p className="text-sm text-ink-900">{humanise(entry.event)}</p>
+                    <p className="text-sm text-ink-900">
+                      {t(`admin.term.activityEvent.${entry.event}`)}
+                    </p>
                     <p className="text-xs text-ink-700/65">
                       {formatDateTime(entry.created_at)}
                       {entry.entity ? ` · ${entry.entity}` : ""}
@@ -190,11 +233,18 @@ export default async function CrmCustomerPage({
         </section>
       </div>
 
-      <section className="washi-panel p-4" aria-label="Feedback">
-        <h2 className="font-display text-base font-semibold text-ink-900">Feedback</h2>
+      <section
+        className="washi-panel p-4"
+        aria-label={t("admin.pages.customerProfile.feedback")}
+      >
+        <h2 className="font-display text-base font-semibold text-ink-900">
+          {t("admin.pages.customerProfile.feedback")}
+        </h2>
 
         {feedback.length === 0 ? (
-          <p className="mt-2 text-sm text-ink-700/70">No feedback submitted by this customer.</p>
+          <p className="mt-2 text-sm text-ink-700/70">
+            {t("admin.pages.customerProfile.noFeedback")}
+          </p>
         ) : (
           <ul className="mt-3 space-y-3">
             {feedback.map((item) => (
@@ -204,9 +254,11 @@ export default async function CrmCustomerPage({
                     <Star className="size-3.5 text-miso-500" aria-hidden="true" />
                     {item.rating}/5
                   </span>
-                  <Badge tone="neutral">{humanise(item.category)}</Badge>
+                  <Badge tone="neutral">
+                    {t(`admin.term.feedbackCategory.${item.category}`)}
+                  </Badge>
                   <Badge tone={item.status === "resolved" ? "success" : "warning"}>
-                    {humanise(item.status)}
+                    {t(`admin.term.feedbackStatus.${item.status}`)}
                   </Badge>
                   <span className="text-xs text-ink-700/65">
                     {formatDateTime(item.created_at)}
@@ -219,13 +271,15 @@ export default async function CrmCustomerPage({
         )}
       </section>
 
-      <section className="washi-panel p-4" aria-label="Staff access">
+      <section
+        className="washi-panel p-4"
+        aria-label={t("admin.pages.customerProfile.staffAccess")}
+      >
         <h2 className="font-display text-base font-semibold text-ink-900">
-          Staff access
+          {t("admin.pages.customerProfile.staffAccess")}
         </h2>
         <p className="mt-1 text-xs text-ink-700/70">
-          Grant this person a staff role. Roles are checked on every admin page and mirrored
-          by row-level security in the database.
+          {t("admin.pages.customerProfile.staffAccessHint")}
         </p>
         <div className="mt-3">
           <StaffRoleForm
