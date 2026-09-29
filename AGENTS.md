@@ -2097,3 +2097,50 @@ row's current values. `parseRoutes()` in `lib/actions/admin.ts` keeps only
 `AI_TASKS` keys with finite values (clamped 0-9999).
 `tests/ai-task-routing.test.ts` pins the ordering contract with no network.
 
+
+## Combo choices and per-option stock were already live (2026-09-29)
+
+The two requests ("make the combo note real options" and "let admin mark a dish
+out of stock / hidden, and a protein like shrimp out of stock") were **already
+implemented and deployed** in `b23c45f`. Verified against the live DB, not the
+code alone:
+
+- **Combo choices are real radios, not note text.** `combo 8 pieces`
+  (`65f8da1e...`) and `combo fried 8 pieces` (`ac5bec4b...`) each carry a required
+  `Your choice` group (min 1 / max 1) with two options. The customer page emits
+  `<input type="radio">` per option, and the group is also written as a
+  `modifier_group` in the RSC payload. The "note" the owner saw in the sheet
+  became the group; the dish `description_en` is just the base roll.
+- **Protein choices exist too.** Four groups live: `Choose your protein`
+  (44 options / 11 dishes, includes shrimp/beef/chicken/no-protein),
+  `Size` (12 / 6 rolls), `Choose your style` (9 / 3), `Your choice` (4 / 2).
+- **Out-of-stock is enforced by `place_order`, not the label.** Rolled-back
+  transaction proof: with one option of `combo 8 pieces` flipped
+  `is_available = false`, ordering it is refused (`VALIDATION:combo 8 pieces`)
+  while its available sibling is accepted. The client also greys the option and
+  shows `dish.soldOut`; a required group with every option unavailable blocks
+  the add entirely (`addToCart.soldOutChoice`).
+- **Three-way dish visibility** already exists: `live` / `sold_out`
+  (`is_available=false`) / `hidden` (`is_archived=true`), via
+  `setMenuItemVisibilityAction`. Hide, never delete -- the row, its translations
+  and its images stay.
+
+### The one real gap: the controls were hardcoded English
+`menu-item-row.tsx` and `modifier-editor.tsx` had no `useT()` at all, so in the
+Arabic-first console the visibility radiogroup, the option "In stock" switch and
+every group/option form label rendered in English. Fixed in `249c5eb` by reading
+`admin.pages.menu.*` and `admin.pages.optionsEditor.*` from both dictionaries.
+Verified live in dev with a forged gate cookie (`panda-wok.admin` =
+`createHmac("sha256","Panda2026:panda-wok-gate").update("open:admin")`):
+`/admin/menu?edit=65f8da1e...` renders the Arabic options editor and the Arabic
+`نفدت الكمية` state; English renders `Live / Out of stock / Hidden / Copy / Hide`.
+
+Wording is already the owner's preference: EN "Out of stock" / AR "نفدت الكمية".
+
+Note the two conditional strings that are legitimately absent from a static
+fetch: `saving` only shows during a save, `restore` only for an archived dish.
+
+`tests/i18n-usage.test.ts` + `i18n-parity.test.ts` pass (they catch the
+raw-key class of bug); full suite 266 passed / 2 skipped; `tsc` clean; lint 0
+errors; `next build` green.
+
