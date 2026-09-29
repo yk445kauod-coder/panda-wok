@@ -61,9 +61,11 @@ end $$;
 
 -- ------------------------------------------------------------- loyalty switch
 
--- Honour the flag in the three loyalty triggers. The timestamp/refund work in
--- log_order_status is not loyalty state and always runs; only the history insert
--- is gated, so disabling loyalty also stops writing history rows.
+-- Honour the flag in the loyalty triggers. Order-status history is NOT loyalty
+-- state — it is the audit trail and the realtime signal the customer's tracking
+-- page listens on — so it is always written; only points accrual and clawback
+-- are gated. (Gating history on loyalty would silence tracking whenever loyalty
+-- is off, which is precisely the bug being fixed.)
 create or replace function public.log_order_status()
 returns trigger
 language plpgsql
@@ -72,17 +74,13 @@ set search_path = public
 as $function$
 begin
   if tg_op = 'INSERT' then
-    if public.setting_flag('loyalty', true) then
-      insert into order_status_history (order_id, from_status, to_status, changed_by, changed_by_role)
-      values (new.id, null, new.status, new.user_id, null);
-    end if;
+    insert into order_status_history (order_id, from_status, to_status, changed_by, changed_by_role)
+    values (new.id, null, new.status, new.user_id, null);
     return new;
   end if;
   if new.status is distinct from old.status then
-    if public.setting_flag('loyalty', true) then
-      insert into order_status_history (order_id, from_status, to_status, changed_by, changed_by_role)
-      values (new.id, old.status, new.status, auth.uid(), public.current_staff_role());
-    end if;
+    insert into order_status_history (order_id, from_status, to_status, changed_by, changed_by_role)
+    values (new.id, old.status, new.status, auth.uid(), public.current_staff_role());
     if new.status = 'accepted' then new.accepted_at = coalesce(new.accepted_at, now());
     elsif new.status = 'prepared' then new.prepared_at = coalesce(new.prepared_at, now());
     elsif new.status = 'out_for_delivery' then new.dispatched_at = coalesce(new.dispatched_at, now());

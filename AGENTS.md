@@ -1528,3 +1528,54 @@ Therefore the *better* fix is to keep the expensive traffic off Supabase
 altogether (edge cache + tiny column select), rather than looking for a more
 generous free Supabase tier — there is none. If a paid tier is ever chosen,
 Pro (250 GB + 250 GB egress) is the natural step and supersedes all of this.
+
+### Edits are never stale: the worker purges its own cache
+Next's `revalidatePath` clears only *Next's* cache, not the Worker's
+`caches.default`. The Worker now sees every admin mutation (server actions POST
+back to `/admin`), and on a non-GET under `/admin` it purges all cached public
+pages via `ctx.waitUntil`, so an edit is visible on the next request instead of
+at the TTL. Customer GETs never trigger a purge. The cache key uses a fixed
+origin (`https://edge.cache.internal`) rather than the request host, so a page
+has exactly one key regardless of host and the purge is deterministic. Verified
+live: HIT -> admin POST -> MISS.
+
+## Order realtime, and loyalty off by default (2026-09-29)
+
+### The blank `supabase_realtime` publication was the whole bug
+The customer tracking page subscribes to `order_status_history` INSERTs and the
+KDS to `orders`. Both were dead because `supabase_realtime` contained **no
+tables** (`select * from pg_publication_tables` came back empty). Realtime does
+not error for an unlisted table — it reports `SUBSCRIBED` and then delivers
+nothing, which is the nastiest possible failure: the client looks healthy.
+Migration `20260929000100` adds `orders` and `order_status_history` to the
+publication. RLS still runs per subscriber, so a customer only receives their
+own order (`orders_owner_read` / `order_status_history_owner_read` are the only
+SELECT policies). **Check `pg_publication_tables` first whenever realtime
+"does nothing": `supabase_realtime` starts empty on every project.**
+
+### A `SUBSCRIBED` socket must never switch polling off
+Compounding the above: `order-status-realtime.tsx` and `kitchen-board.tsx` both
+only polled while `live === false`, and `SUBSCRIBED` sets `live = true`. So the
+silent socket disabled the fallback and the page froze until manual refresh.
+Both now poll for the whole active life of the view regardless of socket state
+(order 15s; KDS 12s, or 30s when the socket is up). The `live` flag is now
+labelled a transport hint, not a guarantee.
+
+### `order_status_history` is not loyalty state
+`log_order_status()` also writes `order_status_history`, and a first pass gated
+that insert on the `loyalty` flag — which would have re-broken tracking exactly
+when loyalty is off (the default). History is always written; only points
+accrual (`award_loyalty_on_finish`) and clawback
+(`clawback_loyalty_on_failure`) are gated. Corrective migration
+`20260929000200` restores the unconditional insert. Verified in a rolled-back
+transaction: a status change writes history while the flag is false.
+
+### Loyalty is off by default, and off now really stops it
+`feature_flags.loyalty` is `false` (re-enable from the admin console). New
+`setting_flag(key, default)` helper (execute revoked from `anon`/`authenticated`)
+is what the triggers consult. `place_order` became a thin guard wrapper: the
+original body is renamed `place_order_internal` (execute revoked, signature and
+callers unchanged) and the wrapper raises `LOYALTY_DISABLED` (22023) for a
+redemption while the flag is off. Checkout hides redemption when the flag is
+off, so the customer never reaches that rejection. `LOYALTY_DISABLED` copy is
+in both dictionaries.
