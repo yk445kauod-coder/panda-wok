@@ -677,7 +677,9 @@ than the reader's language.
 copy with ž¦┘äžźž│┘ā┘åž»ž▒┘Ŗž® / ┘ģžĄž▒; no `AmbienceToggle` or "garden sounds" string in the
 served HTML; `tsc` clean; 60 tests pass.
 
-**Data cleanup is complete.** `categories`, `menu_items`, `modifier_groups`,
+**Data cleanup is complete.** > **Superseded (2026-09-26):** the Chinese menu was loaded after this note was written, and the Japanese sushi menu after that. See the catalogue note at the end of this file. The paragraphs below describe the moment the mock rows were removed, not the current state.
+
+`categories`, `menu_items`, `modifier_groups`,
 `modifier_options`, `orders`, `faqs`, `page_content`, `page_seo`,
 `loyalty_rewards`, `delivery_zones`, `announcements` and `stock_items` are all
 empty (0 rows) ŌĆö every mock item, category, policy, offer and FAQ is gone, and
@@ -735,7 +737,7 @@ customer picks a point, the address fills in for confirmation.
 
 
 
-- Mock-data cleanup (verified, DB): categories/menu_items/page_content/faqs/delivery_zones/announcements/orders are all 0 rows on the live project. Only real persistence remains: settings ( 28 rows - phones/socials/brand) + 2 ai_providers rows ( infra.). No offers/coupons tables exist - nothing stale to purge.
+- Mock-data cleanup (verified, DB, at the time): categories/menu_items/page_content/faqs/delivery_zones/announcements/orders were all 0 rows on the live project. **No longer true for the menu** — see the catalogue note at the end of this file. Only real persistence remains: settings ( 28 rows - phones/socials/brand) + 2 ai_providers rows ( infra.). No offers/coupons tables exist - nothing stale to purge.
 
 
 ## Perf + admin forms pass (2026-09-25, session 6 - pushed 9e32f46)
@@ -1678,3 +1680,40 @@ are already loaded with Arabic names and prices; the Japanese sushi sections
 (RAW/FRIED URA MAKI ROLL, NIGIRI RAW/FRIED, COMBO RAW/FRIED, SALADS, Sauces) are
 also live. "Upload the Chinese menu" needs confirming — replace prices? add dishes?
 add Japanese names? add per-dish modifiers?
+
+### Catalogue state, verified live (2026-09-26) — answers the open question above
+
+Re-counted against the live DB (`xjbtsryidznsxqlynmfa`): **18 categories, 84
+menu_items, 20 modifier_groups, 65 modifier_options, 5 orders.** Every dish has an
+Arabic name and a price; 73 of 84 carry an image. The two earlier "0 rows" notes in
+this file are historical and were corrected in place — do not describe the menu as
+empty.
+
+- **Chinese menu** — 10 sections, 52 dishes, sort_order 0–9 (Appetizers 9, Noodles
+  10, RICE 5, Main dishes 2, Set menu 6, Fasting Meal 2, Special Offers 3, Box 8,
+  Extra sauces 5, Drinks 2).
+- **Japanese sushi menu** — 8 sections, 32 dishes, sort_order 10–17 (RAW/FRIED URA
+  MAKI ROLL 6+6, NIGIRI RAW/FRIED 3+3, COMBO FRIED 4, COMBO RAW 5, SALADS 2,
+  Sauces 3). Loaded by `20260927070000_japanese_sushi_menu.sql`, keyed on
+  `menu_items.external_id` (`menu-item-N@I`), so it is idempotent.
+- **So "upload the Chinese menu" is already done** — both catalogues are live
+  together on `/menu`, per the standing rule that neither is ever disabled.
+- **4-piece/8-piece rolls are ONE dish each, not two.** The import first stored
+  both prices as separate rows; `20260928000100_roll_piece_options.sql` (remote
+  name `roll_size_options`) collapsed each pair into one item whose **base price is
+  the 4-piece price**, plus a required single-select `Piece count` modifier group
+  (`4 Pieces` +0, `8 Pieces` +delta). Six rolls: Philadelphia 215, California
+  Caviar 205, Hanami 215, New Style Philadelphia 215, Dynamite 215, Veggie Cheese
+  150. `place_order` prices modifiers from the live DB, so the option stores only
+  the delta. `20260928000200_roll_options_ai_prompt.sql` teaches the assistant to
+  ask which piece count the customer wants.
+- **Import round trip is a verified no-op:** export -> copy to
+  `scripts/data/menu-import.csv` -> `npm run menu:import` reported *0 new
+  categories, 0 new dishes, 0 updates, 84 unchanged, no problems*. The pipeline is
+  therefore trustworthy for a real edit. Both sheet files are gitignored.
+- `scripts/import-menu.mjs` is the **older insert-only** loader (refuses to run once
+  the table is populated) — it is not the tool for updating an existing menu.
+- Standing rule unchanged: **no agent writes menu rows unless the owner asked for
+  that exact change.** The price sheet is the owner's to fill in; hiding via
+  `is_available`/`is_enabled` is the reversible alternative to deleting.
+
