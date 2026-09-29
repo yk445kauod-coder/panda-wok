@@ -339,6 +339,26 @@
     border-color: var(--color-miso-500);
   }
 
+  /* Every text field in the product sits on a light surface (the rice sheets,
+     the washi panels, the admin console). The page ground, however, is a dark
+     ink band whose cream text colour is inherited by default — so any field
+     styled with only `bg-rice-50` renders cream-on-cream and looks blank. That
+     is what happened to the `/admin` passcode field, ~400 admin controls and
+     the customer AI assistant's message box.
+
+     The base rule below makes the light-surface assumption explicit once, so a
+     new field cannot silently inherit the dark ground's colour. A utility class
+     (`.text-*`) still wins, so a genuinely dark field can override. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+  textarea,
+  select {
+    color: var(--color-ink-900);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: color-mix(in oklab, var(--color-ink-700) 60%, transparent);
+  }
+
   .washi-panel {
     background-color: color-mix(in oklab, white 78%, var(--color-rice-100));
     border: 1px solid color-mix(in oklab, var(--color-rice-400) 60%, transparent);
@@ -813,136 +833,6 @@
       radial-gradient(90% 60% at 85% -10%, color-mix(in oklab, var(--color-vermilion-700) 52%, transparent), transparent 58%),
       radial-gradient(70% 50% at 8% 0%, color-mix(in oklab, var(--color-miso-600) 34%, transparent), transparent 52%);
     box-shadow: inset 0 3px 0 var(--color-vermilion-500);
-  }
-
-  /* Grades the hero photo into the ink ground. It sits above the photo and
-     below the copy. The hero's own glows stay *behind* the photo, so a hero
-     with no photo is pixel-identical to the pre-photo design.
-
-     The wash is deliberately light so the photograph stays a photograph. What
-     sets the floor is not the average brightness of the photo (it is very dark)
-     but its *highlights*: there is a small set of near-pure-white pixels
-     (~0.5% of the frame, around x 17-44% / y 63-73% of the source, i.e. the
-     lower-middle of the hero where the stats row sits). Cream on pure white
-     needs ~0.57 ink alpha for 4.5:1, so the lower part of the wash keeps a
-     heavier floor while the upper/middle — where the headline sits over dark
-     photo — opens up and lets the image read.
-
-     Below the lg breakpoint the hero is one column and the copy spans the full
-     width, so the wash stays even across it. */
-  .hero-wash {
-    background-image:
-      /* protects the lower copy where the photo's highlights are */
-      linear-gradient(
-        to bottom,
-        transparent 22%,
-        color-mix(in oklab, var(--color-ink-950) 46%, transparent) 56%,
-        color-mix(in oklab, var(--color-ink-950) 58%, transparent) 100%
-      ),
-      linear-gradient(
-        165deg,
-        color-mix(in oklab, var(--color-ink-950) 62%, transparent) 0%,
-        color-mix(in oklab, var(--color-ink-950) 48%, transparent) 50%,
-        color-mix(in oklab, var(--color-ink-900) 32%, transparent) 100%
-      );
-  }
-
-  /* Tablets keep the one-column hero but crop the photo onto a brighter
-     highlight than either the phone or the desktop crop, so the wash has to be
-     heavier here than at either. Measured, not guessed: the headline's worst
-     pixel is 2.5:1 with the phone wash and 4.6:1 with this one. */
-  @media (min-width: 640px) and (max-width: 1023px) {
-    .hero-wash {
-      background-image:
-        linear-gradient(
-          to bottom,
-          transparent 14%,
-          color-mix(in oklab, var(--color-ink-950) 56%, transparent) 42%,
-          color-mix(in oklab, var(--color-ink-950) 62%, transparent) 72%,
-          color-mix(in oklab, var(--color-ink-950) 66%, transparent) 100%
-        ),
-        linear-gradient(
-          165deg,
-          color-mix(in oklab, var(--color-ink-950) 72%, transparent) 0%,
-          color-mix(in oklab, var(--color-ink-950) 60%, transparent) 50%,
-          color-mix(in oklab, var(--color-ink-900) 48%, transparent) 100%
-        );
-    }
-  }
-
-  /* Narrow desktop: the copy column is a bigger share of the width, so the
-     bright spot still falls inside it. Keep the wash fairly closed until there
-     is enough room for the photo to breathe on the right. */
-  @media (min-width: 1024px) and (max-width: 1535px) {
-    .hero-wash {
-      background-image:
-        linear-gradient(
-          to bottom,
-          transparent 30%,
-          color-mix(in oklab, var(--color-ink-950) 46%, transparent) 62%,
-          color-mix(in oklab, var(--color-ink-950) 54%, transparent) 100%
-        ),
-        linear-gradient(
-          100deg,
-          color-mix(in oklab, var(--color-ink-950) 70%, transparent) 0%,
-          color-mix(in oklab, var(--color-ink-950) 58%, transparent) 46%,
-          color-mix(in oklab, var(--color-ink-900) 44%, transparent) 100%
-        );
-    }
-
-    [dir="rtl"] .hero-wash {
-      background-image:
-        linear-gradient(
-          to bottom,
-          transparent 30%,
-          color-mix(in oklab, var(--color-ink-950) 46%, transparent) 62%,
-          color-mix(in oklab, var(--color-ink-950) 54%, transparent) 100%
-        ),
-        linear-gradient(
-          260deg,
-          color-mix(in oklab, var(--color-ink-950) 70%, transparent) 0%,
-          color-mix(in oklab, var(--color-ink-950) 58%, transparent) 46%,
-          color-mix(in oklab, var(--color-ink-900) 44%, transparent) 100%
-        );
-    }
-  }
-
-  @media (min-width: 1536px) {
-    /* At lg the hero splits into two columns and the copy takes the left ~55%,
-       so the wash opens towards the right where the photo's subject and the
-       ringed plate sit, while the left column keeps the text legible. */
-    .hero-wash {
-      background-image:
-        linear-gradient(
-          to bottom,
-          transparent 28%,
-          color-mix(in oklab, var(--color-ink-950) 50%, transparent) 60%,
-          color-mix(in oklab, var(--color-ink-950) 56%, transparent) 100%
-        ),
-        linear-gradient(
-          100deg,
-          color-mix(in oklab, var(--color-ink-950) 62%, transparent) 0%,
-          color-mix(in oklab, var(--color-ink-950) 46%, transparent) 46%,
-          color-mix(in oklab, var(--color-ink-900) 20%, transparent) 100%
-        );
-    }
-
-    /* In RTL the copy takes the right column, so the wash mirrors with it —
-       otherwise Arabic text would sit on the *open* end of the gradient. */
-    [dir="rtl"] .hero-wash {
-      background-image:
-        linear-gradient(
-          to bottom,
-          transparent 46%,
-          color-mix(in oklab, var(--color-ink-950) 36%, transparent) 100%
-        ),
-        linear-gradient(
-          260deg,
-          color-mix(in oklab, var(--color-ink-950) 54%, transparent) 0%,
-          color-mix(in oklab, var(--color-ink-950) 30%, transparent) 46%,
-          color-mix(in oklab, var(--color-ink-900) 8%, transparent) 100%
-        );
-    }
   }
 
  /* ---- Washi paper band (header / bottom nav) -----------------------

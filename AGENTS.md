@@ -1859,44 +1859,43 @@ Two traps this exposed, worth keeping:
 
 
 
-## Hero wash re-measured and lightened (2026-09-29)
+## Hero photo is bare; the legibility wash was removed (2026-09-29)
 
-The owner said the hero photo looked **too dimmed**. The earlier "19.3:1 / 15:1"
-figure was measured over **background pixels only** (anything below a luminance
-threshold was treated as foreground and discarded). That silently removed the
-photo's *highlights* — the one thing a wash has to defend against — so it
-understated the real worst case and produced a wash stronger than needed.
+The owner's call: **no shading on the hero photo at all — show it as it is.**
+The `.hero-wash` overlay (and its four breakpoint variants) has been deleted
+from `globals.css`, and the `<div class="hero-wash">` removed from the hero
+markup in `src/app/(site)/page.tsx`. The `<img>` is now the only layer over the
+`.hero-night` ground; nothing is composited on top of the photograph.
 
-**Correct method:** screenshot the hero with the copy hidden (`visibility:
-hidden` on `main h1,p,a,span,li,button`) so the photo and wash are captured
-exactly as composited, then sample the pixels *inside the heading's bounding
-box* and take the contrast of the **worst (brightest) pixel** against cream.
-`/tmp/hero-measure.mjs` does this over CDP.
+**This is a deliberate legibility tradeoff, and it is the owner's to make.**
+Measured with the wash gone, the worst pixel under the headline is *pure
+photographic white*:
 
-Two findings that changed the design:
+| width | worst-pixel contrast (cream on photo) |
+|-------|--------------------------------------|
+| 390   | 1.08:1 |
+| 768   | 1.05:1 |
+| 1024  | 1.60:1 |
+| 1440  | 1.17:1 |
+| 1920  | 1.06:1 |
 
-- **A near-pure-white pixel sits under the headline, inside the copy column.**
-  The old note claimed the whites were at y63-73% "where the stats row sits" —
-  with the current crop they land at ~y59% at desktop and *inside the left copy
-  column* at 1024-1536px. At 1440 the max background luminance is 0.25 even
-  after a ~77% ink wash. Cream on pure white needs **~0.85 alpha for 4.5:1**;
-  no amount of reasonable washing reaches AA for the worst pixel.
-- **The crop changes per breakpoint, so the wash must too.** The same gradients
-  gave 2.2:1 at 1440px and 7.6:1 at 1920px. One rule cannot cover both.
+i.e. wherever a white highlight lands behind a glyph the text is unreadable
+(1:1 = invisible). Roughly 1% of the hero area is that bright; the median is
+still ~17:1 because the photo is mostly dark.
 
-**Target chosen deliberately: ≥3.0:1** (AA for large text — the headline is
-display-weight and 36px+). The honest tradeoff is stated rather than hidden: a
-single pure-white sparkle under a glyph can never reach 4.5:1 without flattening
-the photograph, which is exactly what the owner did not want. Delivered wash is
-**per breakpoint** (base/phone, 640-1023 tablet, 1024-1535 narrow desktop,
-1536+): the tablet band needs the *heaviest* wash of any one-column layout, and
-the narrow-desktop band needs a fairly closed wash because the copy column is a
-large share of the width.
+**Do not re-add a wash without asking.** If the owner later wants the copy
+readable, the options are, in order of least damage to the photo:
+1. a stronger crop bias (`object-position`) so the copy sits on the dark region;
+2. per-text legibility (`color`, `text-shadow`) — *not* a surface overlay, so
+   the photo stays untouched;
+3. a localised gradient scrim behind the copy column only.
+Note the whites are part of the artwork (a garnish/plate highlight), so unshaded
+text over them is an accepted aesthetic choice, not an oversight.
 
-Verified worst-pixel contrast: 390→4.6, 640→10.4, 768→7.7, 1024→5.1, 1280→7.2,
-1440→3.1, 1536→3.6, 1920→5.3. Median 17:1, p99 within 0.01-0.05 luminance, so
-the photo reads as a photograph and not as a tint block.
-
-**Re-measure whenever the hero photo is swapped.** Every number here is a
-property of *that* image's crop, not of the page.
+**Still true and worth keeping:** the earlier "19.3:1" note was measured over
+background pixels only (bright pixels were discarded as foreground), which threw
+away exactly the highlights a wash must defend against. Any future contrast
+measurement must sample the *worst* pixel under the text, not the average.
+`/tmp/hero-measure.mjs` (CDP) is the tool; screenshot the hero with the copy
+hidden, then read the pixels inside the heading's bounding box.
 

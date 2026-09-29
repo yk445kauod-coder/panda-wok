@@ -279,7 +279,7 @@ export function PandaAssistant({
                   onChange={(event) => setInput(event.target.value)}
                   maxLength={600}
                   placeholder="Ask about the menu…"
-                  className="h-11 flex-1 rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
+                  className="h-11 flex-1 rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm text-ink-900 outline-none placeholder:text-ink-700/60 focus:border-miso-500"
                 />
                 <Button
                   type="submit"

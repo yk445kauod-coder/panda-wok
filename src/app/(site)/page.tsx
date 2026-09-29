@@ -477,8 +477,6 @@ function Hero({
             decoding="async"
             className="absolute inset-0 size-full object-cover object-[62%_64%]"
           />
-          {/* Keeps cream copy legible over the photograph. */}
-          <div aria-hidden="true" className="hero-wash absolute inset-0" />
         </>
       ) : null}
 
