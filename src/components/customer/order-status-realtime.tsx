@@ -6,11 +6,18 @@ import { createClient } from "@/lib/supabase/client";
 import { useT } from "@/components/i18n-provider";
 
 /**
- * Subscribes to order_status_history inserts for one order and refreshes the
- * server component when a change lands. Realtime is treated as an
- * enhancement: on disconnect the component falls back to polling so a
- * customer never sits on a frozen screen.
+ * Keeps an order page current.
+ *
+ * Realtime (a `postgres_changes` insert on `order_status_history`) is the fast
+ * path, but it is treated strictly as an enhancement: polling runs the whole
+ * time the order is active, not only when the socket is down. That matters
+ * because a subscription can report `SUBSCRIBED` while delivering nothing — an
+ * empty `supabase_realtime` publication did exactly that, so the old code
+ * switched polling off and the page froze until a manual refresh. With polling
+ * always on, the worst case is one poll interval, whatever the socket claims.
  */
+const POLL_MS = 15000;
+
 export function OrderStatusRealtime({
   orderId,
   enabled,
@@ -21,8 +28,18 @@ export function OrderStatusRealtime({
   const t = useT();
   const router = useRouter();
   const [live, setLive] = useState(false);
-  const [lastEventAt, setLastEventAt] = useState<number>(() => Date.now());
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const refreshing = useRef(false);
+
+  const refresh = () => {
+    if (refreshing.current) return;
+    refreshing.current = true;
+    router.refresh();
+    // The server render replaces the tree; clear the guard shortly after so a
+    // slow render cannot block every later poll.
+    window.setTimeout(() => {
+      refreshing.current = false;
+    }, 4000);
+  };
 
   useEffect(() => {
     if (!enabled) return;
@@ -41,40 +58,30 @@ export function OrderStatusRealtime({
           filter: `order_id=eq.${orderId}`,
         },
         () => {
-          if (cancelled) return;
-          setLive(true);
-          setLastEventAt(Date.now());
-          router.refresh();
+          if (!cancelled) refresh();
         },
       )
       .subscribe((status: string) => {
         if (cancelled) return;
         if (status === "SUBSCRIBED") setLive(true);
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setLive(false);
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setLive(false);
+        }
       });
 
     return () => {
       cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [orderId, enabled, router]);
+  }, [orderId, enabled]);
 
-  // Polling safety net: only runs while realtime is not connected, and stops
-  // entirely once the order reaches a terminal state (enabled=false upstream).
+  // Always poll while the order is active. Realtime usually beats this to it;
+  // the poll is what guarantees the page cannot silently stall.
   useEffect(() => {
-    if (!enabled || live) return;
-
-    pollRef.current = setInterval(() => {
-      if (Date.now() - lastEventAt > 20000) {
-        router.refresh();
-        setLastEventAt(Date.now());
-      }
-    }, 25000);
-
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [enabled, live, lastEventAt, router]);
+    if (!enabled) return;
+    const id = window.setInterval(refresh, POLL_MS);
+    return () => window.clearInterval(id);
+  }, [enabled]);
 
   return (
     <p className="mt-1 flex items-center gap-1.5 text-xs text-ink-700/65">

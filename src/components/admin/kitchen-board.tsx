@@ -123,11 +123,16 @@ export function KitchenLiveBoard({
     lastSync.current = Date.now();
   }, []);
 
+  // The board always polls; realtime just lets it poll less often. A socket that
+  // reports SUBSCRIBED but delivers nothing (an empty `supabase_realtime`
+  // publication did exactly that) must not be able to freeze a KDS mid-service.
   useEffect(() => {
-    if (live) return;
-    const interval = setInterval(() => {
-      if (Date.now() - lastSync.current > 9000) refresh();
-    }, 12000);
+    const interval = setInterval(
+      () => {
+        if (Date.now() - lastSync.current > 9000) refresh();
+      },
+      live ? 30000 : 12000,
+    );
     return () => clearInterval(interval);
   }, [live, refresh]);
 

@@ -45,6 +45,7 @@ export function CheckoutFlow({
   instapayUrl,
   loyaltyPoints,
   loyaltyTier,
+  loyaltyEnabled,
   previousOrders,
   locale = "en",
 }: {
@@ -56,6 +57,7 @@ export function CheckoutFlow({
   instapayUrl: string | null;
   loyaltyPoints: number;
   loyaltyTier: string | null;
+  loyaltyEnabled: boolean;
   previousOrders: number;
   locale?: Locale;
 }) {
@@ -104,12 +106,14 @@ export function CheckoutFlow({
     }
   }, [hydrated, lines.length, subtotal]);
 
-  // Redeeming is capped at half the subtotal and by the points balance.
+  // Redeeming is capped at half the subtotal and by the points balance. When the
+  // loyalty program is off, nothing is offered — the server would reject it.
   const redeemablePoints = useMemo(() => {
+    if (!loyaltyEnabled) return 0;
     const byBalance = loyaltyPoints;
     const byValue = Math.floor((subtotal * 0.5) / config.loyaltyPointValue);
     return Math.max(0, Math.min(byBalance, byValue));
-  }, [loyaltyPoints, subtotal, config.loyaltyPointValue]);
+  }, [loyaltyEnabled, loyaltyPoints, subtotal, config.loyaltyPointValue]);
 
   const pointsToRedeem = usePoints ? redeemablePoints : 0;
 

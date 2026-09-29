@@ -864,6 +864,8 @@ export const ar: Dictionary = {
       MODIFIER_LIMIT_EXCEEDED:
         "إضافة أو أكثر تتجاوز الحد الأقصى المسموح. يرجى مراجعة اختياراتك.",
       NO_LOYALTY_POINTS: "ليس لديك نقاط كافية للاستبدال.",
+      LOYALTY_DISABLED:
+        "برنامج نقاط الولاء متوقف حاليًا. يرجى إتمام الطلب بدون استبدال نقاط.",
       PICKUP_UNAVAILABLE:
         "هذا مطبخ توصيل فقط ولا يوجد مكان للاستلام. يرجى إضافة عنوان توصيل.",
       IDEMPOTENCY_KEY_REQUIRED:

@@ -71,6 +71,7 @@ export default async function CheckoutPage() {
       instapayUrl={settings.support.instapayUrl}
       loyaltyPoints={loyalty.account?.points_balance ?? 0}
       loyaltyTier={loyalty.account?.tier ?? null}
+      loyaltyEnabled={flags.loyalty !== false}
       previousOrders={stats.orderCount}
       locale={locale}
     />

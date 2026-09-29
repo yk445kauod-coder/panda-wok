@@ -18,6 +18,7 @@ export type AppErrorCode =
   | "QUANTITY_LIMIT_EXCEEDED"
   | "MODIFIER_LIMIT_EXCEEDED"
   | "NO_LOYALTY_POINTS"
+  | "LOYALTY_DISABLED"
   | "PICKUP_UNAVAILABLE"
   | "IDEMPOTENCY_KEY_REQUIRED"
   | "ACCOUNT_BLOCKED"
@@ -51,6 +52,8 @@ const MESSAGES: Record<AppErrorCode, string> = {
   MODIFIER_LIMIT_EXCEEDED:
     "One or more extras are above the allowed maximum. Please review your choices.",
   NO_LOYALTY_POINTS: "You do not have enough points to redeem.",
+  LOYALTY_DISABLED:
+    "The loyalty program is currently turned off. Please order without redeeming points.",
   PICKUP_UNAVAILABLE:
     "This is a delivery-only kitchen, so orders cannot be collected. Please enter a delivery address.",
   IDEMPOTENCY_KEY_REQUIRED:
@@ -107,6 +110,7 @@ const CODE_PATTERN = new RegExp(
       "QUANTITY_LIMIT_EXCEEDED",
       "MODIFIER_LIMIT_EXCEEDED",
       "NO_LOYALTY_POINTS",
+      "LOYALTY_DISABLED",
       "PICKUP_UNAVAILABLE",
       "IDEMPOTENCY_KEY_REQUIRED",
       "ACCOUNT_BLOCKED",
