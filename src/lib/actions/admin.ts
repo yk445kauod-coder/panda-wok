@@ -362,6 +362,53 @@ export async function toggleMenuItemAction(
   return actionOk();
 }
 
+/**
+ * The three states a dish can be in, as one action rather than two independent
+ * booleans. The pairing matters: `is_archived` is what removes a dish from the
+ * customer menu entirely, while `is_available = false` keeps it visible and
+ * marked sold out. Setting one without the other is the mistake this prevents —
+ * archiving always clears availability, and going live always clears archive.
+ *
+ * Nothing is ever deleted: a hidden dish keeps its row, translations, photos and
+ * every order snapshot that referenced it, and one call brings it back.
+ */
+export type MenuItemVisibility = "live" | "sold_out" | "hidden";
+
+export async function setMenuItemVisibilityAction(
+  menuItemId: string,
+  visibility: MenuItemVisibility,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("menu.manage");
+  if (!isUuid(menuItemId)) return actionFail("VALIDATION", "Invalid dish.");
+
+  const patch =
+    visibility === "live"
+      ? { is_available: true, is_archived: false }
+      : visibility === "sold_out"
+        ? { is_available: false, is_archived: false }
+        : { is_available: false, is_archived: true };
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("menu_items")
+    .update(patch)
+    .eq("id", menuItemId);
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "menu_item.visibility",
+    entity: "menu_items",
+    entityId: menuItemId,
+    after: { visibility, ...patch },
+  });
+
+  revalidatePath("/admin/menu");
+  revalidatePath("/menu");
+  return actionOk();
+}
+
 /* -------------------------------------------------------------- modifiers */
 
 /**
@@ -499,6 +546,40 @@ export async function saveModifierOptionAction(
   revalidatePath("/admin/menu");
   revalidatePath("/menu");
   return actionOk({ id: result.data.id });
+}
+
+/**
+ * Flip one option's availability. This is the "shrimp is out of stock" lever:
+ * the option row stays exactly where it is (and in every past order snapshot),
+ * it just stops being selectable — and `place_order` already refuses an
+ * unavailable option, so the database is the boundary rather than the UI.
+ */
+export async function toggleModifierOptionAction(
+  optionId: string,
+  value: boolean,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("menu.manage");
+  if (!isUuid(optionId)) return actionFail("VALIDATION", "Invalid option.");
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase
+    .from("modifier_options")
+    .update({ is_available: value })
+    .eq("id", optionId);
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "modifier_option.availability",
+    entity: "modifier_options",
+    entityId: optionId,
+    after: { is_available: value },
+  });
+
+  revalidatePath("/admin/menu");
+  revalidatePath("/menu");
+  return actionOk();
 }
 
 export async function deleteModifierOptionAction(

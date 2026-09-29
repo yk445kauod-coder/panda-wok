@@ -46,7 +46,7 @@ export type GroundingSnapshot = {
     containsNuts: boolean;
     allergens: string[];
     calories: number | null;
-    options: { group: string; name: string; nameAr: string | null; price: number }[];
+    options: { group: string; name: string; nameAr: string | null; price: number; available: boolean }[];
   }[];
   rewards: { name: string; pointsCost: number; description: string | null }[];
   loyalty: { pointsPerCurrency: number; pointValue: number };
@@ -126,6 +126,9 @@ export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
           name: option.name_en,
           nameAr: option.name_ar,
           price: Number(item.price) + Number(option.price_delta),
+          // A sold-out option must never be quoted as buyable: the assistant
+          // answers from this snapshot, and `place_order` would refuse it.
+          available: option.is_available,
         })),
       ),
     })),
@@ -232,7 +235,12 @@ export function renderSnapshot(snapshot: GroundingSnapshot): string {
           (item.allergens.length > 0 ? ` — allergens: ${item.allergens.join(", ")}` : "") +
           (item.description ? ` — ${item.description}` : "") +
           (item.options.length > 0
-            ? ` — options: ${item.options.map((option) => `${option.group}: ${option.name} = ${option.price} EGP`).join("; ")}`
+            ? ` — options: ${item.options
+                .map(
+                  (option) =>
+                    `${option.group}: ${option.name} = ${option.price} EGP${option.available ? "" : " (sold out)"}`,
+                )
+                .join("; ")}`
             : ""),
       );
     }

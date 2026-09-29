@@ -42,14 +42,15 @@ export function AddToCartPanel({
   const localName = (record: { name_en: string; name_ar: string | null }) =>
     locale === "ar" && record.name_ar?.trim() ? record.name_ar : record.name_en;
 
-  // Single-select required groups start on their first option so the required
-  // choice is never left blank. Defaults are derived during render rather than
-  // written from an effect, so switching dish remounts with the right state and
-  // no cascading render is triggered.
+  // Single-select required groups start on their first *available* option so
+  // the required choice is never left blank and a sold-out default is never
+  // pre-picked. Defaults are derived during render rather than written from an
+  // effect, so switching dish remounts with the right state and no cascading
+  // render is triggered.
   const selected = useMemo(() => {
     const defaults: Record<string, string[]> = {};
     for (const group of groups) {
-      const options = group.modifier_options ?? [];
+      const options = (group.modifier_options ?? []).filter((o) => o.is_available);
       if (options.length === 0) continue;
       defaults[group.id] =
         group.min_select > 0 && group.max_select === 1 ? [options[0].id] : [];
@@ -83,6 +84,17 @@ export function AddToCartPanel({
     (group) => (selected[group.id]?.length ?? 0) < group.min_select,
   );
 
+  // A required group whose options are all sold out cannot be satisfied by any
+  // customer action, so ordering is blocked with an explanation rather than
+  // leaving a button that can never enable. `place_order` would refuse the
+  // order anyway; this makes the reason visible.
+  const blockedGroups = groups.filter(
+    (group) =>
+      group.min_select > 0 &&
+      (group.modifier_options ?? []).filter((o) => o.is_available).length < group.min_select,
+  );
+  const orderBlocked = blockedGroups.length > 0;
+
   // How many of this dish are already in the basket, to cap the stepper.
   const alreadyInCart = hydrated
     ? lines
@@ -111,7 +123,7 @@ export function AddToCartPanel({
   }
 
   function handleAdd() {
-    if (unmetGroups.length > 0 || remaining === 0) return;
+    if (unmetGroups.length > 0 || orderBlocked || remaining === 0) return;
 
     add(
       {
@@ -190,23 +202,33 @@ export function AddToCartPanel({
               const delta = Number(option.price_delta);
               const selectionCount = (selected[group.id] ?? []).length;
               const atMax = group.max_select > 1 && selectionCount >= group.max_select;
+              const soldOut = !option.is_available;
               return (
                 <li key={option.id}>
-                  <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-rice-200/60">
+                  <label
+                    className={
+                      soldOut
+                        ? "flex cursor-not-allowed items-center justify-between gap-3 rounded-lg px-2 py-2 opacity-55"
+                        : "flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-rice-200/60"
+                    }
+                  >
                     <span className="flex items-center gap-2.5">
                       <input
                         type={group.max_select === 1 ? "radio" : "checkbox"}
                         name={`group-${group.id}`}
                         checked={checked}
-                        disabled={!checked && atMax}
+                        disabled={soldOut || (!checked && atMax)}
                         onChange={() =>
                           toggleOption(group.id, option.id, group.max_select)
                         }
                         className="size-4 accent-vermilion-600 disabled:opacity-50"
                       />
                       <span className="text-sm text-ink-900">{localName(option)}</span>
+                      {soldOut ? (
+                        <Badge tone="danger">{t("dish.soldOut")}</Badge>
+                      ) : null}
                     </span>
-                    {delta !== 0 ? (
+                    {delta !== 0 && !soldOut ? (
                       <span className="text-xs text-ink-700/75">
                         {delta > 0 ? "+" : ""}
                         {formatPrice(delta, currency, locale)}
@@ -240,7 +262,15 @@ export function AddToCartPanel({
         />
       </div>
 
-      {unmetGroups.length > 0 ? (
+      {orderBlocked ? (
+        <p role="status" className="text-xs text-chili-600">
+          {t("addToCart.soldOutChoice", {
+            groups: blockedGroups.map((g) => localName(g)).join("، "),
+          })}
+        </p>
+      ) : null}
+
+      {unmetGroups.length > 0 && !orderBlocked ? (
         <p role="status" className="text-xs text-miso-600">
           {t("addToCart.unfinished", {
             groups: unmetGroups.map((g) => localName(g)).join("، "),
@@ -287,7 +317,7 @@ export function AddToCartPanel({
           <Button
             type="button"
             onClick={handleAdd}
-            disabled={unmetGroups.length > 0 || remaining === 0}
+            disabled={unmetGroups.length > 0 || orderBlocked || remaining === 0}
             className="h-11 flex-1"
           >
             {justAdded ? (

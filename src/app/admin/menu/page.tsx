@@ -28,7 +28,9 @@ export default async function AdminMenuPage({
 
   const [categories, items] = await Promise.all([
     listAdminCategories(),
-    listAdminMenuItems({ limit: 400 }),
+    // Hidden dishes are listed too, so the row that hid them is the row that can
+    // bring them back — otherwise hiding would look like deleting.
+    listAdminMenuItems({ limit: 400, includeArchived: true }),
   ]);
 
   const editing = params.edit ? await getAdminMenuItem(params.edit) : null;
@@ -157,6 +159,7 @@ export default async function AdminMenuPage({
                         slug: item.slug,
                         price: Number(item.price),
                         is_available: item.is_available,
+                        is_archived: item.is_archived,
                         is_featured: item.is_featured,
                         has_transparent_png: item.has_transparent_png,
                         image_url: item.image_url,
@@ -186,6 +189,7 @@ export default async function AdminMenuPage({
                         slug: item.slug,
                         price: Number(item.price),
                         is_available: item.is_available,
+                        is_archived: item.is_archived,
                         is_featured: item.is_featured,
                         has_transparent_png: item.has_transparent_png,
                         image_url: item.image_url,
@@ -199,7 +203,7 @@ export default async function AdminMenuPage({
               </div>
             ) : null}
 
-            <HiddenNotice count={0} />
+            <HiddenNotice count={items.filter((item) => item.is_archived).length} />
           </div>
         )}
       </section>

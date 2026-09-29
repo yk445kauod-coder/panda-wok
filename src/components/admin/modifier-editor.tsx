@@ -10,7 +10,9 @@ import {
   deleteModifierOptionAction,
   saveModifierGroupAction,
   saveModifierOptionAction,
+  toggleModifierOptionAction,
 } from "@/lib/actions/admin";
+import { useErrorText } from "@/components/i18n-provider";
 import type { AdminModifierGroup } from "@/lib/services/admin-catalog";
 
 /**
@@ -78,31 +80,7 @@ export function ModifierEditor({
 
             <ul className="mt-3 space-y-1.5">
               {group.modifier_options.map((option) => (
-                <li
-                  key={option.id}
-                  className="flex items-center justify-between gap-2 rounded-lg bg-rice-100/70 px-2.5 py-1.5"
-                >
-                  <span className="min-w-0 text-sm text-ink-900">
-                    {option.name_en}
-                    <span className="ms-2 text-xs text-ink-700/70 tabular-nums">
-                      {Number(option.price_delta) > 0
-                        ? `+${Number(option.price_delta).toFixed(2)}`
-                        : "included"}
-                    </span>
-                    {!option.is_available ? (
-                      <span className="ms-2 text-2xs text-chili-600">hidden</span>
-                    ) : null}
-                  </span>
-                  <AdminButtonAction
-                    action={() => deleteModifierOptionAction(option.id)}
-                    variant="ghost"
-                    size="sm"
-                    confirm={`Remove "${option.name_en}"?`}
-                  >
-                    <Trash2 className="size-3.5" aria-hidden="true" />
-                    <span className="sr-only">Remove {option.name_en}</span>
-                  </AdminButtonAction>
-                </li>
+                <OptionRow key={option.id} option={option} />
               ))}
             </ul>
 
@@ -122,6 +100,76 @@ export function ModifierEditor({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * One option with its own in-stock switch. The row is kept when it is out of
+ * stock — hiding it would lose the name, the price and every past order that
+ * referenced it — and `place_order` refuses an unavailable option, so the flag
+ * is enforced by the database rather than the label.
+ */
+function OptionRow({
+  option,
+}: {
+  option: AdminModifierGroup["modifier_options"][number];
+}) {
+  const router = useRouter();
+  const errorText = useErrorText();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle(value: boolean) {
+    setBusy(true);
+    setError(null);
+    const result = await toggleModifierOptionAction(option.id, value);
+    setBusy(false);
+    if (!result.ok) {
+      setError(errorText(result.error));
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <li className="rounded-lg bg-rice-100/70 px-2.5 py-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 text-sm text-ink-900">
+          {option.name_en}
+          <span className="ms-2 text-xs text-ink-700/70 tabular-nums">
+            {Number(option.price_delta) > 0
+              ? `+${Number(option.price_delta).toFixed(2)}`
+              : "included"}
+          </span>
+        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-ink-800">
+            <input
+              type="checkbox"
+              checked={option.is_available}
+              disabled={busy}
+              onChange={(event) => toggle(event.target.checked)}
+              className="size-3.5 accent-vermilion-600"
+            />
+            {busy ? "Saving…" : "In stock"}
+          </label>
+          <AdminButtonAction
+            action={() => deleteModifierOptionAction(option.id)}
+            variant="ghost"
+            size="sm"
+            confirm={`Remove "${option.name_en}"?`}
+          >
+            <Trash2 className="size-3.5" aria-hidden="true" />
+            <span className="sr-only">Remove {option.name_en}</span>
+          </AdminButtonAction>
+        </div>
+      </div>
+      {error ? (
+        <p role="alert" className="mt-1 text-xs text-chili-600">
+          {error}
+        </p>
+      ) : null}
+    </li>
   );
 }
 

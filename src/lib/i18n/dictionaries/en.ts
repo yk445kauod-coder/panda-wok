@@ -240,6 +240,8 @@ export const en = {
     unfinished: "Please finish choosing: {groups}.",
     maxInBasket: "You already have the maximum of this dish in your basket.",
     maxExtras: "You can choose up to {count} extras. Deselect one first.",
+    soldOutChoice:
+      "Every option in {groups} is sold out right now, so this dish cannot be ordered. Please try again later.",
     unavailableTitle: "This dish is unavailable right now.",
     unavailableBody:
       "It has sold out or is paused right now. Try another dish, or check back later.",

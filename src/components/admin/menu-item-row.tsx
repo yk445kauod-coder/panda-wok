@@ -2,11 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Copy, EyeOff, ImageOff, Star, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, ImageOff, Star } from "lucide-react";
 import {
   deleteMenuItemAction,
   duplicateMenuItemAction,
+  setMenuItemVisibilityAction,
   toggleMenuItemAction,
+  type MenuItemVisibility,
 } from "@/lib/actions/admin";
 import { AdminButtonAction } from "@/components/admin/form-kit";
 import { Badge } from "@/components/ui/button";
@@ -20,6 +22,7 @@ type Row = {
   slug: string;
   price: number;
   is_available: boolean;
+  is_archived: boolean;
   is_featured: boolean;
   has_transparent_png: boolean;
   image_url: string | null;
@@ -27,10 +30,21 @@ type Row = {
   stock_status: string | null;
 };
 
+/** The dish's current state, derived the same way the customer menu derives it. */
+function visibilityOf(item: Row): MenuItemVisibility {
+  if (item.is_archived) return "hidden";
+  return item.is_available ? "live" : "sold_out";
+}
+
 /**
  * Menu list rows with inline enable/feature/transparent-PNG toggles. Each
  * toggle is a real server action, so the database and the public menu are
  * updated together rather than drifting from optimistic UI state.
+ *
+ * Availability is a three-way choice rather than a lone checkbox: a dish is
+ * either live, marked sold out but still shown, or hidden from customers. Two
+ * independent booleans let the row say "Orderable" while `is_archived` quietly
+ * kept it off the menu, which is exactly the confusion this replaces.
  */
 export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: string | null }) {
   const router = useRouter();
@@ -38,8 +52,10 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const visibility = visibilityOf(item);
+
   async function toggle(
-    field: "is_available" | "is_featured" | "has_transparent_png",
+    field: "is_featured" | "has_transparent_png",
     value: boolean,
   ) {
     setBusy(field);
@@ -53,6 +69,25 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
     setBusy(null);
     router.refresh();
   }
+
+  async function setVisibility(next: MenuItemVisibility) {
+    setBusy("visibility");
+    setError(null);
+    const result = await setMenuItemVisibilityAction(item.id, next);
+    if (!result.ok) {
+      setError(errorText(result.error));
+      setBusy(null);
+      return;
+    }
+    setBusy(null);
+    router.refresh();
+  }
+
+  const states: { key: MenuItemVisibility; label: string }[] = [
+    { key: "live", label: "Live" },
+    { key: "sold_out", label: "Sold out" },
+    { key: "hidden", label: "Hidden" },
+  ];
 
   return (
     <li className="washi-panel p-3">
@@ -85,7 +120,8 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
                 {item.name_ar}
               </span>
             ) : null}
-            {!item.is_available ? <Badge tone="danger">Hidden</Badge> : null}
+            {visibility === "hidden" ? <Badge tone="danger">Hidden</Badge> : null}
+            {visibility === "sold_out" ? <Badge tone="warning">Sold out</Badge> : null}
             {item.is_featured ? <Badge tone="indigo">Featured</Badge> : null}
             {item.has_transparent_png ? <Badge tone="info">Transparent PNG</Badge> : null}
           </div>
@@ -99,16 +135,36 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
               {formatPrice(item.price)}
             </span>
 
-            <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-ink-800">
-              <input
-                type="checkbox"
-                checked={item.is_available}
-                disabled={busy !== null}
-                onChange={(event) => toggle("is_available", event.target.checked)}
-                className="size-3.5 accent-vermilion-600"
-              />
-              {busy === "is_available" ? "Saving…" : "Orderable"}
-            </label>
+            {/* One control, three honest states. */}
+            <div
+              role="radiogroup"
+              aria-label={`Visibility for ${item.name_en}`}
+              className="inline-flex overflow-hidden rounded-lg border border-ink-900/15"
+            >
+              {states.map((state) => {
+                const active = state.key === visibility;
+                return (
+                  <button
+                    key={state.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    disabled={busy !== null}
+                    onClick={() => !active && setVisibility(state.key)}
+                    className={
+                      active
+                        ? "bg-vermilion-600 px-2.5 py-1 text-xs font-medium text-rice-50"
+                        : "px-2.5 py-1 text-xs text-ink-800 hover:bg-rice-200 disabled:opacity-50"
+                    }
+                  >
+                    {state.label}
+                  </button>
+                );
+              })}
+            </div>
+            {busy === "visibility" ? (
+              <span className="text-xs text-ink-700/70">Saving…</span>
+            ) : null}
 
             <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-ink-800">
               <input
@@ -156,15 +212,26 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
             <Copy className="size-3.5" aria-hidden="true" />
             Copy
           </AdminButtonAction>
-          <AdminButtonAction
-            action={() => deleteMenuItemAction(item.id)}
-            variant="ghost"
-            size="sm"
-            confirm="Archive this dish? It is hidden from customers but kept in past orders."
-          >
-            <Trash2 className="size-3.5" aria-hidden="true" />
-            Archive
-          </AdminButtonAction>
+          {item.is_archived ? (
+            <AdminButtonAction
+              action={() => setMenuItemVisibilityAction(item.id, "live")}
+              variant="ghost"
+              size="sm"
+            >
+              <Eye className="size-3.5" aria-hidden="true" />
+              Restore
+            </AdminButtonAction>
+          ) : (
+            <AdminButtonAction
+              action={() => deleteMenuItemAction(item.id)}
+              variant="ghost"
+              size="sm"
+              confirm="Hide this dish from customers? It is kept in the database and in past orders, and you can restore it any time."
+            >
+              <EyeOff className="size-3.5" aria-hidden="true" />
+              Hide
+            </AdminButtonAction>
+          )}
         </div>
       </div>
     </li>
@@ -176,8 +243,8 @@ export function HiddenNotice({ count }: { count: number }) {
   return (
     <p className="flex items-center gap-2 rounded-xl bg-rice-200/70 px-3 py-2 text-xs text-ink-800">
       <EyeOff className="size-3.5" aria-hidden="true" />
-      {count} archived dish{count === 1 ? "" : "es"} hidden from this list and from
-      customers.
+      {count} hidden dish{count === 1 ? "" : "es"} — not shown to customers, still
+      in the database and in past orders.
     </p>
   );
 }

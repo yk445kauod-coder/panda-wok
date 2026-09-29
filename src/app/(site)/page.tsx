@@ -488,13 +488,17 @@ function Hero({
       <LeafField2D count={11} />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 animate-hero-rise sm:py-20 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <div>
+        {/* Phones centre the copy because the hero reads as a title card there;
+            from `lg` the two-column layout puts the copy on one side, so it
+            returns to the leading edge. Every child that is not already centred
+            by its own container carries the same `lg:` switch. */}
+        <div className="text-center lg:text-start">
           {/* Phones get the mark first, at the top of the page. On desktop the
               ringed plate on the right carries it instead. */}
           <MobileHeroMark logoUrl={logoUrl} brand={brand} />
 
           <p
-            className="mt-5 inline-flex items-center gap-2 rounded-full border border-rice-100/20 bg-rice-100/8 px-3.5 py-1.5 text-xs font-medium tracking-wide text-rice-100/90"
+            className="mt-5 inline-flex items-center gap-2 rounded-full border border-rice-100/20 bg-rice-100/8 px-3.5 py-1.5 text-xs font-medium tracking-wide text-rice-100/90 lg:mx-0"
           >
             <MapPin className="size-3.5 text-vermilion-300" aria-hidden="true" />
             {t("home.heroEyebrow", { city: stats.city })}
@@ -502,24 +506,24 @@ function Hero({
 
           <BrandScriptMarks className="mt-5 text-sm font-semibold tracking-[0.3em] text-vermilion-300" />
 
-          <h1 className="mt-3 max-w-2xl font-display text-fluid-display font-bold text-rice-50 text-balance">
+          <h1 className="mx-auto mt-3 max-w-2xl font-display text-fluid-display font-bold text-rice-50 text-balance lg:mx-0">
             {brand}
           </h1>
 
-          <p className="mt-4 max-w-xl text-lg font-medium text-rice-200/90 text-pretty sm:text-xl">
+          <p className="mx-auto mt-4 max-w-xl text-lg font-medium text-rice-200/90 text-pretty sm:text-xl lg:mx-0">
             {tagline}
           </p>
 
-          <span aria-hidden="true" className="ink-rule mt-5 block max-w-xs" />
+          <span aria-hidden="true" className="ink-rule mx-auto mt-5 block max-w-xs lg:mx-0" />
 
           {!acceptingOrders ? (
-            <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-chili-300">
+            <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-chili-300 lg:mx-0">
               <span aria-hidden="true" className="size-1.5 rounded-full bg-chili-400" />
               {t("home.closedForOrders")}
             </p>
           ) : null}
 
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
             <Link
               href="/menu"
               className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-vermilion-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-vermilion-700"
@@ -538,7 +542,7 @@ function Hero({
           {/* The hero's job is to get someone into the basket, so the one
               reassurance worth stating up front is that there is no app and no
               phone call in the way. */}
-          <p className="mt-5 inline-flex items-start gap-2 text-sm text-rice-200/85">
+          <p className="mt-5 inline-flex items-start gap-2 text-sm text-rice-200/85 lg:mx-0">
             <Globe
               className="mt-0.5 size-4 shrink-0 text-vermilion-300"
               aria-hidden="true"
@@ -597,7 +601,7 @@ function HeroStats({
   if (entries.length === 0) return null;
 
   return (
-    <dl className="mt-9 grid max-w-xl grid-cols-2 gap-x-6 gap-y-4 border-t border-rice-100/15 pt-6">
+    <dl className="mt-9 grid max-w-xl grid-cols-2 gap-x-6 gap-y-4 border-t border-rice-100/15 pt-6 mx-auto text-start lg:mx-0">
       {entries.map((entry) => (
         <div key={entry.label} className="flex items-start gap-2.5">
           <entry.icon
@@ -709,7 +713,7 @@ function ClosingCta({
  */
 function MobileHeroMark({ logoUrl, brand }: { logoUrl: string; brand: string }) {
   return (
-    <div className="mb-5 flex items-center gap-3 lg:hidden">
+    <div className="mb-5 flex items-center justify-center gap-3 lg:hidden">
       {/* The mark is a vector asset served from this origin, so it needs no
           resize transform and no CDN query — those only forced a raster round
           trip. */}
