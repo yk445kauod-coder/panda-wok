@@ -24,7 +24,8 @@ import {
   type LucideIcon,
   UserPlus,
 } from "lucide-react";
-import { GUIDE_SECTIONS, topicMatches, type GuideTopic } from "@/lib/admin/guide";
+import { GUIDE_SECTIONS, topicMatches, type GuideSection, type GuideTopic } from "@/lib/admin/guide";
+import { useT } from "@/components/i18n-provider";
 import { cn } from "@/lib/utils/format";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -54,19 +55,26 @@ const ICONS: Record<string, LucideIcon> = {
  */
 export function GuideBrowser({
   capabilities,
+  sections: inputSections,
 }: {
   capabilities: readonly string[];
+  /** Localised sections from the server; falls back to the English source. */
+  sections?: GuideSection[];
 }) {
+  const t = useT();
+  const source = inputSections ?? (GUIDE_SECTIONS as unknown as GuideSection[]);
   const [query, setQuery] = useState("");
-  const [openId, setOpenId] = useState<string | null>(GUIDE_SECTIONS[0]?.topics[0]?.id ?? null);
+  const [openId, setOpenId] = useState<string | null>(source[0]?.topics[0]?.id ?? null);
 
   const sections = useMemo(
     () =>
-      GUIDE_SECTIONS.map((section) => ({
-        ...section,
-        topics: section.topics.filter((topic) => topicMatches(topic, query)),
-      })).filter((section) => section.topics.length > 0),
-    [query],
+      source
+        .map((section) => ({
+          ...section,
+          topics: section.topics.filter((topic) => topicMatches(topic, query)),
+        }))
+        .filter((section) => section.topics.length > 0),
+    [query, source],
   );
 
   const total = sections.reduce((sum, section) => sum + section.topics.length, 0);
@@ -76,7 +84,7 @@ export function GuideBrowser({
     <div className="space-y-5">
       <div className="sticky top-0 z-30 -mx-4 bg-rice-100/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:px-0">
         <label className="relative block">
-          <span className="sr-only">Search the guide</span>
+          <span className="sr-only">{t("admin.guide.searchLabel")}</span>
           <Search
             className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ink-500"
             aria-hidden="true"
@@ -85,21 +93,20 @@ export function GuideBrowser({
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search — refunds, loyalty, stock, a role…"
+            placeholder={t("admin.guide.searchPlaceholder")}
             className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 ps-10 pe-3 text-sm text-ink-900 outline-none focus:border-vermilion-500 focus:ring-2 focus:ring-vermilion-500/20"
           />
         </label>
         <p className="mt-1.5 text-xs text-ink-700/70" aria-live="polite">
           {searching
-            ? `${total} ${total === 1 ? "topic" : "topics"} match “${query.trim()}”`
-            : `${total} topics across ${sections.length} sections`}
+            ? t("admin.guide.matchCount", { count: total, query: query.trim() })
+            : t("admin.guide.sectionCount", { count: total, sections: sections.length })}
         </p>
       </div>
 
       {total === 0 ? (
         <p className="rounded-xl border border-ink-900/10 bg-rice-50 p-6 text-center text-sm text-ink-700/80">
-          Nothing matched that. Try a shorter word, or ask an owner — this guide only
-          documents what the console actually does.
+          {t("admin.guide.noMatch")}
         </p>
       ) : null}
 
@@ -145,6 +152,7 @@ function TopicCard({
   canAct: boolean;
   onToggle: () => void;
 }) {
+  const t = useT();
   const Icon = ICONS[topic.icon] ?? BookOpen;
   const panelId = `guide-topic-${topic.id}`;
 
@@ -177,7 +185,7 @@ function TopicCard({
             <span className="font-medium text-ink-900">{topic.title}</span>
             {!canAct ? (
               <span className="rounded-full bg-ink-900/8 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-600">
-                Owner or admin
+                {t("admin.guide.ownerOrAdmin")}
               </span>
             ) : null}
           </span>
@@ -216,7 +224,7 @@ function TopicCard({
             <div className="mt-3.5 rounded-xl bg-miso-500/10 p-3">
               <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-miso-700">
                 <Lightbulb className="size-3.5" aria-hidden="true" />
-                Good to know
+                {t("admin.guide.goodToKnow")}
               </p>
               <ul className="mt-1.5 space-y-1.5">
                 {topic.tips.map((tip) => (

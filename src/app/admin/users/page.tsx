@@ -7,7 +7,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { DEFAULT_PAGE_SIZE, Pagination, resolvePage } from "@/components/ui/pagination";
 import { BlockUserControl, CreateStaffForm, StaffRoleForm } from "@/components/admin/customer-controls";
-import { formatDate, formatDateTime, formatNumber, formatPrice, humanise } from "@/lib/utils/format";
+import { formatDate, formatDateTime, formatNumber, formatPrice } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 import type { StaffRole } from "@/lib/auth/rbac";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ export default async function AdminUsersPage({
   const session = await requireCapability("users.manage");
   const canGrantPrivileged = session.role === "owner";
   const params = await searchParams;
+  const locale = await getAdminLocale();
+  const t = await getT(locale);
 
   const page = resolvePage(params.page);
   const pageSize = DEFAULT_PAGE_SIZE;
@@ -64,13 +67,13 @@ export default async function AdminUsersPage({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Operations"
-        title="Users"
-        description="Customer accounts and staff access. Only the details needed for support and operations are shown."
+        eyebrow={t("admin.users.eyebrow")}
+        title={t("admin.users.title")}
+        description={t("admin.users.description")}
         actions={
           <>
-            <Badge tone="neutral">{formatNumber(total)} accounts</Badge>
-            <Badge tone="info">{staff.length} staff</Badge>
+            <Badge tone="neutral">{t("admin.users.accounts", { count: formatNumber(total) })}</Badge>
+            <Badge tone="info">{t("admin.users.staffCount", { count: staff.length })}</Badge>
           </>
         }
       />
@@ -78,19 +81,19 @@ export default async function AdminUsersPage({
       <form method="get" className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
           <label htmlFor="users-q" className="block text-xs font-medium text-ink-800">
-            Search
+            {t("admin.users.searchLabel")}
           </label>
           <input
             id="users-q"
             name="q"
             defaultValue={params.q ?? ""}
-            placeholder="Name or phone"
+            placeholder={t("admin.users.searchPlaceholder")}
             className="mt-1 h-10 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           />
         </div>
         <div>
           <label htmlFor="users-role" className="block text-xs font-medium text-ink-800">
-            Filter
+            {t("admin.users.filterLabel")}
           </label>
           <select
             id="users-role"
@@ -98,12 +101,12 @@ export default async function AdminUsersPage({
             defaultValue={params.role ?? ""}
             className="mt-1 h-10 rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           >
-            <option value="">Everyone</option>
-            <option value="staff">Staff only</option>
-            <option value="blocked">Blocked only</option>
+            <option value="">{t("admin.users.everyone")}</option>
+            <option value="staff">{t("admin.users.staffOnly")}</option>
+            <option value="blocked">{t("admin.users.blockedOnly")}</option>
             {roles.map((role) => (
               <option key={role} value={role}>
-                {humanise(role)}
+                {t(`admin.term.role.${role}`)}
               </option>
             ))}
           </select>
@@ -112,26 +115,23 @@ export default async function AdminUsersPage({
           type="submit"
           className="h-10 rounded-xl bg-vermilion-600 px-4 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
         >
-          Apply
+          {t("admin.users.apply")}
         </button>
         {params.q || params.role ? (
           <Link
             href="/admin/users"
             className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
           >
-            Clear
+            {t("admin.users.clear")}
           </Link>
         ) : null}
       </form>
 
       <details className="washi-panel p-4">
         <summary className="cursor-pointer font-display text-base font-semibold text-ink-900">
-          Create a team account
+          {t("admin.users.createTeam")}
         </summary>
-        <p className="mt-1 text-xs text-ink-700/70">
-          Issues a role and an ops login id in one step. The person opens /admin
-          with that id — no email, password or customer signup required.
-        </p>
+        <p className="mt-1 text-xs text-ink-700/70">{t("admin.users.createTeamHint")}</p>
         <div className="mt-4 max-w-md">
           <CreateStaffForm canGrantPrivileged={canGrantPrivileged} />
         </div>
@@ -139,13 +139,9 @@ export default async function AdminUsersPage({
 
       {filtered.length === 0 ? (
         <EmptyState
-          title={
-            params.q || params.role ? "No users match this filter" : "No customer accounts yet"
-          }
+          title={params.q || params.role ? t("admin.users.noMatch") : t("admin.users.noAccounts")}
           description={
-            params.q || params.role
-              ? "Try a different search or clear the filter."
-              : "Accounts appear here when customers sign up."
+            params.q || params.role ? t("admin.users.noMatchBody") : t("admin.users.noAccountsBody")
           }
         />
       ) : (
@@ -161,36 +157,40 @@ export default async function AdminUsersPage({
                         href={`/admin/crm/${customer.user_id}`}
                         className="font-display text-base font-semibold text-ink-900 hover:text-vermilion-600"
                       >
-                        {customer.full_name ?? "Unnamed user"}
+                        {customer.full_name ?? t("admin.users.unnamed")}
                       </Link>
                       {staffRow ? (
                         <Badge tone={staffRow.is_active ? "success" : "neutral"}>
-                          {humanise(staffRow.role)}
-                          {staffRow.is_active ? "" : " (inactive)"}
+                          {t(`admin.term.role.${staffRow.role}`)}
+                          {staffRow.is_active ? "" : ` ${t("admin.users.inactive")}`}
                         </Badge>
                       ) : null}
-                      {customer.is_blocked ? <Badge tone="danger">Blocked</Badge> : null}
+                      {customer.is_blocked ? (
+                        <Badge tone="danger">{t("admin.users.blocked")}</Badge>
+                      ) : null}
                     </div>
 
                     <p className="mt-1 text-sm text-ink-800">
-                      {customer.phone ?? "No phone"}
+                      {customer.phone ?? t("admin.users.noPhone")}
                       <span className="text-ink-700/65">
-                        {" · joined "}
-                        {formatDate(customer.created_at)}
+                        {" · "}
+                        {t("admin.users.joined")} {formatDate(customer.created_at)}
                         {customer.last_seen_at
-                          ? ` · last seen ${formatDateTime(customer.last_seen_at)}`
+                          ? ` · ${t("admin.users.lastSeen")} ${formatDateTime(customer.last_seen_at)}`
                           : ""}
                       </span>
                     </p>
 
                     <p className="mt-1 text-xs text-ink-700/70">
-                      {formatNumber(customer.order_count)} orders ·{" "}
-                      {formatPrice(customer.lifetime_value)} lifetime
+                      {t("admin.users.ordersLifetime", {
+                        orders: formatNumber(customer.order_count),
+                        value: formatPrice(customer.lifetime_value),
+                      })}
                     </p>
 
                     <details className="mt-3">
                       <summary className="cursor-pointer text-xs font-medium text-vermilion-600 hover:text-vermilion-700">
-                        {staffRow ? "Change staff role" : "Grant staff access"}
+                        {staffRow ? t("admin.users.changeRole") : t("admin.users.grantAccess")}
                       </summary>
                       <div className="mt-3 max-w-md">
                         <StaffRoleForm
@@ -208,7 +208,7 @@ export default async function AdminUsersPage({
                   <BlockUserControl
                     userId={customer.user_id}
                     isBlocked={customer.is_blocked}
-                    name={customer.full_name ?? "This user"}
+                    name={customer.full_name ?? t("admin.users.unnamed")}
                   />
                 </div>
               </li>
@@ -227,10 +227,7 @@ export default async function AdminUsersPage({
         />
       ) : null}
 
-      <p className="text-xs text-ink-700/60">
-        Role changes are recorded in the audit log with the acting staff member. The database
-        independently enforces the same permissions through row-level security.
-      </p>
+      <p className="text-xs text-ink-700/60">{t("admin.users.auditNote")}</p>
     </div>
   );
 }

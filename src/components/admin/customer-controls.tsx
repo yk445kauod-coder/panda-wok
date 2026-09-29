@@ -9,17 +9,8 @@ import { setUserBlockedAction, saveStaffAction, createStaffAccountAction, adjust
 import { AdminForm, Field, Toggle } from "@/components/admin/form-kit";
 import type { StaffRole } from "@/lib/auth/rbac";
 
-import { useErrorText } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 const ROLES: StaffRole[] = ["owner", "admin", "manager", "kitchen", "support", "marketing"];
-
-const ROLE_HINTS: Record<StaffRole, string> = {
-  owner: "Full access, including backups, roles and settings.",
-  admin: "Everything operational except restoring backups and managing owner roles.",
-  manager: "Operations, stock, menu, CRM, loyalty and exports.",
-  kitchen: "Orders and preparation status only.",
-  support: "Orders read, feedback and customer chat.",
-  marketing: "Segments, broadcasts and analytics.",
-};
 
 /**
  * Block/unblock a customer. Blocking prevents ordering; it is reversible and a
@@ -36,6 +27,7 @@ export function BlockUserControl({
 }) {
   const router = useRouter();
   const errorText = useErrorText();
+  const t = useT();
   const [pending, setPending] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,17 +69,17 @@ export function BlockUserControl({
       >
         {confirming
           ? isBlocked
-            ? "Confirm unblock?"
-            : "Confirm block?"
+            ? t("admin.users.confirmUnblock")
+            : t("admin.users.confirmBlock")
           : isBlocked
-            ? "Unblock"
-            : "Block"}
+            ? t("admin.users.unblock")
+            : t("admin.users.block")}
       </Button>
       {confirming ? (
         <span className="text-[11px] text-ink-700/70">
           {isBlocked
-            ? `${name} will be able to order again.`
-            : `${name} will not be able to place orders.`}
+            ? t("admin.users.willOrder", { name })
+            : t("admin.users.willNotOrder", { name })}
         </span>
       ) : null}
       {error ? (
@@ -116,6 +108,7 @@ export function StaffRoleForm({
   /** Owner-only: whether owner/admin may be chosen in the role picker. */
   canGrantPrivileged: boolean;
 }) {
+  const t = useT();
   const [role, setRole] = useState<StaffRole>(currentRole ?? "kitchen");
   const grantable = ROLES.filter(
     (option) =>
@@ -125,27 +118,27 @@ export function StaffRoleForm({
   return (
     <AdminForm
       action={saveStaffAction}
-      submitLabel={currentRole ? "Update role" : "Grant staff access"}
-      options={{ successMessage: "Staff role updated." }}
+      submitLabel={currentRole ? t("admin.users.updateRole") : t("admin.users.grantStaff")}
+      options={{ successMessage: t("admin.users.staffUpdated") }}
     >
       <input type="hidden" name="userId" value={userId} />
       <Field
         name="displayName"
-        label="Display name"
-        hint="Shown to other staff on messages and status changes."
+        label={t("admin.users.displayName")}
+        hint={t("admin.users.displayNameHint")}
         defaultValue={displayName ?? ""}
       />
 
       <Field
         name="loginId"
-        label="Ops login id"
-        hint="What this person types at /admin to open the console with this role. A phone number works well. Leave blank to use the shared passcode only."
+        label={t("admin.users.loginId")}
+        hint={t("admin.users.loginIdHint")}
         defaultValue={currentLoginId ?? ""}
       />
 
       <div>
         <label htmlFor={`role-${userId}`} className="block text-sm font-medium text-ink-900">
-          Role
+          {t("admin.users.role")}
         </label>
         <select
           id={`role-${userId}`}
@@ -156,18 +149,18 @@ export function StaffRoleForm({
         >
           {grantable.map((option) => (
             <option key={option} value={option}>
-              {humanise(option)}
+              {t(`admin.term.role.${option}`)}
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-ink-700/65">{ROLE_HINTS[role]}</p>
+        <p className="mt-1 text-xs text-ink-700/65">{t(`admin.users.roleHint.${role}`)}</p>
       </div>
 
       <Toggle
         name="isActive"
-        label="Active"
+        label={t("admin.users.active")}
         defaultChecked={isActive}
-        hint="Inactive staff keep their history but lose access."
+        hint={t("admin.users.activeHint")}
       />
     </AdminForm>
   );
@@ -179,6 +172,7 @@ export function StaffRoleForm({
  * customer signup is involved — the login id *is* the credential.
  */
 export function CreateStaffForm({ canGrantPrivileged }: { canGrantPrivileged: boolean }) {
+  const t = useT();
   const [role, setRole] = useState<StaffRole>("kitchen");
   const grantable = ROLES.filter(
     (option) => canGrantPrivileged || (option !== "owner" && option !== "admin"),
@@ -187,25 +181,25 @@ export function CreateStaffForm({ canGrantPrivileged }: { canGrantPrivileged: bo
   return (
     <AdminForm
       action={createStaffAccountAction}
-      submitLabel="Create team account"
-      options={{ successMessage: "Team account created — share the ops login id." }}
+      submitLabel={t("admin.users.createAccount")}
+      options={{ successMessage: t("admin.users.createAccountDone") }}
     >
       <Field
         name="fullName"
-        label="Full name"
+        label={t("admin.users.fullName")}
         placeholder="Mona Adel"
         required
       />
       <Field
         name="loginId"
-        label="Ops login id"
-        hint="The credential they type at /admin. Use a mobile number or a short code."
+        label={t("admin.users.loginId")}
+        hint={t("admin.users.loginIdNewHint")}
         placeholder="01001234567"
         required
       />
       <div>
         <label htmlFor="new-staff-role" className="block text-sm font-medium text-ink-900">
-          Role
+          {t("admin.users.role")}
         </label>
         <select
           id="new-staff-role"
@@ -216,22 +210,22 @@ export function CreateStaffForm({ canGrantPrivileged }: { canGrantPrivileged: bo
         >
           {grantable.map((option) => (
             <option key={option} value={option}>
-              {humanise(option)}
+              {t(`admin.term.role.${option}`)}
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-ink-700/65">{ROLE_HINTS[role]}</p>
+        <p className="mt-1 text-xs text-ink-700/65">{t(`admin.users.roleHint.${role}`)}</p>
       </div>
       <Field
         name="phone"
-        label="Phone (optional)"
-        hint="Stored on the profile for contact. Not used to sign in."
+        label={t("admin.users.phoneOptional")}
+        hint={t("admin.users.phoneHint")}
         placeholder="01001234567"
       />
       <Field
         name="email"
-        label="Email (optional)"
-        hint="Recovery contact only. Leave blank to keep the account fully phone-first."
+        label={t("admin.users.emailOptional")}
+        hint={t("admin.users.emailHint")}
         placeholder="mona@example.com"
       />
     </AdminForm>
