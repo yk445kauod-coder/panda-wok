@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FileDown } from "lucide-react";
 import { AdminForm } from "@/components/admin/form-kit";
 import { requestExportAction } from "@/lib/actions/admin";
+import { useT } from "@/components/i18n-provider";
 
 export type DatasetOption = {
   key: string;
@@ -19,6 +20,7 @@ export type DatasetOption = {
  * The work runs in the background, so the success message sets expectations.
  */
 export function ExportRequestForm({ datasets }: { datasets: DatasetOption[] }) {
+  const t = useT();
   const [dataset, setDataset] = useState(datasets[0]?.key ?? "orders");
   const [format, setFormat] = useState<"csv" | "json">("csv");
 
@@ -27,17 +29,16 @@ export function ExportRequestForm({ datasets }: { datasets: DatasetOption[] }) {
   return (
     <AdminForm
       action={requestExportAction}
-      submitLabel="Request export"
+      submitLabel={t("admin.pages.exports.form.submit")}
       options={{
-        successMessage:
-          "Export queued. It appears below and turns ready when the worker finishes it.",
+        successMessage: t("admin.pages.exports.form.success"),
         resetOnSuccess: false,
       }}
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="dataset" className="block text-sm font-medium text-ink-900">
-            Dataset
+            {t("admin.pages.exports.form.dataset")}
           </label>
           <select
             id="dataset"
@@ -55,7 +56,9 @@ export function ExportRequestForm({ datasets }: { datasets: DatasetOption[] }) {
         </div>
 
         <fieldset>
-          <legend className="text-sm font-medium text-ink-900">Format</legend>
+          <legend className="text-sm font-medium text-ink-900">
+            {t("admin.pages.exports.form.format")}
+          </legend>
           <input type="hidden" name="format" value={format} />
           <div className="mt-1.5 flex gap-2">
             {(["csv", "json"] as const).map((option) => (
@@ -84,8 +87,7 @@ export function ExportRequestForm({ datasets }: { datasets: DatasetOption[] }) {
             {selected.description}
             {selected.sensitivity === "personal" ? (
               <strong className="block pt-1 font-medium text-chili-600">
-                Contains personal data. Only export what the task needs and delete the
-                file afterwards.
+                {t("admin.pages.exports.form.personalWarning")}
               </strong>
             ) : null}
           </span>

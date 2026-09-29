@@ -3,39 +3,29 @@
 import { useState } from "react";
 import { AdminForm, Field, Toggle } from "@/components/admin/form-kit";
 import { requestBackupAction } from "@/lib/actions/admin";
+import { useT } from "@/components/i18n-provider";
 
-const KINDS: { key: string; label: string; hint: string }[] = [
-  { key: "database", label: "Database", hint: "Core tables — the row-level backup." },
-  { key: "configuration", label: "Configuration", hint: "Settings, flags and catalog config." },
-  { key: "menu", label: "Menu", hint: "Categories, dishes and prices." },
-  { key: "media_refs", label: "Media references", hint: "Pointers to stored images, not the files." },
-  { key: "snapshot", label: "Full snapshot", hint: "Everything above in one manifest." },
-];
+const KINDS = ["database", "configuration", "menu", "media_refs", "snapshot"] as const;
+type KindKey = (typeof KINDS)[number];
 
 /**
  * Backup requester. Creating a backup is safe and non-destructive; it still asks
  * for an explicit confirmation so a stray click cannot queue heavy work. The
  * action runs the real backup routine server-side.
  */
-export function BackupRequestForm({
-  kinds = KINDS,
-}: {
-  kinds?: { key: string; label: string; hint: string }[];
-}) {
-  const [kind, setKind] = useState(kinds[0]?.key ?? "database");
-  const selected = kinds.find((item) => item.key === kind);
+export function BackupRequestForm({ kinds = KINDS }: { kinds?: readonly KindKey[] }) {
+  const t = useT();
+  const [kind, setKind] = useState<string>(kinds[0] ?? "database");
 
   return (
     <AdminForm
       action={requestBackupAction}
-      submitLabel="Create backup"
-      options={{
-        successMessage: "Backup queued. Progress is shown in the history below.",
-      }}
+      submitLabel={t("admin.pages.backups.form.submit")}
+      options={{ successMessage: t("admin.pages.backups.form.success") }}
     >
       <div>
         <label htmlFor="kind" className="block text-sm font-medium text-ink-900">
-          What to back up
+          {t("admin.pages.backups.form.whatToBackUp")}
         </label>
         <select
           id="kind"
@@ -45,27 +35,27 @@ export function BackupRequestForm({
           className="mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
         >
           {kinds.map((option) => (
-            <option key={option.key} value={option.key}>
-              {option.label}
+            <option key={option} value={option}>
+              {t(`admin.pages.backups.kind.${option}`)}
             </option>
           ))}
         </select>
-        {selected ? (
-          <p className="mt-1 text-xs text-ink-700/65">{selected.hint}</p>
-        ) : null}
+        <p className="mt-1 text-xs text-ink-700/65">
+          {t(`admin.pages.backups.kindHint.${kind}`)}
+        </p>
       </div>
 
       <Field
         name="label"
-        label="Label (optional)"
-        placeholder="Before the summer menu change"
-        hint="A short note so future-you knows why this backup exists."
+        label={t("admin.pages.backups.form.label")}
+        placeholder={t("admin.pages.backups.form.labelPlaceholder")}
+        hint={t("admin.pages.backups.form.labelHint")}
       />
 
       <Toggle
         name="confirm"
-        label="I want to create this backup now"
-        hint="Required. Backups read the whole dataset, so the server asks for intent."
+        label={t("admin.pages.backups.form.confirmLabel")}
+        hint={t("admin.pages.backups.form.confirmHint")}
       />
     </AdminForm>
   );
