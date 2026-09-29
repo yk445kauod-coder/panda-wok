@@ -1579,3 +1579,59 @@ callers unchanged) and the wrapper raises `LOYALTY_DISABLED` (22023) for a
 redemption while the flag is off. Checkout hides redemption when the flag is
 off, so the customer never reaches that rejection. `LOYALTY_DISABLED` copy is
 in both dictionaries.
+
+## i18n usage test catches the raw-key class of bug (2026-09-26)
+
+`tsc` cannot catch a `t("some.key")` call whose key does not exist: the dictionary
+is typed as a whole object and the lookup accepts any string, so the call renders
+the key path itself ("contact.faqHeading") to the visitor, only at runtime.
+
+`tests/i18n-usage.test.ts` scans every literal `t("...")` in `src/app` + `src/components`
+and asserts each resolves to a real dictionary key. It found, fixed, and locked:
+
+- contact page rendered raw `contact.faqHeading` / `contact.faqSubtitle` (keys never existed)
+- admin automations form rendered every label raw — the keys live under
+  `admin.agent.automations` but the component looked up `admin.automations`
+- `/orders/[orderId]` rendered raw `orders.delivery`
+- feedback form rendered raw `feedback.orderLabel`
+- the contact page hardcoded its "Where we cook" and "Ordering and delivery"
+  sections in English while `contact.whereHeading` / `orderingHeading` / etc.
+  already existed in the dictionary (so Arabic showed English there)
+- the route loading skeleton's `sr-only` text was hardcoded English
+
+Dynamic keys (`t("admin.nav.${x}")`) cannot be scanned statically; the families
+they belong to are kept complete by the `Dictionary` type + `tests/i18n-parity.test.ts`.
+When adding a dynamic family, keep both dictionaries in lockstep or the parity
+test and `tsc` will fail.
+
+The customer mobile drawer (`MobileNav`) and the bottom tab bar were audited live
+(headless Chromium at 320-414px, both locales): fully translated, and
+`documentElement.scrollWidth - clientWidth == 0` on every customer page in both
+locales. There is no customer sidebar — "the mobile sidebar" is the `MobileNav`
+sheet. The admin console drawer is `src/components/admin/admin-shell.tsx`.
+
+## Menu system (verified 2026-09-26)
+
+Live catalogue is NOT empty: 18 categories / 84 dishes / 20 modifier groups /
+65 options (supabase project xjbtsryidznsxqlynmfa). 76/84 dishes have an image,
+67 have descriptions.
+
+- Tables (`supabase/migrations/20260922000200_menu.sql`): `categories` (name_en/ar/ja,
+  slug, sort_order, is_enabled), `menu_items` (name_en/ar/ja, slug, prices, flags,
+  allergens[], image_url), `menu_images`, `modifier_groups` + `modifier_options`,
+  `upsell_rules`.
+- Admin CMS: `/admin/menu` + `/admin/categories` (one dish at a time), backed by
+  `menu-item-form.tsx` / `category-form.tsx` with direct image upload to the public
+  `menu-images` Storage bucket (`src/lib/actions/storage.ts`).
+- Bulk path: `npm run menu:export` (live -> `scripts/data/menu-export.csv`), edit,
+  `npm run menu:import` (dry run) / `menu:import:apply`. Idempotent; matches on
+  `external_id` then `slug`; never deletes. Columns in scripts/data/README-menu-import.md.
+- `scripts/data/panda-wok-menu.json` is an import manifest derived from `newwebsitemenu.pmdx`
+  (10 sections / 89 priced items), largely the same catalogue already live.
+
+Open question for the owner: the Chinese sections (Appetizers, Noodles, RICE,
+Main dishes, Set menu, Fasting Meal, Special Offers, Box, Extra sauces, Drinks)
+are already loaded with Arabic names and prices; the Japanese sushi sections
+(RAW/FRIED URA MAKI ROLL, NIGIRI RAW/FRIED, COMBO RAW/FRIED, SALADS, Sauces) are
+also live. "Upload the Chinese menu" needs confirming — replace prices? add dishes?
+add Japanese names? add per-dish modifiers?
