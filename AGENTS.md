@@ -2144,3 +2144,39 @@ fetch: `saving` only shows during a save, `restore` only for an archived dish.
 raw-key class of bug); full suite 266 passed / 2 skipped; `tsc` clean; lint 0
 errors; `next build` green.
 
+
+## `combo mix 48 pieces` got its own category (2026-09-29, owner request)
+
+The owner asked, in writing, for one dish to sit alone in a new category:
+
+- new category `Combo mix` / `كومبو ميكس`, slug `combo-mix`, `sort_order = 18`
+  (after `Sauces` 17, so it lands at the end of the Japanese sushi catalogue);
+- `combo mix 48 pieces` (`83b33e26-b48a-48bb-91c1-795f4e3c9c0f`, EGP 1540)
+  moved out of `COMBO RAW` and into it.
+
+Applied live as migration `combo_mix_category`. Additive and idempotent: one
+category inserted (`where not exists` by slug), then the dish repointed
+(`is distinct from`). Nothing was deleted and no price, name, description or
+image was touched — this is the owner's menu, and this is the only change asked
+for.
+
+**`COMBO RAW` survives and is still public** with its other four dishes
+(8/16/24/32 pieces). Do not "clean up" the category now that mix 48 has left it,
+and do not repoint anything else; the owner moved exactly one dish.
+
+Verified live: `/menu` lists 19 categories and both `Combo mix` and `COMBO RAW`
+render; `/menu/combo-mix` = 200 with the dish and its 1540 price; `/menu/combo-raw`
+= 200 with four combos and **no** `combo mix 48`; the Arabic cookie renders
+`كومبو ميكس`. Counts before/after: categories 18 -> 19, menu_items 84 -> 84
+(0 archived), 1 item in the new category.
+
+**Note for the next session: `name_ja` is still being written.** The live schema
+still carries `categories.name_ja` / `menu_items.name_ja` (the column drop was
+reverted once because the separately-deployed Pages bundle still selected it),
+and the Japanese seed `20260927070000_japanese_sushi_menu.sql` still sets it. The
+new category's `name_ja` is left null on purpose — dropping the column is still
+"deploy the app first, then drop", never the reverse.
+
+Deploy credentials are not in this environment (`CLOUDFLARE_API_TOKEN` absent), so
+the DB change is live immediately while this repo note ships with the next push.
+
