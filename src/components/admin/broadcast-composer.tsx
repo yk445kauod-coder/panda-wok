@@ -27,23 +27,23 @@ export type SegmentOption = {
 const CHANNELS: { key: Channel; labelKey: string; hintKey: string }[] = [
   {
     key: "in_app",
-    labelKey: "admin.pages.broadcast.inApp",
-    hintKey: "admin.pages.broadcast.inAppHint",
+    labelKey: "admin.pages.broadcast.composer.inApp",
+    hintKey: "admin.pages.broadcast.composer.inAppHint",
   },
   {
     key: "push",
-    labelKey: "admin.pages.broadcast.push",
-    hintKey: "admin.pages.broadcast.pushHint",
+    labelKey: "admin.pages.broadcast.composer.push",
+    hintKey: "admin.pages.broadcast.composer.pushHint",
   },
   {
     key: "email",
-    labelKey: "admin.pages.broadcast.email",
-    hintKey: "admin.pages.broadcast.emailHint",
+    labelKey: "admin.pages.broadcast.composer.email",
+    hintKey: "admin.pages.broadcast.composer.emailHint",
   },
   {
     key: "sms",
-    labelKey: "admin.pages.broadcast.sms",
-    hintKey: "admin.pages.broadcast.smsHint",
+    labelKey: "admin.pages.broadcast.composer.sms",
+    hintKey: "admin.pages.broadcast.composer.smsHint",
   },
 ];
 
@@ -78,10 +78,10 @@ export function BroadcastComposer({
       action={createBroadcastAction}
       submitLabel={
         reviewing
-          ? t("admin.pages.broadcast.sendNow")
-          : t("admin.pages.broadcast.review")
+          ? t("admin.pages.broadcast.composer.sendNow")
+          : t("admin.pages.broadcast.composer.review")
       }
-      options={{ successMessage: t("admin.pages.broadcast.sentToast") }}
+      options={{ successMessage: t("admin.pages.broadcast.composer.sentToast") }}
     >
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <div className="space-y-4">

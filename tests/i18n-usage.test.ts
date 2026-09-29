@@ -33,16 +33,37 @@ function keysOf(node: unknown, prefix = ""): string[] {
 
 const DICTIONARY_KEYS = new Set(keysOf(en));
 
+const ROOTS = ["src/app", "src/components"];
+
+/** Top-level dictionary members; a bare string starting with one of these is a key. */
+const TOP_LEVEL = new Set(Object.keys(en));
+
 function usedKeys(): { key: string; file: string }[] {
-  const roots = ["src/app", "src/components"];
   const used: { key: string; file: string }[] = [];
-  for (const root of roots) {
+  for (const root of ROOTS) {
     for (const file of filesUnder(root)) {
       const text = readFileSync(file, "utf8");
-      // Static string argument only. A template literal with ${...} is skipped.
-      const re = /\bt\(\s*"([a-zA-Z0-9_.]+)"\s*[,)]/g;
+
+      // `t("some.key")` — static string argument only; a template literal with
+      // ${...} is skipped because it cannot be checked statically.
+      const callRe = /\bt\(\s*"([a-zA-Z0-9_.]+)"\s*[,)]/g;
       let m: RegExpExecArray | null;
-      while ((m = re.exec(text))) used.push({ key: m[1], file });
+      while ((m = callRe.exec(text))) used.push({ key: m[1], file });
+
+      // Keys parked in constants (`labelKey: "admin.pages.x.inApp"`) are never
+      // passed to t() literally, so the scan above cannot see them. That blind
+      // spot once shipped a family pointing at the wrong level of the
+      // dictionary — the label rendered as a raw key path.
+      //
+      // The discriminator is depth: real keys are three segments or deeper
+      // (`admin.pages.broadcast.composer.inApp`), while the dotted literals
+      // that are not keys are two-segment capabilities such as `orders.view`
+      // and `menu.manage`. Requiring the first segment to be a top-level
+      // dictionary member keeps route strings out too.
+      const literalRe = /"([a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9_]+){2,})"/g;
+      while ((m = literalRe.exec(text))) {
+        if (TOP_LEVEL.has(m[1].split(".")[0])) used.push({ key: m[1], file });
+      }
     }
   }
   return used;

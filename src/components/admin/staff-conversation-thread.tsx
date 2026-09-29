@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { sendMessageAction } from "@/lib/actions/communication";
 import { cn, formatDateTime, formatTime } from "@/lib/utils/format";
 
-import { useErrorText } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 export type StaffChatMessage = {
   id: string;
   body: string;
@@ -40,6 +40,7 @@ export function StaffConversationThread({
 }) {
   const router = useRouter();
   const errorText = useErrorText();
+  const t = useT();
   const [body, setBody] = useState("");
   const [internalNote, setInternalNote] = useState(false);
   const [pending, setPending] = useState(false);
@@ -177,7 +178,7 @@ export function StaffConversationThread({
       {disabled ? (
         <p className="mt-2 rounded-xl bg-rice-200/70 px-3.5 py-3 text-xs text-ink-700/80">
           {disabledReason ??
-            "This conversation is closed. Reopen it to reply to the customer."}
+            t("admin.pages.conversation.closedNote")}
         </p>
       ) : (
         <form
@@ -185,7 +186,7 @@ export function StaffConversationThread({
           className="sticky bottom-0 space-y-2 bg-rice-50/95 pt-3 backdrop-blur"
         >
           <label htmlFor="staff-chat-body" className="sr-only">
-            Reply to the customer
+            {t("admin.pages.conversation.replyLabel")}
           </label>
           <div className="flex gap-2">
             <textarea
@@ -200,7 +201,7 @@ export function StaffConversationThread({
               }}
               rows={2}
               maxLength={2000}
-              placeholder="Reply to the customer…"
+              placeholder={t("admin.pages.conversation.replyPlaceholder")}
               className="max-h-40 min-h-11 flex-1 resize-none rounded-xl border border-ink-900/12 bg-rice-50 px-3 py-2.5 text-sm outline-none focus:border-miso-500"
             />
             <Button
@@ -208,7 +209,7 @@ export function StaffConversationThread({
               size="sm"
               loading={pending}
               disabled={!body.trim()}
-              aria-label="Send reply"
+              aria-label={t("admin.pages.conversation.sendReply")}
               className="size-11 shrink-0 self-end p-0"
             >
               <Send className="size-4" aria-hidden="true" />

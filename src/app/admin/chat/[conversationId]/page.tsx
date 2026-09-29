@@ -6,7 +6,8 @@ import { getConversationForStaff } from "@/lib/services/messaging";
 import { Badge } from "@/components/ui/button";
 import { ConversationStatusControl } from "@/components/admin/conversation-status-control";
 import { StaffConversationThread } from "@/components/admin/staff-conversation-thread";
-import { formatDateTime, humanise } from "@/lib/utils/format";
+import { formatDateTime } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function AdminConversationPage({
 }) {
   const { conversationId } = await params;
   const session = await requireCapability("chat.manage");
+  const t = await getT(await getAdminLocale());
 
   const conversation = await getConversationForStaff(conversationId);
   if (!conversation) notFound();
@@ -31,17 +33,17 @@ export default async function AdminConversationPage({
         href="/admin/chat"
         className="inline-flex items-center gap-1.5 text-sm text-ink-700 hover:text-ink-900"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" />
-        All conversations
+        <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden="true" />
+        {t("admin.pages.conversation.allConversations")}
       </Link>
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-ink-900">
-            {conversation.subject?.trim() || "Conversation"}
+            {conversation.subject?.trim() || t("admin.pages.conversation.fallbackTitle")}
           </h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            {conversation.customer?.full_name ?? "Unnamed customer"}
+            {conversation.customer?.full_name ?? t("admin.pages.conversation.unnamed")}
             {conversation.customer?.phone ? (
               <>
                 {" · "}
@@ -56,8 +58,13 @@ export default async function AdminConversationPage({
             ) : null}
           </p>
           <p className="mt-1 text-xs text-ink-700/60">
-            Started {formatDateTime(conversation.created_at)} · last message{" "}
-            {formatDateTime(conversation.last_message_at)}
+            {t("admin.pages.conversation.started", {
+              when: formatDateTime(conversation.created_at),
+            })}{" "}
+            ·{" "}
+            {t("admin.pages.conversation.lastMessage", {
+              when: formatDateTime(conversation.last_message_at),
+            })}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge
@@ -69,16 +76,18 @@ export default async function AdminConversationPage({
                     : "neutral"
               }
             >
-              {humanise(conversation.status)}
+              {t(`admin.term.conversationStatus.${conversation.status}`)}
             </Badge>
             {conversation.staff_unread > 0 ? (
-              <Badge tone="indigo">{conversation.staff_unread} unread</Badge>
+              <Badge tone="indigo">
+                {t("admin.pages.conversation.unread", { count: conversation.staff_unread })}
+              </Badge>
             ) : null}
             {conversation.related_order_id ? (
               <Link href={`/admin/orders/${conversation.related_order_id}`}>
                 <Badge tone="info">
-                  <Receipt className="mr-1 size-3" aria-hidden="true" />
-                  Linked order
+                  <Receipt className="me-1 size-3" aria-hidden="true" />
+                  {t("admin.pages.conversation.linkedOrder")}
                 </Badge>
               </Link>
             ) : null}
@@ -96,7 +105,7 @@ export default async function AdminConversationPage({
       <StaffConversationThread
         conversationId={conversation.id}
         disabled={conversation.status === "closed"}
-        disabledReason="This conversation is closed. Reopen it to send another reply."
+        disabledReason={t("admin.pages.conversation.closedNote")}
         messages={conversation.messages.map((message) => ({
           id: String(message.id),
           body: message.body,
@@ -106,10 +115,11 @@ export default async function AdminConversationPage({
           mine: message.sender_id === session.actorId,
           senderLabel:
             message.sender_kind === "customer"
-              ? (conversation.customer?.full_name ?? "Customer")
+              ? (conversation.customer?.full_name ??
+                t("admin.pages.conversation.customer"))
               : message.sender_kind === "staff"
-                ? "Panda Wok team"
-                : "System",
+                ? t("admin.pages.conversation.staffTeam")
+                : t("admin.pages.conversation.system"),
         }))}
       />
     </div>

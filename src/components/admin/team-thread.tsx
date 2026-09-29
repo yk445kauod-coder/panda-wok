@@ -6,7 +6,7 @@ import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { sendTeamMessageAction } from "@/lib/actions/team-chat";
-import { useErrorText } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import { cn, formatDateTime, formatTime } from "@/lib/utils/format";
 import type { TeamMessage } from "@/lib/services/team-chat";
 
@@ -28,6 +28,7 @@ export function TeamThread({
 }) {
   const router = useRouter();
   const errorText = useErrorText();
+  const t = useT();
   const [body, setBody] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +70,11 @@ export function TeamThread({
         className="flex-1 space-y-3 overflow-y-auto px-1 py-3"
         role="log"
         aria-live="polite"
-        aria-label={`Team chat, ${messages.length} message${messages.length === 1 ? "" : "s"}`}
+        aria-label={
+          messages.length === 1
+            ? t("admin.pages.conversation.teamChatAria", { count: messages.length })
+            : t("admin.pages.conversation.teamChatAriaPlural", { count: messages.length })
+        }
       >
         {messages.length === 0 ? (
           <p className="py-8 text-center text-sm text-ink-700/70">
@@ -136,12 +141,12 @@ export function TeamThread({
               }
             }}
             rows={2}
-            placeholder="Write a message…"
+            placeholder={t("admin.pages.conversation.writeMessage")}
             className="min-h-11 flex-1 resize-none rounded-xl border border-ink-900/12 bg-rice-50 px-3 py-2.5 text-sm text-ink-900 outline-none focus:border-vermilion-500"
           />
           <Button type="submit" disabled={pending || body.trim().length === 0} className="self-end">
             <Send className="size-4" aria-hidden="true" />
-            <span className="sr-only">Send</span>
+            <span className="sr-only">{t("admin.pages.conversation.send")}</span>
           </Button>
         </div>
       </form>
