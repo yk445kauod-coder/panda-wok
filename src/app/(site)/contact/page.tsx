@@ -177,7 +177,7 @@ export default async function ContactPage() {
           className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"
         >
           <MapPin className="size-4 text-vermilion-600" aria-hidden="true" />
-          Where we cook
+          {t("contact.whereHeading")}
         </h2>
         <p className="mt-2 text-sm text-ink-700/85">
           {restaurant?.area ? `${restaurant.area}, ` : ""}
@@ -185,8 +185,7 @@ export default async function ContactPage() {
           {restaurant?.country ?? settings.brand.country}
         </p>
         <p className="mt-1 text-xs text-ink-700/70">
-          We are a cloud kitchen rather than a restaurant, so there is no dining room to
-          visit. Collection is available at checkout if you prefer to pick your order up.
+          {t("contact.whereNote")}
         </p>
       </section>
       </Reveal>
@@ -194,34 +193,34 @@ export default async function ContactPage() {
       <Reveal delay={160}>
         <section aria-labelledby="ordering-heading" className="washi-panel mt-3 p-4">
         <h2 id="ordering-heading" className="text-sm font-semibold text-ink-900">
-          Ordering and delivery
+          {t("contact.orderingHeading")}
         </h2>
         <dl className="mt-3 space-y-1.5 text-sm">
           <div className="flex justify-between gap-3">
-            <dt className="text-ink-700/85">Minimum order</dt>
+            <dt className="text-ink-700/85">{t("contact.minimumOrder")}</dt>
             <dd className="tabular-nums text-ink-900">
               {settings.ordering.minOrderTotal} EGP
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-ink-700/85">Delivery fee</dt>
+            <dt className="text-ink-700/85">{t("contact.deliveryFee")}</dt>
             <dd className="tabular-nums text-ink-900">{settings.ordering.deliveryFee} EGP</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-ink-700/85">Free delivery over</dt>
+            <dt className="text-ink-700/85">{t("contact.freeDeliveryOver")}</dt>
             <dd className="tabular-nums text-ink-900">
               {settings.ordering.freeDeliveryOver} EGP
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-ink-700/85">Typical delivery time</dt>
+            <dt className="text-ink-700/85">{t("contact.typicalDeliveryTime")}</dt>
             <dd className="tabular-nums text-ink-900">
-              about {settings.ordering.etaMinutes} minutes
+              {t("contact.minutesValue", { minutes: settings.ordering.etaMinutes })}
             </dd>
           </div>
         </dl>
         <p className="mt-2 text-xs text-ink-700/70">
-          Timings are a guide rather than a promise, and depend on how busy the kitchen is.
+          {t("contact.orderingNote")}
         </p>
       </section>
       </Reveal>

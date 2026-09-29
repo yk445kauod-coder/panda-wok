@@ -1,10 +1,12 @@
 import { EnsoMark } from "@/components/ui/empty-state";
+import { getLocale, getT } from "@/lib/i18n/server";
 
 /** Route-level loading skeleton. Mirrors the washi panel rhythm so nothing jumps. */
-export default function Loading() {
+export default async function Loading() {
+  const t = await getT(await getLocale());
   return (
     <div className="mx-auto max-w-3xl px-4 py-6" aria-busy="true" aria-live="polite">
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">{t("common.loading")}</span>
       <EnsoMark className="mx-auto size-14 animate-sway text-vermilion-600/50" />
 
       <div className="mt-6 space-y-3">

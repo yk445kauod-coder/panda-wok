@@ -364,6 +364,7 @@ export const ar: Dictionary = {
     subtotal: "المجموع الفرعي",
     total: "الإجمالي",
     payment: "الدفع: {method} · {status}",
+    delivery: "التوصيل",
     deliveryDetails: "تفاصيل التوصيل",
     addressGone:
       "العنوان المحفوظ لهذا الطلب لم يعد متاحاً في دفتر عناوينك. يرجى التواصل مع المطبخ إذا كنت بحاجة لتأكيده.",
@@ -577,6 +578,7 @@ export const ar: Dictionary = {
     categoryLabel: "ملخص قصير",
     categoryOptional: "اختياري.",
     orderGeneral: "ليس عن طلب محدد",
+    orderLabel: "عن أي طلب؟",
     orderHint:
       "اختياري. ربط الطلب يتيح للمطبخ رؤية ما استلمته بالضبط.",
     titlePlaceholder: "الرامن كان مثالياً والتوصيل سريع…",
@@ -661,6 +663,8 @@ export const ar: Dictionary = {
       "الأوقات إرشادية وليست وعداً، وتعتمد على مدى انشغال المطبخ.",
     startOrder: "ابدأ طلباً",
     sendFeedback: "أرسل رأيك",
+    faqHeading: "أسئلة شائعة",
+    faqSubtitle: "أكثر ما يسأل عنه العملاء.",
     days: {
       mon: "الاثنين",
       tue: "الثلاثاء",

@@ -38,52 +38,52 @@ export function AutomationManager({ automations }: { automations: AutomationView
       <form action={submit} className="washi-panel space-y-3 p-4">
         <input type="hidden" name="id" value={editing?.id ?? ""} />
         <div className="grid gap-3 sm:grid-cols-2">
-          <FormField name="name" label={t("admin.automations.name")} defaultValue={editing?.name ?? ""} required />
-          <FormField name="kind" label={t("admin.automations.kind")}>
+          <FormField name="name" label={t("admin.agent.automations.name")} defaultValue={editing?.name ?? ""} required />
+          <FormField name="kind" label={t("admin.agent.automations.kind")}>
             <select name="kind" defaultValue={editing?.kind ?? "report"} className="input">
-              <option value="report">{t("admin.automations.kindReport")}</option>
-              <option value="agent">{t("admin.automations.kindAgent")}</option>
-              <option value="export">{t("admin.automations.kindExport")}</option>
+              <option value="report">{t("admin.agent.automations.kindReport")}</option>
+              <option value="agent">{t("admin.agent.automations.kindAgent")}</option>
+              <option value="export">{t("admin.agent.automations.kindExport")}</option>
             </select>
           </FormField>
-          <FormField name="cadence" label={t("admin.automations.cadence")}>
+          <FormField name="cadence" label={t("admin.agent.automations.cadence")}>
             <select
               name="cadence"
               value={cadence}
               onChange={(event) => setCadence(event.target.value)}
               className="input"
             >
-              <option value="daily">{t("admin.automations.daily")}</option>
-              <option value="weekly">{t("admin.automations.weekly")}</option>
-              <option value="monthly">{t("admin.automations.monthly")}</option>
-              <option value="interval">{t("admin.automations.interval")}</option>
+              <option value="daily">{t("admin.agent.automations.daily")}</option>
+              <option value="weekly">{t("admin.agent.automations.weekly")}</option>
+              <option value="monthly">{t("admin.agent.automations.monthly")}</option>
+              <option value="interval">{t("admin.agent.automations.interval")}</option>
             </select>
           </FormField>
           <FormField
             name="atHour"
-            label={t("admin.automations.atHour")}
+            label={t("admin.agent.automations.atHour")}
             type="number"
             defaultValue={String(editing?.at_hour ?? 8)}
           />
           {cadence === "weekly" ? (
-            <FormField name="weekday" label={t("admin.automations.weekday")} type="number" defaultValue={String(editing?.weekday ?? 1)} />
+            <FormField name="weekday" label={t("admin.agent.automations.weekday")} type="number" defaultValue={String(editing?.weekday ?? 1)} />
           ) : null}
           {cadence === "monthly" ? (
-            <FormField name="dayOfMonth" label={t("admin.automations.dayOfMonth")} type="number" defaultValue={String(editing?.day_of_month ?? 1)} />
+            <FormField name="dayOfMonth" label={t("admin.agent.automations.dayOfMonth")} type="number" defaultValue={String(editing?.day_of_month ?? 1)} />
           ) : null}
           {cadence === "interval" ? (
-            <FormField name="intervalHours" label={t("admin.automations.intervalHours")} type="number" defaultValue={String(editing?.interval_hours ?? 24)} />
+            <FormField name="intervalHours" label={t("admin.agent.automations.intervalHours")} type="number" defaultValue={String(editing?.interval_hours ?? 24)} />
           ) : null}
         </div>
-        <FormField name="prompt" label={t("admin.automations.prompt")} defaultValue={editing?.prompt ?? ""} />
+        <FormField name="prompt" label={t("admin.agent.automations.prompt")} defaultValue={editing?.prompt ?? ""} />
         <div className="flex flex-wrap items-center gap-4">
           <label className="flex items-center gap-2 text-sm text-ink-800">
             <input type="checkbox" name="isEnabled" defaultChecked={editing?.is_enabled ?? true} className="size-4" />
-            {t("admin.automations.enabled")}
+            {t("admin.agent.automations.enabled")}
           </label>
           <label className="flex items-center gap-2 text-sm text-ink-800">
             <input type="checkbox" name="notify" defaultChecked={editing?.notify ?? true} className="size-4" />
-            {t("admin.automations.notify")}
+            {t("admin.agent.automations.notify")}
           </label>
         </div>
         <div className="flex items-center gap-2">
@@ -93,7 +93,7 @@ export function AutomationManager({ automations }: { automations: AutomationView
             className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-vermilion-600 px-4 text-sm font-medium text-rice-50 disabled:opacity-50"
           >
             {pending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-            {editing ? t("common.save") : t("admin.automations.add")}
+            {editing ? t("common.save") : t("admin.agent.automations.add")}
           </button>
           {editing ? (
             <button
@@ -115,7 +115,7 @@ export function AutomationManager({ automations }: { automations: AutomationView
             <div className="min-w-0 flex-1">
               <p className="font-medium text-ink-900">{item.name}</p>
               <p className="text-xs text-ink-700/70">
-                {t("admin.automations.nextRun")}: {formatDateTime(item.next_run_at)}
+                {t("admin.agent.automations.nextRun")}: {formatDateTime(item.next_run_at)}
                 {item.last_status ? ` · ${item.last_status}` : ""}
               </p>
               {item.last_error ? (

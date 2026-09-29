@@ -383,6 +383,7 @@ export const en = {
     subtotal: "Subtotal",
     total: "Total",
     payment: "Payment: {method} · {status}",
+    delivery: "Delivery",
     deliveryDetails: "Delivery details",
     addressGone:
       "The saved address for this order is no longer available in your address book. Please contact the kitchen if you need to confirm it.",
@@ -606,6 +607,7 @@ export const en = {
     categoryLabel: "Short summary",
     categoryOptional: "Optional.",
     orderGeneral: "Not about a specific order",
+    orderLabel: "Which order is this about?",
     orderHint:
       "Optional. Linking an order lets the kitchen see exactly what you received.",
     titlePlaceholder: "Ramen was perfect, delivery was quick…",
@@ -697,6 +699,8 @@ export const en = {
       "Timings are a guide rather than a promise, and depend on how busy the kitchen is.",
     startOrder: "Start an order",
     sendFeedback: "Send feedback",
+    faqHeading: "Common questions",
+    faqSubtitle: "The answers customers ask for most.",
     days: {
       mon: "Monday",
       tue: "Tuesday",
