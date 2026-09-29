@@ -11,7 +11,8 @@ import {
   resolvePage,
 } from "@/components/ui/pagination";
 import { FeedbackReplyControl, FeedbackPublishControl } from "@/components/admin/customer-controls";
-import { cn, formatDateTime, humanise } from "@/lib/utils/format";
+import { cn, formatDateTime } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 import type { Database } from "@/lib/types/database";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,7 @@ export default async function AdminFeedbackPage({
 }) {
   await requireCapability("feedback.manage");
   const params = await searchParams;
+  const t = await getT(await getAdminLocale());
 
   const status = STATUSES.includes(params.status as FeedbackStatus)
     ? (params.status as FeedbackStatus)
@@ -74,22 +76,22 @@ export default async function AdminFeedbackPage({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="CRM"
-        title="Feedback"
-        description="What customers told the kitchen. Replies are visible to the customer; contact details stay on this page."
+        eyebrow={t("admin.pages.feedback.eyebrow")}
+        title={t("admin.pages.feedback.title")}
+        description={t("admin.pages.feedback.description")}
         actions={
           <>
-            <Badge tone="neutral">{total} total</Badge>
+            <Badge tone="neutral">{t("admin.pages.feedback.total", { count: total })}</Badge>
             {feedback.length > 0 ? (
               <Badge tone="info">
-                <Star className="mr-1 size-3" aria-hidden="true" />
-                {average.toFixed(1)} average on this page
+                <Star className="me-1 size-3" aria-hidden="true" />
+                {t("admin.pages.feedback.average", { value: average.toFixed(1) })}
               </Badge>
             ) : null}
             {open > 0 ? (
-              <Badge tone="warning">{open} needing a reply</Badge>
+              <Badge tone="warning">{t("admin.pages.feedback.needingReply", { count: open })}</Badge>
             ) : (
-              <Badge tone="success">All answered</Badge>
+              <Badge tone="success">{t("admin.pages.feedback.allAnswered")}</Badge>
             )}
           </>
         }
@@ -98,19 +100,19 @@ export default async function AdminFeedbackPage({
       <form method="get" className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
           <label htmlFor="feedback-q" className="block text-xs font-medium text-ink-800">
-            Search
+            {t("admin.pages.feedback.searchLabel")}
           </label>
           <input
             id="feedback-q"
             name="q"
             defaultValue={params.q ?? ""}
-            placeholder="Search the message text"
+            placeholder={t("admin.pages.feedback.searchPlaceholder")}
             className="mt-1 h-10 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           />
         </div>
         <div>
           <label htmlFor="feedback-status" className="block text-xs font-medium text-ink-800">
-            Status
+            {t("admin.pages.feedback.statusLabel")}
           </label>
           <select
             id="feedback-status"
@@ -118,17 +120,17 @@ export default async function AdminFeedbackPage({
             defaultValue={status ?? ""}
             className="mt-1 h-10 rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           >
-            <option value="">All statuses</option>
+            <option value="">{t("admin.pages.feedback.allStatuses")}</option>
             {STATUSES.map((option) => (
               <option key={option} value={option}>
-                {humanise(option)}
+                {t(`admin.term.feedbackStatus.${option}`)}
               </option>
             ))}
           </select>
         </div>
         <div>
           <label htmlFor="feedback-category" className="block text-xs font-medium text-ink-800">
-            Category
+            {t("admin.pages.feedback.categoryLabel")}
           </label>
           <select
             id="feedback-category"
@@ -136,10 +138,10 @@ export default async function AdminFeedbackPage({
             defaultValue={category ?? ""}
             className="mt-1 h-10 rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           >
-            <option value="">All categories</option>
+            <option value="">{t("admin.pages.feedback.allCategories")}</option>
             {CATEGORIES.map((option) => (
               <option key={option} value={option}>
-                {humanise(option)}
+                {t(`admin.term.feedbackCategory.${option}`)}
               </option>
             ))}
           </select>
@@ -148,19 +150,19 @@ export default async function AdminFeedbackPage({
           type="submit"
           className="h-10 rounded-xl bg-vermilion-600 px-4 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
         >
-          Filter
+          {t("admin.pages.feedback.filter")}
         </button>
         {params.q || status || category ? (
           <Link
             href="/admin/feedback"
             className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
           >
-            Clear
+            {t("admin.pages.feedback.clear")}
           </Link>
         ) : null}
       </form>
 
-      <nav aria-label="Quick filters" className="flex flex-wrap gap-2">
+      <nav aria-label={t("admin.pages.feedback.quickFilters")} className="flex flex-wrap gap-2">
         {STATUSES.map((option) => (
           <Link
             key={option}
@@ -173,7 +175,7 @@ export default async function AdminFeedbackPage({
                 : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
             )}
           >
-            {humanise(option)}
+            {t(`admin.term.feedbackStatus.${option}`)}
           </Link>
         ))}
       </nav>
@@ -182,13 +184,13 @@ export default async function AdminFeedbackPage({
         <EmptyState
           title={
             params.q || status || category
-              ? "No feedback matches these filters"
-              : "No feedback yet"
+              ? t("admin.pages.feedback.noMatch")
+              : t("admin.pages.feedback.empty")
           }
           description={
             params.q || status || category
-              ? "Clear the filters to see everything customers have sent."
-              : "Feedback appears here after a customer rates an order or writes in."
+              ? t("admin.pages.feedback.noMatchBody")
+              : t("admin.pages.feedback.emptyBody")
           }
         />
       ) : (
@@ -202,7 +204,9 @@ export default async function AdminFeedbackPage({
                       <Star className="size-3.5 text-miso-500" aria-hidden="true" />
                       {row.rating}/5
                     </span>
-                    <Badge tone="neutral">{humanise(row.category)}</Badge>
+                    <Badge tone="neutral">
+                      {t(`admin.term.feedbackCategory.${row.category}`)}
+                    </Badge>
                     <Badge
                       tone={
                         row.status === "resolved" || row.status === "archived"
@@ -212,11 +216,11 @@ export default async function AdminFeedbackPage({
                             : "warning"
                       }
                     >
-                      {humanise(row.status)}
+                      {t(`admin.term.feedbackStatus.${row.status}`)}
                     </Badge>
                     {row.order_id ? (
                       <Link href={`/admin/orders/${row.order_id}`}>
-                        <Badge tone="info">Order linked</Badge>
+                        <Badge tone="info">{t("admin.pages.feedback.orderLinked")}</Badge>
                       </Link>
                     ) : null}
                   </div>
@@ -233,7 +237,7 @@ export default async function AdminFeedbackPage({
                           href={url}
                           className="text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
                         >
-                          Attached image {index + 1}
+                          {t("admin.pages.feedback.attachedImage", { n: index + 1 })}
                         </a>
                       ))}
                     </p>
@@ -242,7 +246,7 @@ export default async function AdminFeedbackPage({
                   {row.admin_response ? (
                     <div className="mt-3 rounded-xl border border-jade-500/25 bg-jade-500/8 p-2.5">
                       <p className="text-xs font-medium uppercase tracking-wide text-jade-700">
-                        Panda Wok replied
+                        {t("admin.pages.feedback.replied")}
                       </p>
                       <p className="mt-0.5 text-sm text-ink-800">{row.admin_response}</p>
                       {row.responded_at ? (
@@ -254,7 +258,7 @@ export default async function AdminFeedbackPage({
                   ) : null}
 
                   <p className="mt-2 text-xs text-ink-700/65">
-                    {row.customer?.full_name ?? "Unnamed customer"}
+                    {row.customer?.full_name ?? t("admin.pages.feedback.unnamedCustomer")}
                     {row.customer?.phone ? ` · ${row.customer.phone}` : ""}
                     {row.customer?.id ? (
                       <>
@@ -263,7 +267,7 @@ export default async function AdminFeedbackPage({
                           href={`/admin/crm/${row.customer.id}`}
                           className="text-vermilion-600 hover:text-vermilion-700"
                         >
-                          Customer profile
+                          {t("admin.pages.feedback.customerProfile")}
                         </Link>
                       </>
                     ) : null}

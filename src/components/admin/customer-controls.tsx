@@ -303,13 +303,14 @@ export function FeedbackReplyControl({
   currentStatus: string;
   existingResponse: string | null;
 }) {
+  const t = useT();
   return (
     <details className="mt-2">
       <summary className="cursor-pointer text-xs font-medium text-vermilion-600 hover:text-vermilion-700">
-        {existingResponse ? "Edit the reply" : "Reply"}
+        {existingResponse ? t("admin.pages.feedback.editReply") : t("admin.pages.feedback.reply")}
         {currentStatus !== "resolved" ? (
-          <Badge tone="warning" className="ml-2">
-            {humanise(currentStatus)}
+          <Badge tone="warning" className="ms-2">
+            {t(`admin.term.feedbackStatus.${currentStatus}`)}
           </Badge>
         ) : null}
       </summary>
@@ -320,34 +321,34 @@ export function FeedbackReplyControl({
             const { respondToFeedbackAction } = await import("@/lib/actions/admin");
             return respondToFeedbackAction(formData);
           }}
-          submitLabel="Send reply"
-          options={{ successMessage: "Reply saved and the customer notified." }}
+          submitLabel={t("admin.pages.feedback.sendReply")}
+          options={{ successMessage: t("admin.pages.feedback.replySaved") }}
         >
           <input type="hidden" name="feedbackId" value={feedbackId} />
           <Field
             name="response"
-            label="Your reply"
+            label={t("admin.pages.feedback.yourReply")}
             defaultValue={existingResponse ?? ""}
-            placeholder="Sorry about that — we're sending a replacement dessert."
+            placeholder={t("admin.pages.feedback.replyPlaceholder")}
           />
           <div>
             <label
               htmlFor={`status-${feedbackId}`}
               className="block text-sm font-medium text-ink-900"
             >
-              Mark as
+              {t("admin.pages.feedback.markAs")}
             </label>
             <select
               id={`status-${feedbackId}`}
               name="status"
-              defaultValue={currentStatus === "new" ? "in_review" : currentStatus}
+              defaultValue={currentStatus === "new" ? "reviewed" : currentStatus}
               className={cn(
                 "mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm",
                 "outline-none focus:border-miso-500",
               )}
             >
-              <option value="in_review">In review</option>
-              <option value="resolved">Resolved</option>
+              <option value="reviewed">{t("admin.pages.feedback.inReview")}</option>
+              <option value="resolved">{t("admin.pages.feedback.resolved")}</option>
             </select>
           </div>
         </AdminForm>
@@ -374,6 +375,7 @@ export function FeedbackPublishControl({
 }) {
   const router = useRouter();
   const errorText = useErrorText();
+  const t = useT();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -408,10 +410,14 @@ export function FeedbackPublishControl({
           loading={pending}
           onClick={() => run(!isPublic)}
         >
-          {isPublic ? "Hide rating from the menu" : "Show rating on the menu"}
+          {isPublic
+            ? t("admin.pages.feedback.hideRating")
+            : t("admin.pages.feedback.showRating")}
         </Button>
         <Badge tone={isPublic ? "success" : "neutral"}>
-          {isPublic ? "Counts toward the menu rating" : "Not shown on the menu"}
+          {isPublic
+            ? t("admin.pages.feedback.countsRating")
+            : t("admin.pages.feedback.notShown")}
         </Badge>
       </div>
       {error ? (
