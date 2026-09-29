@@ -2149,26 +2149,41 @@ errors; `next build` green.
 
 The owner asked, in writing, for one dish to sit alone in a new category:
 
-- new category `Combo mix` / `كومبو ميكس`, slug `combo-mix`, `sort_order = 18`
-  (after `Sauces` 17, so it lands at the end of the Japanese sushi catalogue);
+- new category `Combo mix` / `كومبو ميكس`, slug `combo-mix`;
 - `combo mix 48 pieces` (`83b33e26-b48a-48bb-91c1-795f4e3c9c0f`, EGP 1540)
   moved out of `COMBO RAW` and into it.
 
-Applied live as migration `combo_mix_category`. Additive and idempotent: one
-category inserted (`where not exists` by slug), then the dish repointed
+Applied live as `20260929215322_combo_mix_category.sql`. Additive and idempotent:
+one category inserted (`where not exists` by slug), then the dish repointed
 (`is distinct from`). Nothing was deleted and no price, name, description or
 image was touched — this is the owner's menu, and this is the only change asked
 for.
+
+**Position: with the combos, not at the end.** A follow-up,
+`20260929215655_combo_mix_category_order.sql`, moved the section into the combo
+run and shifted its two successors down by one. The sushi tail now reads:
+
+| sort | section |
+|------|---------|
+| 14 | COMBO FRIED |
+| 15 | COMBO RAW |
+| 16 | **Combo mix** |
+| 17 | SALADS |
+| 18 | Sauces |
+
+The owner chose this placement explicitly. Note the earlier session note that
+"`Combo mix` was created at 18" describes the intermediate state only; the live
+value is 16.
 
 **`COMBO RAW` survives and is still public** with its other four dishes
 (8/16/24/32 pieces). Do not "clean up" the category now that mix 48 has left it,
 and do not repoint anything else; the owner moved exactly one dish.
 
-Verified live: `/menu` lists 19 categories and both `Combo mix` and `COMBO RAW`
-render; `/menu/combo-mix` = 200 with the dish and its 1540 price; `/menu/combo-raw`
-= 200 with four combos and **no** `combo mix 48`; the Arabic cookie renders
-`كومبو ميكس`. Counts before/after: categories 18 -> 19, menu_items 84 -> 84
-(0 archived), 1 item in the new category.
+Verified live: `/menu` lists 19 categories and the section ids render in order
+`combo-fried · combo-raw · combo-mix · salads · sauces`; `/menu/combo-mix` = 200
+with the dish and its 1540 price; `/menu/combo-raw` = 200 with four combos and
+**no** `combo mix 48`; the Arabic cookie renders `كومبو ميكس`. Counts before/after:
+categories 18 -> 19, menu_items 84 -> 84 (0 archived), 1 item in the new section.
 
 **Note for the next session: `name_ja` is still being written.** The live schema
 still carries `categories.name_ja` / `menu_items.name_ja` (the column drop was
