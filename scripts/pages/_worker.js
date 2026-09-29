@@ -3,6 +3,8 @@ import {
   EDGE_CACHE_CONTROL,
   isCacheableRequest,
   localeVariant,
+  purgePublicCache,
+  shouldPurgeAfter,
   toCacheUrl,
 } from "./edge-cache.js";
 
@@ -75,13 +77,19 @@ export default {
     // immediately while it revalidates in the background.
     const cacheUsable = typeof caches !== "undefined" && Boolean(caches.default);
 
+    // An admin edit can change any cached public page (menu, settings, branding),
+    // and Next's `revalidatePath` only clears Next's own cache. Purge ours on the
+    // way out so the next visitor gets the fresh page instead of the old one.
+    const purgeAfter = cacheUsable && shouldPurgeAfter(snapshot);
+    if (purgeAfter) ctx.waitUntil(purgePublicCache(caches.default));
+
     if (cacheUsable && isCacheableRequest(snapshot)) {
       const cache = caches.default;
       const variant = localeVariant({
         cookieLocale: cookieValue(request.headers.get("cookie"), "panda-wok.locale"),
         acceptLanguage: request.headers.get("accept-language"),
       });
-      const cacheKey = new Request(toCacheUrl(request.url, variant), { method: "GET" });
+      const cacheKey = new Request(toCacheUrl(pathname, variant), { method: "GET" });
 
       const hit = await cache.match(cacheKey);
       if (hit) return withCacheStatus(hit, "HIT");

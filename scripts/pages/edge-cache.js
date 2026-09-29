@@ -102,11 +102,47 @@ export function isCacheableRequest(request) {
 }
 
 /**
- * The cache key. `caches.default` keys on the URL alone, so the language
- * variant is appended here rather than left implicit in a header.
+ * The cache key.
+ *
+ * `caches.default` keys on the URL alone, so the language variant is appended.
+ * The origin is a fixed constant rather than the request host so that a page has
+ * one key regardless of which host served it — that lets the admin actions purge
+ * it deterministically (`src/lib/cache/edge.ts`, which mirrors this exactly; the
+ * two are asserted equal in `tests/edge-cache.test.ts`). The page body does not
+ * depend on the host — canonical URLs come from `NEXT_PUBLIC_SITE_URL`.
  */
-export function toCacheUrl(originalUrl, variant) {
-  const url = new URL(originalUrl);
-  url.searchParams.set("__pw_lang", variant);
-  return url.toString();
+export const CACHE_ORIGIN = "https://edge.cache.internal";
+
+export function toCacheUrl(pathname, variant) {
+  return `${CACHE_ORIGIN}${pathname}?__pw_lang=${variant}`;
+}
+
+export const CACHE_LOCALES = ["en", "ar"];
+
+/** Every stored key for one public path, across locales. */
+export function cacheKeysFor(pathname) {
+  return CACHE_LOCALES.map((locale) => toCacheUrl(pathname, locale));
+}
+
+/**
+ * True when the request is an admin mutation, after which the cached public
+ * pages may be out of date. Server actions POST back to the page that hosts them,
+ * so an edit lands as a non-GET request under `/admin`. Customer traffic never
+ * matches, so a rush is not affected.
+ */
+export function shouldPurgeAfter(snapshot) {
+  return snapshot.method !== "GET" && snapshot.pathname.startsWith("/admin");
+}
+
+/**
+ * Drops every cached public page. `getPlainText`, settings and branding can
+ * change any of them; deleting the whole set is bounded and rare, and it means an
+ * edit is visible on the next request instead of at the TTL. Best-effort: a
+ * failed delete only means the page refreshes at the TTL.
+ */
+export async function purgePublicCache(cache) {
+  const keys = PUBLIC_PATHS.flatMap(cacheKeysFor);
+  await Promise.all(
+    keys.map((key) => cache.delete(new Request(key)).catch(() => false)),
+  );
 }

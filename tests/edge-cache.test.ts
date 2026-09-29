@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   EDGE_CACHE_CONTROL,
+  cacheKeysFor,
   isCacheablePath,
   isCacheableRequest,
   localeVariant,
+  purgePublicCache,
+  shouldPurgeAfter,
   toCacheUrl,
 } from "../scripts/pages/edge-cache.js";
 
@@ -98,8 +101,8 @@ describe("localeVariant", () => {
 
 describe("toCacheUrl", () => {
   it("separates locales into distinct cache keys", () => {
-    const en = toCacheUrl("https://panda-wok.pages.dev/menu", "en");
-    const ar = toCacheUrl("https://panda-wok.pages.dev/menu", "ar");
+    const en = toCacheUrl("/menu", "en");
+    const ar = toCacheUrl("/menu", "ar");
     expect(en).not.toBe(ar);
     expect(new URL(en).searchParams.get("__pw_lang")).toBe("en");
   });
@@ -110,5 +113,58 @@ describe("EDGE_CACHE_CONTROL", () => {
     expect(EDGE_CACHE_CONTROL).toContain("s-maxage=60");
     expect(EDGE_CACHE_CONTROL).toContain("stale-while-revalidate=300");
     expect(EDGE_CACHE_CONTROL).toContain("stale-if-error=600");
+  });
+});
+
+/**
+ * Purging is how an admin edit becomes visible immediately instead of at the
+ * TTL. If the purge key ever drifts from the store key, edits silently lag —
+ * the exact bug this closes — so the two are asserted equal.
+ */
+describe("cache keys", () => {
+  it("is host-independent, so one page has one key", () => {
+    expect(toCacheUrl("/menu", "en")).toBe("https://edge.cache.internal/menu?__pw_lang=en");
+  });
+
+  it("uses the same key to store and to purge", async () => {
+    const deleted: string[] = [];
+    const cache = {
+      delete: async (request: Request) => {
+        deleted.push(request.url);
+        return true;
+      },
+    };
+
+    await purgePublicCache(cache);
+
+    // The purge set must contain exactly the keys the worker stores under.
+    expect(cacheKeysFor("/menu")).toEqual([
+      toCacheUrl("/menu", "en"),
+      toCacheUrl("/menu", "ar"),
+    ]);
+    expect(deleted).toContain(toCacheUrl("/menu", "ar"));
+    expect(deleted).toContain(toCacheUrl("/menu", "en"));
+  });
+
+  it("purges every public page in both locales", async () => {
+    const deleted: string[] = [];
+    await purgePublicCache({ delete: async (r: Request) => (deleted.push(r.url), true) });
+    expect(new Set(deleted).size).toBe(deleted.length); // no duplicates
+    expect(deleted.length).toBeGreaterThan(8);
+    expect(deleted.some((u) => u.includes("/menu?__pw_lang=ar"))).toBe(true);
+    expect(deleted.some((u) => u.includes("/?__pw_lang=en"))).toBe(true);
+  });
+});
+
+describe("shouldPurgeAfter", () => {
+  it("purges after an admin mutation of any method", () => {
+    expect(shouldPurgeAfter({ method: "POST", pathname: "/admin/menu" })).toBe(true);
+    expect(shouldPurgeAfter({ method: "PUT", pathname: "/admin/settings" })).toBe(true);
+  });
+
+  it("does not purge on reads, customer traffic or public GETs", () => {
+    expect(shouldPurgeAfter({ method: "GET", pathname: "/admin/menu" })).toBe(false);
+    expect(shouldPurgeAfter({ method: "POST", pathname: "/checkout" })).toBe(false);
+    expect(shouldPurgeAfter({ method: "GET", pathname: "/menu" })).toBe(false);
   });
 });
