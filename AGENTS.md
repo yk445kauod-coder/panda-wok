@@ -1899,3 +1899,101 @@ measurement must sample the *worst* pixel under the text, not the average.
 `/tmp/hero-measure.mjs` (CDP) is the tool; screenshot the hero with the copy
 hidden, then read the pixels inside the heading's bounding box.
 
+
+
+## Checkout was 100% dead: `place_order` had the wrong return type (2026-09-29)
+
+**Every order failed.** The customer saw "something went wrong on our side" and
+the kitchen saw cancelled orders; the live log showed
+`POST /rest/v1/rpc/place_order -> 400` (3 times at 18:50).
+
+Root cause, in `20260929000100_realtime_and_loyalty_default.sql`: the
+`LOYALTY_DISABLED` guard was added as a thin wrapper, but the wrapper was
+declared `returns uuid` while assigning the four-column table function into a
+scalar:
+
+```sql
+v_result uuid;
+v_result := public.place_order_internal(...);   -- returns table(...)
+```
+
+`place_order` is not `returns table`, so `v_result := fn(...)` does not *call*
+the function — it reads the row as a whole and coerces the composite
+`(order_id, order_number, total, reused)` to `uuid`. That type-checks while the
+call is unresolved (which is why the migration applied cleanly) and fails at
+**run** time:
+
+    ERROR: 22P02: invalid input syntax for type uuid:
+           "(5253bbb4-…,PW-2609-1043,680.00,f)"
+
+The order row is inserted and the transaction then aborts, so no order ever
+survived. `20260929190000_fix_place_order_return_type.sql` restores the table
+return type and keeps the guard:
+`return query select * from public.place_order_internal(...)`.
+
+Verified live in a rolled-back transaction (the exact basket from the report,
+2 × combo fried 8 pieces): returns `PW-2609-1045 / 340.00`. Also verified a
+non-combo item (2 × combo 8 pieces, 696.00) and that the guard still fires —
+a `points_redeem > 0` call while the flag is off still raises `LOYALTY_DISABLED`.
+
+**Trap worth keeping: a scalar assignment from a `returns table` function is a
+runtime error, not a compile error.** `create function` resolves the body
+lazily, so the migration is green, `tsc` is green, and every request 400s. When
+a wrapper changes a function's return type, assert the result with
+`pg_get_function_result()` and call it once in a rolled-back transaction.
+
+**Repro method** (no browser needed): `set_config('request.jwt.claims', …)` +
+`set_config('role','authenticated',true)` inside `begin; … rollback;` gives a
+real `auth.uid()`, so `place_order` can be exercised as the customer would.
+
+## Loyalty is off, and now actually stops (2026-09-29)
+
+`feature_flags.loyalty.is_enabled` is **false** live. Two customer-facing leaks
+of a programme that is not running were closed:
+
+- `checkout-flow.tsx` still rendered "You will earn {points} loyalty points on
+  this order." The line is now gated on `loyaltyEnabled`, so no promise is made
+  for points the kitchen is not honouring. (`place_order` still records
+  `points_earned`; that is a database column, not a promise.)
+- `SiteFooter` rendered `/loyalty` unconditionally — the header already gated it
+  on the flag, the footer did not. The footer now takes `flags` and drops the
+  link the same way. Account page shortcuts and `/loyalty` itself already
+  respected the flag; `/loyalty` shows its "not available" empty state.
+
+Note the `loyalty` flag gates **both** earning and redemption; the assistant's
+grounding (`src/lib/ai/grounding.ts`) still states the earn rate regardless.
+Spend lives in `loyalty_transactions` (ledger) + `loyalty_rewards` (thresholds)
+— there is no single `redeem` table.
+
+## Combo choices are option groups, not description prose (2026-09-29)
+
+`combo-8-pieces` and `combo-fried-8-pieces` now carry a required single-select
+**"Your choice"** group (migration `20260929180000`), so the customer picks the
+roll instead of reading a note. Their descriptions lost the redundant
+`your choice: …` clause (migration `combo_description_cleanup`) and keep the
+rest of the text verbatim. The other combos (16/24/32/48 piece, raw and fried)
+are **meal compositions, not choices** — their descriptions stay as written and
+they get no group. Verified live in both locales: the group renders as radio
+inputs on `/menu/combo-fried-8-pieces` and the old note is gone.
+
+Live menu state: both catalogues public — Chinese (10 cats, `external_id is
+null`) and Japanese sushi (8 cats, `external_id` set). Do not disable either;
+hide with a flag instead.
+
+## `Sold out` -> `Out of stock` (2026-09-29)
+
+The owner preferred "out of stock" over "sold out". Changed in
+`en.ts` (`dish.soldOut`, `addToCart.soldOutChoice`, `addToCart.unavailable`),
+the admin menu `menu-item-row.tsx` badge and visibility option, and the
+assistant grounding's option annotation so the agent's wording matches the UI.
+Arabic was already `نفدت الكمية` (= out of stock) and is unchanged.
+
+## Mobile hero copy is centred (verified live, 2026-09-29)
+
+The home hero's copy column is `text-center lg:text-start`; measured on the
+deployed page at 390px: `h1`, tagline, and CTA row all report
+`text-align: center`, `documentElement.scrollWidth - clientWidth == 0` (no
+horizontal overflow). At `lg` it returns to the leading edge because the
+two-column layout puts the copy in one column. Note the hero *stats* strip
+(`dl`) stays `text-start` at every width by design — it is a data table, not
+copy.
