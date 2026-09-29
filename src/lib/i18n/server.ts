@@ -60,9 +60,9 @@ export const getAdminLocale = cache(async (): Promise<Locale> => {
   return ADMIN_DEFAULT_LOCALE;
 });
 
-export async function getDictionary(locale?: Locale): Promise<Dictionary> {
+export const getDictionary = cache(async (locale?: Locale): Promise<Dictionary> => {
   return DICTIONARIES[locale ?? (await getLocale())];
-}
+});
 
 /**
  * Translator for server components and server actions. `t("menu.title")`
@@ -71,10 +71,10 @@ export async function getDictionary(locale?: Locale): Promise<Dictionary> {
  * so a forgotten translation degrades to something debuggable instead of
  * crashing the page.
  */
-export async function getT(locale?: Locale) {
+export const getT = cache(async (locale?: Locale) => {
   const dict = await getDictionary(locale);
   return makeTranslator(dict);
-}
+});
 
 export type T = ReturnType<typeof makeTranslator>;
 

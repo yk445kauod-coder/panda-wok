@@ -26,14 +26,30 @@ export function LiveOrdersFeed({
   const [refreshing, setRefreshing] = useState(false);
   const [lastSync, setLastSync] = useState<number>(() => Date.now());
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const refresh = useCallback(() => {
+  const refreshNow = useCallback(() => {
     setRefreshing(true);
     setLastSync(Date.now());
     router.refresh();
     // The server component streams in; clear the spinner once the frame settles.
     window.setTimeout(() => setRefreshing(false), 600);
   }, [router]);
+
+  // A single order action produces a status change *and* a new history row, and
+  // the acting client also refreshes — so a burst of events lands within a few
+  // milliseconds. Coalescing them into one render keeps the ops board from
+  // re-running its server component several times for one tap.
+  const refresh = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(refreshNow, 250);
+  }, [refreshNow]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();

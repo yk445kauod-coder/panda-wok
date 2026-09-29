@@ -43,6 +43,7 @@ import {
 } from "@/lib/validation/schemas";
 import { placeholderEmailFor } from "@/lib/auth/phone";
 import { escapeLike, randomId } from "@/lib/utils/format";
+import { paymentStatusFor } from "@/lib/services/order-workflow";
 
 /** Narrow guard shared by the single-row mutations. */
 function isUuid(value: string) {
@@ -73,7 +74,7 @@ export async function updateOrderStatusAction(
 
   const { data: current, error: readError } = await supabase
     .from("orders")
-    .select("id, status, user_id")
+    .select("id, status, user_id, payment_status")
     .eq("id", parsed.data.orderId)
     .maybeSingle();
 
@@ -105,11 +106,18 @@ export async function updateOrderStatusAction(
     canceled: { canceled_at: new Date().toISOString() },
   };
 
+  // A refunded order is no longer paid. The money state has to follow the
+  // workflow, otherwise the dashboard counts a refund as collected revenue.
+  const nextPayment = paymentStatusFor(parsed.data.status, current.payment_status);
+  const paymentStatus =
+    nextPayment === current.payment_status ? {} : { payment_status: nextPayment };
+
   const { error } = await supabase
     .from("orders")
     .update({
       status: parsed.data.status,
       ...(stamps[parsed.data.status] ?? {}),
+      ...paymentStatus,
       ...(parsed.data.status === "canceled"
         ? { cancel_reason: parsed.data.note ?? "Canceled by the kitchen" }
         : {}),

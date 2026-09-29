@@ -79,6 +79,20 @@ export function allowedTransitions(status: OrderStatus): readonly OrderStatus[] 
 }
 
 /**
+ * The payment status an order should carry after moving to `next`.
+ *
+ * A refund is the only transition that changes the money state: leaving a
+ * refunded order marked `paid` makes the dashboard count it as collected
+ * revenue. Every other step keeps whatever the payment was.
+ */
+export function paymentStatusFor(
+  next: OrderStatus,
+  current: Database["public"]["Enums"]["payment_status"],
+): Database["public"]["Enums"]["payment_status"] {
+  return next === "refunded" ? "refunded" : current;
+}
+
+/**
  * The customer-facing timeline. Terminal failures collapse to a single
  * explanatory state instead of showing a broken progress bar.
  */

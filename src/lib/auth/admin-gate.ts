@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { serverEnv } from "@/lib/config/env";
 import { createAdminSupabase } from "@/lib/supabase/server";
@@ -140,8 +141,15 @@ export async function resolveSecret(secret: string): Promise<GateIdentity | null
   return staffById(secret);
 }
 
-/** Reads the unlock cookie into an identity, or null when locked/expired. */
-export async function gateIdentity(): Promise<GateIdentity | null> {
+/**
+ * Reads the unlock cookie into an identity, or null when locked/expired.
+ *
+ * Cached per request: a single admin render calls this from the layout, the
+ * page guard and `createServerSupabase`, and each uncached call was a staff
+ * read against PostgREST. On Cloudflare's Free plan the subrequest count per
+ * invocation is capped, so paying it once keeps a page well inside the budget.
+ */
+export const gateIdentity = cache(async (): Promise<GateIdentity | null> => {
   const store = await cookies();
   const value = store.get(COOKIE_NAME)?.value;
   if (!value) return null;
@@ -166,7 +174,7 @@ export async function gateIdentity(): Promise<GateIdentity | null> {
   const identity = await staffByUserId(userId);
   if (!identity || identity.kind !== "staff" || identity.role !== role) return null;
   return identity;
-}
+});
 
 /** True when the console is unlocked for this browser by any credential. */
 export async function isUnlocked(): Promise<boolean> {

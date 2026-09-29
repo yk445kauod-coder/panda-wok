@@ -7,6 +7,7 @@ import {
   buildTimeline,
   isActive,
   isTerminal,
+  paymentStatusFor,
 } from "@/lib/services/order-workflow";
 import type { Database } from "@/lib/types/database";
 
@@ -173,5 +174,28 @@ describe("order totals for a multi-item basket", () => {
     const { total } = price([{ unit: 95.5, qty: 3 }], "pickup");
     expect(total).toBe(326.61);
     expect(Number.isInteger(total)).toBe(false);
+  });
+});
+
+/**
+ * The money state must follow the workflow. A refund that left
+ * `payment_status = 'paid'` would count a refunded order as collected revenue
+ * on the dashboard.
+ */
+describe("payment status follows the order state machine", () => {
+  it("marks a refunded order's payment as refunded", () => {
+    expect(paymentStatusFor("refunded", "paid")).toBe("refunded");
+  });
+
+  it("leaves payment untouched for every other transition", () => {
+    for (const status of ALL_STATUSES.filter((s) => s !== "refunded")) {
+      expect(paymentStatusFor(status, "paid")).toBe("paid");
+    }
+  });
+
+  it("does not invent a paid state when the order was unpaid", () => {
+    expect(paymentStatusFor("accepted", "unpaid")).toBe("unpaid");
+    expect(paymentStatusFor("canceled", "unpaid")).toBe("unpaid");
+    expect(paymentStatusFor("finished", "unpaid")).toBe("unpaid");
   });
 });

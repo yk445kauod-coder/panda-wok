@@ -149,8 +149,12 @@ async function resolveActorId(
 /**
  * Resolves the acting ops identity from the gate. Returns null when the console
  * is locked, which is what sends a visitor to the passcode screen.
+ *
+ * Cached per request. `requireCapability` runs in the layout and again in every
+ * page, and each uncached call re-read the profile, the staff row and the owner
+ * fallback — three PostgREST round trips repeated across one render.
  */
-export async function getAdminSession(): Promise<AdminSession | null> {
+export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
   const gate = await gateIdentity();
   if (!gate) return null;
 
@@ -171,7 +175,7 @@ export async function getAdminSession(): Promise<AdminSession | null> {
     gate,
     actorId,
   };
-}
+});
 
 /**
  * Requires an unlocked ops session holding a capability. Used by every admin

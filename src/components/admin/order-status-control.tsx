@@ -42,18 +42,26 @@ export function OrderStatusControl({
     formData.set("status", status);
     if (note.trim()) formData.set("note", note.trim());
 
-    const result = await updateOrderStatusAction(formData);
+    // A rejected action (edge resource limit, dropped connection, stale
+    // deployment) used to leave the button stuck on "…" with no message, which
+    // is indistinguishable from a hang. Always clear the spinner and say what
+    // happened, whatever the outcome.
+    try {
+      const result = await updateOrderStatusAction(formData);
 
-    if (!result.ok) {
-      setError(errorText(result.error));
+      if (!result.ok) {
+        setError(errorText(result.error));
+        return;
+      }
+
+      setNote("");
+      setOpen(false);
+      router.refresh();
+    } catch {
+      setError(errorText({ code: "UNKNOWN", message: "Network error" }));
+    } finally {
       setPending(null);
-      return;
     }
-
-    setPending(null);
-    setNote("");
-    setOpen(false);
-    router.refresh();
   }
 
   if (options.length === 0) {

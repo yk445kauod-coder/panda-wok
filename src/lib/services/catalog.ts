@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createPublicSupabase } from "@/lib/supabase/server";
 import type { Database, Json } from "@/lib/types/database";
 
@@ -306,7 +307,7 @@ function toNullableText(value: Json | undefined): string | null {
  * Public settings come from RLS-filtered rows marked is_public, so internal
  * values (VAT rate, point economics) never reach the browser.
  */
-export async function getPublicSettings(): Promise<PublicSettings> {
+export const getPublicSettings = cache(async (): Promise<PublicSettings> => {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("settings")
@@ -365,7 +366,7 @@ export async function getPublicSettings(): Promise<PublicSettings> {
       ),
     },
   };
-}
+});
 
 export async function getRestaurant(): Promise<Restaurant | null> {
   const supabase = createPublicSupabase();
