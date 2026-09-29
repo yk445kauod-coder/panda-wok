@@ -3,19 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setConversationStatusAction } from "@/lib/actions/admin";
-import { cn, humanise } from "@/lib/utils/format";
+import { cn } from "@/lib/utils/format";
 import type { Database } from "@/lib/types/database";
 
-import { useErrorText } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 type ConversationStatus = Database["public"]["Enums"]["conversation_status"];
 
 const STATUSES: ConversationStatus[] = ["open", "pending", "closed"];
-
-const HINTS: Record<ConversationStatus, string> = {
-  open: "Waiting on the kitchen — needs a reply.",
-  pending: "We replied and are waiting on the customer.",
-  closed: "Done. No further action needed.",
-};
 
 /**
  * Moderation control for one conversation. Writes go through the existing
@@ -32,6 +26,7 @@ export function ConversationStatusControl({
 }) {
   const router = useRouter();
   const errorText = useErrorText();
+  const t = useT();
   const [pending, setPending] = useState<ConversationStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,7 +55,7 @@ export function ConversationStatusControl({
     <div className="space-y-1.5">
       <div
         role="group"
-        aria-label="Conversation status"
+        aria-label={t("admin.pages.chat.conversationStatus")}
         className={cn("flex flex-wrap gap-1.5", compact && "gap-1")}
       >
         {STATUSES.map((status) => {
@@ -72,7 +67,7 @@ export function ConversationStatusControl({
               onClick={() => apply(status)}
               disabled={pending !== null || active}
               aria-pressed={active}
-              title={HINTS[status]}
+              title={t(`admin.pages.chat.hint${status.charAt(0).toUpperCase()}${status.slice(1)}`)}
               className={cn(
                 "rounded-lg border px-2.5 py-1.5 text-xs font-medium outline-none transition-colors",
                 "focus-visible:ring-2 focus-visible:ring-vermilion-600/40 disabled:cursor-default",
@@ -81,7 +76,9 @@ export function ConversationStatusControl({
                   : "border-ink-900/15 bg-rice-50 text-ink-800 hover:bg-rice-100 disabled:opacity-60",
               )}
             >
-              {pending === status ? "…" : humanise(status)}
+              {pending === status
+                ? t("admin.pages.chat.pendingShort")
+                : t(`admin.term.conversationStatus.${status}`)}
             </button>
           );
         })}

@@ -10,20 +10,16 @@ import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConversationStatusControl } from "@/components/admin/conversation-status-control";
 import { OpenDmButton } from "@/components/admin/open-dm-button";
-import { formatRelative, humanise } from "@/lib/utils/format";
+import { formatRelative } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 import type { Database } from "@/lib/types/database";
 
 export const dynamic = "force-dynamic";
 
 type ConversationStatus = Database["public"]["Enums"]["conversation_status"];
 
-const CUSTOMER_TABS: { key: ConversationStatus | "all"; label: string }[] = [
-  { key: "open", label: "Open" },
-  { key: "pending", label: "Waiting" },
-  { key: "closed", label: "Closed" },
-  { key: "all", label: "All" },
-];
+const CUSTOMER_TABS: (ConversationStatus | "all")[] = ["open", "pending", "closed", "all"];
 
 /**
  * One chat hub for the whole team. Customer conversations and internal team
@@ -38,6 +34,7 @@ export default async function AdminChatPage({
 }) {
   await requireCapability("chat.manage");
   const params = await searchParams;
+  const t = await getT(await getAdminLocale());
 
   const tab = params.tab === "team" ? "team" : "customers";
 
@@ -50,28 +47,26 @@ export default async function AdminChatPage({
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold text-ink-900">Chat</h1>
-        <p className="mt-1 text-sm text-ink-700/80">
-          Customer conversations and internal team threads in one place.
-        </p>
+        <h1 className="text-2xl font-semibold text-ink-900">{t("admin.pages.chat.title")}</h1>
+        <p className="mt-1 text-sm text-ink-700/80">{t("admin.pages.chat.description")}</p>
       </header>
 
       <nav
-        aria-label="Chat sections"
+        aria-label={t("admin.pages.chat.sections")}
         className="flex gap-2 rounded-2xl border border-ink-900/8 bg-rice-100 p-1"
       >
         <TabLink
           href="/admin/chat?tab=customers"
           active={tab === "customers"}
           icon={<Inbox className="size-4" aria-hidden="true" />}
-          label="Customers"
+          label={t("admin.pages.chat.customers")}
           count={unread}
         />
         <TabLink
           href="/admin/chat?tab=team"
           active={tab === "team"}
           icon={<MessagesSquare className="size-4" aria-hidden="true" />}
-          label="Team"
+          label={t("admin.pages.chat.team")}
           count={teamUnread}
         />
       </nav>
@@ -126,7 +121,8 @@ function TabLink({
 }
 
 async function CustomerInbox({ requestedStatus }: { requestedStatus?: string }) {
-  const status = CUSTOMER_TABS.some((t) => t.key === requestedStatus)
+  const t = await getT(await getAdminLocale());
+  const status = CUSTOMER_TABS.includes(requestedStatus as ConversationStatus | "all")
     ? (requestedStatus as ConversationStatus | "all")
     : "open";
 
@@ -137,13 +133,16 @@ async function CustomerInbox({ requestedStatus }: { requestedStatus?: string }) 
 
   return (
     <div className="space-y-4">
-      <nav aria-label="Filter conversations" className="flex gap-2 overflow-x-auto pb-1">
-        {CUSTOMER_TABS.map((t) => {
-          const active = t.key === status;
+      <nav
+        aria-label={t("admin.pages.chat.filterConversations")}
+        className="flex gap-2 overflow-x-auto pb-1"
+      >
+        {CUSTOMER_TABS.map((tab) => {
+          const active = tab === status;
           return (
             <Link
-              key={t.key}
-              href={`/admin/chat?tab=customers&status=${t.key}`}
+              key={tab}
+              href={`/admin/chat?tab=customers&status=${tab}`}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "shrink-0 rounded-full border px-3.5 py-2 text-xs font-medium",
@@ -152,7 +151,9 @@ async function CustomerInbox({ requestedStatus }: { requestedStatus?: string }) 
                   : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
               )}
             >
-              {t.label}
+              {tab === "all"
+                ? t("admin.pages.orders.all")
+                : t(`admin.term.conversationStatus.${tab}`)}
             </Link>
           );
         })}
@@ -161,8 +162,8 @@ async function CustomerInbox({ requestedStatus }: { requestedStatus?: string }) 
       {conversations.length === 0 ? (
         <EmptyState
           icon={<Inbox className="size-6" />}
-          title="No conversations here"
-          description="When a customer writes in, the thread appears here with their unread count and any linked order."
+          title={t("admin.pages.chat.noConversations")}
+          description={t("admin.pages.chat.noConversationsBody")}
         />
       ) : (
         <ul className="space-y-3">
@@ -178,10 +179,12 @@ async function CustomerInbox({ requestedStatus }: { requestedStatus?: string }) 
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="truncate font-display text-base font-semibold text-ink-900">
-                      {row.customer_name ?? "Unnamed customer"}
+                      {row.customer_name ?? t("admin.pages.chat.unnamedCustomer")}
                     </span>
                     {row.staff_unread > 0 ? (
-                      <Badge tone="indigo">{row.staff_unread} new</Badge>
+                      <Badge tone="indigo">
+                        {t("admin.pages.chat.newCount", { count: row.staff_unread })}
+                      </Badge>
                     ) : null}
                     <Badge
                       tone={
@@ -192,7 +195,7 @@ async function CustomerInbox({ requestedStatus }: { requestedStatus?: string }) 
                             : "neutral"
                       }
                     >
-                      {humanise(row.status)}
+                      {t(`admin.term.conversationStatus.${row.status}`)}
                     </Badge>
                   </span>
                   {row.subject ? (
@@ -202,8 +205,8 @@ async function CustomerInbox({ requestedStatus }: { requestedStatus?: string }) 
                   ) : null}
                   <span className="mt-1 block line-clamp-2 text-sm text-ink-700/80">
                     {row.last_message
-                      ? `${row.last_message_from_staff ? "You: " : ""}${row.last_message}`
-                      : "No messages yet."}
+                      ? `${row.last_message_from_staff ? `${t("admin.pages.chat.youPrefix")} ` : ""}${row.last_message}`
+                      : t("admin.pages.chat.noMessages")}
                   </span>
                   <span className="mt-1 block text-xs text-ink-700/60">
                     {formatRelative(row.last_message_at)}
@@ -227,6 +230,7 @@ async function CustomerInbox({ requestedStatus }: { requestedStatus?: string }) 
 }
 
 async function TeamChatPanel() {
+  const t = await getT(await getAdminLocale());
   const [threads, peers] = await Promise.all([listMyTeamThreads(), listTeamPeers()]);
 
   return (
@@ -234,7 +238,7 @@ async function TeamChatPanel() {
       <ul className="space-y-2">
         {threads.length === 0 ? (
           <li className="rounded-2xl border border-ink-900/8 bg-rice-100 px-4 py-8 text-center text-sm text-ink-700/70">
-            No threads yet. Start a direct message to a colleague.
+            {t("admin.pages.chat.noThreads")}
           </li>
         ) : (
           threads.map((thread) => (
@@ -249,11 +253,13 @@ async function TeamChatPanel() {
                       {thread.kind === "channel" ? `# ${thread.name}` : thread.name}
                     </span>
                     <span className="rounded-full bg-ink-900/6 px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide text-ink-700/70">
-                      {thread.kind === "channel" ? "Channel" : "DM"}
+                      {thread.kind === "channel"
+                        ? t("admin.pages.chat.channel")
+                        : t("admin.pages.chat.direct")}
                     </span>
                   </span>
                   <span className="mt-0.5 block text-xs text-ink-700/60">
-                    Active {formatRelative(thread.lastMessageAt)}
+                    {t("admin.pages.chat.activeAgo", { when: formatRelative(thread.lastMessageAt) })}
                   </span>
                 </span>
                 {thread.unread > 0 ? (
@@ -270,11 +276,11 @@ async function TeamChatPanel() {
       <aside className="washi-panel h-fit p-4">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-900">
           <Users className="size-4 text-ink-700/70" aria-hidden="true" />
-          Message a teammate
+          {t("admin.pages.chat.messageTeammate")}
         </h2>
         {peers.length === 0 ? (
           <p className="mt-2 text-xs text-ink-700/70">
-            No other team members yet. Add them from Team &amp; users.
+            {t("admin.pages.chat.noTeammates")}
           </p>
         ) : (
           <ul className="mt-3 space-y-2">
@@ -283,7 +289,7 @@ async function TeamChatPanel() {
                 <span className="min-w-0">
                   <span className="block truncate text-sm text-ink-900">{peer.name}</span>
                   <span className="block text-3xs uppercase tracking-wide text-ink-700/60">
-                    {humanise(peer.role)}
+                    {t(`admin.term.role.${peer.role}`)}
                   </span>
                 </span>
                 <OpenDmButton userId={peer.userId} name={peer.name} />

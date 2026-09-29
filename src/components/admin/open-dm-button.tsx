@@ -4,12 +4,13 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquarePlus } from "lucide-react";
 import { openTeamDmAction } from "@/lib/actions/team-chat";
-import { useErrorText } from "@/components/i18n-provider";
+import { useErrorText, useT } from "@/components/i18n-provider";
 
 /** Opens (or reuses) the 1:1 thread with a team member, then navigates to it. */
 export function OpenDmButton({ userId, name }: { userId: string; name: string }) {
   const router = useRouter();
   const errorText = useErrorText();
+  const t = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +32,7 @@ export function OpenDmButton({ userId, name }: { userId: string; name: string })
         type="button"
         onClick={onClick}
         disabled={pending}
-        aria-label={`Message ${name}`}
+        aria-label={t("admin.pages.chat.messageName", { name })}
         className="grid size-8 shrink-0 place-items-center rounded-lg border border-ink-900/12 text-ink-700 transition-colors hover:border-vermilion-500/50 hover:text-vermilion-700 disabled:opacity-50"
       >
         <MessageSquarePlus className="size-4" aria-hidden="true" />
