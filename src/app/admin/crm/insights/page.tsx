@@ -6,6 +6,8 @@ import { generateInsights, type InsightRecommendation } from "@/lib/crm/insights
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn, formatDateTime, formatNumber } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
+import type { Translator } from "@/lib/i18n/translate";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +41,7 @@ export default async function AdminInsightsPage({
 }) {
   await requireCapability("crm.view");
   const params = await searchParams;
+  const t = await getT(await getAdminLocale());
 
   const days = [7, 30, 90].includes(Number(params.days)) ? Number(params.days) : 30;
 
@@ -55,14 +58,15 @@ export default async function AdminInsightsPage({
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">AI insights</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">
+            {t("admin.pages.insights.title")}
+          </h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            Findings computed from live order, loyalty, stock and feedback rows for the last{" "}
-            {days} days.
+            {t("admin.pages.insights.description", { days })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <nav aria-label="Window" className="flex gap-1.5">
+          <nav aria-label={t("admin.pages.insights.window")} className="flex gap-1.5">
             {[7, 30, 90].map((option) => (
               <Link
                 key={option}
@@ -75,7 +79,7 @@ export default async function AdminInsightsPage({
                     : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
                 )}
               >
-                {option}d
+                {t("admin.pages.insights.days", { n: option })}
               </Link>
             ))}
           </nav>
@@ -83,31 +87,33 @@ export default async function AdminInsightsPage({
             href="/admin/crm"
             className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
           >
-            Back to CRM
+            {t("admin.pages.insights.back")}
           </Link>
         </div>
       </header>
 
       <section
         className="washi-panel border-miso-500/25 bg-miso-300/15 p-4"
-        aria-label="How to read these insights"
+        aria-label={t("admin.pages.insights.howToRead")}
       >
         <h2 className="flex items-center gap-2 font-display text-base font-semibold text-ink-900">
           <ShieldQuestion className="size-4 text-miso-600" aria-hidden="true" />
-          These are suggestions, not decisions
+          {t("admin.pages.insights.cautionTitle")}
         </h2>
         <p className="mt-1.5 text-sm text-ink-800/90">
-          Every figure below is computed from the database for the stated window. The system
-          proposes actions for a human to weigh — it never changes prices, stock or marketing
-          on its own. Where the sample is small, the confidence line says so.
+          {t("admin.pages.insights.cautionBody")}
         </p>
         <p className="mt-2 text-xs text-ink-700/70">
-          Generated {formatDateTime(report.generatedAt)} · provider{" "}
+          {t("admin.pages.insights.generated", { when: formatDateTime(report.generatedAt) })} ·{" "}
+          {t("admin.pages.insights.providerLabel")}{" "}
           <span className="font-medium">{report.provider}</span>
-          {report.model ? ` · model ${report.model}` : ""} ·{" "}
+          {report.model
+            ? ` · ${t("admin.pages.insights.modelLabel")} ${report.model}`
+            : ""}{" "}
+          ·{" "}
           {report.status === "fallback"
-            ? "served deterministically from database rules"
-            : "model narrative on top of the same data"}
+            ? t("admin.pages.insights.servedFallback")
+            : t("admin.pages.insights.servedModel")}
         </p>
       </section>
 
@@ -116,30 +122,29 @@ export default async function AdminInsightsPage({
           role="alert"
           className="rounded-xl border border-chili-500/30 bg-chili-500/8 px-3 py-2 text-sm text-chili-600"
         >
-          The model could not be reached ({report.error}), so the deterministic findings are
-          shown. They are complete on their own.
+          {t("admin.pages.insights.modelUnreachable", { error: report.error })}
         </p>
       ) : null}
 
       {report.deterministic.length === 0 ? (
         <EmptyState
           icon={<Lightbulb className="size-6" />}
-          title="Not enough data for insights yet"
-          description="Insights need a window of real orders to be meaningful. Once orders and feedback accumulate, findings appear here with the numbers behind them."
+          title={t("admin.pages.insights.empty")}
+          description={t("admin.pages.insights.emptyBody")}
         />
       ) : (
         <ul className="space-y-4">
           {dataBacked.map((insight) => (
-            <InsightCard key={insight.title} insight={insight} />
+            <InsightCard key={insight.title} insight={insight} t={t} />
           ))}
         </ul>
       )}
 
       {report.aiNarrative ? (
-        <section className="washi-panel p-4" aria-label="Model narrative">
+        <section className="washi-panel p-4" aria-label={t("admin.pages.insights.narrative")}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-display text-base font-semibold text-ink-900">
-              Model narrative
+              {t("admin.pages.insights.narrative")}
             </h2>
             <Badge tone="info">
               {report.provider}
@@ -147,7 +152,7 @@ export default async function AdminInsightsPage({
             </Badge>
           </div>
           <p className="mt-1 text-xs text-ink-700/70">
-            A rephrasing of the same figures above. It introduces no new data.
+            {t("admin.pages.insights.narrativeHint")}
           </p>
           <div className="mt-3 space-y-2 text-sm leading-relaxed text-ink-800">
             {report.aiNarrative
@@ -161,17 +166,24 @@ export default async function AdminInsightsPage({
       ) : null}
 
       <p className="text-xs text-ink-700/60">
-        Confidence reflects sample size and how directly the rule maps to the data. It is not
-        a statistical guarantee.{" "}
+        {t("admin.pages.insights.footnote")}{" "}
         {report.deterministic.length > 0
-          ? `${formatNumber(report.deterministic.length)} findings in this window.`
+          ? t("admin.pages.insights.findingsCount", {
+              count: formatNumber(report.deterministic.length),
+            })
           : ""}
       </p>
     </div>
   );
 }
 
-function InsightCard({ insight }: { insight: InsightRecommendation }) {
+function InsightCard({
+  insight,
+  t,
+}: {
+  insight: InsightRecommendation;
+  t: Translator;
+}) {
   return (
     <li className="washi-panel p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -179,21 +191,25 @@ function InsightCard({ insight }: { insight: InsightRecommendation }) {
           {insight.title}
         </h2>
         <Badge tone={CONFIDENCE_TONE[insight.confidence]}>
-          {insight.confidence} confidence
+          {t("admin.pages.insights.confidence", {
+            level: t(
+              `admin.pages.insights.level${insight.confidence.charAt(0).toUpperCase()}${insight.confidence.slice(1)}`,
+            ),
+          })}
         </Badge>
       </div>
 
       <dl className="mt-3 space-y-3 text-sm">
         <div>
           <dt className="text-xs font-medium uppercase tracking-wide text-ink-700/70">
-            Reason
+            {t("admin.pages.insights.reason")}
           </dt>
           <dd className="mt-0.5 text-ink-800">{insight.observation}</dd>
         </div>
 
         <div>
           <dt className="text-xs font-medium uppercase tracking-wide text-ink-700/70">
-            Relevant data
+            {t("admin.pages.insights.evidence")}
           </dt>
           <dd className="mt-1">
             <ul className="flex flex-wrap gap-1.5">
@@ -211,14 +227,14 @@ function InsightCard({ insight }: { insight: InsightRecommendation }) {
 
         <div>
           <dt className="text-xs font-medium uppercase tracking-wide text-ink-700/70">
-            Suggested action
+            {t("admin.pages.insights.suggestedAction")}
           </dt>
           <dd className="mt-0.5 text-ink-800">{insight.suggestedAction}</dd>
         </div>
 
         <div>
           <dt className="text-xs font-medium uppercase tracking-wide text-ink-700/70">
-            Confidence &amp; limitations
+            {t("admin.pages.insights.confidenceLimits")}
           </dt>
           <dd className="mt-0.5 text-ink-700/85">{insight.confidenceReason}</dd>
         </div>

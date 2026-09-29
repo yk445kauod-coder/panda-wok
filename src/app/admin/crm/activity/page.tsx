@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDateTime, humanise, safeJson } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/format";
+import { getAdminLocale, getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export default async function AdminActivityPage({
 }) {
   await requireCapability("crm.view");
   const params = await searchParams;
+  const t = await getT(await getAdminLocale());
 
   const events = await listActivity({
     event: params.event,
@@ -54,36 +56,37 @@ export default async function AdminActivityPage({
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Activity</h1>
+          <h1 className="text-2xl font-semibold text-ink-900">
+            {t("admin.pages.activity.title")}
+          </h1>
           <p className="mt-1 text-sm text-ink-700/80">
-            Recorded customer actions, newest first. Data collection is limited to what the
-            kitchen needs to serve and improve the menu.
+            {t("admin.pages.activity.description")}
           </p>
         </div>
         <Link
           href="/admin/crm"
           className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
         >
-          Back to CRM
+          {t("admin.pages.activity.back")}
         </Link>
       </header>
 
       <form method="get" className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
           <label htmlFor="activity-search" className="block text-xs font-medium text-ink-800">
-            Search
+            {t("admin.pages.activity.searchLabel")}
           </label>
           <input
             id="activity-search"
             name="q"
             defaultValue={params.q ?? ""}
-            placeholder="Customer name, event or metadata"
+            placeholder={t("admin.pages.activity.searchPlaceholder")}
             className="mt-1 h-10 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           />
         </div>
         <div>
           <label htmlFor="activity-event" className="block text-xs font-medium text-ink-800">
-            Event
+            {t("admin.pages.activity.eventLabel")}
           </label>
           <select
             id="activity-event"
@@ -91,10 +94,10 @@ export default async function AdminActivityPage({
             defaultValue={params.event ?? ""}
             className="mt-1 h-10 rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
           >
-            <option value="">All events</option>
+            <option value="">{t("admin.pages.activity.allEvents")}</option>
             {EVENTS.map((event) => (
               <option key={event} value={event}>
-                {humanise(event)}
+                {t(`admin.term.activityEvent.${event}`)}
               </option>
             ))}
           </select>
@@ -103,20 +106,20 @@ export default async function AdminActivityPage({
           type="submit"
           className="h-10 rounded-xl bg-vermilion-600 px-4 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
         >
-          Filter
+          {t("admin.pages.activity.filter")}
         </button>
         {params.q || params.event ? (
           <Link
             href="/admin/crm/activity"
             className="h-10 rounded-xl border border-ink-900/15 px-4 text-sm leading-10 text-ink-800 hover:bg-rice-200"
           >
-            Clear
+            {t("admin.pages.activity.clear")}
           </Link>
         ) : null}
       </form>
 
       {byEvent.length > 0 ? (
-        <nav aria-label="Event types present" className="flex flex-wrap gap-2">
+        <nav aria-label={t("admin.pages.activity.eventTypes")} className="flex flex-wrap gap-2">
           {byEvent.map(([event, count]) => (
             <Link
               key={event}
@@ -129,7 +132,7 @@ export default async function AdminActivityPage({
                   : "border-ink-900/12 bg-rice-50 text-ink-800 hover:bg-rice-200",
               )}
             >
-              {humanise(event)}
+              {t(`admin.term.activityEvent.${event}`)}
               <span
                 className={cn(
                   "tabular-nums",
@@ -145,11 +148,15 @@ export default async function AdminActivityPage({
 
       {events.length === 0 ? (
         <EmptyState
-          title={params.q || params.event ? "No activity matches this filter" : "No activity recorded"}
+          title={
+            params.q || params.event
+              ? t("admin.pages.activity.noMatch")
+              : t("admin.pages.activity.empty")
+          }
           description={
             params.q || params.event
-              ? "Try a different event, or clear the filter to see everything."
-              : "Activity appears here as customers browse the menu, build a cart and order."
+              ? t("admin.pages.activity.noMatchBody")
+              : t("admin.pages.activity.emptyBody")
           }
         />
       ) : (
@@ -167,7 +174,9 @@ export default async function AdminActivityPage({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-2 text-sm text-ink-900">
-                      <span className="font-medium">{humanise(entry.event)}</span>
+                      <span className="font-medium">
+                        {t(`admin.term.activityEvent.${entry.event}`)}
+                      </span>
                       {entry.entity ? <Badge tone="neutral">{entry.entity}</Badge> : null}
                     </p>
                     <p className="mt-0.5 text-xs text-ink-700/75">
@@ -183,7 +192,7 @@ export default async function AdminActivityPage({
                           entry.customer_name
                         )
                       ) : (
-                        "Anonymous visitor"
+                        t("admin.pages.activity.anonymous")
                       )}
                       {detail ? ` · ${detail}` : ""}
                     </p>
