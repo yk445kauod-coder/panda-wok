@@ -42,7 +42,7 @@ function visibilityOf(item: Row): MenuItemVisibility {
  * updated together rather than drifting from optimistic UI state.
  *
  * Availability is a three-way choice rather than a lone checkbox: a dish is
- * either live, marked sold out but still shown, or hidden from customers. Two
+ * either live, marked out of stock but still shown, or hidden from customers. Two
  * independent booleans let the row say "Orderable" while `is_archived` quietly
  * kept it off the menu, which is exactly the confusion this replaces.
  */
@@ -85,7 +85,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
 
   const states: { key: MenuItemVisibility; label: string }[] = [
     { key: "live", label: "Live" },
-    { key: "sold_out", label: "Sold out" },
+    { key: "sold_out", label: "Out of stock" },
     { key: "hidden", label: "Hidden" },
   ];
 
@@ -121,7 +121,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
               </span>
             ) : null}
             {visibility === "hidden" ? <Badge tone="danger">Hidden</Badge> : null}
-            {visibility === "sold_out" ? <Badge tone="warning">Sold out</Badge> : null}
+            {visibility === "sold_out" ? <Badge tone="warning">Out of stock</Badge> : null}
             {item.is_featured ? <Badge tone="indigo">Featured</Badge> : null}
             {item.has_transparent_png ? <Badge tone="info">Transparent PNG</Badge> : null}
           </div>

@@ -366,7 +366,7 @@ export async function toggleMenuItemAction(
  * The three states a dish can be in, as one action rather than two independent
  * booleans. The pairing matters: `is_archived` is what removes a dish from the
  * customer menu entirely, while `is_available = false` keeps it visible and
- * marked sold out. Setting one without the other is the mistake this prevents —
+ * marked out of stock. Setting one without the other is the mistake this prevents —
  * archiving always clears availability, and going live always clears archive.
  *
  * Nothing is ever deleted: a hidden dish keeps its row, translations, photos and

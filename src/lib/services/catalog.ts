@@ -182,7 +182,7 @@ export async function getMenuItemBySlug(slug: string): Promise<MenuItemDetail | 
   return {
     ...detail,
     // Unavailable options are kept rather than filtered out: the dish page
-    // shows them greyed with a "sold out" note, so a customer who came for the
+    // shows them greyed with an "out of stock" note, so a customer who came for the
     // shrimp can see why it is not selectable instead of wondering where it
     // went. `place_order` rejects them either way.
     modifier_groups: (detail.modifier_groups ?? [])

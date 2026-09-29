@@ -585,9 +585,14 @@ export function CheckoutFlow({
           </div>
         </dl>
 
-        <p className="mt-3 text-xs text-jade-600">
-          {t("checkout.pointsEarned", { points: totals.pointsEarned })}
-        </p>
+        {/* Points are only promised when the programme is on. `place_order`
+            still records points_earned, but advertising a balance the kitchen
+            is not honouring would be worse than saying nothing. */}
+        {loyaltyEnabled ? (
+          <p className="mt-3 text-xs text-jade-600">
+            {t("checkout.pointsEarned", { points: totals.pointsEarned })}
+          </p>
+        ) : null}
         {nextOffer ? (
           <p className="mt-1 text-xs text-vermilion-700">
             {t("checkout.offerHint", {

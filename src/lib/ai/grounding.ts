@@ -238,7 +238,7 @@ export function renderSnapshot(snapshot: GroundingSnapshot): string {
             ? ` — options: ${item.options
                 .map(
                   (option) =>
-                    `${option.group}: ${option.name} = ${option.price} EGP${option.available ? "" : " (sold out)"}`,
+                    `${option.group}: ${option.name} = ${option.price} EGP${option.available ? "" : " (out of stock)"}`,
                 )
                 .join("; ")}`
             : ""),

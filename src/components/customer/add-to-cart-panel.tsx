@@ -84,7 +84,7 @@ export function AddToCartPanel({
     (group) => (selected[group.id]?.length ?? 0) < group.min_select,
   );
 
-  // A required group whose options are all sold out cannot be satisfied by any
+  // A required group whose options are all out of stock cannot be satisfied by any
   // customer action, so ordering is blocked with an explanation rather than
   // leaving a button that can never enable. `place_order` would refuse the
   // order anyway; this makes the reason visible.
