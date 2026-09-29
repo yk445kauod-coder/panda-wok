@@ -37,6 +37,10 @@ async function main() {
   const wrapper = await readFile(path.join(root, "scripts", "pages", "_worker.js"), "utf8");
   await writeFile(path.join(OUT, "_worker.js"), wrapper, "utf8");
 
+  // The wrapper imports the edge-cache policy, which Pages does not copy for us.
+  const edgeCache = await readFile(path.join(root, "scripts", "pages", "edge-cache.js"), "utf8");
+  await writeFile(path.join(OUT, "edge-cache.js"), edgeCache, "utf8");
+
   await redactServerEnv(OUT);
 
   console.log("Pages output ready in .pages/");

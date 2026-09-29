@@ -1,4 +1,10 @@
 import opennext from "./opennext-worker.js";
+import {
+  EDGE_CACHE_CONTROL,
+  isCacheableRequest,
+  localeVariant,
+  toCacheUrl,
+} from "./edge-cache.js";
 
 /**
  * Pages entrypoint. Pages advanced mode does not serve the assets directory
@@ -48,6 +54,80 @@ export default {
     }
 
     const handler = opennext.fetch ?? opennext.default?.fetch;
+
+    // Edge cache for anonymous public pages. During a rush this is the
+    // difference between every hit running the Worker and the CDN answering
+    // them: only a miss or a stale hit reaches Next, and a stale page is served
+    // immediately while it revalidates in the background.
+    if (typeof caches !== "undefined" && caches.default) {
+      const snapshot = {
+        method: request.method,
+        pathname,
+        cookieNames: parseCookieNames(request.headers.get("cookie")),
+        acceptLanguage: request.headers.get("accept-language"),
+        accept: request.headers.get("accept"),
+        hasRscHeader: request.headers.has("rsc"),
+        hasPrefetchHeader:
+          request.headers.has("next-router-prefetch") ||
+          request.headers.has("next-router-state-tree"),
+        hasAuthorization: request.headers.has("authorization"),
+      };
+
+      if (isCacheableRequest(snapshot)) {
+        const url = new URL(request.url);
+        const variant = localeVariant({
+          cookieLocale: cookieValue(request.headers.get("cookie"), "panda-wok.locale"),
+          acceptLanguage: request.headers.get("accept-language"),
+        });
+        url.searchParams.set("__pw_lang", variant);
+        const cacheKey = new Request(url.toString(), { method: "GET" });
+        const cache = caches.default;
+
+        const hit = await cache.match(cacheKey);
+        if (hit) return withCacheStatus(hit, "HIT");
+
+        const response = await handler(request, env, ctx);
+        if (response.status === 200 && isHtml(response)) {
+          const cacheable = new Response(response.body, response);
+          cacheable.headers.set("Cache-Control", EDGE_CACHE_CONTROL);
+          ctx.waitUntil(cache.put(cacheKey, cacheable.clone()));
+          return withCacheStatus(cacheable, "MISS");
+        }
+        return response;
+      }
+    }
+
     return handler(request, env, ctx);
   },
 };
+
+/** The cookie names a request carries, for the cache decision. */
+function parseCookieNames(header) {
+  if (!header) return [];
+  return header
+    .split(";")
+    .map((part) => part.slice(0, part.indexOf("=")).trim())
+    .filter(Boolean);
+}
+
+/** One cookie's value, or undefined. */
+function cookieValue(header, name) {
+  if (!header) return undefined;
+  for (const part of header.split(";")) {
+    const i = part.indexOf("=");
+    if (i === -1) continue;
+    if (part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
+  }
+  return undefined;
+}
+
+function isHtml(response) {
+  return (response.headers.get("content-type") ?? "").includes("text/html");
+}
+
+/** Marks whether Cloudflare served this copy from the edge cache. */
+function withCacheStatus(response, status) {
+  const headers = new Headers(response.headers);
+  headers.set("x-edge-cache", status);
+  return new Response(response.body, { status: response.status, headers });
+}
