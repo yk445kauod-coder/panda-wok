@@ -1717,3 +1717,40 @@ empty.
   that exact change.** The price sheet is the owner's to fill in; hiding via
   `is_available`/`is_enabled` is the reversible alternative to deleting.
 
+## Ops agent: it was answering in English on purpose (2026-09-29)
+
+The agent was never "not in Arabic". Its prompt has been Egyptian Arabic since
+`8edcd31`; the prose was being thrown away after the model produced it.
+
+**Defect 1 — the model's report was parsed and discarded.** `runOpsReport`
+(`src/lib/agent/ops-agent.ts`) builds a prompt asking for an Arabic
+`headline`/`summary`/`recommendations`, then read only `parsed.actions` from the
+reply. `headline` and `summary` were computed *before* the model call from
+`buildDeterministicInsights` — whose strings are English — and the model's own
+wording was dropped on the floor. The stored run is the proof: `provider:
+"workers-ai"`, four Arabic actions, English headline ("Not enough order history
+for reliable patterns yet"). Nothing was misconfigured; the good output was
+simply not read.
+
+Fix: `pickGroundedReport()` (exported for tests) accepts the model's prose, but
+only after the **whole reply** passes `findUngroundedFigures` against the
+snapshot — the same figure-grounding guard the chat agent gets from
+`finaliseAnswer`. An ungrounded reply is rejected whole and the deterministic
+report stands, so switching to Arabic did not also open a path for invented
+figures. Verified live: provider `workers-ai`, headline
+"تحليل أداء المطبخ السحابي لم Panda Wok في مصر".
+
+**Defect 2 — "about 19000% of finished revenue".** In `insights.ts`, the
+category-concentration share divided `categoryMix[0].revenue` (summed over every
+*non-cancelled* order) by `totals.revenue` (only *finished* orders), with
+`Math.max(..., 1)` standing in for a zero base. A window with no finished
+revenue but real item revenue therefore divided by 1. The share is now measured
+against the mix total it was built from: same live data now reads "about 53% of
+item revenue" (215 of 405).
+
+`tests/ops-agent-report.test.ts` covers both. `InsightData` is now exported.
+
+**Reports already had daily/weekly cadence** — `ops_agent_settings
+.report_interval_hours` (24 = daily, 168 = weekly) plus `agent_automations`
+`cadence: daily | weekly | monthly | interval`. No new scheduler was needed.
+
