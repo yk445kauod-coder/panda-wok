@@ -19,6 +19,7 @@
     "db:types": "supabase gen types typescript --linked --schema public > /tmp/panda-wok-db-types.ts && mv /tmp/panda-wok-db-types.ts src/lib/types/database.ts",
     "menu:import": "node scripts/import-menu-csv.mjs",
     "menu:import:apply": "node scripts/import-menu-csv.mjs --apply",
+    "menu:export": "node scripts/import-menu-csv.mjs --export",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

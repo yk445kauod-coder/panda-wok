@@ -42,3 +42,7 @@ cloudflare-env.d.ts
 # env: never commit real secrets, but the placeholder template is tracked
 .env*
 !.env.example
+
+# Menu working sheets (owner keeps these; only the example is committed)
+scripts/data/menu-import.csv
+scripts/data/menu-export.csv

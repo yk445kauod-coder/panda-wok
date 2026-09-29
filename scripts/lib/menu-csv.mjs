@@ -17,6 +17,22 @@ export const slugify = (value) =>
 
 export const truthy = (v) => /^(1|true|yes|y|نعم|صح)$/i.test(String(v ?? "").trim());
 
+/** A money cell: blank stays null, otherwise a finite number (EGP, piastres ok). */
+export const toMoney = (v) => {
+  const s = String(v ?? "").trim();
+  if (s === "") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : Number.NaN;
+};
+
+/** An ordering cell: blank stays null, otherwise a non-negative integer. */
+export const toSort = (v) => {
+  const s = String(v ?? "").trim();
+  if (s === "") return null;
+  const n = Number(s);
+  return Number.isInteger(n) && n >= 0 ? n : null;
+};
+
 const norm = (s) => String(s ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "");
 
 /** Minimal RFC-4180 CSV: quoted fields, embedded commas and doubled quotes. */
@@ -83,10 +99,16 @@ export function toRecords(text) {
     description_en: cell(row, "description_en"),
     description_ar: cell(row, "description_ar"),
     price: cell(row, "price"),
+    compare_at_price: cell(row, "compare_at_price"),
     item_slug: cell(row, "item_slug"),
     external_id: cell(row, "external_id"),
     image_url: cell(row, "image_url"),
     is_spicy: cell(row, "is_spicy"),
+    is_featured: cell(row, "is_featured"),
+    is_vegetarian: cell(row, "is_vegetarian"),
+    is_vegan: cell(row, "is_vegan"),
+    category_sort: cell(row, "category_sort"),
+    item_sort: cell(row, "item_sort"),
   }));
 }
 
@@ -97,7 +119,7 @@ export function toRecords(text) {
  */
 export function buildPlan(records) {
   const problems = [];
-  const categories = new Map(); // slug -> { slug, name_en, name_ar, items: [] }
+  const categories = new Map(); // slug -> { slug, name_en, name_ar, sort_order, items: [] }
 
   for (const r of records) {
     if (!r.item_en) {
@@ -114,17 +136,35 @@ export function buildPlan(records) {
         slug: catSlug,
         name_en: r.category_en ?? catSlug,
         name_ar: r.category_ar,
+        sort_order: toSort(r.category_sort),
         items: [],
       });
     }
     const cat = categories.get(catSlug);
     if (!cat.name_ar && r.category_ar) cat.name_ar = r.category_ar;
+    if (cat.sort_order == null && r.category_sort != null) cat.sort_order = toSort(r.category_sort);
 
-    const price = r.price == null ? null : Number(r.price);
-    if (price != null && (!Number.isFinite(price) || price < 0)) {
+    const price = toMoney(r.price);
+    if (price != null && !Number.isFinite(price)) {
       problems.push(`line ${r.line}: bad price "${r.price}"`);
       continue;
     }
+    if (price != null && price < 0) {
+      problems.push(`line ${r.line}: price cannot be negative ("${r.price}")`);
+      continue;
+    }
+    const compareAt = toMoney(r.compare_at_price);
+    if (compareAt != null && !Number.isFinite(compareAt)) {
+      problems.push(`line ${r.line}: bad compare_at_price "${r.compare_at_price}"`);
+      continue;
+    }
+    if (compareAt != null && price != null && compareAt < price) {
+      problems.push(
+        `line ${r.line}: compare_at_price ${compareAt} is below the selling price ${price}`,
+      );
+      continue;
+    }
+
     cat.items.push({
       line: r.line,
       slug: r.item_slug ? slugify(r.item_slug) : slugify(r.item_en),
@@ -134,8 +174,13 @@ export function buildPlan(records) {
       description_en: r.description_en,
       description_ar: r.description_ar,
       price,
+      compare_at_price: compareAt,
       image_url: r.image_url,
       is_spicy: truthy(r.is_spicy),
+      is_featured: truthy(r.is_featured),
+      is_vegetarian: truthy(r.is_vegetarian),
+      is_vegan: truthy(r.is_vegan),
+      sort_order: toSort(r.item_sort),
     });
   }
 
@@ -184,6 +229,12 @@ export function diffPlan({ categories, liveCats, liveItems }) {
       if (it.price != null && Number(match.price) !== it.price) {
         changes.push(`price ${match.price} -> ${it.price}`);
       }
+      if (
+        it.compare_at_price != null &&
+        toMoney(match.compare_at_price) !== it.compare_at_price
+      ) {
+        changes.push("compare_at_price updated");
+      }
       if (it.name_en && it.name_en !== match.name_en) {
         changes.push(`name_en "${match.name_en}" -> "${it.name_en}"`);
       }
@@ -196,6 +247,16 @@ export function diffPlan({ categories, liveCats, liveItems }) {
       }
       if (it.image_url && it.image_url !== match.image_url) changes.push("image_url updated");
       if (it.is_spicy && it.is_spicy !== match.is_spicy) changes.push("is_spicy -> true");
+      if (it.is_featured && it.is_featured !== match.is_featured) {
+        changes.push("is_featured -> true");
+      }
+      if (it.is_vegetarian && it.is_vegetarian !== match.is_vegetarian) {
+        changes.push("is_vegetarian -> true");
+      }
+      if (it.is_vegan && it.is_vegan !== match.is_vegan) changes.push("is_vegan -> true");
+      if (it.sort_order != null && it.sort_order !== match.sort_order) {
+        changes.push(`sort_order ${match.sort_order} -> ${it.sort_order}`);
+      }
       if (liveCat && match.category_id !== liveCat.id) changes.push("moved category");
       if (changes.length) updates.push({ match, cat, item: it, changes });
       else unchanged.push({ match, item: it });

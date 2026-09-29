@@ -64,8 +64,67 @@ describe("buildPlan", () => {
   });
 
   it("rejects a non-numeric or negative price", () => {
-    const { problems } = buildPlan(toRecords(`${HEADER}\nAppetizers,,,Dish,,,,-5,,,,`));
-    expect(problems.join(" ")).toMatch(/bad price/);
+    expect(buildPlan(toRecords(`${HEADER}\nAppetizers,,,Dish,,,,abc,,,,`)).problems.join(" ")).toMatch(
+      /bad price/,
+    );
+    expect(buildPlan(toRecords(`${HEADER}\nAppetizers,,,Dish,,,,-5,,,,,`)).problems.join(" ")).toMatch(
+      /cannot be negative/,
+    );
+  });
+
+  it("rejects a compare_at_price below the selling price", () => {
+    const cols = HEADER.split(",").concat(["compare_at_price"]);
+    const row = cols.map((c) => {
+      if (c === "category_en") return "Appetizers";
+      if (c === "item_en") return "Dish";
+      if (c === "price") return "100";
+      if (c === "compare_at_price") return "-1";
+      return "";
+    });
+    const { problems } = buildPlan(toRecords(`${cols.join(",")}\n${row.join(",")}`));
+    expect(problems.join(" ")).toMatch(/compare_at_price/);
+  });
+
+  it("carries the new flags and ordering columns through", () => {
+    const cols = HEADER.split(",").concat([
+      "compare_at_price",
+      "is_featured",
+      "is_vegetarian",
+      "is_vegan",
+      "category_sort",
+      "item_sort",
+    ]);
+    const row = cols.map((c) => {
+      switch (c) {
+        case "category_en":
+          return "Appetizers";
+        case "category_ar":
+          return "المقبلات";
+        case "item_en":
+          return "Dish";
+        case "price":
+          return "90";
+        case "compare_at_price":
+          return "120";
+        case "is_featured":
+        case "is_vegetarian":
+          return "1";
+        case "category_sort":
+          return "2";
+        case "item_sort":
+          return "5";
+        default:
+          return "";
+      }
+    });
+    const { categories } = buildPlan(toRecords(`${cols.join(",")}\n${row.join(",")}`));
+    const item = categories.get("appetizers").items[0];
+    expect(item.compare_at_price).toBe(120);
+    expect(item.is_featured).toBe(true);
+    expect(item.is_vegetarian).toBe(true);
+    expect(item.is_vegan).toBe(false);
+    expect(item.sort_order).toBe(5);
+    expect(categories.get("appetizers").sort_order).toBe(2);
   });
 
   it("flags two rows that resolve to the same key", () => {
