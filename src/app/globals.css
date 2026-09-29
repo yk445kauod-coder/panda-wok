@@ -835,18 +835,79 @@
       /* protects the lower copy where the photo's highlights are */
       linear-gradient(
         to bottom,
-        transparent 34%,
-        color-mix(in oklab, var(--color-ink-950) 52%, transparent) 100%
+        transparent 22%,
+        color-mix(in oklab, var(--color-ink-950) 46%, transparent) 56%,
+        color-mix(in oklab, var(--color-ink-950) 58%, transparent) 100%
       ),
       linear-gradient(
         165deg,
-        color-mix(in oklab, var(--color-ink-950) 68%, transparent) 0%,
-        color-mix(in oklab, var(--color-ink-950) 54%, transparent) 50%,
-        color-mix(in oklab, var(--color-ink-900) 40%, transparent) 100%
+        color-mix(in oklab, var(--color-ink-950) 62%, transparent) 0%,
+        color-mix(in oklab, var(--color-ink-950) 48%, transparent) 50%,
+        color-mix(in oklab, var(--color-ink-900) 32%, transparent) 100%
       );
   }
 
-  @media (min-width: 1024px) {
+  /* Tablets keep the one-column hero but crop the photo onto a brighter
+     highlight than either the phone or the desktop crop, so the wash has to be
+     heavier here than at either. Measured, not guessed: the headline's worst
+     pixel is 2.5:1 with the phone wash and 4.6:1 with this one. */
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .hero-wash {
+      background-image:
+        linear-gradient(
+          to bottom,
+          transparent 14%,
+          color-mix(in oklab, var(--color-ink-950) 56%, transparent) 42%,
+          color-mix(in oklab, var(--color-ink-950) 62%, transparent) 72%,
+          color-mix(in oklab, var(--color-ink-950) 66%, transparent) 100%
+        ),
+        linear-gradient(
+          165deg,
+          color-mix(in oklab, var(--color-ink-950) 72%, transparent) 0%,
+          color-mix(in oklab, var(--color-ink-950) 60%, transparent) 50%,
+          color-mix(in oklab, var(--color-ink-900) 48%, transparent) 100%
+        );
+    }
+  }
+
+  /* Narrow desktop: the copy column is a bigger share of the width, so the
+     bright spot still falls inside it. Keep the wash fairly closed until there
+     is enough room for the photo to breathe on the right. */
+  @media (min-width: 1024px) and (max-width: 1535px) {
+    .hero-wash {
+      background-image:
+        linear-gradient(
+          to bottom,
+          transparent 30%,
+          color-mix(in oklab, var(--color-ink-950) 46%, transparent) 62%,
+          color-mix(in oklab, var(--color-ink-950) 54%, transparent) 100%
+        ),
+        linear-gradient(
+          100deg,
+          color-mix(in oklab, var(--color-ink-950) 70%, transparent) 0%,
+          color-mix(in oklab, var(--color-ink-950) 58%, transparent) 46%,
+          color-mix(in oklab, var(--color-ink-900) 44%, transparent) 100%
+        );
+    }
+
+    [dir="rtl"] .hero-wash {
+      background-image:
+        linear-gradient(
+          to bottom,
+          transparent 30%,
+          color-mix(in oklab, var(--color-ink-950) 46%, transparent) 62%,
+          color-mix(in oklab, var(--color-ink-950) 54%, transparent) 100%
+        ),
+        linear-gradient(
+          260deg,
+          color-mix(in oklab, var(--color-ink-950) 70%, transparent) 0%,
+          color-mix(in oklab, var(--color-ink-950) 58%, transparent) 46%,
+          color-mix(in oklab, var(--color-ink-900) 44%, transparent) 100%
+        );
+    }
+  }
+
+  @media (min-width: 1536px) {
     /* At lg the hero splits into two columns and the copy takes the left ~55%,
        so the wash opens towards the right where the photo's subject and the
        ringed plate sit, while the left column keeps the text legible. */
@@ -854,14 +915,15 @@
       background-image:
         linear-gradient(
           to bottom,
-          transparent 34%,
-          color-mix(in oklab, var(--color-ink-950) 52%, transparent) 100%
+          transparent 28%,
+          color-mix(in oklab, var(--color-ink-950) 50%, transparent) 60%,
+          color-mix(in oklab, var(--color-ink-950) 56%, transparent) 100%
         ),
         linear-gradient(
           100deg,
-          color-mix(in oklab, var(--color-ink-950) 70%, transparent) 0%,
-          color-mix(in oklab, var(--color-ink-950) 44%, transparent) 46%,
-          color-mix(in oklab, var(--color-ink-900) 12%, transparent) 100%
+          color-mix(in oklab, var(--color-ink-950) 62%, transparent) 0%,
+          color-mix(in oklab, var(--color-ink-950) 46%, transparent) 46%,
+          color-mix(in oklab, var(--color-ink-900) 20%, transparent) 100%
         );
     }
 
@@ -871,14 +933,14 @@
       background-image:
         linear-gradient(
           to bottom,
-          transparent 34%,
-          color-mix(in oklab, var(--color-ink-950) 52%, transparent) 100%
+          transparent 46%,
+          color-mix(in oklab, var(--color-ink-950) 36%, transparent) 100%
         ),
         linear-gradient(
           260deg,
-          color-mix(in oklab, var(--color-ink-950) 70%, transparent) 0%,
-          color-mix(in oklab, var(--color-ink-950) 44%, transparent) 46%,
-          color-mix(in oklab, var(--color-ink-900) 12%, transparent) 100%
+          color-mix(in oklab, var(--color-ink-950) 54%, transparent) 0%,
+          color-mix(in oklab, var(--color-ink-950) 30%, transparent) 46%,
+          color-mix(in oklab, var(--color-ink-900) 8%, transparent) 100%
         );
     }
   }
