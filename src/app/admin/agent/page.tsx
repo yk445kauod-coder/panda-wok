@@ -20,6 +20,8 @@ import {
   getDeliverableDownloadUrls,
   listDeliverables,
 } from "@/lib/agent/deliverables";
+import { listArtifactComments } from "@/lib/agent/library";
+import { listAgentMemory } from "@/lib/agent/memory";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDateTime, humanise } from "@/lib/utils/format";
@@ -48,6 +50,8 @@ export default async function AdminAgentPage() {
     getAgentBaseUrl(),
   ]);
 
+  const memories = await listAgentMemory(30);
+
   const deliverables = await listDeliverables(30);
   const readyPaths = deliverables
     .filter((d) => d.status === "ready" && d.storage_path)
@@ -59,6 +63,9 @@ export default async function AdminAgentPage() {
     const url = d.storage_path ? urlsByPath[d.storage_path] : undefined;
     if (url) downloadUrls[d.id] = url;
   }
+
+  // The team library: everyone who can read a document can also discuss it.
+  const commentThreads = await listArtifactComments(deliverables.map((d) => d.id));
 
   const deliverableOptions: DeliverableOption[] = [
     { kind: "daily_sales", label: "Daily sales sheet", description: "Today's orders, revenue, average order and top dishes." },
@@ -87,6 +94,7 @@ export default async function AdminAgentPage() {
     row_count: d.row_count,
     error: d.error,
     created_at: d.created_at,
+    reuse_count: d.reuse_count,
   }));
 
   const pending = actions.filter((a) => a.status === "proposed");
@@ -94,7 +102,6 @@ export default async function AdminAgentPage() {
   const decided = actions.filter((a) => a.status !== "proposed" && a.status !== "approved");
   const lastRun = runs[0];
   const lastReport = (lastRun?.report ?? {}) as ReportShape;
-
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -123,12 +130,18 @@ export default async function AdminAgentPage() {
         }}
       />
 
-      <AgentSkillsPanel skills={skills} memoryCount={memoryCount} baseUrl={baseUrl} />
+      <AgentSkillsPanel
+        skills={skills}
+        memoryCount={memoryCount}
+        baseUrl={baseUrl}
+        memories={memories}
+      />
 
       <AgentDeliverables
         options={deliverableOptions}
         artifacts={deliverableRows}
         downloadUrls={downloadUrls}
+        comments={commentThreads}
       />
 
       <section className="washi-panel p-4" aria-label="Approval queue">

@@ -827,7 +827,21 @@ function envBlock(kind: AiProviderKind, suffix: "MODEL" | "BASE_URL" | "API_KEY"
  * for keys provisioned at deploy time. Never returns anything to the client.
  */
 export async function resolveSecretValue(secretRef: string): Promise<string | undefined> {
-  const fromEnv = (serverEnv as Record<string, string | undefined>)[secretRef];
+  return resolveSecretValueWithEnv(secretRef, serverEnv);
+}
+
+/**
+ * Same resolution, but against an explicit environment object. Needed because
+ * `serverEnv` is a *validated* subset: it does not carry the Workers AI account
+ * id/token pair (`AI_CLOUDFLARE_ACCOUNT_ID` / `AI_CLOUDFLARE_API_TOKEN`), which
+ * are not in the schema but may be set in the runtime env. Reading `process.env`
+ * directly is what lets the embeddings path authenticate outside a Worker.
+ */
+export async function resolveSecretValueWithEnv(
+  secretRef: string,
+  env: Record<string, string | undefined>,
+): Promise<string | undefined> {
+  const fromEnv = env[secretRef];
   if (fromEnv) return fromEnv;
 
   const admin = tryCreateAdminSupabase();

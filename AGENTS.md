@@ -2359,3 +2359,91 @@ status and total); stock -> `stock_inventory`; users -> `users_summary`
 Note: one run returned an empty model turn ("no result written") — the model
 emitted no tool call, not a wiring fault. The prompt fix above addresses the
 cause; the loop's empty-turn fallback is unchanged.
+
+## Vector memory, skill index and the team document library (2026-09-30)
+
+The brief was "give the ops agent strong short- and long-term vector memory, and
+let it do hard work — detailed reports and a deck". The agent could already do
+the work; what was broken was the memory layer, and most of it was *silently*
+broken in the same way as the earlier reachability and `security_invoker` bugs.
+
+### Long-term memory was write-only, and 5 of its rows were unreadable
+`agent_memory` (pgvector + HNSW) held rows, but the interactive chat never wrote
+one — only `ops-agent.ts` did. Worse, **5 of the 6 live rows had `embedding is
+null`**, so vector search could never return them. The chat *read* memory (3
+recalled rows) and produced confident answers while learning nothing.
+
+Three repairs, all live-verified:
+
+1. **Embedding secret resolution.** `embeddings.ts` read the Cloudflare account
+   id / token from a partial env view and found nothing, so every embed returned
+   `null` and the write fell back to storing a row with no vector.
+   `resolveSecretValue` / `resolveSecretValueWithEnv` are now exported from
+   `src/lib/ai/provider.ts` and used here, so the CF REST call resolves the same
+   way the provider chain does. Verified: CF REST embeddings HTTP 200, **dims
+   1024**.
+2. **Lexical fallback + dedupe + backfill.** When no embedding service is
+   reachable, `recall` ranks by `lexicalSimilarity` (Arabic-diacritic-normalised)
+   instead of returning nothing; `remember` suppresses an exact-normalised
+   duplicate; `backfillMemoryEmbeddings()` repairs rows that predate a working
+   embedder. Verified: backfill embedded **5** rows; a new `remember` stored
+   `has_embedding = true`; `recall` returned it at **0.676**; a duplicate write
+   returned `null` (suppressed).
+3. **Auto-capture from chat.** `extractMemoryCandidates` only fires on an
+   explicit instruction (`افتكر` / `remember` / `خد بالك` / …) and strips the
+   instruction so the memory reads as the fact. A bare `"remember"` is now
+   rejected (`MIN_FACT_CHARS`) — it used to store the word itself. Wired into the
+   `agent-chat` action, so a chat turn can teach the agent, not just query it.
+
+**Short-term memory:** long threads were truncated to the last 8 messages, so
+anything older vanished. `agent_threads.summary` / `summary_upto` (migration
+`20260930120000`) plus the rolling-summary compaction in
+`src/lib/services/agent-chat.ts` keep a summary of the turns that fell out of the
+verbatim window.
+
+### The skill index was genuinely empty — and re-seeding it is the fix
+`agent_skills` had **0 rows**, so `retrieveSkills` always returned nothing and
+the agent answered from the prompt alone. The sources are generated
+(`scripts/generate-repo-skills.mjs` → `repo-skills.generated.ts`) and synced by
+`syncSkillSources`. Live result: **repo:AGENTS.md 231 chunks, repo:skills.md 10
+chunks**, and a price-quoting query retrieved skills.md at 0.571 / 0.538 / 0.530.
+Re-index from Admin → AI ops → Skills & memory ("Re-index repo skills"), or the
+sync runs on every `prebuild`/`predev`.
+
+### The team library: comments and reuse on deliverables
+Owners/admins (`can_agent()`) could already see, export and download every
+document. What was missing was the conversation *about* a document and a record
+of reuse. Migration `20260930121000` adds `agent_artifact_comments` and
+`agent_artifacts.reuse_count` / `last_reused_at`; `src/lib/agent/library.ts`
+provides `listArtifactComments` / `addArtifactComment` / `markArtifactReused`
+(the last through the atomic definer RPC `mark_artifact_reused`). Visibility is
+unchanged — the library does not widen who can read a document, only lets the
+people who can read one discuss it.
+
+### The admin Skills & memory panel is now a real memory surface
+It showed a count and nothing else. It now lists the remembered rows
+(`listAgentMemory`) with their scope/kind, whether each is embedded, and a
+Remove button, plus an "Embed pending" button for the backfill. Rendered and
+checked live in **both locales** (`/admin/agent` 200 with a forged gate cookie):
+EN "Remembered / Embed pending / Reuse / Comment / No comments yet", AR
+"المستندات / تعليق / إعادة استخدام / لا توجد تعليقات / تنزيل" with `dir="rtl"`.
+
+### Two traps hit again
+1. **A `select` list is a contract.** `listDeliverables` did not select
+   `reuse_count`, so the page's new `reuse_count` read failed `tsc` — the good
+   direction. Add the column to the select, not a cast.
+2. **`createServerSupabase()` is async**; three `logAudit(createServerSupabase(), …)`
+   calls passed a Promise where a client was expected. The admin-only elevation
+   only works on the resolved client.
+
+`tests/agent-memory.test.ts` (9, no network) pins candidate extraction, the
+lexical ranking and `renderMemoryContext`. Full suite **331 passed / 7 skipped**,
+`tsc` clean, lint 0 errors (17 pre-existing `no-img-element` warnings),
+`next build` green.
+
+**Note:** the two new migration files are named `20260930120000_*` /
+`20260930121000_*` locally but were applied remotely as
+`agent_memory_readability` / `agent_document_library`. They are additive and
+idempotent (`add column if not exists`, `create table if not exists`,
+`create or replace function`), so re-applying is safe; the remote history was
+left as-is rather than renumbered.

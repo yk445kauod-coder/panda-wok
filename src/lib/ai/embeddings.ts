@@ -1,5 +1,5 @@
 import "server-only";
-import { getWorkersAiBinding } from "@/lib/ai/provider";
+import { getWorkersAiBinding, resolveSecretValueWithEnv } from "@/lib/ai/provider";
 import { serverEnv } from "@/lib/config/env";
 
 /**
@@ -54,6 +54,37 @@ async function embedViaBinding(binding: Binding, text: string): Promise<number[]
   }
 }
 
+/**
+ * The Workers AI REST path. It needs the account id and a token, which live in
+ * Vault (set from the admin AI centre) or the runtime env — but the account/token
+ * names are not in the validated `serverEnv` schema, so they are resolved against
+ * the raw `process.env` as well. That is what makes embeddings work in plain
+ * `next dev` and in a script, not only inside the Worker binding.
+ */
+async function embedViaCloudflareRest(text: string): Promise<number[] | null> {
+  const env = process.env as Record<string, string | undefined>;
+  const accountId = await resolveSecretValueWithEnv("AI_CLOUDFLARE_ACCOUNT_ID", env);
+  const token = await resolveSecretValueWithEnv("AI_CLOUDFLARE_API_TOKEN", env);
+  if (!accountId || !token) return null;
+
+  try {
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${EMBEDDING_MODEL}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text: [text] }),
+        // Embeddings are small and fast; a hung request must not stall a search.
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+    if (!response.ok) return null;
+    return parseEmbedding(await response.json());
+  } catch {
+    return null;
+  }
+}
+
 async function embedViaWorker(text: string): Promise<number[] | null> {
   const base = (serverEnv as Record<string, string | undefined>)["AI_CLOUDFLARE_BASE_URL"];
   const token = (serverEnv as Record<string, string | undefined>)["AI_CLOUDFLARE_API_KEY"];
@@ -87,6 +118,8 @@ export async function embedText(text: string): Promise<number[] | null> {
     const embedding = await embedViaBinding(binding.ai as Binding, clean);
     if (embedding) return embedding;
   }
+  const viaRest = await embedViaCloudflareRest(clean);
+  if (viaRest) return viaRest;
   return embedViaWorker(clean);
 }
 

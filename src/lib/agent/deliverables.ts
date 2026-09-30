@@ -853,7 +853,7 @@ export async function listDeliverables(limit = 30) {
   const admin = createAdminSupabase();
   const { data, error } = await admin
     .from("agent_artifacts")
-    .select("id, kind, title, summary, format, status, storage_path, bytes, row_count, error, created_at, completed_at")
+    .select("id, kind, title, summary, format, status, storage_path, bytes, row_count, error, created_at, completed_at, reuse_count")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(`Failed to load deliverables: ${error.message}`);

@@ -187,3 +187,82 @@ export async function recentAgentHistory(
     .reverse()
     .map((m) => ({ role: m.role as "user" | "assistant", content: m.body }));
 }
+
+/** Verbatim turns kept in context; older turns are condensed into the summary. */
+const RECENT_WINDOW = 12;
+/** How many new old-turns trigger a summary refresh (avoids rebuilding every turn). */
+const SUMMARY_REFRESH_AFTER = 4;
+/** Char budget for the rolling summary, so it can never crowd the prompt. */
+const SUMMARY_MAX_CHARS = 1600;
+
+/**
+ * Short-term memory for a thread that outgrows the recent window.
+ *
+ * A conversation used to be truncated to the last few messages, so a long
+ * working session silently forgot how it started. Here the newest `window` turns
+ * stay verbatim and everything older is folded into a rolling summary, which is
+ * injected as a system line. The summary is built from the operator's *own
+ * words* (the opening line of each older question), so it is a compaction of what
+ * was actually said rather than a model's paraphrase that could invent detail.
+ *
+ * Deterministic and cheap on purpose: summarising must not cost a model call on
+ * every turn, or the memory would slow the answer it exists to improve.
+ */
+export async function compactAgentHistory(
+  threadId: string,
+  opts: { window?: number } = {},
+): Promise<{ summary: string | null; history: { role: "user" | "assistant" | "system"; content: string }[] }> {
+  const admin = tryCreateAdminSupabase();
+  if (!admin) return { summary: null, history: [] };
+  const window = opts.window ?? RECENT_WINDOW;
+
+  const { data: thread } = await admin
+    .from("agent_threads")
+    .select("summary, summary_upto")
+    .eq("id", threadId)
+    .maybeSingle();
+
+  const { data } = await admin
+    .from("agent_messages")
+    .select("role, body, created_at")
+    .eq("thread_id", threadId)
+    .in("role", ["user", "assistant"])
+    .order("created_at", { ascending: true });
+
+  const all = data ?? [];
+  if (all.length <= window) {
+    return {
+      summary: thread?.summary ?? null,
+      history: all.map((m) => ({ role: m.role as "user" | "assistant", content: m.body })),
+    };
+  }
+
+  const recent = all.slice(-window);
+  const older = all.slice(0, -window);
+
+  // Only the old-turns that the stored summary does not already cover.
+  const cutoff = thread?.summary_upto ?? null;
+  const uncovered = cutoff ? older.filter((m) => m.created_at > cutoff) : older;
+
+  let summary = thread?.summary ?? null;
+  let summaryUpto = cutoff;
+
+  const shouldRefresh = !summary || uncovered.length >= SUMMARY_REFRESH_AFTER;
+  if (shouldRefresh && older.length > 0) {
+    const lines = older
+      .filter((m) => m.role === "user")
+      .map((m) => `- ${m.body.replace(/\s+/g, " ").slice(0, 140)}`);
+    const header = "ملخص المحادثة السابقة (كلام المستخدم نفسه):";
+    summary = `${header}\n${lines.join("\n")}`.slice(0, SUMMARY_MAX_CHARS);
+    summaryUpto = older[older.length - 1].created_at;
+    await admin
+      .from("agent_threads")
+      .update({ summary, summary_upto: summaryUpto })
+      .eq("id", threadId);
+  }
+
+  const history: { role: "user" | "assistant" | "system"; content: string }[] = [];
+  if (summary) history.push({ role: "system", content: summary });
+  for (const m of recent) history.push({ role: m.role as "user" | "assistant", content: m.body });
+  return { summary, history };
+}

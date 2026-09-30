@@ -25,7 +25,8 @@ import {
 } from "@/lib/agent/deliverables";
 import { REPO_SKILL_SOURCES } from "@/lib/agent/repo-skills.generated";
 import { importGithubSkills, syncSkillSources } from "@/lib/agent/skill-sources";
-import { remember } from "@/lib/agent/memory";
+import { remember, backfillMemoryEmbeddings, deleteAgentMemory } from "@/lib/agent/memory";
+import { addArtifactComment, markArtifactReused } from "@/lib/agent/library";
 
 /**
  * Server actions for the owner-facing ops agent.
@@ -425,4 +426,102 @@ export async function scheduleAgentCronAction(
 
   revalidatePath("/admin/agent");
   return actionOk();
+}
+
+/* ------------------------------------------------------ team document library */
+
+/** Adds a comment to a generated document. Owner/admin only (`ai.manage`). */
+export async function commentOnArtifactAction(
+  formData: FormData,
+): Promise<FormActionResult<{ id: string }>> {
+  const session = await assertCapability("ai.manage");
+
+  const artifactId = String(formData.get("artifactId") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
+  if (!artifactId) return actionFail("VALIDATION", "Missing document.");
+  if (!body) return actionFail("VALIDATION", "Write a comment first.");
+  if (body.length > 4000) return actionFail("VALIDATION", "That comment is too long.");
+
+  const id = await addArtifactComment({
+    artifactId,
+    body,
+    authorId: session.actorId,
+    authorLabel: session.profile?.full_name ?? session.role,
+  });
+  if (!id) return actionFail("NOT_FOUND", "That document no longer exists.");
+
+  revalidatePath("/admin/agent");
+  return actionOk({ id });
+}
+
+/** Marks a document as reused, so the library can surface what the team reuses. */
+export async function reuseArtifactAction(
+  formData: FormData,
+): Promise<FormActionResult<{ count: number }>> {
+  const session = await assertCapability("ai.manage");
+
+  const artifactId = String(formData.get("artifactId") ?? "").trim();
+  if (!artifactId) return actionFail("VALIDATION", "Missing document.");
+
+  try {
+    const count = await markArtifactReused(artifactId);
+    const supabase = await createServerSupabase();
+    await logAudit(supabase, {
+      actorId: session.actorId,
+      actorRole: session.role,
+      action: "ops_agent.artifact_reused",
+      entity: "agent_artifacts",
+      entityId: artifactId,
+      after: { count },
+    });
+    revalidatePath("/admin/agent");
+    return actionOk({ count });
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+/** Removes one stored memory. */
+export async function deleteMemoryAction(
+  formData: FormData,
+): Promise<FormActionResult<{ id: string }>> {
+  const session = await assertCapability("ai.manage");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return actionFail("VALIDATION", "Missing memory.");
+  const ok = await deleteAgentMemory(id);
+  if (!ok) return actionFail("NOT_FOUND", "That memory no longer exists.");
+
+  const supabase = await createServerSupabase();
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "ops_agent.memory_deleted",
+    entity: "agent_memory",
+    entityId: id,
+  });
+  revalidatePath("/admin/agent");
+  return actionOk({ id });
+}
+
+/**
+ * Re-embeds memories written while no embedding service was reachable, so they
+ * become vector-searchable instead of stored-but-unreadable.
+ */
+export async function backfillMemoryAction(): Promise<FormActionResult<{ updated: number }>> {
+  const session = await assertCapability("ai.manage");
+  try {
+    const updated = await backfillMemoryEmbeddings();
+    const supabase = await createServerSupabase();
+    await logAudit(supabase, {
+      actorId: session.actorId,
+      actorRole: session.role,
+      action: "ops_agent.memory_backfilled",
+      entity: "agent_memory",
+      after: { updated },
+    });
+    revalidatePath("/admin/agent");
+    return actionOk({ updated });
+  } catch (error) {
+    return actionError(error);
+  }
 }

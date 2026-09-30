@@ -129,6 +129,41 @@ export type Database = {
           },
         ]
       }
+      agent_artifact_comments: {
+        Row: {
+          artifact_id: string
+          author_id: string | null
+          author_label: string | null
+          body: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          artifact_id: string
+          author_id?: string | null
+          author_label?: string | null
+          body: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          artifact_id?: string
+          author_id?: string | null
+          author_label?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_artifact_comments_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "agent_artifacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_artifacts: {
         Row: {
           bytes: number | null
@@ -140,6 +175,8 @@ export type Database = {
           format: string
           id: string
           kind: string
+          last_reused_at: string | null
+          reuse_count: number
           row_count: number | null
           run_id: string | null
           status: string
@@ -157,6 +194,8 @@ export type Database = {
           format?: string
           id?: string
           kind: string
+          last_reused_at?: string | null
+          reuse_count?: number
           row_count?: number | null
           run_id?: string | null
           status?: string
@@ -174,6 +213,8 @@ export type Database = {
           format?: string
           id?: string
           kind?: string
+          last_reused_at?: string | null
+          reuse_count?: number
           row_count?: number | null
           run_id?: string | null
           status?: string
@@ -262,6 +303,7 @@ export type Database = {
           content: string
           created_at: string
           embedding: string | null
+          has_embedding: boolean | null
           id: string
           kind: string
           metadata: Json
@@ -272,6 +314,7 @@ export type Database = {
           content: string
           created_at?: string
           embedding?: string | null
+          has_embedding?: boolean | null
           id?: string
           kind?: string
           metadata?: Json
@@ -282,6 +325,7 @@ export type Database = {
           content?: string
           created_at?: string
           embedding?: string | null
+          has_embedding?: boolean | null
           id?: string
           kind?: string
           metadata?: Json
@@ -376,6 +420,8 @@ export type Database = {
           id: string
           owner_id: string | null
           owner_label: string | null
+          summary: string | null
+          summary_upto: string | null
           title: string
           updated_at: string
         }
@@ -384,6 +430,8 @@ export type Database = {
           id?: string
           owner_id?: string | null
           owner_label?: string | null
+          summary?: string | null
+          summary_upto?: string | null
           title?: string
           updated_at?: string
         }
@@ -392,6 +440,8 @@ export type Database = {
           id?: string
           owner_id?: string | null
           owner_label?: string | null
+          summary?: string | null
+          summary_upto?: string | null
           title?: string
           updated_at?: string
         }
@@ -3105,6 +3155,7 @@ export type Database = {
         Args: { p_audience?: string; p_user_id?: string }
         Returns: undefined
       }
+      mark_artifact_reused: { Args: { p_id: string }; Returns: number }
       mark_notification_read: {
         Args: { p_id: number; p_user_id?: string }
         Returns: undefined

@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { BookOpen, Download, RefreshCw, Sparkles } from "lucide-react";
 import {
+  backfillMemoryAction,
+  deleteMemoryAction,
   importGithubSkillsAction,
   rememberOwnerNoteAction,
   scheduleAgentCronAction,
@@ -10,6 +12,7 @@ import {
 } from "@/lib/actions/agent";
 import { Button, Badge } from "@/components/ui/button";
 import type { IndexedSkill } from "@/lib/services/agent";
+import type { MemoryRow } from "@/lib/agent/memory";
 import { formatDateTime, humanise } from "@/lib/utils/format";
 
 /**
@@ -27,16 +30,40 @@ export function AgentSkillsPanel({
   skills,
   memoryCount,
   baseUrl,
+  memories = [],
 }: {
   skills: IndexedSkill[];
   memoryCount: number;
   baseUrl: string;
+  memories?: MemoryRow[];
 }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [urls, setUrls] = useState("");
   const [note, setNote] = useState("");
   const [cronUrl, setCronUrl] = useState(baseUrl);
+
+  const runBackfill = () => {
+    setMessage(null);
+    startTransition(async () => {
+      const result = await backfillMemoryAction();
+      setMessage(
+        result.ok
+          ? `Embedded ${result.data.updated} memory row(s).`
+          : result.error.message,
+      );
+    });
+  };
+
+  const runDeleteMemory = (id: string) => {
+    setMessage(null);
+    const formData = new FormData();
+    formData.set("id", id);
+    startTransition(async () => {
+      const result = await deleteMemoryAction(formData);
+      setMessage(result.ok ? "Memory removed." : result.error.message);
+    });
+  };
 
   const runSync = () => {
     setMessage(null);
@@ -191,6 +218,59 @@ export function AgentSkillsPanel({
           Nothing indexed yet. Re-index the repo skills to get started.
         </p>
       )}
+
+      {/* Durable memory: what the agent will recall in later turns. */}
+      <div className="mt-5 border-t border-ink-900/10 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-ink-900">
+            Remembered ({memoryCount})
+          </h3>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-8 px-2 text-xs"
+            onClick={runBackfill}
+            disabled={pending}
+          >
+            <RefreshCw className="size-3.5" aria-hidden="true" />
+            Embed pending
+          </Button>
+        </div>
+        {memories.length === 0 ? (
+          <p className="mt-2 text-sm text-ink-700/70">
+            Nothing remembered yet. Save a lasting note above, or say
+            &ldquo;remember …&rdquo; in the agent chat.
+          </p>
+        ) : (
+          <ul className="mt-2 space-y-1.5">
+            {memories.map((memory) => (
+              <li
+                key={memory.id}
+                className="flex flex-wrap items-start justify-between gap-2 rounded-lg bg-rice-100/70 px-3 py-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-ink-800">{memory.content}</p>
+                  <p className="mt-0.5 text-[11px] text-ink-700/60">
+                    {memory.scope} · {memory.kind} · {formatDateTime(memory.createdAt)}
+                    {memory.hasEmbedding ? "" : " · not yet embedded"}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 px-2 text-xs text-chili-600"
+                  onClick={() => runDeleteMemory(memory.id)}
+                  disabled={pending}
+                >
+                  Remove
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }

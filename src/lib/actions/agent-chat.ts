@@ -7,11 +7,12 @@ import { actionError, actionOk, type FormActionResult } from "@/lib/actions/resu
 import { runAgentTurn, type AgentStep } from "@/lib/agent/conversation";
 import {
   appendAgentMessage,
+  compactAgentHistory,
   createAgentThread,
   deleteAgentThread,
-  recentAgentHistory,
   titleThreadFromFirstMessage,
 } from "@/lib/services/agent-chat";
+import { captureTurnMemory } from "@/lib/agent/memory";
 import { logAudit } from "@/lib/activity/log";
 import { createAdminSupabase } from "@/lib/supabase/server";
 
@@ -52,7 +53,10 @@ export async function askAgentAction(formData: FormData): Promise<FormActionResu
     await appendAgentMessage({ threadId: activeThread, role: "user", body: message });
     await titleThreadFromFirstMessage(activeThread, message);
 
-    const history = await recentAgentHistory(activeThread, 8);
+    // Short-term memory: the recent turns verbatim, older turns folded into a
+    // rolling summary so a long session keeps its thread. Long-term memory is
+    // written after the answer, from what the operator explicitly asked to keep.
+    const { history } = await compactAgentHistory(activeThread);
     const result = await runAgentTurn({
       question: message,
       history,
@@ -60,6 +64,13 @@ export async function askAgentAction(formData: FormData): Promise<FormActionResu
       actorName: session.profile?.full_name ?? session.role,
       confirmWrites: !autoApply,
     });
+
+    // Best-effort durable memory: never fail the answer over a memory write.
+    const saved = await captureTurnMemory({
+      question: message,
+      answer: result.answer,
+      actorId: ownerId,
+    }).catch(() => 0);
 
     await appendAgentMessage({
       threadId: activeThread,
@@ -80,6 +91,7 @@ export async function askAgentAction(formData: FormData): Promise<FormActionResu
         tools: result.steps.map((s) => s.tool),
         pending: result.pendingApproval.length,
         provider: result.provider,
+        memoriesSaved: saved,
       },
     });
 
