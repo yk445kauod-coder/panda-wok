@@ -72,8 +72,19 @@ describe("markdown parsing", () => {
     expect(table.rows).toEqual([["combo", "6", "2040.00 EGP"]]);
   });
 
-  it("strips inline emphasis", () => {
+  it("keeps inline emphasis in the parsed block, for the chat renderer", () => {
     const bullet = parseMarkdown(MD).find((b) => b.type === "bullets");
+    if (bullet?.type !== "bullets") throw new Error("no bullets");
+    // The parser is shared with the chat renderer, which turns `**x**` into a
+    // <strong>; stripping here would lose the emphasis in the browser.
+    expect(bullet.items[0]).toBe("**الإيرادات**: 4,250.00 EGP");
+  });
+
+  it("strips inline emphasis for the binary exporters", () => {
+    // The PDF/Word/Excel writers draw their own emphasis, so they must receive
+    // plain text — otherwise a literal `**` prints in the document.
+    const blocks = toPdfBlocks(MD, "تقرير مبيعات");
+    const bullet = blocks.find((b) => b.type === "bullets");
     if (bullet?.type !== "bullets") throw new Error("no bullets");
     expect(bullet.items[0]).toBe("الإيرادات: 4,250.00 EGP");
   });

@@ -39,6 +39,15 @@ describe("assistant markdown renderer", () => {
     expect(html("[Menu](/menu)")).toContain('href="/menu"');
   });
 
+  it("renders a markdown table as a real table, not a wall of pipes", () => {
+    const out = html("| الصنف | الإيراد |\n| --- | --- |\n| combo | 2040.00 EGP |");
+    expect(out).toContain("<table");
+    expect(out).toContain("<th");
+    expect(out).toContain("<td");
+    expect(out).toContain("combo");
+    expect(out).not.toContain("| --- |");
+  });
+
   it("renders unterminated emphasis as literal text", () => {
     const out = html("**unclosed bold");
     expect(out).toContain("**unclosed bold");

@@ -3,6 +3,7 @@ import "server-only";
 import { buildDocx, type DocBlock } from "@/lib/agent/docx";
 import { buildPdf, type PdfBlock } from "@/lib/agent/pdf";
 import { buildWorkbook, type Sheet } from "@/lib/agent/xlsx";
+import { parseMarkdown, plainText, type MdBlock } from "@/lib/markdown";
 
 /**
  * Converts a rendered markdown deliverable into the binary office formats.
@@ -13,117 +14,17 @@ import { buildWorkbook, type Sheet } from "@/lib/agent/xlsx";
  * over as a PDF, an Excel workbook or a Word document without the numbers
  * taking a second path through the database.
  *
- * The markdown is produced by this codebase, so its shape is known: `#`/`##`
- * headings, `| … |` tables, `-` bullets, `1.` numbered steps, and paragraphs.
+ * The parse itself lives in `@/lib/markdown`, shared with the chat renderer, so
+ * a table reads the same in the browser as it does in the PDF of the same
+ * answer. This module only adds the binary writers.
  */
 
-export type DocBlockIR =
-  | { type: "heading"; text: string; level: 1 | 2 | 3 }
-  | { type: "paragraph"; text: string }
-  | { type: "bullets"; items: string[] }
-  | { type: "numbers"; items: string[] }
-  | { type: "table"; headers: string[]; rows: string[][] }
-  | { type: "note"; text: string };
+export type DocBlockIR = MdBlock;
 
-/** Splits a markdown table row into cells, dropping the outer pipes. */
-function cells(line: string): string[] {
-  const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
-  return trimmed.split("|").map((c) => c.trim());
-}
+/** Strips inline markdown to plain text, for the binary exporters. */
+const plain = plainText;
 
-const isSeparator = (line: string) => /^\|?[\s:|-]+\|?$/.test(line) && line.includes("-");
-
-/** Strips the inline markdown this codebase emits (`**bold**`, `_note_`). */
-function plain(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "$1")
-    .replace(/`(.+?)`/g, "$1")
-    .trim();
-}
-
-export function parseMarkdown(markdown: string): DocBlockIR[] {
-  const lines = markdown.split("\n");
-  const blocks: DocBlockIR[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    if (!line.trim()) {
-      i += 1;
-      continue;
-    }
-
-    const heading = /^(#{1,3})\s+(.*)$/.exec(line);
-    if (heading) {
-      blocks.push({
-        type: "heading",
-        text: plain(heading[2]),
-        level: heading[1].length as 1 | 2 | 3,
-      });
-      i += 1;
-      continue;
-    }
-
-    // A table is a header row, a separator, then body rows.
-    if (line.trim().startsWith("|") && i + 1 < lines.length && isSeparator(lines[i + 1])) {
-      const headers = cells(line);
-      i += 2;
-      const rows: string[][] = [];
-      while (i < lines.length && lines[i].trim().startsWith("|")) {
-        rows.push(cells(lines[i]));
-        i += 1;
-      }
-      blocks.push({ type: "table", headers, rows });
-      continue;
-    }
-
-    if (/^[-*]\s+/.test(line.trim())) {
-      const items: string[] = [];
-      while (i < lines.length && /^[-*]\s+/.test(lines[i].trim())) {
-        items.push(plain(lines[i].trim().replace(/^[-*]\s+/, "")));
-        i += 1;
-      }
-      blocks.push({ type: "bullets", items });
-      continue;
-    }
-
-    if (/^\d+[.)]\s+/.test(line.trim())) {
-      const items: string[] = [];
-      while (i < lines.length && /^\d+[.)]\s+/.test(lines[i].trim())) {
-        items.push(plain(lines[i].trim().replace(/^\d+[.)]\s+/, "")));
-        i += 1;
-      }
-      blocks.push({ type: "numbers", items });
-      continue;
-    }
-
-    // A line that is entirely italic is treated as a note.
-    const note = /^_(.+)_$/.exec(line.trim());
-    if (note) {
-      blocks.push({ type: "note", text: plain(note[1]) });
-      i += 1;
-      continue;
-    }
-
-    // Otherwise gather the paragraph up to the next blank line or block.
-    const para: string[] = [];
-    while (
-      i < lines.length &&
-      lines[i].trim() &&
-      !/^(#{1,3})\s/.test(lines[i]) &&
-      !lines[i].trim().startsWith("|") &&
-      !/^[-*]\s+/.test(lines[i].trim()) &&
-      !/^\d+[.)]\s+/.test(lines[i].trim())
-    ) {
-      para.push(lines[i].trim());
-      i += 1;
-    }
-    if (para.length > 0) blocks.push({ type: "paragraph", text: plain(para.join(" ")) });
-  }
-
-  return blocks;
-}
+export { parseMarkdown };
 
 /** Markdown -> PDF blocks, promoting the first heading to the document title. */
 export function toPdfBlocks(markdown: string, title: string): PdfBlock[] {
@@ -135,22 +36,26 @@ export function toPdfBlocks(markdown: string, title: string): PdfBlock[] {
     if (index === 0 && block.type === "heading" && block.level === 1) return;
     switch (block.type) {
       case "heading":
-        out.push({ type: "heading", text: block.text, level: block.level });
+        out.push({ type: "heading", text: plain(block.text), level: block.level });
         break;
       case "paragraph":
-        out.push({ type: "paragraph", text: block.text });
+        out.push({ type: "paragraph", text: plain(block.text) });
         break;
       case "bullets":
-        out.push({ type: "bullets", items: block.items });
+        out.push({ type: "bullets", items: block.items.map(plain) });
         break;
       case "numbers":
-        out.push({ type: "numbers", items: block.items });
+        out.push({ type: "numbers", items: block.items.map(plain) });
         break;
       case "table":
-        out.push({ type: "table", headers: block.headers, rows: block.rows });
+        out.push({
+          type: "table",
+          headers: block.headers.map(plain),
+          rows: block.rows.map((row) => row.map(plain)),
+        });
         break;
       case "note":
-        out.push({ type: "note", text: block.text });
+        out.push({ type: "note", text: plain(block.text) });
         break;
     }
   });
@@ -163,17 +68,21 @@ export function toDocBlocks(markdown: string): DocBlock[] {
   return blocks.map((block): DocBlock => {
     switch (block.type) {
       case "heading":
-        return { type: "heading", text: block.text, level: block.level };
+        return { type: "heading", text: plain(block.text), level: block.level };
       case "bullets":
-        return { type: "bullets", items: block.items };
+        return { type: "bullets", items: block.items.map(plain) };
       case "numbers":
-        return { type: "numbers", items: block.items };
+        return { type: "numbers", items: block.items.map(plain) };
       case "table":
-        return { type: "table", headers: block.headers, rows: block.rows };
+        return {
+          type: "table",
+          headers: block.headers.map(plain),
+          rows: block.rows.map((row) => row.map(plain)),
+        };
       case "note":
-        return { type: "note", text: block.text };
+        return { type: "note", text: plain(block.text) };
       default:
-        return { type: "paragraph", text: block.text };
+        return { type: "paragraph", text: plain(block.text) };
     }
   });
 }
@@ -196,11 +105,11 @@ export function toSheets(markdown: string, title: string): Sheet[] {
 
   const prose: Sheet["rows"] = [];
   for (const block of blocks) {
-    if (block.type === "heading") prose.push([block.text]);
-    else if (block.type === "paragraph") prose.push([block.text]);
+    if (block.type === "heading") prose.push([plain(block.text)]);
+    else if (block.type === "paragraph") prose.push([plain(block.text)]);
     else if (block.type === "bullets" || block.type === "numbers") {
-      for (const item of block.items) prose.push([`• ${item}`]);
-    } else if (block.type === "note") prose.push([block.text]);
+      for (const item of block.items) prose.push([`• ${plain(item)}`]);
+    } else if (block.type === "note") prose.push([plain(block.text)]);
   }
   if (prose.length > 0) {
     sheets.push({ name: "Report", rows: [[title], [], ...prose], widths: [80] });
@@ -208,17 +117,21 @@ export function toSheets(markdown: string, title: string): Sheet[] {
 
   const tables = blocks.filter((b): b is Extract<DocBlockIR, { type: "table" }> => b.type === "table");
   tables.forEach((table, index) => {
+    // Inline markup is stripped before numeric detection, so `**4,250**` still
+    // lands in the spreadsheet as a number rather than a bold-looking string.
+    const headers = table.headers.map(plain);
+    const body = table.rows.map((row) => row.map(plain));
     // Numeric columns are detected from the data so money lands as money and
     // can be summed, rather than arriving as text in a spreadsheet.
     const moneyColumns: number[] = [];
-    table.headers.forEach((_, c) => {
-      const values = table.rows.map((r) => r[c] ?? "").filter(Boolean);
+    headers.forEach((_, c) => {
+      const values = body.map((r) => r[c] ?? "").filter(Boolean);
       if (values.length > 0 && values.every((v) => asNumber(v) !== null)) moneyColumns.push(c);
     });
 
     const rows: Sheet["rows"] = [
-      table.headers,
-      ...table.rows.map((row) =>
+      headers,
+      ...body.map((row) =>
         row.map((cell) => {
           const n = asNumber(cell);
           return n !== null ? n : cell;
@@ -226,7 +139,7 @@ export function toSheets(markdown: string, title: string): Sheet[] {
       ),
     ];
     sheets.push({
-      name: table.headers[0]?.slice(0, 28) || `Table ${index + 1}`,
+      name: headers[0]?.slice(0, 28) || `Table ${index + 1}`,
       rows,
       moneyColumns,
       freezeHeader: true,
@@ -243,7 +156,9 @@ export function toCsv(markdown: string): string {
   if (!table || table.type !== "table") return "";
   const escape = (value: string) =>
     /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-  return [table.headers, ...table.rows].map((row) => row.map(escape).join(",")).join("\n");
+  return [table.headers, ...table.rows]
+    .map((row) => row.map((cell) => escape(plain(cell))).join(","))
+    .join("\n");
 }
 
 /** Builds the binary body for an office format. */

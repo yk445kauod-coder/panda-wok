@@ -19,6 +19,7 @@ import { callMcpTool, discoverMcpTools } from "@/lib/agent/mcp";
 import { recall, renderMemoryContext } from "@/lib/agent/memory";
 import { retrieveSkills, renderSkillContext } from "@/lib/agent/skills";
 import { FABRICATION_NOTICE, findUngroundedFigures } from "@/lib/agent/grounding";
+import { withRequestScope } from "@/lib/request-scope";
 
 /**
  * The conversational agent loop.
@@ -193,6 +194,13 @@ async function nextTurn(
  * can render a real activity log beside the answer.
  */
 export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResult> {
+  // One turn is one subrequest budget. The document tools re-query the whole
+  // dashboard, so without a shared scope a multi-document turn overruns the
+  // Worker's per-invocation cap and dies mid-render.
+  return withRequestScope(() => runAgentTurnInner(input));
+}
+
+async function runAgentTurnInner(input: AgentTurnInput): Promise<AgentTurnResult> {
   const maxSteps = Math.min(Math.max(input.maxSteps ?? 6, 1), 12);
   const confirmWrites = input.confirmWrites ?? true;
 

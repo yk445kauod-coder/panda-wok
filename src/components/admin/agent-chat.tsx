@@ -5,6 +5,7 @@ import { Bot, Loader2, Send, Sparkles, User, Wrench } from "lucide-react";
 import { askAgentAction, type AgentChatResult } from "@/lib/actions/agent-chat";
 import type { AgentStep } from "@/lib/agent/conversation";
 import { useT } from "@/components/i18n-provider";
+import { Markdown } from "@/components/ui/markdown";
 import { cn } from "@/lib/utils/format";
 
 /**
@@ -192,13 +193,13 @@ function TurnBubble({ turn }: { turn: ChatTurn }) {
       <div className={cn("max-w-[85%] space-y-2", isUser ? "items-end" : "")}>
         <div
           className={cn(
-            "whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm",
+            "rounded-2xl px-4 py-2.5 text-sm",
             isUser
-              ? "bg-vermilion-600 text-rice-50"
+              ? "whitespace-pre-wrap bg-vermilion-600 text-rice-50"
               : "border border-ink-900/10 bg-rice-50 text-ink-900",
           )}
         >
-          {turn.body}
+          {isUser ? turn.body : <Markdown>{turn.body}</Markdown>}
         </div>
         {turn.steps.length > 0 ? <StepLog steps={turn.steps} /> : null}
       </div>

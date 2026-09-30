@@ -9,6 +9,7 @@ import {
   type CompletionRequest,
 } from "@/lib/ai/provider";
 import { recordAiRequest } from "@/lib/ai/usage";
+import { memo } from "@/lib/request-scope";
 import type { Database } from "@/lib/types/database";
 
 export type DashboardMetrics = {
@@ -55,6 +56,10 @@ function dayKey(iso: string) {
  * seeded, and an empty database yields zeros rather than invented figures.
  */
 export async function getDashboardMetrics(days = 30): Promise<DashboardMetrics> {
+  return memo(`dashboard-metrics:${days}`, () => loadDashboardMetrics(days));
+}
+
+async function loadDashboardMetrics(days: number): Promise<DashboardMetrics> {
   const admin = tryCreateAdminSupabase();
   const empty: DashboardMetrics = {
     windowDays: days,
@@ -316,6 +321,10 @@ export type InsightData = {
  * the only data handed to the model, so every AI claim is traceable to a row.
  */
 export async function collectInsightData(days = 30): Promise<InsightData> {
+  return memo(`insight-data:${days}`, () => loadInsightData(days));
+}
+
+async function loadInsightData(days: number): Promise<InsightData> {
   const admin = createAdminSupabase();
   const since = new Date(Date.now() - days * 86400000);
   const priorStart = new Date(Date.now() - days * 2 * 86400000);

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdminSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
+import { memo } from "@/lib/request-scope";
 
 export type CrmCustomer = {
   user_id: string;
@@ -55,6 +56,16 @@ export async function listCrmCustomers(params: {
   limit?: number;
   offset?: number;
 }): Promise<CrmCustomer[]> {
+  return memo(`crm-customers:${params.search ?? ""}:${params.limit ?? ""}:${params.offset ?? ""}`, () =>
+    loadCrmCustomers(params),
+  );
+}
+
+async function loadCrmCustomers(params: {
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<CrmCustomer[]> {
   const admin = createAdminSupabase();
   const { data, error } = await admin.rpc("crm_customers", {
     ...(params.search ? { p_search: params.search } : {}),
@@ -96,6 +107,17 @@ export async function countCrmCustomers(search?: string): Promise<number> {
  * page size.
  */
 export async function getCrmStats(): Promise<{
+  customer_count: number;
+  lifetime_value: number;
+  repeat_customers: number;
+  at_risk_customers: number;
+  blocked_customers: number;
+  marketing_opt_in: number;
+}> {
+  return memo("crm-stats", () => loadCrmStats());
+}
+
+async function loadCrmStats(): Promise<{
   customer_count: number;
   lifetime_value: number;
   repeat_customers: number;
@@ -168,6 +190,10 @@ export type SegmentBreakdown = {
 
 /** Every segment with a live count, for the segments dashboard. */
 export async function segmentOverview(): Promise<SegmentBreakdown[]> {
+  return memo("segment-overview", () => loadSegmentOverview());
+}
+
+async function loadSegmentOverview(): Promise<SegmentBreakdown[]> {
   const admin = tryCreateAdminSupabase();
   if (!admin) return [];
 

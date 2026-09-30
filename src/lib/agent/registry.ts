@@ -31,6 +31,13 @@ export type AgentToolDef = {
   run: (args: Record<string, unknown>) => Promise<{ data: unknown; summary: string }>;
 };
 
+/**
+ * Documents a single turn may render. A Cloudflare Worker caps subrequests per
+ * invocation (50 on the free plan) and each document costs 4-18, so this keeps
+ * the worst realistic turn inside the budget.
+ */
+export const MAX_DOCUMENTS_PER_TURN = 4;
+
 /* ------------------------------------------------------------------ */
 /* Read tools                                                           */
 /* ------------------------------------------------------------------ */
@@ -354,8 +361,19 @@ const WRITE_TOOLS: AgentToolDef[] = [
     run: async (args) => {
       const { createDeliverable, exportDeliverable, isDeliverableKind, isOfficeFormat } =
         await import("@/lib/agent/deliverables");
+      const { takeToken } = await import("@/lib/request-scope");
       const kind = String(args.kind ?? "").trim();
       if (!isDeliverableKind(kind)) throw new Error(`unknown document kind ${kind}`);
+
+      // A Worker invocation has a hard subrequest cap, and rendering a document
+      // re-queries the dashboard. Cap the documents per turn so an ambitious
+      // request ("make me ten reports") degrades to an honest refusal instead of
+      // being killed mid-render, which leaves the artifact stuck in `building`.
+      if (!takeToken("create_document", MAX_DOCUMENTS_PER_TURN)) {
+        throw new Error(
+          `This turn already produced ${MAX_DOCUMENTS_PER_TURN} documents. Ask again for the next one.`,
+        );
+      }
 
       const format = String(args.format ?? "").trim().toLowerCase();
       if (format) {
