@@ -8,6 +8,7 @@ import {
 } from "@/lib/services/catalog";
 import { listStockItems, listOffers } from "@/lib/services/admin-catalog";
 import { getDashboardMetrics } from "@/lib/crm/insights";
+import { getCrmStats, segmentOverview, listCrmCustomers } from "@/lib/crm/customers";
 
 /**
  * The ops agent's tools: named, typed reads over the live database.
@@ -27,7 +28,12 @@ export type AgentToolName =
   | "menu_item_lookup"
   | "offers_list"
   | "stock_status"
+  | "stock_inventory"
   | "orders_metrics"
+  | "orders_recent"
+  | "crm_summary"
+  | "crm_customers"
+  | "users_summary"
   | "business_settings";
 
 export type AgentToolResult = { tool: AgentToolName; data: unknown };
@@ -37,7 +43,17 @@ const TOOL_DESCRIPTIONS: Record<AgentToolName, string> = {
   menu_item_lookup: "Look up one dish by slug or name — price, availability, flags.",
   offers_list: "Current enabled offers with their thresholds and values.",
   stock_status: "Stock items that are low or out, worst first.",
+  stock_inventory:
+    "FULL stock count: every item with on-hand, threshold, unit, cost, supplier and status.",
   orders_metrics: "30-day order/revenue/customer metrics from the dashboard service.",
+  orders_recent:
+    "The most recent orders with number, status, total, payment and item count. Use for 'what came in lately'.",
+  crm_summary:
+    "Customer totals: count, lifetime value, repeat, at-risk, opted-in, plus every segment count.",
+  crm_customers:
+    "Top customers by lifetime value, and the newest signups. Use for 'best customers' / 'who signed up'.",
+  users_summary:
+    "Users and access: total users, staff members by role, and active/suspended counts.",
   business_settings: "Brand, contact (incl. InstaPay) and ordering configuration.",
 };
 
@@ -114,9 +130,120 @@ export async function callAgentTool(
       return { tool: name, data: { lowOrOut: problem, totalItems: stock.length } };
     }
 
+    case "stock_inventory": {
+      // The full count, not just the problem rows: "جرد كامل" needs every item.
+      const stock = await listStockItems();
+      const items = stock.map((s) => ({
+        name: s.name_en,
+        unit: s.unit,
+        onHand: Number(s.quantity),
+        minThreshold: Number(s.min_threshold),
+        costPerUnit: s.cost_per_unit === null ? null : Number(s.cost_per_unit),
+        supplier: s.supplier,
+        status: s.status,
+      }));
+      const value = items.reduce(
+        (sum, s) => sum + s.onHand * (s.costPerUnit ?? 0),
+        0,
+      );
+      return {
+        tool: name,
+        data: {
+          totalItems: items.length,
+          needsReorder: items.filter((s) => s.status === "low" || s.status === "out").length,
+          totalValueEgp: value,
+          items,
+        },
+      };
+    }
+
     case "orders_metrics": {
       const metrics = await getDashboardMetrics(30);
       return { tool: name, data: metrics };
+    }
+
+    case "orders_recent": {
+      const admin = tryCreateAdminSupabase();
+      if (!admin) return { tool: name, data: { orders: [], note: "no service key" } };
+      const limit = Math.min(Number(args.limit ?? 10) || 10, 25);
+      const { data } = await admin
+        .from("orders")
+        .select(
+          "order_number, status, total, payment_method, payment_status, created_at, fulfillment, order_items (quantity)",
+        )
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      return {
+        tool: name,
+        data: (data ?? []).map((o) => ({
+          number: o.order_number,
+          status: o.status,
+          total: Number(o.total),
+          paymentMethod: o.payment_method,
+          paymentStatus: o.payment_status,
+          fulfillment: o.fulfillment,
+          placedAt: o.created_at,
+          itemCount: (o.order_items ?? []).reduce((n, i) => n + Number(i.quantity), 0),
+        })),
+      };
+    }
+
+    case "crm_summary": {
+      const [stats, segments] = await Promise.all([getCrmStats(), segmentOverview()]);
+      return { tool: name, data: { stats, segments } };
+    }
+
+    case "crm_customers": {
+      // `lifetime_value` / `order_count` / `last_order_at` are computed by the
+      // `crm_customers` RPC, not stored on `profiles` — reading the table
+      // directly is a compile error and, worse, a silent empty result.
+      const customers = await listCrmCustomers({ limit: 200 });
+      const top = [...customers]
+        .sort((a, b) => b.lifetime_value - a.lifetime_value)
+        .slice(0, 10)
+        .map((c) => ({
+          name: c.full_name,
+          phone: c.phone,
+          lifetimeValue: c.lifetime_value,
+          orderCount: c.order_count,
+          lastOrderAt: c.last_order_at,
+        }));
+      const newest = [...customers]
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+        .slice(0, 10)
+        .map((c) => ({
+          name: c.full_name,
+          phone: c.phone,
+          signedUpAt: c.created_at,
+          orderCount: c.order_count,
+        }));
+      return { tool: name, data: { totalCustomers: customers.length, topByLifetimeValue: top, newestSignups: newest } };
+    }
+
+    case "users_summary": {
+      const admin = tryCreateAdminSupabase();
+      if (!admin) return { tool: name, data: { staff: [], note: "no service key" } };
+      const [{ data: staff }, { count: userCount }] = await Promise.all([
+        admin.from("staff").select("role, display_name, is_active, created_at"),
+        admin.from("profiles").select("id", { count: "exact", head: true }),
+      ]);
+      const roles = new Map<string, number>();
+      for (const s of staff ?? []) roles.set(s.role, (roles.get(s.role) ?? 0) + 1);
+      return {
+        tool: name,
+        data: {
+          totalUsers: userCount ?? 0,
+          staffCount: (staff ?? []).length,
+          activeStaff: (staff ?? []).filter((s) => s.is_active).length,
+          rolesByCount: Object.fromEntries(roles),
+          staff: (staff ?? []).map((s) => ({
+            name: s.display_name,
+            role: s.role,
+            active: s.is_active,
+            addedAt: s.created_at,
+          })),
+        },
+      };
     }
 
     case "business_settings": {

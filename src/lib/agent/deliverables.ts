@@ -2,6 +2,10 @@ import "server-only";
 
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { getDashboardMetrics } from "@/lib/crm/insights";
+import {
+  renderHtmlDeliverable,
+  isHtmlDeliverableKind as isHtmlKind,
+} from "@/lib/agent/html-deliverables";
 import type { Json } from "@/lib/types/database";
 
 /**
@@ -32,9 +36,15 @@ export type DeliverableKind =
   | "stock_reorder"
   | "winback_draft"
   | "pricing_review"
-  | "eod_reconciliation";
+  | "eod_reconciliation"
+  | "sales_dashboard"
+  | "crm_summary"
+  | "users_report"
+  | "inventory_report"
+  | "slide_deck"
+  | "strategy_brief";
 
-export type DeliverableFormat = "md" | "csv" | "json";
+export type DeliverableFormat = "md" | "csv" | "json" | "html";
 
 export type RenderedDeliverable = {
   kind: DeliverableKind;
@@ -54,7 +64,27 @@ const KIND_TITLES: Record<DeliverableKind, string> = {
   winback_draft: "Win-back campaign draft",
   pricing_review: "Pricing review",
   eod_reconciliation: "End-of-day reconciliation",
+  sales_dashboard: "Sales & statistics dashboard (charts)",
+  crm_summary: "CRM summary",
+  users_report: "Users & access report",
+  inventory_report: "Inventory report",
+  slide_deck: "Presentation deck",
+  strategy_brief: "Strategy brief",
 };
+
+/** Kinds rendered as a self-contained HTML page (charts, slides, plans). */
+const HTML_KINDS: DeliverableKind[] = [
+  "sales_dashboard",
+  "crm_summary",
+  "users_report",
+  "inventory_report",
+  "slide_deck",
+  "strategy_brief",
+];
+
+export function isHtmlDeliverableKind(kind: DeliverableKind): boolean {
+  return HTML_KINDS.includes(kind);
+}
 
 export function isDeliverableKind(value: string): value is DeliverableKind {
   return Object.prototype.hasOwnProperty.call(KIND_TITLES, value);
@@ -622,8 +652,41 @@ export async function renderDeliverable(kind: DeliverableKind): Promise<Rendered
       return winbackDraft();
     case "pricing_review":
       return pricingReview();
+    // The HTML kinds render charts and slides, so they delegate to their own
+    // module and are returned with `format: "html"`.
+    case "sales_dashboard":
+    case "crm_summary":
+    case "users_report":
+    case "inventory_report":
+    case "slide_deck":
+    case "strategy_brief": {
+      const rendered = await renderHtmlDeliverable(kind);
+      return {
+        kind,
+        title: rendered.title,
+        summary: rendered.summary,
+        format: "html",
+        body: rendered.body,
+        rowCount: rendered.rowCount,
+        data: rendered.data,
+      };
+    }
     default:
       throw new Error(`No renderer for deliverable "${kind}".`);
+  }
+}
+
+/** MIME type for an artifact body, so a download opens correctly in a browser. */
+export function deliverableContentType(format: DeliverableFormat): string {
+  switch (format) {
+    case "csv":
+      return "text/csv; charset=utf-8";
+    case "html":
+      return "text/html; charset=utf-8";
+    case "json":
+      return "application/json; charset=utf-8";
+    default:
+      return "text/markdown; charset=utf-8";
   }
 }
 
@@ -648,11 +711,13 @@ export async function createDeliverable(params: {
   const admin = createAdminSupabase();
 
   // Open the row first so a failure between here and the upload is auditable.
+  // The format is provisional: it is corrected below from the rendered body,
+  // because an HTML deliverable must not be filed as markdown.
   const { data: id, error: openError } = await admin.rpc("open_artifact", {
     p_kind: params.kind,
     p_title: KIND_TITLES[params.kind],
     p_summary: "",
-    p_format: "md",
+    p_format: isHtmlKind(params.kind) ? "html" : "md",
     p_data: {} as Json,
     p_run_id: params.runId ?? undefined,
     p_created_by: params.createdBy ?? undefined,
@@ -668,7 +733,7 @@ export async function createDeliverable(params: {
     const { error: uploadError } = await admin.storage
       .from(ARTIFACT_BUCKET)
       .upload(path, rendered.body, {
-        contentType: rendered.format === "csv" ? "text/csv; charset=utf-8" : "text/markdown; charset=utf-8",
+        contentType: deliverableContentType(rendered.format),
         upsert: true,
       });
     if (uploadError) throw new Error(uploadError.message);

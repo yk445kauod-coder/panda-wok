@@ -68,6 +68,12 @@ export default async function AdminAgentPage() {
     { kind: "eod_reconciliation", label: "End-of-day reconciliation", description: "Money taken in the last 24 hours, split by payment method." },
     { kind: "winback_draft", label: "Win-back campaign draft", description: "Opted-in customers who went quiet, with a message draft." },
     { kind: "pricing_review", label: "Pricing review", description: "Lowest-contribution dishes with their list price." },
+    { kind: "sales_dashboard", label: "Statistics dashboard (charts)", description: "A charted HTML page: revenue trend, status mix, category mix, top dishes." },
+    { kind: "crm_summary", label: "CRM summary", description: "Customer totals, every segment, newest signups and top customers." },
+    { kind: "users_report", label: "Users & access report", description: "All users, staff by role, and active/suspended members." },
+    { kind: "inventory_report", label: "Inventory report", description: "Full stock count with values, thresholds and what to reorder." },
+    { kind: "slide_deck", label: "Presentation deck", description: "A printable slide deck of the period's performance and recommendations." },
+    { kind: "strategy_brief", label: "Strategy brief / plan", description: "A written plan: findings, numbered actions, owners and measures." },
   ];
 
   const deliverableRows: DeliverableRow[] = deliverables.map((d) => ({

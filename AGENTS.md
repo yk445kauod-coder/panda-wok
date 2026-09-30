@@ -2271,3 +2271,91 @@ Live result: 19 categories, 84 dishes, `combo-mix` at 16 holding exactly
 owner's own instruction, so it was applied — the general prohibition on writing
 menu rows still holds for anything not explicitly requested.
 
+
+## Hard tasks: documents, charts and the reachability trap (2026-09-30)
+
+The owner asked the agent to handle the hard things: reports, an inventory count,
+CRM summaries, user reports, statistics, charts, boards, plans, docs and slide
+decks. All of it now renders from live data — but the interesting part is that
+**most of it was already written and invisible.**
+
+### The reachability trap: tools.ts and registry.ts are two different lists
+`callAgentTool()` in `tools.ts` had CRM, users, full-inventory and recent-orders
+logic for a while. The model never called any of it, because the loop only sends
+`specsForCapabilities()` — i.e. `AGENT_TOOLS`, built from `registry.ts` — and
+`registry.ts` listed six tools. So the agent answered "I have no way to show you
+order details" while `orders_recent` sat one file away, fully working.
+
+`READ_TOOLS` is typed `Record<AgentToolName, AgentToolDef>`, so `tsc` **does**
+catch an unregistered read tool — that is why adding the entries to `tools.ts`
+alone failed to compile. But nothing catches the reverse, and nothing catches a
+*write* tool. `tests/agent-reachability.test.ts` now asserts every tool the
+prompt catalogue advertises is registered and reachable for the owner, and that
+a kitchen role is never offered CRM/user tools.
+
+**Rule: a tool is not shipped until it is in `registry.ts`.** Adding it to
+`tools.ts` is half the work and produces a confident, wrong "I can't".
+
+### The chat agent could not produce a document at all
+Only the Deliverables panel and the scheduled agent could render a file. Asking
+in chat for a slide deck returned the raw tool catalogue, because there was no
+tool to call. `create_document` (registry, `ai.manage`) now renders any of the 13
+kinds through the *same* `createDeliverable()` the panel uses, so a chart in chat
+and a chart in the console are the same numbers. It is `mode: "read"` on purpose:
+it writes a document, never business data, so it must not queue for approval.
+
+The interactive SYSTEM_PROMPT also had to say so — it described reading and
+writing but never mentioned documents, so the model talked *about* reports
+instead of making one. The spec being present is not the same as the model
+knowing to use it.
+
+### Six new HTML kinds
+`charts.ts` (inline SVG: bar, ranked bar, donut, gauge, empty state) and
+`html.ts` (self-contained document shell: KPI grid, data table, note, section,
+slide) feed `html-deliverables.ts`:
+
+| kind | what it is |
+|---|---|
+| `sales_dashboard` | statistics page — revenue trend, status mix, category mix, top dishes, ratings, stock warnings |
+| `crm_summary` | customer totals, every segment, newest signups, top customers by lifetime value |
+| `users_report` | all users, staff by role, active/suspended |
+| `inventory_report` | full stock count with values, thresholds and a reorder list |
+| `slide_deck` | printable deck; one idea and at most one chart per slide |
+| `strategy_brief` | written plan: findings, numbered actions, measures |
+
+- **Self-contained by design.** Verified on the rendered files: 0 `<script>`,
+  0 external URLs, every `<svg>` parses. They open offline and print to PDF.
+  The user permitted JS/CDN; it was not needed, and no-CDN means a document
+  never breaks because a host is down.
+- **Charts cannot invent a figure.** A chart is a view of numbers the renderer
+  already holds, and the raw figure sits beside every share ("680.00 EGP
+  (45.2%)"), so a chart and its table cannot disagree.
+- `agent_artifacts.kind` gained the six kinds (migration
+  `20260929230000_agent_html_deliverables.sql`, applied live; constraint-only, no
+  row touched). `format` already allowed `html` — `createDeliverable` had
+  hardcoded `"md"`, so an HTML page would have been filed as markdown and
+  rendered as source. It now takes the format from the renderer, and
+  `deliverableContentType()` maps it to a real MIME type.
+
+### Two data traps hit while writing the renderers
+1. **`profiles` has no `lifetime_value`, `order_count` or `last_order_at`.** Those
+   are computed by the `crm_customers` RPC. Selecting them off the table is a
+   `tsc` error (good) and would be a silent empty result (bad). Use
+   `listCrmCustomers()`.
+2. **`InsightData` field names are not the obvious ones** — `pairs`, `itemTrend`,
+   `weakItems`, `inactiveCustomers.count`, `inactiveCustomers.avgDaysSinceOrder`.
+   Grep the interface before writing a renderer against it.
+
+### Verified
+13/13 deliverable kinds render against the live DB; 11/11 tools return real data
+with no request scope. Agent answers, live: CRM -> `crm_summary` + `crm_customers`
+(6 customers, top by order count); orders -> `orders_recent` (every order number,
+status and total); stock -> `stock_inventory`; users -> `users_summary`
+(6 users, 3 staff); stats -> `orders_metrics`; a deck request ->
+`create_document:ok`. Zero ungrounded figures in any answer. 300 tests pass,
+`tsc` clean, lint 0 errors (17 pre-existing `no-img-element` warnings),
+`next build` green.
+
+Note: one run returned an empty model turn ("no result written") — the model
+emitted no tool call, not a wiring fault. The prompt fix above addresses the
+cause; the loop's empty-turn fallback is unchanged.

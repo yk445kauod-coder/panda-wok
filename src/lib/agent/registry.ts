@@ -41,7 +41,12 @@ const READ_TOOLS: Record<AgentToolName, AgentToolDef> = (
     ["menu_item_lookup", "orders.view", "Look up a dish by slug or name — price, availability, dietary flags."],
     ["offers_list", "orders.view", "Current enabled offers with their thresholds and values."],
     ["stock_status", "orders.view", "Stock items that are low or out, worst first."],
+    ["stock_inventory", "stock.manage", "FULL stock count: every item with on-hand, threshold, unit, cost and status."],
     ["orders_metrics", "orders.view", "30-day order, revenue and customer metrics."],
+    ["orders_recent", "orders.view", "The most recent orders with number, status, total, payment and item count."],
+    ["crm_summary", "crm.view", "Customer totals, repeat/at-risk counts and every segment count."],
+    ["crm_customers", "crm.view", "Top customers by lifetime value and the newest signups."],
+    ["users_summary", "users.manage", "Total users, staff by role, and active/suspended counts."],
     ["business_settings", "orders.view", "Brand, contact and ordering configuration."],
   ] as [AgentToolName, Capability, string][]
 ).reduce<Record<AgentToolName, AgentToolDef>>(
@@ -302,6 +307,52 @@ const WRITE_TOOLS: AgentToolDef[] = [
       return {
         data: { dataset, days, id: job.id ?? null },
         summary: `${dataset} export queued (${days}d window)`,
+      };
+    },
+  },
+  {
+    capability: "ai.manage" as Capability,
+    // A read tool in the loop's sense: it writes a *document*, never business
+    // data, so it runs immediately instead of queueing for approval. What it
+    // produces is a rendered file from live queries — the same renderer the
+    // Deliverables panel calls — so a chart in chat and a chart in the console
+    // are the same numbers.
+    mode: "read",
+    spec: {
+      name: "create_document",
+      description:
+        "Produce a document from live data and save it: a report, a statistics page with charts, a CRM or users or inventory report, a presentation deck, or a written plan. Returns the document title and row count; the file appears in Admin -> AI ops -> Deliverables.",
+      parameters: {
+        kind: {
+          type: "string",
+          description: "Which document to produce",
+          required: true,
+          enum: [
+            "daily_sales",
+            "weekly_kpi",
+            "menu_engineering",
+            "stock_reorder",
+            "winback_draft",
+            "pricing_review",
+            "eod_reconciliation",
+            "sales_dashboard",
+            "crm_summary",
+            "users_report",
+            "inventory_report",
+            "slide_deck",
+            "strategy_brief",
+          ],
+        },
+      },
+    },
+    run: async (args) => {
+      const { createDeliverable, isDeliverableKind } = await import("@/lib/agent/deliverables");
+      const kind = String(args.kind ?? "").trim();
+      if (!isDeliverableKind(kind)) throw new Error(`unknown document kind ${kind}`);
+      const result = await createDeliverable({ kind, createdBy: null });
+      return {
+        data: { kind, id: result.id, title: result.title, rowCount: result.rowCount },
+        summary: `${result.title} (${result.rowCount} rows)`,
       };
     },
   },
