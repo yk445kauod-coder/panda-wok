@@ -321,7 +321,7 @@ const WRITE_TOOLS: AgentToolDef[] = [
     spec: {
       name: "create_document",
       description:
-        "Produce a document from live data and save it: a report, a statistics page with charts, a CRM or users or inventory report, a presentation deck, or a written plan. Returns the document title and row count; the file appears in Admin -> AI ops -> Deliverables.",
+        "Produce a document from live data and save it: a report, a statistics page with charts, a CRM or users or inventory report, a presentation deck, or a written plan. Returns the document title and row count; the file appears in Admin -> AI ops -> Deliverables. Pass `format` to deliver it as a real file: a PDF, a Word document (.docx) or an Excel workbook (.xlsx); omit it for the default page/markdown.",
       parameters: {
         kind: {
           type: "string",
@@ -343,12 +343,30 @@ const WRITE_TOOLS: AgentToolDef[] = [
             "strategy_brief",
           ],
         },
+        format: {
+          type: "string",
+          description:
+            "Optional file format: pdf, docx (Word) or xlsx (Excel). Omit for the default HTML/markdown document.",
+          enum: ["pdf", "docx", "xlsx"],
+        },
       },
     },
     run: async (args) => {
-      const { createDeliverable, isDeliverableKind } = await import("@/lib/agent/deliverables");
+      const { createDeliverable, exportDeliverable, isDeliverableKind, isOfficeFormat } =
+        await import("@/lib/agent/deliverables");
       const kind = String(args.kind ?? "").trim();
       if (!isDeliverableKind(kind)) throw new Error(`unknown document kind ${kind}`);
+
+      const format = String(args.format ?? "").trim().toLowerCase();
+      if (format) {
+        if (!isOfficeFormat(format)) throw new Error(`unknown document format ${format}`);
+        const result = await exportDeliverable({ kind, format, createdBy: null });
+        return {
+          data: { kind, format, id: result.id, title: result.title, bytes: result.bytes },
+          summary: `${result.title} (.${format}, ${Math.round(result.bytes / 1024)} KB)`,
+        };
+      }
+
       const result = await createDeliverable({ kind, createdBy: null });
       return {
         data: { kind, id: result.id, title: result.title, rowCount: result.rowCount },

@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, FileText, Loader2, Sparkles } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, FileType, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { runDeliverableAction } from "@/lib/actions/agent";
-import { useErrorText } from "@/components/i18n-provider";
+import { exportDeliverableAction, runDeliverableAction } from "@/lib/actions/agent";
+import { useErrorText, useT } from "@/components/i18n-provider";
 import { formatDateTime } from "@/lib/utils/format";
+
+/** The file formats a document can be delivered as, and their button labels. */
+const EXPORT_FORMATS = ["xlsx", "docx", "pdf"] as const;
+type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 export type DeliverableOption = {
   kind: string;
@@ -45,7 +49,9 @@ export function AgentDeliverables({
 }) {
   const router = useRouter();
   const errorText = useErrorText();
+  const t = useT();
   const [pendingKind, setPendingKind] = useState<string | null>(null);
+  const [pendingExport, setPendingExport] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function generate(kind: string) {
@@ -61,22 +67,40 @@ export function AgentDeliverables({
       }
       router.refresh();
     } catch {
-      setError("The server did not respond. Try again.");
+      setError(t("admin.agent.deliverables.serverNoResponse"));
     } finally {
       setPendingKind(null);
     }
   }
 
+  async function exportAs(kind: string, format: ExportFormat) {
+    setPendingExport(`${kind}:${format}`);
+    setError(null);
+    const formData = new FormData();
+    formData.set("kind", kind);
+    formData.set("format", format);
+    try {
+      const result = await exportDeliverableAction(formData);
+      if (!result.ok) {
+        setError(errorText(result.error));
+        return;
+      }
+      router.refresh();
+    } catch {
+      setError(t("admin.agent.deliverables.serverNoResponse"));
+    } finally {
+      setPendingExport(null);
+    }
+  }
+
   return (
-    <section className="washi-panel p-4" aria-label="Deliverables">
+    <section className="washi-panel p-4" aria-label={t("admin.agent.deliverables.title")}>
       <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-ink-900">
         <FileText className="size-4 text-jade-600" aria-hidden="true" />
-        Deliverables
+        {t("admin.agent.deliverables.title")}
       </h2>
       <p className="mt-1 text-sm text-ink-700/75">
-        Generate a real document — a sales sheet, a menu-engineering report, a
-        reorder list — from live data. Each one is stored and downloadable, and
-        nothing in it is estimated.
+        {t("admin.agent.deliverables.subtitle")}
       </p>
 
       <ul className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -93,8 +117,33 @@ export function AgentDeliverables({
               onClick={() => generate(option.kind)}
             >
               <Sparkles className="size-3.5" aria-hidden="true" />
-              Generate
+              {t("admin.agent.deliverables.generate")}
             </Button>
+
+            {/* The same document as a real file: Excel, Word or PDF. */}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-ink-700/70">
+                {t("admin.agent.deliverables.asFile")}
+              </span>
+              {EXPORT_FORMATS.map((format) => {
+                const Icon =
+                  format === "xlsx" ? FileSpreadsheet : format === "docx" ? FileType : FileText;
+                return (
+                  <Button
+                    key={format}
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    loading={pendingExport === `${option.kind}:${format}`}
+                    onClick={() => exportAs(option.kind, format)}
+                  >
+                    <Icon className="size-3.5" aria-hidden="true" />
+                    {format.toUpperCase()}
+                  </Button>
+                );
+              })}
+            </div>
           </li>
         ))}
       </ul>
@@ -106,12 +155,12 @@ export function AgentDeliverables({
       ) : null}
 
       <h3 className="mt-5 border-t border-ink-900/8 pt-4 text-sm font-semibold text-ink-900">
-        Generated documents
+        {t("admin.agent.deliverables.generated")}
       </h3>
 
       {artifacts.length === 0 ? (
         <p className="mt-2 text-sm text-ink-700/70">
-          Nothing generated yet. Press Generate above.
+          {t("admin.agent.deliverables.empty")}
         </p>
       ) : (
         <ul className="mt-2 space-y-2">

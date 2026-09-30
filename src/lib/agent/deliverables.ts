@@ -6,6 +6,7 @@ import {
   renderHtmlDeliverable,
   isHtmlDeliverableKind as isHtmlKind,
 } from "@/lib/agent/html-deliverables";
+import { htmlToMarkdown, renderOfficeFormat } from "@/lib/agent/office";
 import type { Json } from "@/lib/types/database";
 
 /**
@@ -44,7 +45,7 @@ export type DeliverableKind =
   | "slide_deck"
   | "strategy_brief";
 
-export type DeliverableFormat = "md" | "csv" | "json" | "html";
+export type DeliverableFormat = "md" | "csv" | "json" | "html" | "pdf" | "docx" | "xlsx";
 
 export type RenderedDeliverable = {
   kind: DeliverableKind;
@@ -55,6 +56,14 @@ export type RenderedDeliverable = {
   rowCount: number;
   data: Record<string, unknown>;
 };
+
+/** The office formats a deliverable can additionally be exported to. */
+export const OFFICE_FORMATS = ["pdf", "docx", "xlsx"] as const;
+export type OfficeFormat = (typeof OFFICE_FORMATS)[number];
+
+export function isOfficeFormat(value: string): value is OfficeFormat {
+  return (OFFICE_FORMATS as readonly string[]).includes(value);
+}
 
 const KIND_TITLES: Record<DeliverableKind, string> = {
   daily_sales: "Daily sales sheet",
@@ -685,9 +694,20 @@ export function deliverableContentType(format: DeliverableFormat): string {
       return "text/html; charset=utf-8";
     case "json":
       return "application/json; charset=utf-8";
+    case "pdf":
+      return "application/pdf";
+    case "docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    case "xlsx":
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     default:
       return "text/markdown; charset=utf-8";
   }
+}
+
+/** File extension for an artifact path. */
+export function deliverableExtension(format: DeliverableFormat): string {
+  return format === "md" ? "md" : format;
 }
 
 /* --------------------------------------------------------------- persistence */
@@ -697,6 +717,66 @@ const ARTIFACT_BUCKET = "artifacts";
 function artifactPath(id: string, kind: DeliverableKind, format: DeliverableFormat) {
   const stamp = new Date().toISOString().slice(0, 10);
   return `${kind}/${stamp}/${id}.${format}`;
+}
+
+/**
+ * Re-renders a deliverable into an office format and stores the result.
+ *
+ * The source is always the live data, never the stored markdown, so a PDF
+ * exported today shows today's numbers and cannot drift from the HTML or Excel
+ * version. For the HTML kinds the page is converted through `htmlToMarkdown`
+ * first, which is why a chart page and its spreadsheet agree: both read the
+ * same rendered figures.
+ */
+export async function exportDeliverable(params: {
+  kind: DeliverableKind;
+  format: OfficeFormat;
+  runId?: string | null;
+  createdBy?: string | null;
+}): Promise<{ id: string; title: string; path: string; bytes: number }> {
+  const admin = createAdminSupabase();
+  const rendered = await renderDeliverable(params.kind);
+  const markdown = rendered.format === "html" ? htmlToMarkdown(rendered.body) : rendered.body;
+  const body = renderOfficeFormat(params.format, markdown, rendered.title);
+
+  const { data: id, error: openError } = await admin.rpc("open_artifact", {
+    p_kind: params.kind,
+    p_title: rendered.title,
+    p_summary: rendered.summary,
+    p_format: params.format,
+    p_data: {} as Json,
+    p_run_id: params.runId ?? undefined,
+    p_created_by: params.createdBy ?? undefined,
+  });
+  if (openError || !id) throw new Error(openError?.message ?? "Could not open the export.");
+
+  const path = artifactPath(id as string, params.kind, params.format);
+  try {
+    const { error: uploadError } = await admin.storage
+      .from(ARTIFACT_BUCKET)
+      .upload(path, body, {
+        contentType: deliverableContentType(params.format),
+        upsert: true,
+      });
+    if (uploadError) throw new Error(uploadError.message);
+
+    const { error: finishError } = await admin.rpc("finish_artifact", {
+      p_id: id as string,
+      p_storage_path: path,
+      p_bytes: body.length,
+      p_row_count: rendered.rowCount,
+    });
+    if (finishError) throw new Error(finishError.message);
+
+    return { id: id as string, title: rendered.title, path, bytes: body.length };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Export failed.";
+    await admin.rpc("fail_artifact", { p_id: id as string, p_error: message }).then(
+      () => null,
+      () => null,
+    );
+    throw error instanceof Error ? error : new Error(message);
+  }
 }
 
 /**

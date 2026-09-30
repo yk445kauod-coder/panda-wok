@@ -1055,6 +1055,15 @@ export const en = {
       mcpSubtitle: "Connect external Model Context Protocol servers the agent can call.",
       automationsTitle: "Automations",
       automationsSubtitle: "Schedule reports and agent runs — daily, weekly or monthly.",
+      deliverables: {
+        title: "Deliverables",
+        subtitle: "Generate a real document — a sales sheet, a menu-engineering report, a reorder list — from live data. Each one is stored and downloadable, and nothing in it is estimated.",
+        generate: "Generate",
+        asFile: "As a file:",
+        generated: "Generated documents",
+        empty: "Nothing generated yet. Press Generate above.",
+        serverNoResponse: "The server did not respond. Try again.",
+      },
     mcp: {
       name: "Name",
       url: "Endpoint URL",

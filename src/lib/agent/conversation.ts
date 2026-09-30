@@ -115,7 +115,13 @@ DOCUMENTS — when the request is for an artifact, not a chat answer:
   crm_summary / users_report for those, and the smaller sheets for their topic.
 - After it is saved, reply in one or two lines naming the document and that it is
   in Admin → AI ops → Deliverables. The document holds the detail; the chat does
-  not need to repeat it.`;
+  not need to repeat it.
+- If the request names a file type — Excel / xlsx / شيت، Word / docx / مستند وورد،
+  PDF — pass \`format\` ("xlsx", "docx" or "pdf") so a real file is produced, not a
+  web page. When no format is asked for, leave it out.
+- Documents are Arabic-first and RTL: the PDF embeds an Arabic font, and the Word
+  and Excel files open right-to-left. Do not switch a document to English because
+  of the file format.`;
 
 const NO_MODEL_MESSAGE =
   "مش قادر أوصل لموديل ذكاء اصطناعي دلوقتي، فمقدرش أجاوب من غير بيانات. " +

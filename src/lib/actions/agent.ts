@@ -19,7 +19,9 @@ import {
 } from "@/lib/agent/ops-agent";
 import {
   createDeliverable,
+  exportDeliverable,
   isDeliverableKind,
+  isOfficeFormat,
 } from "@/lib/agent/deliverables";
 import { REPO_SKILL_SOURCES } from "@/lib/agent/repo-skills.generated";
 import { importGithubSkills, syncSkillSources } from "@/lib/agent/skill-sources";
@@ -65,6 +67,53 @@ export async function runDeliverableAction(
 
     revalidatePath("/admin/agent");
     return actionOk({ id: result.id, title: result.title, rowCount: result.rowCount });
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+/**
+ * Exports a deliverable as a real file — PDF, Word or Excel.
+ *
+ * The body is re-rendered from live data rather than converted from a stored
+ * file, so a PDF handed to the accountant today cannot disagree with the
+ * dashboard. Office documents are RTL/Arabic-ready: the PDF embeds a font that
+ * carries the shaped Arabic glyphs, and the Word/Excel parts carry the RTL
+ * reading direction.
+ */
+export async function exportDeliverableAction(
+  formData: FormData,
+): Promise<FormActionResult<{ id: string; title: string; bytes: number }>> {
+  const session = await assertCapability("ai.manage");
+
+  const kind = String(formData.get("kind") ?? "").trim();
+  const format = String(formData.get("format") ?? "").trim().toLowerCase();
+  if (!isDeliverableKind(kind)) {
+    return actionFail("VALIDATION", "Unknown deliverable type.");
+  }
+  if (!isOfficeFormat(format)) {
+    return actionFail("VALIDATION", "Unknown export format.");
+  }
+
+  try {
+    const result = await exportDeliverable({
+      kind,
+      format,
+      createdBy: session.actorId,
+    });
+
+    const supabase = await createServerSupabase();
+    await logAudit(supabase, {
+      actorId: session.actorId,
+      actorRole: session.role,
+      action: "ops_agent.deliverable_exported",
+      entity: "agent_artifacts",
+      entityId: result.id,
+      after: { kind, format, bytes: result.bytes },
+    });
+
+    revalidatePath("/admin/agent");
+    return actionOk({ id: result.id, title: result.title, bytes: result.bytes });
   } catch (error) {
     return actionError(error);
   }
