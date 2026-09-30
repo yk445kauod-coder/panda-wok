@@ -131,3 +131,164 @@ export function parseToolArguments(raw: string): Record<string, unknown> {
     return {};
   }
 }
+
+/**
+ * Extracts a balanced `{...}` / `[...]` region starting at `start`, ignoring
+ * braces inside string literals. Returns null when the region never closes.
+ */
+function extractBalanced(text: string, start: number, open: string, close: string): string | null {
+  if (text[start] !== open) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === open) depth += 1;
+    else if (ch === close) {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+type SalvagedSpan = { start: number; end: number; name: string; args: string };
+
+/** Every `{...}` whose JSON names an allowed tool, in any common alias shape. */
+function findJsonNameSpans(text: string, allowed: ReadonlySet<string>): SalvagedSpan[] {
+  const spans: SalvagedSpan[] = [];
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] !== "{") continue;
+    const raw = extractBalanced(text, i, "{", "}");
+    if (!raw) continue;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      continue;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) continue;
+    const obj = parsed as Record<string, unknown>;
+    const name = [obj.name, obj.tool, obj.function, obj.tool_name].find(
+      (v): v is string => typeof v === "string" && allowed.has(v),
+    );
+    if (!name) continue;
+    const args = obj.arguments ?? obj.args ?? obj.parameters ?? {};
+    spans.push({
+      start: i,
+      end: i + raw.length,
+      name,
+      args: typeof args === "string" ? args : JSON.stringify(args),
+    });
+  }
+  return spans;
+}
+
+/** `[tool_name, {...}]` / `[tool_name {...}]` — a common weak-model shape. */
+function findBracketSpans(text: string, allowed: ReadonlySet<string>): SalvagedSpan[] {
+  const spans: SalvagedSpan[] = [];
+  const re = /\[\s*([A-Za-z_][\w]*)\s*[,(]?\s*(?=\{)/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    const name = match[1];
+    if (!allowed.has(name)) continue;
+    const braceStart = match.index + match[0].length;
+    const raw = extractBalanced(text, braceStart, "{", "}");
+    if (!raw) continue;
+    const closeBracket = text.indexOf("]", braceStart + raw.length);
+    spans.push({
+      start: match.index,
+      end: closeBracket === braceStart + raw.length ? closeBracket + 1 : braceStart + raw.length,
+      name,
+      args: raw,
+    });
+  }
+  return spans;
+}
+
+/** `tool_name({...})` — a call written as prose. */
+function findParenSpans(text: string, allowed: ReadonlySet<string>): SalvagedSpan[] {
+  const spans: SalvagedSpan[] = [];
+  const re = /\b([A-Za-z_][\w]*)\s*\(\s*(?=\{)/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    const name = match[1];
+    if (!allowed.has(name)) continue;
+    const braceStart = match.index + match[0].length;
+    const raw = extractBalanced(text, braceStart, "{", "}");
+    if (!raw) continue;
+    const closeParen = text.indexOf(")", braceStart + raw.length);
+    spans.push({
+      start: match.index,
+      end: closeParen === braceStart + raw.length ? closeParen + 1 : braceStart + raw.length,
+      name,
+      args: raw,
+    });
+  }
+  return spans;
+}
+
+/**
+ * Recovers tool calls a model wrote as *text* instead of a structured call.
+ *
+ * Weaker free models routinely emit `[remember_memory, {"content": "…"}]` or a
+ * fenced `{"name": …, "arguments": …}` block. The provider returns no
+ * `tool_calls`, so without this the call is silently dropped: the loop sees an
+ * empty turn, the tool never runs, and the operator is told "nothing happened"
+ * for a request the model did handle. That is a silent failure of the worst kind
+ * — it looks like the feature is not implemented.
+ *
+ * Deliberately conservative: only names already offered in this turn are
+ * matched, and the JSON must parse. Anything else is left in the prose, so a
+ * false positive cannot invent a call the model did not make.
+ */
+export function salvageToolCalls(
+  text: string,
+  allowed: readonly string[],
+): { text: string; toolCalls: ToolCall[] } {
+  const names = new Set(allowed);
+  if (names.size === 0 || !text) return { text, toolCalls: [] };
+
+  const found = [
+    ...findJsonNameSpans(text, names),
+    ...findBracketSpans(text, names),
+    ...findParenSpans(text, names),
+  ].sort((a, b) => a.start - b.start);
+
+  // Keep the first of any overlapping matches, so one call is not double-counted.
+  const chosen: SalvagedSpan[] = [];
+  let cursor = -1;
+  for (const span of found) {
+    if (span.start < cursor) continue;
+    chosen.push(span);
+    cursor = span.end;
+  }
+  if (chosen.length === 0) return { text, toolCalls: [] };
+
+  let remaining = "";
+  let last = 0;
+  for (const span of chosen) {
+    remaining += text.slice(last, span.start);
+    last = span.end;
+  }
+  remaining += text.slice(last);
+
+  return {
+    text: remaining.trim(),
+    toolCalls: chosen.map((span, index) => ({
+      id: `salvaged_${index}`,
+      name: span.name,
+      arguments: span.args,
+    })),
+  };
+}

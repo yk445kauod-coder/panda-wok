@@ -2509,3 +2509,67 @@ warnings), `next build` green.
 ### Still the owner's call
 The vector embedder needs Cloudflare keys in the Worker env; without them memory
 falls back to the lexical ranker (working, but less precise than vectors).
+
+## The hard task, run for real, and the silent tool-call drop (2026-09-30, session 3)
+
+The owner asked for the agent to actually be *used* on a hard task: detailed
+reports plus a presentation explaining status. It was, against the live DB, and
+that surfaced two real defects.
+
+### What actually ran
+One plain Arabic request — "اعملي تقارير مفصلة و عرض تقديمي يشرح حالتنا" — through
+the real `runAgentTurn` loop, provider `workers-ai`:
+
+| step | tool | result |
+|---|---|---|
+| 1 | `create_document({kind: sales_dashboard})` | لوحة المبيعات — 10,193 B, 3 SVG charts |
+| 2 | `create_document({kind: crm_summary})` | ملخص CRM — 8,733 B |
+| 3 | `create_document({kind: slide_deck})` | عرض تقديمي — 9,281 B, **6 slides**, 3 charts |
+
+The deck is real and grounded: overview KPIs (4 orders, 0.00 EGP finished
+revenue, 2 new customers), revenue-by-day, status mix (refunded 2, canceled /
+rejected / out_for_delivery / accepted 1 each), top dishes (combo fried 8 pieces
+680.00 EGP), category mix (COMBO FRIED 62.7%), and recommendations that say the
+window is too small to trust. Every document is self-contained: **0 `<script>`,
+0 external URLs**, `dir="rtl"`, Arabic copy.
+
+### Defect: a tool call written as text was dropped in silence
+A "خد بالك وافتكر …" turn produced `steps: (none)` and **stored 0 rows**. The
+model had asked to call `remember_memory` — but as *prose*:
+`[remember_memory, {"content": "…"}]`. `parseToolTurnOpenAiLike` only reads
+`choices[].message.tool_calls`, so the provider returned zero calls, the loop saw
+an empty turn, and it answered as if the tool did not exist. Memory looked
+unimplemented for a request the model had handled correctly.
+
+`salvageToolCalls(text, allowed)` in `tool-protocol.ts` now recovers the three
+shapes weak models emit — `[name, {…}]`, `{"name": …, "arguments": …}` and
+`name({…})` — and the loop calls it when the structured list is empty. It is
+deliberately conservative: only names **already offered this turn** match, the
+JSON must parse, and the call text is stripped from the prose so the operator
+does not see raw JSON. `tests/tool-salvage.test.ts` (9) pins the recovery *and*
+that it never invents a tool that was not offered.
+
+Verified live after the fix: `remember_memory:ok`, the row stored **with a real
+embedding** (`has_embedding: true`), and a **fresh conversation** recalled the
+rule correctly — so long-term memory round-trips across sessions, not just
+within one.
+
+### The chain is mostly dead, which is why the fallback path matters
+Live `ai_providers`: `agentic` routes gemini-free first (10), openrouter 20,
+workers-ai 40. Probed directly: **gemini 429** (free quota exhausted),
+**pollinations 500**, **openrouter 404** — only `workers-ai` answers, and it
+returns proper structured tool calls. So every agentic turn burns three failed
+model calls before reaching a working one, and the salvage path is what keeps the
+weaker providers from silently losing a call when they are reached.
+
+Owner decision worth raising: `agentic` should probably put `workers-ai` first
+(priority 10) so a hard, tool-using turn does not depend on three exhausted free
+tiers.
+
+### Documents left spinning: fixed at the source
+The 3 `building` rows from the previous session were all `slide_deck` — the
+heaviest render. `sweepStaleArtifacts` now retires them, and `listDeliverables`
+sweeps on read. Live after: `still_building: 0`.
+
+350 tests pass (40 files), `tsc` clean, lint 0 errors (17 pre-existing
+`no-img-element` warnings), `next build` green.

@@ -11,6 +11,7 @@ import {
 } from "@/lib/ai/provider";
 import {
   parseToolArguments,
+  salvageToolCalls,
   type ToolResult,
   type ToolSpec,
 } from "@/lib/ai/tool-protocol";
@@ -304,6 +305,18 @@ async function runAgentTurnInner(input: AgentTurnInput): Promise<AgentTurnResult
     // The call succeeded, so any earlier failure was recovered by the fallback.
     // Leaving it set would make a good answer render the "no model" notice.
     providerError = null;
+
+    // A weak model may write the call as text rather than a structured
+    // `tool_calls` entry. Recovering it here is what keeps the loop honest:
+    // without this the call is dropped, the tool never runs, and the operator is
+    // told nothing happened for a request the model did handle.
+    const salvaged =
+      turn.toolCalls.length === 0
+        ? salvageToolCalls(turn.text, tools.map((t) => t.name))
+        : { text: turn.text, toolCalls: [] };
+    if (salvaged.toolCalls.length > 0) {
+      turn = { ...turn, text: salvaged.text, toolCalls: salvaged.toolCalls };
+    }
 
     if (turn.toolCalls.length === 0) {
       return {
