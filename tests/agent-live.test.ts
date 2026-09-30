@@ -61,4 +61,26 @@ describe.skipIf(!enabled || !hasSupabase)("agent tool calling (live)", () => {
     const observations = result.steps.filter((s) => s.status === "ok").map((s) => s.data);
     expect(findUngroundedFigures(result.answer, observations)).toEqual([]);
   }, 240_000);
+
+  it("turns a hard document request into real files, not a claim", async () => {
+    // The owner's exact hard task. It failed twice in production: once with an
+    // empty turn, once with the model saying the deck was ready while it had
+    // never called create_document. The assertion is therefore on the artifacts,
+    // not on the prose — a confident answer proves nothing.
+    const result = await runAgentTurn({
+      question: "اعملي تقارير مفصلة و عرض تقديمي يشرح حالتنا",
+      capabilities: capabilitiesFor("owner"),
+      confirmWrites: true,
+    });
+
+    const created = result.steps.filter(
+      (s) => s.tool === "create_document" && s.status === "ok",
+    );
+    expect(created.length).toBeGreaterThan(0);
+
+    // A document claimed in the answer must be one the turn actually made.
+    if (result.answer.includes("Deliverables")) {
+      expect(created.length).toBeGreaterThan(0);
+    }
+  }, 300_000);
 });

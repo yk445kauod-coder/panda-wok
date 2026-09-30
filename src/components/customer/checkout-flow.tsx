@@ -21,6 +21,7 @@ import { useErrorText, useT } from "@/components/i18n-provider";
 import { trackEvent } from "@/components/customer/analytics-beacon";
 import { placeOrderAction } from "@/lib/actions/checkout";
 import { computeTotals, type CheckoutConfig } from "@/lib/services/checkout-math";
+import { formatClock } from "@/lib/services/store-hours";
 import { formatPrice, randomId, humanise } from "@/lib/utils/format";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 import type { Address } from "@/lib/services/orders";
@@ -670,7 +671,11 @@ export function CheckoutFlow({
 
         {!acceptingOrders ? (
           <p role="status" className="mt-2 text-center text-xs text-chili-600">
-            {t("checkout.notAcceptingNow")}
+            {config.availability.reason === "outside_hours"
+              ? t("hours.closedOpensAt", {
+                  time: formatClock(config.availability.openTime, locale),
+                })
+              : t("checkout.notAcceptingNow")}
           </p>
         ) : belowMinimum ? (
           <p role="status" className="mt-2 text-center text-xs text-miso-600">

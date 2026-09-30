@@ -152,6 +152,66 @@ const NO_MODEL_MESSAGE =
   "مش قادر أوصل لموديل ذكاء اصطناعي دلوقتي، فمقدرش أجاوب من غير بيانات. " +
   "بس أقدر أوريك اللي الأدوات رجّعته بالظبط تحت.";
 
+/**
+ * Sent once when a model returns a completely empty turn (no prose, no tool
+ * call). The weaker free tiers do this under load; without a retry the operator
+ * sees "nothing written" for a request the model can handle on a second try.
+ */
+const EMPTY_TURN_NUDGE =
+  "رديت برد فاضي من غير ما تنده أي أداة. نادي الأداة المناسبة دلوقتي (مثلاً " +
+  "create_document للتقارير والعروض) أو اكتب إجابتك بالنص. متسيبش الرد فاضي.";
+
+/**
+ * A claim that a document exists. Two shapes count, because a model asserts a
+ * file in both:
+ *   - production: a past-tense verb next to a document noun ("جهزت العرض");
+ *   - existence: a readiness/location word next to a document noun
+ *     ("العرض جاهز", "التقرير موجود في المستندات").
+ *
+ * Both halves are required, so an offer ("أقدر أعملك تقرير") — present tense, no
+ * existence word — is not mistaken for a completed creation, and neither is a
+ * plain statement of absence ("مفيش تقرير").
+ */
+const DOC_CLAIM_SIGNAL =
+  /(جهّ?زت|حضّ?رت|عملت|أنشأت|انشأت|حفظت|طلّ?عت|إعداد|اعداد|تم |جاهز|موجود|محفوظ|اتحفظ|اتعمل|created|saved|prepared|generated|produced|built|made|ready|available)/i;
+const DOC_CLAIM_NOUN =
+  /(عرض\s*تقديمي|تقديمي|تقرير|مستند|شيت|ملف|presentation|slide\s*deck|\bdeck\b|report|document|spreadsheet)/i;
+
+/**
+ * Naming the Deliverables location is itself a completion claim. The model only
+ * cites this path to point at files it says it produced, and it did exactly that
+ * live ("متاحة الآن في Admin → AI ops → Deliverables") while listing four
+ * documents that had never been created. The verb list alone missed the phrasing
+ * ("تم إعداد التقارير"), so the destination is checked too.
+ */
+const DOC_DESTINATION = /(deliverables|AI ops\s*→|قسم المستندات|المستندات\s*\/)/i;
+
+/**
+ * A negation immediately before the signal means the model is *denying* a
+ * document, not claiming one ("مفيش تقرير محفوظ"). Denials are honest and must
+ * never be rewritten, so they are excluded before the guard can fire.
+ */
+const DOC_CLAIM_NEGATION = /(مفيش|مافيش|مش|لا يوجد|ليس|بدون|\bno\b|\bnot\b|\bnone\b|\bwithout\b)/i;
+
+/** True only when the prose asserts a document that exists. */
+function claimsDocumentExists(text: string): boolean {
+  if (!DOC_CLAIM_NOUN.test(text)) return false;
+  // Naming the Deliverables path is a claim in itself, independent of the verb.
+  if (DOC_DESTINATION.test(text)) return true;
+  const signal = new RegExp(DOC_CLAIM_SIGNAL.source, "gi");
+  let match: RegExpExecArray | null;
+  while ((match = signal.exec(text)) !== null) {
+    const before = text.slice(Math.max(0, match.index - 20), match.index);
+    if (!DOC_CLAIM_NEGATION.test(before)) return true;
+  }
+  return false;
+}
+
+/** Shown in place of prose that claimed a document the turn never created. */
+const DOCUMENT_NOT_CREATED =
+  "الموديل قال إنه عمل المستند، بس مبعتش أمر الإنشاء فعلاً — يعني مفيش ملف " +
+  "اتحفظ. جرّب تطلب تاني، أو اطلب نوع واحد صريح (مثلاً «اعملي عرض تقديمي»).";
+
 /** Providers that can call tools natively; otherwise the model gets no tools. */
 function supportsTools(provider: AiProvider): boolean {
   return providerSupportsTools(provider);
@@ -282,6 +342,11 @@ async function runAgentTurnInner(input: AgentTurnInput): Promise<AgentTurnResult
   const observations: unknown[] = [];
   let providerError: string | null = null;
   let active = provider;
+  // One empty-turn retry per turn: enough to recover a model that produced
+  // nothing, without looping when it is genuinely stuck.
+  let emptyTurnRetried = false;
+  // One corrective retry when the model claims a document it never created.
+  let documentClaimRetried = false;
 
   for (let step = 0; step < maxSteps; step += 1) {
     let turn: Awaited<ReturnType<typeof nextTurn>>;
@@ -319,6 +384,36 @@ async function runAgentTurnInner(input: AgentTurnInput): Promise<AgentTurnResult
     }
 
     if (turn.toolCalls.length === 0) {
+      // An empty turn is not an answer. Retry once with a nudge so a weak model
+      // that produced nothing does not leave the operator with "nothing
+      // written"; only then fall through to the honest summary.
+      if (!turn.text.trim() && !emptyTurnRetried) {
+        emptyTurnRetried = true;
+        messages.push({ role: "user", content: EMPTY_TURN_NUDGE });
+        continue;
+      }
+
+      // A false completion: the model says the document is ready but never
+      // called `create_document`. Withholding the claim alone leaves the
+      // operator empty-handed, so correct it and let the model actually do the
+      // work inside the same turn. This is the live failure being fixed.
+      const createdDocument = steps.some(
+        (s) => s.tool === "create_document" && s.status === "ok",
+      );
+      if (turn.text.trim() && claimsDocumentExists(turn.text) && !createdDocument && !documentClaimRetried) {
+        documentClaimRetried = true;
+        console.warn("[agent] model claimed a document without calling create_document; retrying");
+        messages.push({
+          role: "user",
+          content:
+            "انت قلت إن المستند جاهز، بس مبعتش أمر create_document فعلاً فمفيش ملف " +
+            "اتحفظ. نادي create_document دلوقتي بالنوع المناسب: slide_deck للعرض " +
+            "التقديمي، sales_dashboard للإحصاءات، strategy_brief للخطة. نادي الأداة " +
+            "مرة واحدة لكل نوع مطلوب — متكررش نفس النوع.",
+        });
+        continue;
+      }
+
       return {
         answer: finaliseAnswer(turn.text, steps, observations, providerError),
         steps,
@@ -489,6 +584,16 @@ export function finaliseAnswer(
     return `${FABRICATION_NOTICE}\n\n${summariseSteps(steps)}`;
   }
 
+  // A document cannot exist because the model said so. This happened live: the
+  // model replied "the presentation is in Deliverables" without calling
+  // `create_document`, so the operator went looking for a file that was never
+  // created. Only a successful `create_document` step may claim one.
+  const claimsDocument = claimsDocumentExists(trimmed);
+  if (claimsDocument && !steps.some((s) => s.tool === "create_document" && s.status === "ok")) {
+    console.warn("[agent] withheld document claim with no create_document step");
+    return `${DOCUMENT_NOT_CREATED}\n\n${summariseSteps(steps)}`;
+  }
+
   return trimmed;
 }
 
@@ -506,7 +611,12 @@ function toolMessage(result: ToolResult): ChatMessage {
 
 /** Readable fallback when no model produced prose but tools did run. */
 function summariseSteps(steps: AgentStep[]): string {
-  if (steps.length === 0) return "مش لاقي حاجة أقولها — مكتبتش نتيجة.";
+  if (steps.length === 0) {
+    return (
+      "الموديل مردّش ولا نادى أي أداة في اللفة دي، فمعنديش نتيجة أوريك. " +
+      "جرّب تصيغ الطلب أوضح أو اطلب حاجة واحدة محددة."
+    );
+  }
   return steps
     .map((s) => {
       const label = s.tool;

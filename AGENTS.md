@@ -2573,3 +2573,93 @@ sweeps on read. Live after: `still_building: 0`.
 
 350 tests pass (40 files), `tsc` clean, lint 0 errors (17 pre-existing
 `no-img-element` warnings), `next build` green.
+
+## Store opening hours, and the false-completion class of agent bug (2026-09-30)
+
+### Opening hours are a setting, not a code path
+The owner asked for configurable hours ("من 2 الظهر لحد 1 بالليل") with the
+storefront closed outside them. `ordering.hours_enabled` / `ordering.open_time` /
+`ordering.close_time` (all public, `HH:MM`, Africa/Cairo) drive everything through
+one source of truth: `store_is_open()` in SQL and `resolveStoreAvailability()` in
+TypeScript, which implement the same three rules:
+
+1. hours disabled, or a malformed window -> the manual switch decides;
+2. manual switch off -> closed (the owner can always close early);
+3. otherwise -> inside the window.
+
+**A malformed window deliberately fails *open*.** A typo in a setting must never
+shut a restaurant's ordering silently; "keep taking orders" is the safe failure.
+
+**Crossing midnight is the normal case, not an edge case.** `14:00 -> 01:00` is
+how a restaurant that closes after midnight is configured, so `isWithinWindow`
+inverts to "after open OR before close" when close <= open, and equal times mean a
+full day rather than a zero-length window.
+
+The window is evaluated in **Africa/Cairo, not UTC** — Workers run in UTC, so
+`Intl.DateTimeFormat` (TS) and `p_now at time zone 'Africa/Cairo'` (SQL) are used
+rather than arithmetic on the epoch.
+
+Admin: the time picker is just a new `"time"` branch in `settings-forms.tsx`; the
+rows already render from `listSettings`, so adding the setting was the whole admin
+work. Checkout hides ordering with `config.availability.reason === "outside_hours"`
+and shows the reopening time.
+
+Verified live in rolled-back transactions: closed window -> `place_order` raises
+`STORE_CLOSED` (22023); open window -> order `PW-2609-1053` for 95.00 EGP; the
+manual-off veto holds inside the window; `store_is_open()` returns false at 03:15
+local for a 03:00-03:30 window and true across midnight.
+
+### The agent's real failure was a *false completion*, not a missing capability
+`create_document` was registered and working, yet "اعملي تقارير مفصلة و عرض
+تقديمي" produced nothing. Three successive live runs showed three distinct
+failures, which is why one fix was not enough:
+
+1. **Empty turn** — the model returned no text and no tool call. Retried once with
+   a nudge; if it still says nothing, the honest summary stands.
+2. **Claimed document** — the model wrote "تم إعداد التقارير… متاحة في Admin → AI
+   ops → Deliverables" listing four documents it had never created. Withholding
+   the prose alone (the first attempt) left the operator *empty-handed* rather
+   than wrong, so the guard now **corrects and retries**: it appends a user turn
+   saying the call never happened and naming the kinds, and the model then really
+   creates the files.
+3. **Duplicate document** — on retry the model called `create_document` twice for
+   the same `slide_deck`, saving the identical file twice. `takeToken` now uses a
+   per-`kind:format` key with limit 1, so an exact duplicate is refused while the
+   same report can still be produced as both PDF and XLSX.
+
+**The detection regex is the hard part, and each iteration was too narrow.**
+Keying on the destination phrase alone missed "تم إعداد التقارير"; keying on
+past-tense verbs alone missed "متاحة الآن في …". It now requires a document noun
+*plus* either a production/existence signal or a mention of the Deliverables path,
+**minus** a preceding negation — because "مفيش تقرير محفوظ" is an honest denial
+and must never be rewritten. `claimsDocumentExists()` is exported for the tests,
+which cover the offer ("أقدر أعملك تقرير"), the denial, the pending (not-yet-saved)
+document, and the real claim.
+
+`tests/agent-live.test.ts` now asserts the owner's exact request produces
+`create_document: ok` steps — the assertion is on the artifacts, never on the
+prose, because a confident sentence with no file behind it is precisely the bug.
+
+### The memory layer was already complete — verified, not assumed
+`agent_memory` (6 rows, all embedded) and `agent_skills` (241 chunks across
+AGENTS.md and skills.md, all embedded) are live, and `recall`/`remember` are real
+registry tools wired into the loop. A live probe proved the parts a mocked test
+cannot: **recall finds a fact by meaning** (a semantically related Arabic query
+scored 0.677 on the stored fact), an identical fact is a no-op, a `customer`-scope
+row is invisible to an `owner` query, and skill retrieval stays bounded (<= 6
+chunks). Embeddings come from Workers AI `@cf/baai/bge-m3` at 1024 dims, keyless
+through the binding, degrading to lexical Jaccard when unreachable.
+
+The team library is capability-correct: every deliverable action asserts
+`ai.manage`, which only `owner` and `admin` hold, and the RLS on
+`agent_artifacts` / `agent_artifact_comments` is `can_agent()` — i.e.
+`role in ('owner','admin')`, not merely `authenticated`.
+
+Live tests are opt-in: `MEMORY_LIVE=1` for the memory/skills round-trip,
+`AI_LIVE=1` for the agent loop, `OFFICE_LIVE=1` for office exports. All write to
+the live project and clean up after themselves; verified zero leftovers.
+
+**Cleanup trap:** storage objects cannot be deleted with SQL — `storage.objects`
+is guarded by `storage.protect_delete()`. Remove them through the Storage API
+(`supabase.storage.from(bucket).remove(paths)`); deleting the DB row alone leaves
+an orphaned object.

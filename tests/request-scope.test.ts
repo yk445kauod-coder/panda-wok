@@ -78,4 +78,23 @@ describe("request scope", () => {
     // No scope: a script or test is never throttled.
     expect(takeToken("create_document", MAX_DOCUMENTS_PER_TURN)).toBe(true);
   });
+
+  it("allows each document kind once, so a repeated call cannot duplicate it", async () => {
+    // Live: a weak model repeated create_document for the same slide_deck and
+    // saved the identical file twice. The per-kind key blocks the repeat while
+    // still letting a genuinely different document through.
+    await withRequestScope(() => {
+      expect(takeToken("create_document:slide_deck:default", 1)).toBe(true);
+      expect(takeToken("create_document:slide_deck:default", 1)).toBe(false);
+      expect(takeToken("create_document:sales_dashboard:default", 1)).toBe(true);
+    });
+  });
+
+  it("treats the same kind in different formats as different documents", async () => {
+    await withRequestScope(() => {
+      expect(takeToken("create_document:weekly_kpi:pdf", 1)).toBe(true);
+      expect(takeToken("create_document:weekly_kpi:xlsx", 1)).toBe(true);
+      expect(takeToken("create_document:weekly_kpi:pdf", 1)).toBe(false);
+    });
+  });
 });

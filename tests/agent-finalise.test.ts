@@ -20,6 +20,85 @@ const steps: AgentStep[] = [
   { tool: "orders_metrics", arguments: {}, status: "ok", summary: "30-day metrics", data: { revenueInWindow: 0 } },
 ];
 
+describe("finaliseAnswer — a claimed document must exist", () => {
+  const noDocSteps: AgentStep[] = [
+    { tool: "orders_metrics", arguments: {}, status: "ok", summary: "metrics", data: { orders: 3 } },
+  ];
+
+  it("withholds a document claim when create_document never ran", () => {
+    // Reproduced live: the model said the deck was in Deliverables while it had
+    // never called create_document, so the operator looked for a missing file.
+    const answer = finaliseAnswer(
+      "جهزت لك عرض تقديمي وهو موجود في قسم المستندات دلوقتي.",
+      noDocSteps,
+      [{ orders: 3 }],
+      null,
+    );
+    expect(answer).not.toContain("قسم المستندات");
+    expect(answer).toContain("مفيش ملف");
+  });
+
+  it("withholds the English phrasing too", () => {
+    const answer = finaliseAnswer(
+      "Your slide deck is saved under AI ops → Deliverables.",
+      noDocSteps,
+      [{ orders: 3 }],
+      null,
+    );
+    expect(answer).not.toContain("Deliverables");
+  });
+
+  it("allows the claim when create_document succeeded", () => {
+    const withDoc: AgentStep[] = [
+      ...noDocSteps,
+      {
+        tool: "create_document",
+        arguments: { kind: "slide_deck" },
+        status: "ok",
+        summary: "slide_deck saved",
+        data: { title: "حالتنا" },
+      },
+    ];
+    const answer = finaliseAnswer(
+      "جهزت لك عرض تقديمي وهو موجود في قسم المستندات.",
+      withDoc,
+      [{ orders: 3 }],
+      null,
+    );
+    expect(answer).toContain("قسم المستندات");
+  });
+
+  it("allows the claim when create_document is pending approval, not ok", () => {
+    // A pending write is not a saved file, so the same guard must still fire.
+    const pending: AgentStep[] = [
+      ...noDocSteps,
+      {
+        tool: "create_document",
+        arguments: { kind: "slide_deck" },
+        status: "pending_approval",
+        summary: "waiting",
+        data: null,
+      },
+    ];
+    const answer = finaliseAnswer("العرض جاهز في المستندات.", pending, [{ orders: 3 }], null);
+    expect(answer).not.toContain("العرض جاهز");
+  });
+
+  it("does not mistake an offer or a statement of absence for a claim", () => {
+    // Present tense ("أقدر أعملك") and negation ("مفيش") are not completions.
+    const offer = finaliseAnswer("أقدر أعملك تقرير مفصل لو تحب.", noDocSteps, [{ orders: 3 }], null);
+    expect(offer).toBe("أقدر أعملك تقرير مفصل لو تحب.");
+
+    const absent = finaliseAnswer("مفيش تقرير محفوظ للفترة دي.", noDocSteps, [{ orders: 3 }], null);
+    expect(absent).toBe("مفيش تقرير محفوظ للفترة دي.");
+  });
+
+  it("does not touch ordinary prose that never mentions documents", () => {
+    const answer = finaliseAnswer("عندنا 3 أوردرات.", noDocSteps, [{ orders: 3 }], null);
+    expect(answer).toBe("عندنا 3 أوردرات.");
+  });
+});
+
 describe("finaliseAnswer — the anti-hallucination gate", () => {
   it("passes through an answer whose numbers the tools returned", () => {
     const answer = finaliseAnswer("الإيراد 0 ج.م.", steps, [{ revenueInWindow: 0 }], null);

@@ -383,6 +383,17 @@ const WRITE_TOOLS: AgentToolDef[] = [
       }
 
       const format = String(args.format ?? "").trim().toLowerCase();
+
+      // Same document twice in one turn is a duplicate, not two artifacts — a
+      // weak model that repeats its call would otherwise save the identical file
+      // twice. Keyed on kind *and* format so the same report can still be asked
+      // for as both a PDF and an Excel workbook.
+      if (!takeToken(`create_document:${kind}:${format || "default"}`, 1)) {
+        throw new Error(
+          `Already produced the ${kind}${format ? ` as ${format}` : ""} in this turn — not creating a duplicate.`,
+        );
+      }
+
       if (format) {
         if (!isOfficeFormat(format)) throw new Error(`unknown document format ${format}`);
         const result = await exportDeliverable({ kind, format, createdBy: null });

@@ -106,13 +106,26 @@ export type SettingRow = {
   is_public: boolean;
 };
 
-type Kind = "boolean" | "number" | "string" | "json";
+type Kind = "boolean" | "number" | "string" | "json" | "time";
 
 function kindOf(value: Json): Kind {
   if (typeof value === "boolean") return "boolean";
   if (typeof value === "number") return "number";
   if (typeof value === "string") return "string";
   return "json";
+}
+
+const CLOCK_VALUE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/**
+ * A clock setting gets a real time picker rather than a free-text box. The owner
+ * asked to choose opening hours "freely from the admin panel"; typing "14:00"
+ * into a plain input invites a typo that would silently change the window. The
+ * key shape and the stored value both have to agree, so a non-clock string that
+ * happens to end in `_time` is left as text.
+ */
+function isClockSetting(key: string, value: Json): boolean {
+  return key.endsWith("_time") && typeof value === "string" && CLOCK_VALUE.test(value);
 }
 
 function initialText(value: Json): string {
@@ -185,7 +198,9 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
 
           <div className="mt-3 grid gap-4 lg:grid-cols-2">
             {rows.map((setting) => {
-              const kind = kindOf(setting.value);
+              const kind = isClockSetting(setting.key, setting.value)
+                ? "time"
+                : kindOf(setting.value);
               const inputId = `setting-${setting.key.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
               const value = draft[setting.key] ?? initialText(setting.value);
 
@@ -225,6 +240,19 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
                           {value === "true" ? "Enabled" : "Disabled"}
                         </span>
                       </label>
+                    ) : kind === "time" ? (
+                      <input
+                        id={inputId}
+                        type="time"
+                        value={value}
+                        onChange={(event) =>
+                          setDraft((current) => ({
+                            ...current,
+                            [setting.key]: event.target.value,
+                          }))
+                        }
+                        className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-ink-900 outline-none focus:border-miso-500"
+                      />
                     ) : kind === "json" ? (
                       <textarea
                         id={inputId}

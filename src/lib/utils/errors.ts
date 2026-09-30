@@ -20,6 +20,7 @@ export type AppErrorCode =
   | "NO_LOYALTY_POINTS"
   | "LOYALTY_DISABLED"
   | "PICKUP_UNAVAILABLE"
+  | "STORE_CLOSED"
   | "IDEMPOTENCY_KEY_REQUIRED"
   | "ACCOUNT_BLOCKED"
   | "INVALID_TOTAL"
@@ -56,6 +57,8 @@ const MESSAGES: Record<AppErrorCode, string> = {
     "The loyalty program is currently turned off. Please order without redeeming points.",
   PICKUP_UNAVAILABLE:
     "This is a delivery-only kitchen, so orders cannot be collected. Please enter a delivery address.",
+  STORE_CLOSED:
+    "The kitchen is closed right now. Please order again during our opening hours.",
   IDEMPOTENCY_KEY_REQUIRED:
     "Something went wrong submitting the order. Please retry.",
   ACCOUNT_BLOCKED:
@@ -112,6 +115,7 @@ const CODE_PATTERN = new RegExp(
       "NO_LOYALTY_POINTS",
       "LOYALTY_DISABLED",
       "PICKUP_UNAVAILABLE",
+      "STORE_CLOSED",
       "IDEMPOTENCY_KEY_REQUIRED",
       "ACCOUNT_BLOCKED",
       "INVALID_TOTAL",

@@ -874,6 +874,8 @@ export const ar: Dictionary = {
         "برنامج نقاط الولاء متوقف حاليًا. يرجى إتمام الطلب بدون استبدال نقاط.",
       PICKUP_UNAVAILABLE:
         "هذا مطبخ توصيل فقط ولا يوجد مكان للاستلام. يرجى إضافة عنوان توصيل.",
+      STORE_CLOSED:
+        "المطبخ مقفول دلوقتي. اطلب تاني في مواعيد العمل.",
       IDEMPOTENCY_KEY_REQUIRED:
         "حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.",
       ACCOUNT_BLOCKED: "هذا الحساب لا يمكنه تنفيذ طلبات. يرجى التواصل مع المطبخ.",
@@ -925,6 +927,13 @@ export const ar: Dictionary = {
     rejected: "مرفوض",
     failed: "فشل",
     refunded: "مُسترد",
+  },
+
+  hours: {
+    open: "مفتوح الآن",
+    closedOpensAt: "مقفول دلوقتي — بنفتح {time}",
+    closedToday: "مقفول دلوقتي",
+    everyDay: "كل يوم {open} – {close}",
   },
 
 

@@ -10,7 +10,18 @@ export type CheckoutConfig = {
   freeDeliveryOver: number;
   deliveryFee: number;
   etaMinutes: number;
+  /**
+   * Whether the storefront is taking orders *right now*. Resolved from the
+   * owner's switch plus the configured opening window, so a customer sees the
+   * real state instead of only the manual on/off flag.
+   */
   acceptingOrders: boolean;
+  /** Why the store is open or closed, and the window it applies to. */
+  availability: {
+    reason: "open" | "disabled" | "outside_hours" | "manual_override";
+    openTime: string;
+    closeTime: string;
+  };
   taxRate: number;
   maxQtyPerItem: number;
   loyaltyPointValue: number;

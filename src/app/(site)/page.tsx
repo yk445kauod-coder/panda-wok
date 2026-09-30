@@ -27,6 +27,7 @@ import { AsanohaPanel } from "@/components/customer/asian-frames";
 import { SakuraField } from "@/components/customer/sakura-field";
 import { LeafField2D } from "@/components/customer/leaf-field-2d";
 import { BRAND_LOGO_URL } from "@/lib/brand";
+import { formatClock, type StoreHours } from "@/lib/services/store-hours";
 import { dishImageSrc, dishImageSrcSet } from "@/lib/images/responsive";
 import { BrandScriptMarks } from "@/components/customer/brand-script-marks";
 import { BrandBanner } from "@/components/customer/brand-banner";
@@ -179,6 +180,7 @@ export default async function HomePage() {
         brand={brand}
         tagline={brandTagline(restaurant, locale, settings.brand.tagline)}
         acceptingOrders={settings.ordering.acceptingOrders}
+        hours={settings.ordering.hours}
         hasMenu={menu.items.length > 0}
         logoUrl={BRAND_LOGO_URL}
         heroUrl={settings.brand.hero_url}
@@ -437,6 +439,7 @@ function Hero({
   brand,
   tagline,
   acceptingOrders,
+  hours,
   hasMenu,
   logoUrl,
   heroUrl,
@@ -447,6 +450,7 @@ function Hero({
   brand: string;
   tagline: string;
   acceptingOrders: boolean;
+  hours: StoreHours;
   hasMenu: boolean;
   logoUrl: string;
   heroUrl: string | null;
@@ -519,7 +523,17 @@ function Hero({
           {!acceptingOrders ? (
             <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-chili-300 lg:mx-0">
               <span aria-hidden="true" className="size-1.5 rounded-full bg-chili-400" />
-              {t("home.closedForOrders")}
+              {hours.enabled
+                ? t("hours.closedOpensAt", { time: formatClock(hours.openTime, locale as "en" | "ar") })
+                : t("home.closedForOrders")}
+            </p>
+          ) : hours.enabled ? (
+            <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-jade-300 lg:mx-0">
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-jade-400" />
+              {t("hours.everyDay", {
+                open: formatClock(hours.openTime, locale as "en" | "ar"),
+                close: formatClock(hours.closeTime, locale as "en" | "ar"),
+              })}
             </p>
           ) : null}
 

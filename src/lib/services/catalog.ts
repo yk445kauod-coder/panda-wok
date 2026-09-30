@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { createPublicSupabase } from "@/lib/supabase/server";
+import { STORE_TIME_ZONE, type StoreHours } from "@/lib/services/store-hours";
 import type { Database, Json } from "@/lib/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
@@ -280,6 +281,7 @@ export type PublicSettings = {
     deliveryFee: number;
     etaMinutes: number;
     acceptingOrders: boolean;
+    hours: StoreHours;
   };
   loyalty: {
     pointsPerCurrency: number;
@@ -298,6 +300,16 @@ function toNumber(value: Json | undefined, fallback: number): number {
     return Number.isFinite(n) ? n : fallback;
   }
   return fallback;
+}
+
+/**
+ * A stored clock value, accepted only when it is a real "HH:MM". A malformed
+ * value falls back rather than propagating, because an unparseable window must
+ * not be able to close the storefront.
+ */
+function toClock(value: Json | undefined, fallback: string): string {
+  const text = typeof value === "string" ? value.trim() : "";
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(text) ? text : fallback;
 }
 
 function toText(value: Json | undefined, fallback: string): string {
@@ -359,6 +371,12 @@ export const getPublicSettings = cache(async (): Promise<PublicSettings> => {
       deliveryFee: toNumber(map.get("delivery.fee"), 30),
       etaMinutes: toNumber(map.get("delivery.eta_minutes"), 35),
       acceptingOrders: map.get("ordering.accepting_orders") !== false,
+      hours: {
+        enabled: map.get("ordering.hours_enabled") === true,
+        openTime: toClock(map.get("ordering.open_time"), "14:00"),
+        closeTime: toClock(map.get("ordering.close_time"), "01:00"),
+        timeZone: STORE_TIME_ZONE,
+      },
     },
     loyalty: {
       pointsPerCurrency: toNumber(map.get("loyalty.points_per_currency"), 1),

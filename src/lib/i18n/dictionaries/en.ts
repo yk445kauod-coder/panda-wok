@@ -913,6 +913,8 @@ export const en = {
         "The loyalty program is currently turned off. Please order without redeeming points.",
       PICKUP_UNAVAILABLE:
         "This is a delivery-only kitchen, so orders cannot be collected. Please add a delivery address.",
+      STORE_CLOSED:
+        "The kitchen is closed right now. Please order again during our opening hours.",
       IDEMPOTENCY_KEY_REQUIRED:
         "Something went wrong submitting the order. Please retry.",
       ACCOUNT_BLOCKED:
@@ -966,6 +968,18 @@ export const en = {
     rejected: "Rejected",
     failed: "Failed",
     refunded: "Refunded",
+  },
+
+  /**
+   * Opening-hours states. `closedOpensAt` is shown when the clock — not the
+   * owner's manual switch — is what closed the storefront, so the customer is
+   * told when to come back instead of only that ordering is paused.
+   */
+  hours: {
+    open: "Open now",
+    closedOpensAt: "Closed now — we open at {time}",
+    closedToday: "Closed now",
+    everyDay: "Every day {open} – {close}",
   },
 
 

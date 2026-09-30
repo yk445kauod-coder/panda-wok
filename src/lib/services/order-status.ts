@@ -2,6 +2,7 @@ import "server-only";
 
 import { createServerSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
 import { getPublicSettings } from "@/lib/services/catalog";
+import { resolveStoreAvailability } from "@/lib/services/store-hours";
 import type { CheckoutConfig, OfferRule } from "@/lib/services/checkout-math";
 
 export type { CheckoutConfig, Totals } from "@/lib/services/checkout-math";
@@ -40,12 +41,25 @@ export async function getCheckoutConfig(): Promise<CheckoutConfig> {
     return fallback;
   };
 
+  // The owner's on/off switch is a hard veto; the clock can only close the
+  // store further, never force it open. `place_order` applies the same rule, so
+  // the previewed state and the accepted order cannot disagree.
+  const availability = resolveStoreAvailability(
+    settings.ordering.hours,
+    settings.ordering.acceptingOrders,
+  );
+
   return {
     minOrderTotal: settings.ordering.minOrderTotal,
     freeDeliveryOver: settings.ordering.freeDeliveryOver,
     deliveryFee: settings.ordering.deliveryFee,
     etaMinutes: settings.ordering.etaMinutes,
-    acceptingOrders: settings.ordering.acceptingOrders,
+    acceptingOrders: availability.open,
+    availability: {
+      reason: availability.reason,
+      openTime: availability.openTime,
+      closeTime: availability.closeTime,
+    },
     // No tax is inferred when the row is unreadable: the live rate is 0 and a
     // hardcoded non-zero default is exactly how the checkout drifted from the till.
     taxRate: readNumber("tax.rate", 0),
