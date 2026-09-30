@@ -34,7 +34,10 @@ export type AgentToolName =
   | "crm_summary"
   | "crm_customers"
   | "users_summary"
-  | "business_settings";
+  | "business_settings"
+  | "list_documents"
+  | "recall_memory"
+  | "remember_memory";
 
 export type AgentToolResult = { tool: AgentToolName; data: unknown };
 
@@ -55,6 +58,12 @@ const TOOL_DESCRIPTIONS: Record<AgentToolName, string> = {
   users_summary:
     "Users and access: total users, staff members by role, and active/suspended counts.",
   business_settings: "Brand, contact (incl. InstaPay) and ordering configuration.",
+  list_documents:
+    "The workspace library: documents already produced (title, kind, format, size, when, reuse count) with their ids. Use before re-making a report, or to reference a document by name.",
+  recall_memory:
+    "Search the agent's long-term memory for anything the owner asked it to remember — preferences, policies, corrections.",
+  remember_memory:
+    "Save a lasting fact to the agent's long-term memory, so a later session recalls it. Use when the owner states a preference, rule or correction worth keeping.",
 };
 
 /** One-line-per-tool description for a prompt. Cheap to include, never verbose. */
@@ -271,6 +280,52 @@ export async function callAgentTool(
           rewardCount: rewards.length,
         },
       };
+    }
+
+    case "list_documents": {
+      const { listDeliverables } = await import("@/lib/agent/deliverables");
+      const rows = await listDeliverables(40);
+      return {
+        tool: name,
+        data: {
+          count: rows.length,
+          documents: rows.map((d) => ({
+            id: d.id,
+            title: d.title,
+            kind: d.kind,
+            format: d.format,
+            status: d.status,
+            bytes: d.bytes,
+            rows: d.row_count,
+            reuseCount: d.reuse_count,
+            createdAt: d.created_at,
+          })),
+        },
+      };
+    }
+
+    case "recall_memory": {
+      const { recall } = await import("@/lib/agent/memory");
+      const query = String(args.query ?? "").trim();
+      if (!query) return { tool: name, data: { error: "a query is required" } };
+      const hits = await recall({ query, scope: "owner", matchCount: 6 });
+      return {
+        tool: name,
+        data: {
+          count: hits.length,
+          memories: hits.map((h) => ({ kind: h.kind, content: h.content, similarity: Number(h.similarity.toFixed(3)) })),
+        },
+      };
+    }
+
+    case "remember_memory": {
+      const { remember } = await import("@/lib/agent/memory");
+      const content = String(args.content ?? "").trim();
+      if (content.length < 6) return { tool: name, data: { error: "nothing worth storing" } };
+      // `remember` returns null when an identical fact already exists, so a
+      // repeated instruction does not fork the memory into duplicates.
+      const id = await remember({ scope: "owner", kind: "owner_note", content });
+      return { tool: name, data: { stored: id !== null, id } };
     }
 
     default:

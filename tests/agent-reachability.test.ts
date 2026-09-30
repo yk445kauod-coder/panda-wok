@@ -53,6 +53,27 @@ describe("agent tool reachability", () => {
     }
   });
 
+  it("exposes the workspace tools that make memory and documents usable", () => {
+    // Creating a document is not enough to work in a workspace: the agent must
+    // be able to see what already exists, and to read and write its own memory.
+    for (const name of ["create_document", "list_documents", "recall_memory", "remember_memory"]) {
+      expect(ownerTools).toContain(name);
+    }
+  });
+
+  it("gates the memory and document tools behind ai.manage", () => {
+    // A kitchen role can read orders but must not reach the AI workspace.
+    const kitchen = specsForCapabilities(capabilitiesFor("kitchen")).map((s) => s.name);
+    for (const name of ["list_documents", "recall_memory", "remember_memory", "create_document"]) {
+      expect(kitchen).not.toContain(name);
+    }
+  });
+
+  it("declares the arguments the workspace tools require", () => {
+    expect(AGENT_TOOLS.recall_memory.spec.parameters.query.required).toBe(true);
+    expect(AGENT_TOOLS.remember_memory.spec.parameters.content.required).toBe(true);
+  });
+
   it("gives every registered tool a description and a spec", () => {
     for (const [name, tool] of Object.entries(AGENT_TOOLS)) {
       expect(tool.spec.name, `${name} spec name`).toBe(name);

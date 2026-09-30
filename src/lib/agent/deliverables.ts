@@ -848,8 +848,36 @@ export async function createDeliverable(params: {
   }
 }
 
+/**
+ * Marks documents that were left `building` by a process that died mid-render.
+ *
+ * `createDeliverable` marks its own row `failed` on a thrown error, but a Worker
+ * killed at the subrequest/CPU cap never throws — the invocation just ends. The
+ * row then sits in `building` forever and the console shows a document that
+ * spins and never resolves. Anything still `building` well past any plausible
+ * render is therefore dead, and is retired honestly rather than silently.
+ */
+export async function sweepStaleArtifacts(olderThanMinutes = 15): Promise<number> {
+  const admin = createAdminSupabase();
+  const cutoff = new Date(Date.now() - olderThanMinutes * 60_000).toISOString();
+  const { data, error } = await admin
+    .from("agent_artifacts")
+    .update({
+      status: "failed",
+      error: "Rendering did not finish (the process was interrupted). Try again.",
+    })
+    .eq("status", "building")
+    .lt("created_at", cutoff)
+    .select("id");
+  if (error) return 0;
+  return data?.length ?? 0;
+}
+
 /** Reads for the console: the newest deliverables, newest first. */
 export async function listDeliverables(limit = 30) {
+  // Self-heal on read: opening the library retires any document a killed
+  // invocation left spinning, so the list never shows a permanent "building".
+  await sweepStaleArtifacts().catch(() => 0);
   const admin = createAdminSupabase();
   const { data, error } = await admin
     .from("agent_artifacts")

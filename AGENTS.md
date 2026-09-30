@@ -2447,3 +2447,65 @@ lexical ranking and `renderMemoryContext`. Full suite **331 passed / 7 skipped**
 idempotent (`add column if not exists`, `create table if not exists`,
 `create or replace function`), so re-applying is safe; the remote history was
 left as-is rather than renumbered.
+
+## The workspace agent: documents, memory tools and self-healing (2026-09-30, session 2)
+
+The brief moved from "produce a report" to "be a real workspace agent": work on
+hard tasks, produce large documents and visuals, and keep strong short- and
+long-term vector memory. The gap was not rendering — it was *working with* what
+the agent produced.
+
+### Creating a document is not the same as working in a workspace
+The agent could `create_document` but had no way to see the library, and memory
+was auto-captured only. Three tools close that loop, all gated on `ai.manage`
+(so a kitchen role never sees them) and all verified live:
+
+| tool | what it does |
+|---|---|
+| `list_documents` | the library — title, kind, format, size, when, reuse count, id |
+| `recall_memory` | vector + lexical search of long-term memory for owner rules |
+| `remember_memory` | store a lasting fact; returns `stored: false` on an exact duplicate |
+
+`READ_TOOLS` is a complete `Record<AgentToolName, ...>`, so adding the names to
+`tools.ts` *and* `registry.ts` is required — the union change fails `tsc` until
+both are done. That is the reachability contract working as intended.
+`tests/agent-reachability.test.ts` now pins all four workspace tools and the
+kitchen-role exclusion.
+
+The interactive SYSTEM_PROMPT gained MEMORY and THE WORKSPACE sections, because a
+tool the model does not know to call is a tool that does not exist. It now says
+to `recall_memory` before answering from a standing rule, to `remember_memory`
+*proactively* when the owner states a policy, to store the **rule not the
+reading** ("الشحن مجاني فوق 250" is memory; "النهاردة 12 أوردر" is not), and to
+`list_documents` before re-making a report.
+
+### A killed invocation left documents spinning forever
+`agent_artifacts` held **3 rows stuck in `building`**, all `slide_deck`, all
+30-70 minutes old. `createDeliverable` marks its own row `failed` on a thrown
+error — but a Worker killed at the CPU/subrequest cap never throws, the
+invocation just ends, and the row sits in `building` for good. The console then
+shows a document that spins and never resolves, which is the same
+silent-failure shape as the empty-rating view and the dead notification bell.
+
+`sweepStaleArtifacts(olderThanMinutes = 15)` retires them honestly, and
+`listDeliverables` calls it on read, so opening the library self-heals. The three
+live rows were retired to `failed` with a message that says what happened.
+**15 minutes is deliberate:** a real render is seconds; a "building" row older
+than that is dead, not slow.
+
+Live verification of the whole hard-task path (artifacts created and then deleted,
+so the library is not polluted):
+- `slide_deck` -> "عرض تقديمي — أداء المطعم" / 6 شرائح from 4 orders
+- `sales_dashboard` -> "لوحة المبيعات" / 4 orders, 0.00 EGP finished revenue, 4 dishes
+- `strategy_brief` -> "خطة عمل" / 4 plan items
+- `inventory_report` -> `.xlsx` 2,641 bytes; `weekly_kpi` -> `.pdf` 120,498 bytes
+- `list_documents` -> 40 rows with reuse counts; `remember_memory` stored a fact,
+  `recall_memory` returned it at **0.703**, and a repeat write returned
+  `stored: false` (dedupe).
+
+331 tests pass, `tsc` clean, lint 0 errors (17 pre-existing `no-img-element`
+warnings), `next build` green.
+
+### Still the owner's call
+The vector embedder needs Cloudflare keys in the Worker env; without them memory
+falls back to the lexical ranker (working, but less precise than vectors).

@@ -55,6 +55,9 @@ const READ_TOOLS: Record<AgentToolName, AgentToolDef> = (
     ["crm_customers", "crm.view", "Top customers by lifetime value and the newest signups."],
     ["users_summary", "users.manage", "Total users, staff by role, and active/suspended counts."],
     ["business_settings", "orders.view", "Brand, contact and ordering configuration."],
+    ["list_documents", "ai.manage", "Documents already produced: title, kind, format, size, when and reuse count."],
+    ["recall_memory", "ai.manage", "Search the agent's long-term memory for owner preferences, rules and corrections."],
+    ["remember_memory", "ai.manage", "Save a lasting fact to the agent's long-term memory for future sessions."],
   ] as [AgentToolName, Capability, string][]
 ).reduce<Record<AgentToolName, AgentToolDef>>(
   (acc, [name, capability, description]) => {
@@ -68,7 +71,11 @@ const READ_TOOLS: Record<AgentToolName, AgentToolDef> = (
         parameters:
           name === "menu_item_lookup"
             ? { query: { type: "string", description: "Dish name or slug", required: true } }
-            : {},
+            : name === "recall_memory"
+              ? { query: { type: "string", description: "What to search memory for", required: true } }
+              : name === "remember_memory"
+                ? { content: { type: "string", description: "The fact to remember, stated plainly", required: true } }
+                : {},
       },
       run: async (args) => {
         const result = await callAgentTool(name, args);
