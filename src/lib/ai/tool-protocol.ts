@@ -213,10 +213,19 @@ function findBracketSpans(text: string, allowed: ReadonlySet<string>): SalvagedS
       args: raw,
     });
   }
+  // A no-argument call, e.g. `[menu_summary]` or `[menu_summary()]`. The shapes
+  // above all require a `{...}` body, so without this a tool that takes no
+  // arguments was never recovered.
+  const bare = /\[\s*([A-Za-z_][\w]*)\s*(?:\(\s*\))?\s*\]/g;
+  while ((match = bare.exec(text)) !== null) {
+    const name = match[1];
+    if (!allowed.has(name)) continue;
+    spans.push({ start: match.index, end: match.index + match[0].length, name, args: "{}" });
+  }
   return spans;
 }
 
-/** `tool_name({...})` — a call written as prose. */
+/** `tool_name({...})` / `tool_name()` — a call written as prose. */
 function findParenSpans(text: string, allowed: ReadonlySet<string>): SalvagedSpan[] {
   const spans: SalvagedSpan[] = [];
   const re = /\b([A-Za-z_][\w]*)\s*\(\s*(?=\{)/g;
@@ -234,6 +243,13 @@ function findParenSpans(text: string, allowed: ReadonlySet<string>): SalvagedSpa
       name,
       args: raw,
     });
+  }
+  // A no-argument call: `menu_summary()`. Same reasoning as the bracket form.
+  const bare = /\b([A-Za-z_][\w]*)\s*\(\s*\)/g;
+  while ((match = bare.exec(text)) !== null) {
+    const name = match[1];
+    if (!allowed.has(name)) continue;
+    spans.push({ start: match.index, end: match.index + match[0].length, name, args: "{}" });
   }
   return spans;
 }

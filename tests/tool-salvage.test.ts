@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { salvageToolCalls } from "@/lib/ai/tool-protocol";
+import { parseToolArguments, salvageToolCalls } from "@/lib/ai/tool-protocol";
 
 /**
  * A weak model writing a call as text used to be a silent no-op: the provider
@@ -76,6 +76,32 @@ describe("salvageToolCalls", () => {
   it("ignores malformed JSON", () => {
     const { toolCalls } = salvageToolCalls("[remember_memory, {content: broken]", allowed);
     expect(toolCalls).toHaveLength(0);
+  });
+
+  it("recovers a no-argument call written as text", () => {
+    // The real failure: a model asked "how many dishes?" wrote `[menu_summary()]`
+    // as its whole answer. All three finders required a `{...}` argument object,
+    // so the call was never recovered, no tool ran, and the raw marker was
+    // returned to the operator as if it were the answer.
+    const { text, toolCalls } = salvageToolCalls("[menu_summary()]", ["menu_summary", "orders_metrics"]);
+    expect(toolCalls).toHaveLength(1);
+    expect(toolCalls[0].name).toBe("menu_summary");
+    expect(parseToolArguments(toolCalls[0].arguments)).toEqual({});
+    expect(text).toBe("");
+  });
+
+  it("recovers the other no-argument shapes", () => {
+    for (const raw of ["menu_summary()", "[menu_summary]", "menu_summary( )"]) {
+      const { toolCalls } = salvageToolCalls(raw, ["menu_summary"]);
+      expect(toolCalls.map((c) => c.name)).toEqual(["menu_summary"]);
+    }
+  });
+
+  it("does not read a no-argument call out of a bracketed aside", () => {
+    // `[note]` names no tool, so it must stay prose.
+    const { toolCalls, text } = salvageToolCalls("شوف الملاحظة [note] بعدين", ["menu_summary"]);
+    expect(toolCalls).toHaveLength(0);
+    expect(text).toBe("شوف الملاحظة [note] بعدين");
   });
 
   it("is a no-op on ordinary prose", () => {
