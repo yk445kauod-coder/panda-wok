@@ -6,9 +6,9 @@ import { Lock } from "lucide-react";
 import { AdminForm } from "@/components/admin/form-kit";
 import { toggleFeatureFlagAction, updateSettingsAction } from "@/lib/actions/admin";
 import type { Json } from "@/lib/types/database";
-import { cn, humanise } from "@/lib/utils/format";
+import { humanise } from "@/lib/utils/format";
 
-import { useErrorText } from "@/components/i18n-provider";
+import { useErrorText, useI18n } from "@/components/i18n-provider";
 export type FeatureFlagRow = {
   key: string;
   label: string;
@@ -152,19 +152,48 @@ function coerce(kind: Kind, text: string): Json {
 }
 
 /**
+ * Keys the dedicated `StoreHoursControl` owns. They are pulled out of the
+ * generic list so the owner edits them graphically in one place rather than as
+ * four separate jsonb rows that can drift apart.
+ */
+export const HOURS_SETTING_KEYS = [
+  "ordering.accepting_orders",
+  "ordering.hours_enabled",
+  "ordering.open_time",
+  "ordering.close_time",
+] as const;
+
+/**
  * Business settings editor. The action accepts a single JSON payload under the
  * `values` key, so each control writes into local state and one hidden input
  * carries the whole array. Types are inferred from the stored value, which
  * keeps numbers and booleans as jsonb numbers and booleans rather than strings.
+ *
+ * The owner asked for a friendlier, more graphical surface than raw jsonb rows,
+ * so each field renders a translated name with the raw key beneath it, and
+ * object-valued settings (social links, structured hours) are folded into an
+ * "advanced" section rather than shown as a JSON textarea up front.
  */
 export function SettingsForm({ settings }: { settings: SettingRow[] }) {
+  const { t } = useI18n();
   const [draft, setDraft] = useState<Record<string, string>>(() =>
     Object.fromEntries(settings.map((setting) => [setting.key, initialText(setting.value)])),
   );
 
+  const { simple, advanced } = useMemo(() => {
+    const simpleRows: SettingRow[] = [];
+    const advancedRows: SettingRow[] = [];
+    for (const setting of settings) {
+      if (HOURS_SETTING_KEYS.includes(setting.key as (typeof HOURS_SETTING_KEYS)[number])) continue;
+      if (kindOf(setting.value) === "json") advancedRows.push(setting);
+      else simpleRows.push(setting);
+    }
+    return { simple: simpleRows, advanced: advancedRows };
+  }, [settings]);
+
   const groups = useMemo(() => {
     const map = new Map<string, SettingRow[]>();
-    for (const setting of settings) {
+    for (const setting of simple) {
       const prefix = setting.key.includes(".")
         ? setting.key.slice(0, setting.key.indexOf("."))
         : "general";
@@ -173,7 +202,19 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
       map.set(prefix, bucket);
     }
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [settings]);
+  }, [simple]);
+
+  // A friendly name is looked up per key; a missing translation returns the key
+  // path itself, which is detected and replaced with the humanised key so the
+  // label is always readable.
+  const labelFor = (key: string) => {
+    const translated = t(`admin.pages.settings.friendly.${key}`);
+    return translated.startsWith("admin.pages.settings.friendly.") ? humanise(key) : translated;
+  };
+  const groupLabel = (prefix: string) => {
+    const translated = t(`admin.pages.settings.groups.${prefix}`);
+    return translated.startsWith("admin.pages.settings.groups.") ? humanise(prefix) : translated;
+  };
 
   const payload = JSON.stringify(
     settings.map((setting) => ({
@@ -185,15 +226,15 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
   return (
     <AdminForm
       action={updateSettingsAction}
-      submitLabel="Save settings"
-      options={{ successMessage: "Settings updated." }}
+      submitLabel={t("admin.common.save")}
+      options={{ successMessage: t("admin.common.saved") }}
     >
       <input type="hidden" name="values" value={payload} />
 
       {groups.map(([prefix, rows]) => (
         <fieldset key={prefix} className="washi-panel p-4">
           <legend className="px-1 font-display text-sm font-semibold text-ink-900">
-            {humanise(prefix)}
+            {groupLabel(prefix)}
           </legend>
 
           <div className="mt-3 grid gap-4 lg:grid-cols-2">
@@ -210,7 +251,7 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
                     htmlFor={inputId}
                     className="block text-sm font-medium text-ink-900"
                   >
-                    {setting.key}
+                    {labelFor(setting.key)}
                   </label>
                   {setting.description ? (
                     <p className="mt-0.5 text-xs text-ink-700/65">
@@ -237,7 +278,9 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
                           className="size-4 accent-vermilion-600"
                         />
                         <span className="text-sm text-ink-800">
-                          {value === "true" ? "Enabled" : "Disabled"}
+                          {value === "true"
+                            ? t("admin.pages.loyalty.enabled")
+                            : t("admin.pages.loyalty.disabled")}
                         </span>
                       </label>
                     ) : kind === "time" ? (
@@ -253,19 +296,6 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
                         }
                         className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-ink-900 outline-none focus:border-miso-500"
                       />
-                    ) : kind === "json" ? (
-                      <textarea
-                        id={inputId}
-                        rows={3}
-                        value={value}
-                        onChange={(event) =>
-                          setDraft((current) => ({
-                            ...current,
-                            [setting.key]: event.target.value,
-                          }))
-                        }
-                        className="w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 py-2 font-mono text-xs outline-none focus:border-miso-500"
-                      />
                     ) : (
                       <input
                         id={inputId}
@@ -278,16 +308,18 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
                             [setting.key]: event.target.value,
                           }))
                         }
-                        className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
+                        className="h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm text-ink-900 outline-none focus:border-miso-500"
                       />
                     )}
                   </div>
 
-                  <p className="mt-1 flex items-center gap-1.5 text-[11px] text-ink-700/60">
+                  <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-700/60">
                     <Lock className="size-3" aria-hidden="true" />
-                    {setting.is_public ? "Public jsonb value" : "Internal jsonb value"}
-                    <span className={cn("rounded bg-ink-900/8 px-1.5 py-0.5", "font-mono")}>
-                      {kind}
+                    {setting.is_public
+                      ? t("admin.pages.settings.publicValue")
+                      : t("admin.pages.settings.internalValue")}
+                    <span className="rounded bg-ink-900/8 px-1.5 py-0.5 font-mono">
+                      {setting.key}
                     </span>
                   </p>
                 </div>
@@ -296,6 +328,45 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
           </div>
         </fieldset>
       ))}
+
+      {advanced.length > 0 ? (
+        <details className="washi-panel p-4">
+          <summary className="cursor-pointer font-display text-sm font-semibold text-ink-900">
+            {t("admin.pages.settings.advanced")}
+          </summary>
+          <p className="mt-1 text-xs text-ink-700/70">
+            {t("admin.pages.settings.advancedHint")}
+          </p>
+          <div className="mt-3 grid gap-4 lg:grid-cols-2">
+            {advanced.map((setting) => {
+              const inputId = `setting-${setting.key.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+              return (
+                <div key={setting.key}>
+                  <label htmlFor={inputId} className="block text-sm font-medium text-ink-900">
+                    {labelFor(setting.key)}
+                  </label>
+                  {setting.description ? (
+                    <p className="mt-0.5 text-xs text-ink-700/65">{setting.description}</p>
+                  ) : null}
+                  <textarea
+                    id={inputId}
+                    rows={3}
+                    value={draft[setting.key] ?? initialText(setting.value)}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        [setting.key]: event.target.value,
+                      }))
+                    }
+                    className="mt-1.5 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 py-2 font-mono text-xs text-ink-900 outline-none focus:border-miso-500"
+                  />
+                  <p className="mt-1 font-mono text-[11px] text-ink-700/60">{setting.key}</p>
+                </div>
+              );
+            })}
+          </div>
+        </details>
+      ) : null}
     </AdminForm>
   );
 }

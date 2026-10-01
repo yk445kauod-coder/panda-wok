@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { pickGroundedReport } from "@/lib/agent/ops-agent";
-import { buildDeterministicInsights, type InsightData } from "@/lib/crm/insights";
+import { buildMemoryDigest, pickGroundedReport } from "@/lib/agent/ops-agent";
+import {
+  buildDeterministicInsights,
+  type DashboardMetrics,
+  type InsightData,
+} from "@/lib/crm/insights";
 
 /**
  * Regression cover for two defects found in the live ops-agent output.
@@ -156,5 +160,52 @@ describe("category concentration — the share must not exceed 100%", () => {
     const concentration = findings.find((f) => f.title.startsWith("Category concentration"));
 
     expect(concentration?.observation).toContain("0%");
+  });
+});
+
+describe("buildMemoryDigest — one retrievable fact, not a report dump", () => {
+  const metrics = {
+    windowDays: 30,
+    ordersToday: 0,
+    ordersInWindow: 4,
+    revenueInWindow: 405.5,
+    avgOrderValue: 101.38,
+    newCustomers: 2,
+    returningCustomers: 1,
+    canceledOrders: 2,
+    cashCollected: 0,
+    statusBreakdown: [],
+    revenueByDay: [],
+    topItems: [
+      { name: "combo fried 8 pieces", quantity: 2, revenue: 680 },
+      { name: "Philadelphia Roll", quantity: 1, revenue: 215 },
+    ],
+    categoryMix: [],
+    stockWarnings: [],
+    feedbackSummary: { count: 1, averageRating: 5, distribution: [] },
+  } as unknown as DashboardMetrics;
+
+  it("carries the numbers a later run needs to compare", () => {
+    const digest = buildMemoryDigest(metrics);
+    expect(digest).toContain("4 طلب");
+    expect(digest).toContain("405.50 EGP");
+    expect(digest).toContain("101.38 EGP");
+    expect(digest).toContain("2 عميل جديد");
+    expect(digest).toContain("2 ملغي");
+    expect(digest).toContain("combo fried 8 pieces");
+  });
+
+  it("never carries report prose, so a stale narrative cannot become a fact", () => {
+    // The live defect: the row held the summary verbatim, including the
+    // known-bad "about 19000%" share, and the agent recalled it as real.
+    const digest = buildMemoryDigest(metrics);
+    expect(digest).not.toContain("Not enough order history");
+    expect(digest).not.toContain("19000");
+    expect(digest).not.toContain("directional only");
+  });
+
+  it("stays small and bounded", () => {
+    const digest = buildMemoryDigest(metrics);
+    expect(digest.length).toBeLessThanOrEqual(500);
   });
 });

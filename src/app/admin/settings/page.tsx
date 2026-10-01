@@ -6,9 +6,11 @@ import {
   type FeatureFlagRow,
   type SettingRow,
 } from "@/components/admin/settings-forms";
+import { StoreHoursControl } from "@/components/admin/store-hours-control";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatNumber } from "@/lib/utils/format";
 import { getAdminLocale, getT } from "@/lib/i18n/server";
+import { getPublicSettings } from "@/lib/services/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,11 @@ export default async function AdminSettingsPage() {
   await requireCapability("settings.manage");
 
   const t = await getT(await getAdminLocale());
-  const [flags, settings] = await Promise.all([listFeatureFlags(), listSettings()]);
+  const [flags, settings, publicSettings] = await Promise.all([
+    listFeatureFlags(),
+    listSettings(),
+    getPublicSettings(),
+  ]);
 
   const flagRows = flags as unknown as FeatureFlagRow[];
   const settingRows = settings as unknown as SettingRow[];
@@ -36,12 +42,18 @@ export default async function AdminSettingsPage() {
         </p>
       </header>
 
+      <StoreHoursControl
+        acceptingOrders={publicSettings.ordering.acceptingOrders}
+        hours={publicSettings.ordering.hours}
+      />
+
       <section aria-label={t("admin.pages.settings.flags")}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-display text-lg font-semibold text-ink-900">
-            Feature flags{" "}
+            {t("admin.pages.settings.flags")}{" "}
             <span className="text-sm font-normal text-ink-700/60">
-              ({formatNumber(enabledFlags)} of {formatNumber(flagRows.length)} {t("admin.pages.settings.on")})
+              ({formatNumber(enabledFlags)} {t("admin.pages.settings.on")}{" "}
+              {formatNumber(flagRows.length)})
             </span>
           </h2>
         </div>
@@ -64,32 +76,13 @@ export default async function AdminSettingsPage() {
         )}
       </section>
 
-      <section aria-label="Business settings">
+      <section aria-label={t("admin.pages.settings.business")}>
         <h2 className="mb-3 font-display text-lg font-semibold text-ink-900">
           {t("admin.pages.settings.business")}
         </h2>
 
         <p className="mb-3 text-sm text-ink-700/80">
-          Values are stored as jsonb, grouped by the prefix before the first dot. The numeric
-          rules —{" "}
-          <code className="rounded bg-ink-900/8 px-1 py-0.5 text-xs">delivery.fee</code>,{" "}
-          <code className="rounded bg-ink-900/8 px-1 py-0.5 text-xs">
-            delivery.free_over
-          </code>
-          , <code className="rounded bg-ink-900/8 px-1 py-0.5 text-xs">tax.rate</code>,{" "}
-          <code className="rounded bg-ink-900/8 px-1 py-0.5 text-xs">
-            ordering.min_order_total
-          </code>
-          ,{" "}
-          <code className="rounded bg-ink-900/8 px-1 py-0.5 text-xs">
-            ordering.max_qty_per_item
-          </code>{" "}
-          and{" "}
-          <code className="rounded bg-ink-900/8 px-1 py-0.5 text-xs">
-            loyalty.points_per_currency
-          </code>{" "}
-          — are read by the server-side order placement function, so a wrong number here
-          bills real customers wrongly. Change them deliberately.
+          {t("admin.pages.settings.businessHint")}
         </p>
 
         {settingRows.length === 0 ? (

@@ -62,6 +62,7 @@ export function lexicalSimilarity(a: string, b: string): number {
 async function isDuplicate(
   admin: NonNullable<ReturnType<typeof tryCreateAdminSupabase>>,
   scope: MemoryScope,
+  kind: string,
   subjectId: string | null,
   content: string,
 ): Promise<boolean> {
@@ -71,6 +72,9 @@ async function isDuplicate(
     .from("agent_memory")
     .select("content")
     .eq("scope", scope)
+    // Scoped to the same `kind`: a note and a report that happen to share wording
+    // are different memories and must not suppress one another.
+    .eq("kind", kind)
     .order("created_at", { ascending: false })
     .limit(50);
   query = subjectId ? query.eq("subject_id", subjectId) : query.is("subject_id", null);
@@ -92,7 +96,9 @@ export async function remember(params: {
   if (!content) return null;
 
   // Idempotence: the same note stated twice must not become two memories.
-  if (await isDuplicate(admin, params.scope, params.subjectId ?? null, content)) return null;
+  if (await isDuplicate(admin, params.scope, params.kind, params.subjectId ?? null, content)) {
+    return null;
+  }
 
   const embedding = await embedText(content);
   const { data, error } = await admin.rpc("add_agent_memory", {

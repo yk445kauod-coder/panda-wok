@@ -10,6 +10,7 @@ import {
   collectInsightData,
   getAiUsage,
   getDashboardMetrics,
+  type DashboardMetrics,
 } from "@/lib/crm/insights";
 import { listStockItems } from "@/lib/services/admin-catalog";
 import { recall, renderMemoryContext, remember } from "@/lib/agent/memory";
@@ -224,6 +225,53 @@ export function pickGroundedReport(params: {
 }
 
 /**
+ * The compact fact a run leaves in long-term memory.
+ *
+ * Deliberately *not* the report prose. Storing the summary verbatim was a real
+ * defect: it put 800 characters of narrative into one row — including whatever
+ * figure the prose happened to cite — so the agent later recalled a
+ * known-bad "about 19000%" share as if it were a fact, and the digest was
+ * almost useless for retrieval because one row contained everything. A memory
+ * row should be one retrievable fact, and these are the numbers a later run
+ * actually needs to compare against.
+ */
+export function buildMemoryDigest(
+  metrics: DashboardMetrics | Record<string, unknown>,
+  windowDays = 30,
+): string {
+  const num = (key: string): number => {
+    const raw = (metrics as Record<string, unknown>)[key];
+    const value = typeof raw === "number" ? raw : Number(raw);
+    return Number.isFinite(value) ? value : 0;
+  };
+  const topItems = Array.isArray((metrics as Record<string, unknown>).topItems)
+    ? ((metrics as Record<string, unknown>).topItems as { name?: string }[])
+    : [];
+  const warnings = Array.isArray((metrics as Record<string, unknown>).stockWarnings)
+    ? ((metrics as Record<string, unknown>).stockWarnings as unknown[])
+    : [];
+  const days = num("windowDays") || windowDays;
+
+  const top = topItems
+    .slice(0, 3)
+    .map((i) => i?.name ?? "")
+    .filter(Boolean)
+    .join("، ");
+  const parts = [
+    `ملخص تشغيل ${days} يوم:`,
+    `${num("ordersInWindow")} طلب`,
+    `${num("revenueInWindow").toFixed(2)} EGP إيراد مكتمل`,
+    `متوسط ${num("avgOrderValue").toFixed(2)} EGP`,
+    `${num("newCustomers")} عميل جديد`,
+    `${num("returningCustomers")} عميل عائد`,
+    `${num("canceledOrders")} ملغي`,
+    `${warnings.length} تحذير مخزون`,
+  ];
+  if (top) parts.push(`أعلى الأصناف: ${top}`);
+  return parts.join(" · ").slice(0, 500);
+}
+
+/**
  * Builds the report from live data. Observation and metrics always happen;
  * `proposalsEnabled` only gates whether actions are attached.
  */
@@ -433,11 +481,12 @@ export async function persistOpsReport(params: {
   }
 
   // A compact digest becomes owner memory, so the next run can reference what
-  // was reported last time instead of rediscovering it.
+  // was reported last time instead of rediscovering it. The digest is built from
+  // the metrics, not the report prose — see `buildMemoryDigest`.
   await remember({
     scope: "owner",
     kind: "ops_report",
-    content: `${params.report.headline}. ${params.report.summary}`.slice(0, 800),
+    content: buildMemoryDigest(params.report.metrics),
     metadata: { runId: runId as string, trigger: params.trigger },
   }).catch(() => null);
 

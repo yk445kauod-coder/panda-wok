@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -74,6 +75,7 @@ export function MobileNav({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const t = useT();
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   const entries = ENTRIES.filter((e) => {
     if (e.href === "/loyalty" && flags.loyalty === false) return false;
@@ -100,6 +102,18 @@ export function MobileNav({
     };
   }, [open]);
 
+  // Move focus into the sheet when it opens and return it to the trigger when it
+  // closes, so a keyboard or screen-reader user is not left behind the overlay.
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const first = sheetRef.current?.querySelector<HTMLElement>(
+      "button, a[href]",
+    );
+    first?.focus();
+    return () => previous?.focus?.();
+  }, [open]);
+
   const active = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
@@ -116,72 +130,86 @@ export function MobileNav({
         <span className="sr-only">{t("nav.more")}</span>
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <button
-            type="button"
-            aria-label={t("common.close")}
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-ink-950/50 backdrop-blur-sm"
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={t("nav.allPages")}
-            className="glass-bar absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-3xl pb-safe shadow-2xl"
-          >
-            <div className="mx-auto flex max-w-md items-center justify-between px-4 pt-4">
-              <h2 className="font-display text-base font-semibold text-ink-900">
-                {t("nav.allPages")}
-              </h2>
+      {open
+        ? createPortal(
+            // Portalled to <body> on purpose. Rendered inline, this sheet was
+            // trapped by the sticky header: `.washi-paper` runs `washi-sway`,
+            // which animates `transform`, and a transformed ancestor becomes the
+            // containing block for `position: fixed`. The backdrop then measured
+            // against the header's 4rem box and the sheet landed at y=-429 —
+            // off the top of the screen. A portal escapes that box entirely.
+            // `document` is safe here: the sheet only exists after a client
+            // click, so this never renders during SSR.
+            <div className="fixed inset-0 z-50 md:hidden">
               <button
                 type="button"
+                aria-label={t("common.close")}
                 onClick={() => setOpen(false)}
-                className="inline-flex size-9 items-center justify-center rounded-lg text-ink-700 transition-colors hover:bg-ink-900/5"
+                className="absolute inset-0 bg-ink-950/50 backdrop-blur-sm"
+              />
+              <div
+                ref={sheetRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label={t("nav.allPages")}
+                className="washi-paper absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-3xl pb-safe shadow-2xl"
               >
-                <X className="size-5" aria-hidden="true" />
-                <span className="sr-only">{t("common.close")}</span>
-              </button>
-            </div>
+                <div className="mx-auto flex max-w-md items-center justify-between px-4 pt-4">
+                  <h2 className="font-display text-base font-semibold text-ink-900">
+                    {t("nav.allPages")}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="inline-flex size-9 items-center justify-center rounded-lg text-ink-700 transition-colors hover:bg-ink-900/5"
+                  >
+                    <X className="size-5" aria-hidden="true" />
+                    <span className="sr-only">{t("common.close")}</span>
+                  </button>
+                </div>
 
-            <ul className="mx-auto grid max-w-md grid-cols-1 gap-1 px-3 pb-4 pt-2">
-              {entries.map((entry) => {
-                const Icon = entry.icon;
-                return (
-                  <li key={entry.href}>
-                    <Link
-                      href={entry.href}
-                      onClick={() => setOpen(false)}
-                      aria-current={active(entry.href) ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
-                        active(entry.href) ? "bg-vermilion-600/10" : "hover:bg-ink-900/5",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "grid size-9 shrink-0 place-items-center rounded-lg",
-                          active(entry.href)
-                            ? "bg-vermilion-600/15 text-vermilion-700"
-                            : "bg-ink-900/6 text-ink-700",
-                        )}
-                      >
-                        <Icon className="size-4.5" aria-hidden="true" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-medium text-ink-900">
-                          {t(entry.labelKey)}
-                        </span>
-                        <span className="block text-xs text-ink-700/70">{t(entry.hintKey)}</span>
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </div>
-      ) : null}
+                <ul className="mx-auto grid max-w-md grid-cols-1 gap-1 px-3 pb-4 pt-2">
+                  {entries.map((entry) => {
+                    const Icon = entry.icon;
+                    return (
+                      <li key={entry.href}>
+                        <Link
+                          href={entry.href}
+                          onClick={() => setOpen(false)}
+                          aria-current={active(entry.href) ? "page" : undefined}
+                          className={cn(
+                            "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
+                            active(entry.href) ? "bg-vermilion-600/10" : "hover:bg-ink-900/5",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "grid size-9 shrink-0 place-items-center rounded-lg",
+                              active(entry.href)
+                                ? "bg-vermilion-600/15 text-vermilion-700"
+                                : "bg-ink-900/6 text-ink-700",
+                            )}
+                          >
+                            <Icon className="size-4.5" aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-sm font-medium text-ink-900">
+                              {t(entry.labelKey)}
+                            </span>
+                            <span className="block text-xs text-ink-700/70">
+                              {t(entry.hintKey)}
+                            </span>
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

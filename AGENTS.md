@@ -2682,3 +2682,93 @@ the live project and clean up after themselves; verified zero leftovers.
 is guarded by `storage.protect_delete()`. Remove them through the Storage API
 (`supabase.storage.from(bucket).remove(paths)`); deleting the DB row alone leaves
 an orphaned object.
+
+
+## Mobile "More" sheet: the render bug was a transformed ancestor (2026-10-01)
+
+The owner reported the phone menu as "wrong and broken, not just colour". Both
+were true, and they were independent defects in the same sheet.
+
+**1. The sheet rendered off-screen at `y=-429`.** `mobile-nav.tsx` rendered its
+overlay inline, inside the sticky header. That header carries `.washi-paper`,
+which runs the `washi-sway` animation - and `washi-sway` animates `transform`.
+**A transformed ancestor becomes the containing block for `position: fixed`**, so
+the overlay's `inset-0` resolved against the header's 4rem box instead of the
+viewport: the backdrop measured 390x64 and the bottom-anchored sheet landed above
+the fold. The markup was correct; the containing block was not.
+
+Fix: `createPortal(..., document.body)`. The portal escapes the header entirely,
+so the fixed overlay is laid out against the viewport again. Verified live at
+390px: sheet rect `y=351, h=492` inside `innerHeight=844` (bottom = 843), in both
+LTR and RTL.
+
+**Rule:** any `position: fixed` overlay must not be a descendant of an animated
+or transformed element. `transform`, `filter`, `perspective`, `contain: paint`
+and `will-change: transform` all create a containing block for fixed children.
+Grep `@keyframes` in `globals.css` for `transform` before nesting an overlay, or
+just portal it - which is the safe default.
+
+**2. The text was 1.00:1.** The sheet was a `glass-bar` (dark lacquer, cream text
+by its own rule) but its children were filled with `text-ink-900` /
+`text-ink-700` - the *light*-surface palette. Dark-on-dark. It is now a
+`washi-paper` (cream) panel with ink text, matching the header: measured **17.1:1**
+on the rendered pixels.
+
+**How it was measured, and why the first attempt lied.** A DOM walk for
+`backgroundColor` reported the *light* ancestor, because `glass-bar` paints a
+`background` *gradient*, not a `background-color` - the walker skipped it. The
+trustworthy method is pixels: screenshot the region and compare the brightest
+glyph against the surface behind it. Note the sheet animates in; wait for the
+transform to settle or the measurement reads a half-slid panel.
+
+`tests/mobile-nav-sheet.test.ts` pins all of it: washi surface, no `glass-bar` in
+the dialog, `createPortal` to `document.body`, and the click-gated render.
+
+**Trap hit while fixing:** the first version guarded the portal with a `mounted`
+flag set from `useEffect`, which trips `react-hooks/set-state-in-effect`. It is
+unnecessary anyway - the sheet only opens from a client click, so `document`
+always exists when it renders.
+
+## Memory layer audit and the real hard task (2026-10-01)
+
+Ran the owner's request end to end ("detailed reports and a presentation deck")
+against the live project, then audited the memory underneath it.
+
+**The hard task works.** `runAgentTurn` made 4 tool calls, all `ok`
+(`create_document` x4), producing `sales_dashboard`, `crm_summary`,
+`inventory_report` and `slide_deck` - Arabic titles, `format=html`,
+`status=ready`, stored in the `artifacts` bucket. Verified on the rendered files:
+**0 `<script>`, 0 external URLs**, every `<svg>` balanced, and the deck is
+genuinely honest - "4 orders in the period - these figures are directional and
+need 30-50 orders to be reliable", with the ungrounded-figure guard keeping
+invented numbers out.
+
+**Vector memory is sound.** 6 rows, all embedded; `match_agent_memory` returns
+the exact row at similarity 1.0000 for its own vector and ranks sensibly below
+it. The live suite (`MEMORY_LIVE=1 tests/agent-memory-live.test.ts`) passes:
+embed -> recall-by-meaning -> no duplicate -> customer memory invisible to an
+owner query -> skill retrieval bounded.
+
+**Defect found and cleaned: 3 identical `ops_report` rows.** The digest migration
+stopped *new* prose blobs, but three pre-digest rows (md5-identical, English,
+"Not enough order history...") were still in the table. Removed. They were
+written when the dedup guard only looked at the newest 50 rows, so a repeat days
+later slipped past.
+
+**Dedup is now kind-scoped.** `isDuplicate` filters on `kind` as well as
+`scope`/`subject_id`, so a note and a report that happen to share wording can no
+longer suppress each other. The exact-duplicate case still returns `null`.
+
+**One stale `building` artifact** (`slide_deck`, 10:45) was retired to `failed`
+with the sweep's own message. `sweepStaleArtifacts` already runs on every
+`listDeliverables` read, so the console self-heals - this was the residue of a
+killed invocation, not a live bug.
+
+**Store hours, verified live** with the owner's own window (2 PM - 1 AM,
+Africa/Cairo) in a rolled-back transaction: 14:06 open, 13:59 closed, 23:30 open,
+00:30 open, 01:30 closed, 10:00 closed. `store_is_open()` is the single source of
+truth, so the checkout preview and `place_order` cannot disagree.
+
+**Note:** document chrome (`Panda Wok - generated ... - all figures from the live
+database`, chart labels) is still English inside the Arabic deliverables. Content
+is Arabic; the shell strings are not localised yet.
