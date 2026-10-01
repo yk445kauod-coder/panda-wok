@@ -74,3 +74,11 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy .pages --project-name=panda-wok --branch=${{ steps.target.outputs.branch }}
+
+      # The origin is on Workers Free (10 ms CPU), so a cold cache is what
+      # returns Error 1102. A fresh deployment starts empty; walk every public
+      # page once so the first real visitor is answered from the edge cache
+      # instead of paying for a cold render. Only meaningful on production.
+      - name: Warm the edge cache
+        if: steps.target.outputs.branch == 'feature/panda-wok-platform'
+        run: node scripts/warm-edge-cache.mjs https://panda-wok.pages.dev

@@ -109,10 +109,14 @@ describe("toCacheUrl", () => {
 });
 
 describe("EDGE_CACHE_CONTROL", () => {
-  it("uses a short fresh window with stale-while-revalidate", () => {
-    expect(EDGE_CACHE_CONTROL).toContain("s-maxage=60");
-    expect(EDGE_CACHE_CONTROL).toContain("stale-while-revalidate=300");
-    expect(EDGE_CACHE_CONTROL).toContain("stale-if-error=600");
+  it("uses a fresh window with long stale-while-revalidate", () => {
+    // The origin has a 10 ms CPU budget; a cold render is what returns 1102.
+    // The TTL must be long enough that cached pages do not keep going cold, and
+    // the SWR window long enough that the CDN keeps serving after it lapses.
+    expect(EDGE_CACHE_CONTROL).toContain("s-maxage=600");
+    expect(EDGE_CACHE_CONTROL).toContain("stale-while-revalidate=86400");
+    expect(EDGE_CACHE_CONTROL).toContain("stale-if-error=604800");
+    expect(EDGE_CACHE_CONTROL).toContain("public");
   });
 });
 

@@ -37,16 +37,31 @@ export const PUBLIC_PATHS = [
   "/cart",
 ];
 
-/** Seconds a cached page is fresh. Short on purpose: a rush win without a long
- * stale window. Raise it if the origin is ever under sustained load. */
-export const EDGE_TTL_SECONDS = 60;
+/**
+ * Seconds a cached page is fresh. The origin renders this app on a 10 ms CPU
+ * budget (Workers Free), so a *cold* render is what 1102s: a short TTL keeps
+ * evicting the only copies that can be served without re-running Next. Ten
+ * minutes is short enough that a change made directly in the database shows up
+ * promptly, and admin edits do not wait at all — a non-GET under `/admin` purges
+ * every key (`shouldPurgeAfter`).
+ */
+export const EDGE_TTL_SECONDS = 600;
 
-/** Seconds a stale copy may be served while revalidating in the background, so
- * a burst never waits on (or stampedes) the origin. */
-export const EDGE_SWR_SECONDS = 300;
+/**
+ * Seconds a stale copy may be served while revalidating in the background.
+ * This is the property that makes the cache durable: after the fresh window the
+ * CDN keeps answering from cache and refreshes in the background, so the origin
+ * sees one render per key per TTL instead of one per visitor. Long enough that
+ * the cache never goes cold between visits.
+ */
+export const EDGE_SWR_SECONDS = 86400;
+
+/** How long a stale copy may still be served if the origin errors (1102/5xx),
+ * so a cold-start failure is masked by the last good page instead of shown. */
+export const EDGE_STALE_IF_ERROR_SECONDS = 604800;
 
 /** The Cache-Control a cached public page is stored with. */
-export const EDGE_CACHE_CONTROL = `public, max-age=0, s-maxage=${EDGE_TTL_SECONDS}, stale-while-revalidate=${EDGE_SWR_SECONDS}, stale-if-error=600`;
+export const EDGE_CACHE_CONTROL = `public, max-age=0, s-maxage=${EDGE_TTL_SECONDS}, stale-while-revalidate=${EDGE_SWR_SECONDS}, stale-if-error=${EDGE_STALE_IF_ERROR_SECONDS}`;
 
 const isSupabaseAuthCookie = (name) =>
   name.startsWith("sb-") && name.includes("-auth-token");

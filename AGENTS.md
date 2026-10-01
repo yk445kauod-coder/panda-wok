@@ -2772,3 +2772,123 @@ truth, so the checkout preview and `place_order` cannot disagree.
 **Note:** document chrome (`Panda Wok - generated ... - all figures from the live
 database`, chart labels) is still English inside the Arabic deliverables. Content
 is Arabic; the shell strings are not localised yet.
+
+## Settings save: the Worker subrequest ceiling, not a data bug (2026-09-30)
+
+The owner's "حدث خطأ ما" when saving settings was **not** a bad value, a
+permission, or a trigger. It was the free-plan Worker's **per-request
+subrequest budget**.
+
+`updateSettingsAction` looped `updateSettingsSchema.values` and issued **one
+PostgREST PATCH per row — 34 of them today**. Reproduced on production with CDP
+and bisected by truncating the form payload:
+
+| keys saved | result |
+|---|---|
+| 4 | `تم الحفظ.` |
+| 17 | `تم الحفظ.` |
+| 26 | `تم الحفظ.` |
+| 34 | `حدث خطأ ما` (generic) |
+
+**The misleading part:** the server-action response is still **HTTP 200** with
+`{"ok":false,"error":{"code":"UNKNOWN"}}` — a failed server action is a normal
+200 in the RSC stream, so no status check, edge log, or Postgres log shows
+anything. Local `next dev` (no Worker, no subrequest cap) saved all 34 keys
+successfully, which is exactly why it looked like a data-dependent bug. The
+Supabase logs were empty because the cap is hit *before* the last requests leave
+the Worker.
+
+**Fix:** `apply_settings_batch(p_values jsonb, p_actor uuid)`
+(`20260930230000_apply_settings_batch.sql`), `SECURITY INVOKER` so the
+`settings_staff_write` RLS policy stays the authority, `search_path` pinned,
+execute granted to `authenticated`/`service_role` only. One subrequest, one
+transaction — so a bad value can no longer leave the settings half-written
+either. Verified live after deploy: 34 keys → `تم الحفظ.`
+
+**Two lessons worth keeping:**
+1. **A `for` loop of PostgREST writes in a server action is a budget leak, not a
+   style choice.** Anything that writes N rows from one request should be one
+   RPC. The same shape exists wherever a form maps to many rows.
+2. **An action failure is HTTP 200.** Debug it by reading the RSC response body
+   (`Network.getResponseBody` shows `"ok":false,…`), never by status code, and
+   reproduce it in the *deployed* runtime — `next dev` cannot show a Worker cap.
+
+## The hard task, verified end to end (2026-09-30)
+
+The owner's request ("detailed reports + a presentation deck") runs green live:
+
+- `AI_LIVE=1 tests/agent-live.test.ts` — 4/4, including the exact Arabic prompt;
+  `create_document` produces real `sales_dashboard`, `crm_summary`,
+  `inventory_report` and `slide_deck` artifacts.
+- `MEMORY_LIVE=1 tests/agent-memory-live.test.ts` — 8/8: embed → recall **by
+  meaning** → identical fact is a no-op → a `customer`-scope row is invisible to
+  an `owner` query → skill retrieval bounded to ≤6 chunks → full cleanup.
+
+**The memory layer is complete and live**, not aspirational: `agent_memory`
+(embedded, `match_agent_memory` cosine-ranked) plus a lazy `agent_skills` index
+(AGENTS.md + skills.md chunked and embedded), with `recall`/`remember` as real
+registry tools in the loop. Embeddings are Workers AI `@cf/baai/bge-m3` (1024
+dims) keyless via the binding, degrading to lexical Jaccard when unreachable.
+
+
+## Error 1102 is `exceededCpu` on cold starts, and the Free plan is the ceiling (2026-09-30)
+
+**Root cause, proven, not inferred.** Error 1102 is `outcome: "exceededCpu"` —
+`"Worker exceeded CPU time limit."` — on **cold-start renders**, and it is
+*systemic*, not route-specific:
+
+- `wrangler pages deployment tail` while bursting shows the failure record:
+  `"outcome": "exceededCpu"`, `"cpuTime": 10`, `"wallTime": 12-25`, exceptions
+  `"Worker exceeded CPU time limit."`. `cpuTime` pins at exactly **10 ms** — the
+  Workers **Free** plan per-request CPU ceiling.
+- The same route in the same burst succeeds with `cpuTime` 137-165 ms
+  (`/admin/orders` 137, `/admin/analytics` 165) and up to 1216 ms. Cloudflare
+  grants isolates "flexibility" for occasional overshoot, which is why a warm
+  request passes and a concurrent cold one dies.
+- Per-route CPU (warm, sequential): `/admin/settings` 78 ms, `/admin/orders`
+  137, `/admin/analytics` 165, and even `/about` — the lightest page — is over
+  10 ms cold. **No route can cold-start on Free.**
+- The Pages analytics confirm it: `pagesFunctionsInvocationsAdaptiveGroups` with
+  `status: "exceededResources"` counts 3 (09-24), **479 (09-28)**, 159 (09-29),
+  17 (09-30), 44 (10-01). `subrequests` are **1.0-1.6 per request** — the
+  subrequest budget is *not* the cause, CPU is.
+
+**What does NOT fix it.** `usage_model: "unbound"` was applied to both Pages
+deployment configs and changed nothing — the higher CPU limit (up to 5 minutes)
+is a **Workers Paid** feature. The only real lever is a plan upgrade, or keeping
+the origin off the hot path.
+
+**What the edge cache already does.** `scripts/pages/edge-cache.js` +
+`_worker.js` answer anonymous public GETs from `caches.default`, so warm traffic
+is unaffected (verified: 20/20 `x-edge-cache: HIT` under burst). The failure
+window is a **cold cache** — after a deploy, or after the short TTL let the only
+copies expire. This is why the 09-28 spike lines up with a burst of deployments.
+
+**What was changed (free-plan hardening).** The cache is now durable rather than
+short-lived: `s-maxage=600`, `stale-while-revalidate=86400`,
+`stale-if-error=604800` (was 60/300/600). `stale-while-revalidate` is the
+property that matters — after the fresh window the CDN keeps answering and
+refreshes in the background, so the cache never goes cold between visits. Admin
+edits still purge immediately (`shouldPurgeAfter`), so no edit waits for the TTL.
+A failed render is still never stored.
+
+**A deploy must never leave the site cold.** `scripts/warm-edge-cache.mjs`
+(`npm run pages:warm`) walks every public page in both locales, sequentially with
+retries, and is now the last step of `pages:deploy` and of the `Deploy Pages`
+workflow. Without it, the first visitor after a deploy pays for a cold render and
+can get a 1102.
+
+**Still open, and the honest answer:** admin routes cannot run on Free at all
+(78-165 ms vs a 10 ms cap), so a cold admin load or a burst of staff activity
+will still 1102. That is a **plan decision**, not a code bug. Caching admin pages
+is not an option — they are per-session and must stay `no-store`. Reducing their
+CPU (fewer `motion` components, narrower selects, `optimizePackageImports` for
+`lucide-react`/`motion`) is worth doing regardless, but it will not close a
+10 ms gap.
+
+**Verification method worth reusing.** Burst a route with N concurrent requests
+and read `wrangler pages deployment tail` for the `cpuTime`/`outcome` pair. The
+Cloudflare GraphQL `pagesFunctionsInvocationsAdaptiveGroups` (dimensions:
+`datetime`, `date`, `status`, `scriptName`; sums: `requests`, `subrequests`,
+`duration`) is the historical view. `curl -I` sends HEAD, which the edge cache
+refuses — always verify cache behaviour with a real GET.

@@ -101,6 +101,9 @@ export default {
         ctx.waitUntil(cache.put(cacheKey, cacheable.clone()));
         return withCacheStatus(cacheable, "MISS");
       }
+      // A failed render (1102 / 5xx) must not become the stored copy. If we hold
+      // no stale copy to mask it with, surface it; the next successful render
+      // caches, and `stale-if-error` covers the window once one exists.
       return response;
     }
 
