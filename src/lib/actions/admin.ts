@@ -1430,16 +1430,18 @@ export async function updateSettingsAction(
 
   const supabase = await createServerSupabase();
 
-  // Update one row at a time so a single bad key cannot silently drop the rest.
-  for (const entry of parsed.data.values) {
-    const { error } = await supabase
-      .from("settings")
-      .update({ value: entry.value as never, updated_by: session.actorId })
-      .eq("key", entry.key);
+  // One round trip for the whole form. The previous loop issued a PATCH per row
+  // (34 today) and blew the Worker's per-request subrequest budget on the free
+  // plan: the save failed part-way with a generic error while the response was
+  // still a 200. The RPC applies the array in a single transaction, so a bad
+  // value also can no longer leave the settings half-written.
+  const { error } = await supabase.rpc("apply_settings_batch", {
+    p_values: parsed.data.values as never,
+    p_actor: session.actorId ?? undefined,
+  });
 
-    if (error) {
-      return actionError(error);
-    }
+  if (error) {
+    return actionError(error);
   }
 
   await logAudit(supabase, {

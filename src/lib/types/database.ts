@@ -2975,6 +2975,10 @@ export type Database = {
         }
         Returns: string
       }
+      apply_settings_batch: {
+        Args: { p_actor?: string; p_values: Json }
+        Returns: number
+      }
       approve_ops_action: {
         Args: { p_id: string; p_note?: string }
         Returns: undefined
@@ -3322,6 +3326,7 @@ export type Database = {
         Args: { p_default: number; p_key: string }
         Returns: number
       }
+      store_is_open: { Args: { p_now?: string }; Returns: boolean }
     }
     Enums: {
       backup_kind:

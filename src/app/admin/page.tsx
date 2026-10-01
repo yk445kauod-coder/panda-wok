@@ -14,6 +14,8 @@ import { RadarChart } from "@/components/charts/radar-chart";
 import { Heatmap } from "@/components/charts/heatmap";
 import { formatDateTime, formatNumber, formatPrice, humanise } from "@/lib/utils/format";
 import { getAdminLocale, getT } from "@/lib/i18n/server";
+import { getPublicSettings } from "@/lib/services/catalog";
+import { ManualCloseLever } from "@/components/admin/manual-close-lever";
 
 /**
  * Operational overview, built as a visual report rather than a wall of numbers.
@@ -26,9 +28,10 @@ export default async function AdminOverviewPage() {
   const session = await requireCapability("orders.view");
   const locale = await getAdminLocale();
   const t = await getT(locale);
-  const [metrics, unread] = await Promise.all([
+  const [metrics, unread, settings] = await Promise.all([
     getDashboardMetrics(30),
     countUnreadForStaff().catch(() => 0),
+    getPublicSettings(),
   ]);
 
   const noData = metrics.ordersInWindow === 0;
@@ -108,6 +111,8 @@ export default async function AdminOverviewPage() {
           </div>
         </div>
       </header>
+
+      <ManualCloseLever accepting={settings.ordering.acceptingOrders} />
 
       {noData ? (
         <EmptyState

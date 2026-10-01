@@ -1270,6 +1270,18 @@ export const en = {
         "analytics": "Analytics",
       },
     },
+    "closeLever": {
+      "title": "Manual close",
+      "stateOpen": "Open",
+      "stateClosed": "Closed",
+      "openHint": "The kitchen is taking orders right now.",
+      "closedHint": "Orders are stopped. Customers see the kitchen as closed.",
+      "opened": "Kitchen is open — taking orders.",
+      "closed": "Kitchen closed — orders are stopped.",
+      "failed": "Could not change the kitchen state.",
+      "noteOpen": "This switch overrides the opening hours: turning it off closes the kitchen immediately, even inside the daily window. The hours still decide when it reopens automatically.",
+      "noteClosed": "Nothing is accepted until you switch this back on. The opening hours can reopen the kitchen by themselves once their window starts.",
+    },
     "dash": {
       "outOf5": "out of 5",
       "welcomeNamed": "Welcome back, {name}",
