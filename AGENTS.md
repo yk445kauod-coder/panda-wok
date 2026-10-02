@@ -2892,3 +2892,86 @@ Cloudflare GraphQL `pagesFunctionsInvocationsAdaptiveGroups` (dimensions:
 `datetime`, `date`, `status`, `scriptName`; sums: `requests`, `subrequests`,
 `duration`) is the historical view. `curl -I` sends HEAD, which the edge cache
 refuses — always verify cache behaviour with a real GET.
+
+## Hard-task exercise: reports, deck, and the memory system (2026-10-02)
+
+The owner asked the ops agent to be tried on a hard task — detailed reports, a
+presentation explaining the business — with strong short- and long-term vector
+memory. All of it was exercised **live**, not read from the code.
+
+### Deliverables all render, and the "failed" rows are honest, not a bug
+All 13 kinds render against the live DB. Verified with a throwaway probe:
+`sales_dashboard`, `crm_summary`, `inventory_report`, `strategy_brief`,
+`slide_deck`, `menu_engineering`, `weekly_kpi` — every HTML page had **0
+`<script>`, 0 external URLs** and parsed SVG charts. Then created the six
+owner-facing documents for real via `createDeliverable()`; all landed `ready` in
+`agent_artifacts` and the signed download URL resolved (`DOWNLOAD_URL_OK=true`).
+
+Two rows in the library were `failed` with *"Rendering did not finish (the
+process was interrupted). Try again."* — every one of them a `slide_deck`, the
+heaviest kind (charts + many slides). That is the designed outcome, not a
+defect: a Worker killed at the CPU/subrequest cap never throws, so
+`sweepStaleArtifacts()` retires the orphaned `building` row instead of leaving it
+spinning. The deck renders fine in-process (8.4–9.6 KB, 3 SVGs, 6 slides). If it
+fails from the admin UI it is a Cloudflare plan limit, and the honest fix is a
+longer-lived render (queue/`waitUntil`), not a code change.
+
+### Vector memory is genuinely two-tier, verified end to end
+- **Long-term (vector):** `remember()` stores a fact and `recall()` finds it by
+  **meaning**. Live proof: stored *"العميل المميز بيطلب دايماً بدون بصل"*, recalled
+  with the paraphrase *"تفضيلات العميل بدون بصل"* at **0.71 similarity** (the
+  `match_agent_memory` RPC does the semantic ranking; lexical similarity is the
+  fallback). `captureTurnMemory()` also auto-captures a turn from the operator's
+  own words when they say "افتكر…" — no explicit tool call needed. Live
+  `agent_memory`: 4 rows, all `has_embedding = true`, kinds `owner_note` +
+  `ops_report`.
+- **Short-term:** `compactAgentHistory()` keeps the newest turns verbatim and
+  folds older ones into a rolling summary built from the operator's **own
+  question lines** (never a model paraphrase, so it cannot invent), capped at
+  1600 chars and refreshed only every `SUMMARY_REFRESH_AFTER` uncovered turns —
+  deterministic and free, no model call per turn.
+
+**Gap worth noting, not yet closed:** the thread summary is not promoted into
+long-term memory. When a long chat is compacted, the older turns leave the
+prompt without a durable record, so a fact stated early in a long session can be
+lost unless it matched a "remember" pattern. A `captureTurnMemory` that also
+files the compacted summary as an `ops_report`-style memory would close it.
+
+### Ops agent runs the hard path live
+`runOpsReport({trigger:"manual"})` → provider `workers-ai`, model
+`llama-4-scout-17b-16e-instruct`, Egyptian-Arabic headline/summary, 4 proposed
+actions (`newsletter`, `restock`, `price_review`, `deliverable`). The figure
+grounding guard fired on that run (*"model reply cited figures absent from the
+snapshot; keeping the deterministic report"*) and fell back to the Arabic
+deterministic findings — the guard working, not a failure. Deterministic
+insights are Arabic-first: `[thin_history]`, `[category_concentration]` with
+`Appetizers عمل 380 ج.م، حوالي 100% من إيراد الأصناف`.
+
+### CRM notes + tags verified in a real browser
+With a forged gate cookie, `/admin/crm/<id>` renders the panel and a tag click
+through the **real server action** wrote a `customer_tag_links` row
+(`assigned_by` set), and `/admin/crm/segments` then showed *"عميل مميز 1"*.
+All verification rows (note + tag link) were deleted afterwards; 0 leftovers.
+
+### Other original goals — confirmed already implemented
+- **Team library:** `/admin/agent` lists deliverables with signed downloads,
+  `listArtifactComments` (discuss), and `reuseArtifactAction` (reuse_count) —
+  owner/admin view/export/comment/reuse all present.
+- **Configurable availability hours:** `src/lib/services/store-hours.ts`
+  (17 tests) gates ordering on `ordering.accepting_orders` +
+  `ordering.hours_enabled` + `open_time`/`close_time`, evaluated in
+  **Africa/Cairo** with overnight windows supported. Live settings are
+  `14:00`–`01:00` but `hours_enabled = false` (24h open, the owner's current
+  choice); flipping the switch in Admin → Settings enforces it with no deploy.
+- **Skill index:** `retrieveSkills()` returned the right repo skill for a
+  "تقرير مبيعات وعرض تقديمي" query.
+
+### Verification method that caught things
+Probes were run as temporary `tests/*-tmp.test.ts` (so they load `.env.local`
+via the vitest config) and deleted afterwards — `npx tsx` on a bare script
+hung, because a module in the import graph reaches `env.ts`/a request scope.
+Never leave a probe in `tests/`.
+
+State: typecheck clean, lint 0 errors (17 pre-existing `no-img-element`
+warnings), **381 passed / 15 skipped**, `next build` green. Committed `acf7fe5`.
+
