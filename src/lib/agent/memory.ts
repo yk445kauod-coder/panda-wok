@@ -265,6 +265,41 @@ export async function backfillMemoryEmbeddings(limit = 100): Promise<number> {
 
 /* ------------------------------------------------------- automatic capture */
 
+/**
+ * Promotes a compacted thread summary into long-term memory.
+ *
+ * The rolling summary on `agent_threads` only helps while that thread is open:
+ * once older turns are compacted they leave the prompt, and a *new* session
+ * cannot recall them. Filing the summary as one memory row per thread keeps the
+ * substance of a long session recallable across sessions.
+ *
+ * `kind = session:<threadId>` keeps it bounded — a later compaction of the same
+ * thread replaces its row instead of appending another copy. It is deliberately
+ * *not* `ops_report`: the lexical fallback ranks across kinds, so reusing that
+ * kind would let a chat digest compete with the scheduled reports for the few
+ * recall slots. A distinct kind keeps both reachable without crowding.
+ */
+export async function promoteThreadSummary(params: {
+  threadId: string;
+  summary: string;
+}): Promise<string | null> {
+  const content = params.summary.trim();
+  if (!content) return null;
+  const admin = tryCreateAdminSupabase();
+  if (!admin) return null;
+
+  const kind = `session:${params.threadId}`;
+  // Replace this thread's previous digest rather than accumulating one per compaction.
+  await admin.from("agent_memory").delete().eq("scope", "owner").eq("kind", kind);
+
+  return remember({
+    scope: "owner",
+    kind,
+    content,
+    metadata: { source: "thread_summary", threadId: params.threadId },
+  });
+}
+
 /** Markers that mean "keep this": an explicit instruction to remember. */
 const REMEMBER_PATTERNS: RegExp[] = [
   /اف(?:تكر|اكر|هم)/, // افتكر / افتهم

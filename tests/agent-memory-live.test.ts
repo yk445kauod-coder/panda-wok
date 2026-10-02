@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { deleteAgentMemory, lexicalSimilarity, recall, remember } from "@/lib/agent/memory";
+import {
+  deleteAgentMemory,
+  lexicalSimilarity,
+  listAgentMemory,
+  promoteThreadSummary,
+  recall,
+  remember,
+} from "@/lib/agent/memory";
 import { listIndexedSkills, retrieveSkills } from "@/lib/agent/skills";
 import { embedText } from "@/lib/ai/embeddings";
 
@@ -98,6 +105,32 @@ describe.skipIf(!enabled || !hasSupabase)("agent memory + skills (live)", () => 
       expect(sources.length).toBeGreaterThan(0);
     },
     60_000,
+  );
+
+  it(
+    "promotes a compacted thread summary into durable memory, one row per thread",
+    async () => {
+      const threadId = `probe-thread-${stamp}`;
+      const summary = `ملخص المحادثة السابقة:\n- اشتغلنا على عرض تقديمي وأبحاث أسعار ${stamp}`;
+
+      const id = await promoteThreadSummary({ threadId, summary });
+      expect(id).toBeTruthy();
+      if (id) created.push(id);
+
+      // Re-promoting the same thread must replace, not accumulate: exactly one
+      // row carries this thread's kind, so a long session cannot grow the store.
+      const again = await promoteThreadSummary({ threadId, summary });
+      if (again) created.push(again);
+
+      const rows = await listAgentMemory(200);
+      const forThread = rows.filter((r) => r.kind === `session:${threadId}`);
+      expect(forThread.length).toBe(1);
+
+      // And it is recallable by meaning from a fresh session's query.
+      const hits = await recall({ query: "ملخص الشغل على العرض التقديمي", scope: "owner", matchCount: 10 });
+      expect(hits.some((h) => h.content.includes(String(stamp)))).toBe(true);
+    },
+    120_000,
   );
 
   it("cleans up everything it wrote", async () => {

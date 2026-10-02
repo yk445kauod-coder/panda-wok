@@ -12,7 +12,7 @@ import {
   deleteAgentThread,
   titleThreadFromFirstMessage,
 } from "@/lib/services/agent-chat";
-import { captureTurnMemory } from "@/lib/agent/memory";
+import { captureTurnMemory, promoteThreadSummary } from "@/lib/agent/memory";
 import { logAudit } from "@/lib/activity/log";
 import { createAdminSupabase } from "@/lib/supabase/server";
 
@@ -56,7 +56,14 @@ export async function askAgentAction(formData: FormData): Promise<FormActionResu
     // Short-term memory: the recent turns verbatim, older turns folded into a
     // rolling summary so a long session keeps its thread. Long-term memory is
     // written after the answer, from what the operator explicitly asked to keep.
-    const { history } = await compactAgentHistory(activeThread);
+    const { summary, history } = await compactAgentHistory(activeThread);
+    // A summary only appears once the thread outgrows the recent window, so this
+    // is a no-op for a normal short session. When it does appear, file it as a
+    // durable memory too — otherwise the compacted older turns are reachable
+    // only while this thread is open, and a new session cannot recall them.
+    if (summary) {
+      await promoteThreadSummary({ threadId: activeThread, summary }).catch(() => null);
+    }
     const result = await runAgentTurn({
       question: message,
       history,

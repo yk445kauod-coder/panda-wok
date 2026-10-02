@@ -35,6 +35,7 @@ cloudflare-env.d.ts
 .DS_Store
 *.pem
 .agent_tmp/
+.agents_tmp/
 
 # vercel
 .vercel

@@ -3113,5 +3113,27 @@ agent's `recall_memory` / `remember_memory` are real registry tools in the loop,
 and `captureTurnMemory` auto-files a fact from the operator's own words.
 
 State: typecheck clean, lint 0 errors (17 pre-existing `no-img-element`
-warnings), **394 passed / 15 skipped**, `next build` + OpenNext build green.
+warnings) **394 passed / 15 skipped**, `next build` + OpenNext build green.
+
+## Thread summaries now promote into durable memory (2026-10-02)
+
+The last memory gap is closed: when a chat thread outgrows the recent window and
+`compactAgentHistory` folds older turns into a rolling summary, that summary is
+now **also filed as a durable memory** (`promoteThreadSummary` in
+`src/lib/agent/memory.ts`), so the substance of a long session is recallable by
+a *new* session, not only while the thread is open. It is:
+
+- **Bounded** — `kind = session:<threadId>`, so a later compaction of the same
+  thread replaces its one row instead of appending another copy. The store
+  cannot grow per long session.
+
+- **Distinct from `ops_report`** — reusing that kind would let a chat digest
+  compete with the scheduled reports for the few recall slots; a distinct kind
+  keeps both reachable without crowding. The chat action
+  (`src/lib/actions/agent-chat.ts`) calls it only when a summary actually appears
+  (i.e. once the thread outgrows the window), so normal short sessions stay
+  untouched.
+- **Live-verified** (`MEMORY_LIVE=1 tests/agent-memory-live.test.ts`, 9/9): a
+  promoted digest is recallable by meaning from a fresh query, re-promoting
+  the same thread leaves exactly one row, and cleanup removes it.
 
