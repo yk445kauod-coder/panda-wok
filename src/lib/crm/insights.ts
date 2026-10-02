@@ -282,6 +282,12 @@ async function loadDashboardMetrics(days: number): Promise<DashboardMetrics> {
 // ---------------------------------------------------------------------------
 
 export type InsightRecommendation = {
+  /**
+   * Stable machine id, independent of the wording. Titles are localised (the
+   * console is Arabic-first), so tests and callers key off this instead of
+   * matching a translated string.
+   */
+  key: InsightKey;
   title: string;
   observation: string;
   evidence: string[];
@@ -290,6 +296,18 @@ export type InsightRecommendation = {
   confidenceReason: string;
   source: "data" | "ai";
 };
+
+export type InsightKey =
+  | "thin_history"
+  | "frequent_pairing"
+  | "falling_demand"
+  | "growing_demand"
+  | "stock_out"
+  | "stock_tight"
+  | "lapsed_customers"
+  | "rating_below_target"
+  | "menu_breadth"
+  | "category_concentration";
 
 export type InsightsReport = {
   generatedAt: string;
@@ -661,7 +679,7 @@ export async function generateInsights(params: {
       { role: "system", content: params.systemInstruction },
       {
         role: "user",
-        content: `DATA\n----\n${context}\n----\n\nWrite your observations now.`,
+        content: `البيانات\n----\n${context}\n----\n\nاكتب ملاحظاتك دلوقتي بالمصري.`,
       },
     ],
     temperature: 0.25,
@@ -712,24 +730,28 @@ export async function generateInsights(params: {
 }
 
 /**
- * Rule-based findings. Each one names the numbers it came from and states its
- * confidence honestly, including when the data is too thin to conclude.
+ * The deterministic pass. It always runs, needs no model, and every sentence is
+ * Egyptian Arabic — the console is Arabic-first, and these findings are what a
+ * staff member reads when the model is unavailable. Numbers and dish names are
+ * interpolated as-is (never invented); only the wording is localised.
  */
 export function buildDeterministicInsights(data: InsightData): InsightRecommendation[] {
   const out: InsightRecommendation[] = [];
+  const money = (n: number) => `${n} ج.م`;
 
   if (data.totals.orders < 5) {
     out.push({
-      title: "Not enough order history for reliable patterns yet",
-      observation: `Only ${data.totals.orders} non-cancelled orders were recorded in the last ${data.windowDays} days.`,
+      key: "thin_history",
+      title: "لسه مفيش تاريخ طلبات كفاية",
+      observation: `في آخر ${data.windowDays} يوم اتسجّل ${data.totals.orders} طلب بس (بدون الملغية).`,
       evidence: [
-        `orders in window: ${data.totals.orders}`,
-        `finished revenue: ${data.totals.revenue} EGP`,
+        `عدد الطلبات في المدة: ${data.totals.orders}`,
+        `إيراد الطلبات المكتملة: ${money(data.totals.revenue)}`,
       ],
       suggestedAction:
-        "Treat the findings below as directional only. Revisit once the window contains at least 30 to 50 orders.",
+        "خد النتايج اللي تحت على سبيل الاسترشاد بس، ورجعلها تاني لما تبقى عندك 30 لـ 50 طلب في المدة.",
       confidence: "low",
-      confidenceReason: "Small sample size; percentages from a few orders swing wildly.",
+      confidenceReason: "العيّنة صغيرة، والنسب بتتغير كتير مع عدد طلبات قليل.",
       source: "data",
     });
   }
@@ -737,14 +759,15 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
   if (data.pairs.length > 0) {
     const best = data.pairs[0];
     out.push({
-      title: `Frequent pairing: ${best.a} with ${best.b}`,
-      observation: `These two appeared in the same order ${best.count} times in the last ${data.windowDays} days.`,
+      key: "frequent_pairing",
+      title: `الطلب المتكرر مع بعض: ${best.a} مع ${best.b}`,
+      observation: `الاتنين اتطلبوا في نفس الأوردر ${best.count} مرة في آخر ${data.windowDays} يوم.`,
       evidence: data.pairs
         .slice(0, 4)
-        .map((p) => `${p.a} + ${p.b}: ${p.count} orders`),
-      suggestedAction: `Offer ${best.b} as a one-tap add-on when ${best.a} is in the basket, and measure whether attach rate rises.`,
+        .map((p) => `${p.a} + ${p.b}: ${p.count} طلب`),
+      suggestedAction: `اعرض ${best.b} كإضافة بضغطة واحدة لما ${best.a} يبقى في السلة، وقيس إذا نسبة الإضافة زادت.`,
       confidence: best.count >= 10 ? "high" : best.count >= 5 ? "medium" : "low",
-      confidenceReason: `Based on ${best.count} co-occurrences; more orders would make the pairing more reliable.`,
+      confidenceReason: `مبني على ${best.count} مرة اتطلبوا مع بعض؛ طلبات أكتر هتخلي الربط أوضح.`,
       source: "data",
     });
   }
@@ -755,16 +778,17 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
 
   if (declined) {
     out.push({
-      title: `Falling demand: ${declined.name}`,
-      observation: `Quantity sold moved from ${declined.priorQty} in the previous window to ${declined.recentQty} now.`,
+      key: "falling_demand",
+      title: `الطلب بينزل: ${declined.name}`,
+      observation: `الكمية المبيعة نزلت من ${declined.priorQty} في المدة اللي قبلها لـ ${declined.recentQty} دلوقتي.`,
       evidence: [
-        `previous window quantity: ${declined.priorQty}`,
-        `current window quantity: ${declined.recentQty}`,
+        `الكمية في المدة السابقة: ${declined.priorQty}`,
+        `الكمية في المدة الحالية: ${declined.recentQty}`,
       ],
-      suggestedAction: `Check whether ${declined.name} was frequently out of stock or hidden, then consider a short promotion or repositioning on the menu page.`,
+      suggestedAction: `اتأكد إذا ${declined.name} كان كتير نفدت كميته أو كان مخفي، وبعدها فكّر في عرض لفترة قصيرة أو تغيير مكانه في صفحة المنيو.`,
       confidence: "medium",
       confidenceReason:
-        "Two comparable windows are compared; seasonality and stock outages are not separated here.",
+        "في مدتين متقارنتين، بس الموسم وتوقف المخزون مش مفصولين هنا.",
       source: "data",
     });
   }
@@ -775,15 +799,16 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
 
   if (rising) {
     out.push({
-      title: `Growing demand: ${rising.name}`,
-      observation: `Quantity sold rose from ${rising.priorQty} to ${rising.recentQty} between the two windows.`,
+      key: "growing_demand",
+      title: `الطلب بيزيد: ${rising.name}`,
+      observation: `الكمية المبيعة طلعت من ${rising.priorQty} لـ ${rising.recentQty} بين المدتين.`,
       evidence: [
-        `previous window quantity: ${rising.priorQty}`,
-        `current window quantity: ${rising.recentQty}`,
+        `الكمية في المدة السابقة: ${rising.priorQty}`,
+        `الكمية في المدة الحالية: ${rising.recentQty}`,
       ],
-      suggestedAction: `Keep enough stock for ${rising.name} and consider giving it a featured slot on the menu.`,
+      suggestedAction: `خلي عندك مخزون كفاية من ${rising.name} وفكّر تديه مكان مميز في المنيو.`,
       confidence: "medium",
-      confidenceReason: "Growing demand in the data; the cause is not established.",
+      confidenceReason: "الطلب بيزيد في البيانات، بس السبب لسه مش واضح.",
       source: "data",
     });
   }
@@ -793,15 +818,16 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
   );
   if (riskyStock.length > 0) {
     out.push({
-      title: "Best sellers linked to empty stock",
-      observation: `${riskyStock.length} of the best-selling dishes depend on a stock item that is currently at zero.`,
+      key: "stock_out",
+      title: "أصناف مطلوبة ومخزونها صفر",
+      observation: `${riskyStock.length} من الأصناف الأكثر مبيعًا معتمدة على خامة مخزونها دلوقتي صفر.`,
       evidence: riskyStock.map(
-        (row) => `${row.item} (sold ${row.quantity}) depends on ${row.stockName}: ${row.stockQty} ${row.unit}`,
+        (row) => `${row.item} (اتباع ${row.quantity}) معتمد على ${row.stockName}: ${row.stockQty} ${row.unit}`,
       ),
       suggestedAction:
-        "Restock these ingredients or mark the affected dishes unavailable so customers do not order something the kitchen cannot make.",
+        "اتّبّع الخامات دي أو اعلن الأصناف اللي متأثرة كغير متاحة عشان العميل ميطالبش بحاجة المطبخ مش قادر يعملها.",
       confidence: "high",
-      confidenceReason: "Stock quantity and dish dependency are read directly from current rows.",
+      confidenceReason: "كمية المخزون وربطها بالأصناف مقروءة مباشرة من الصفوف الحالية.",
       source: "data",
     });
   } else {
@@ -810,14 +836,15 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
     );
     if (tight.length > 0) {
       out.push({
-        title: "Stock is tight on popular lines",
-        observation: `${tight.length} ingredients behind best sellers are down to 3 units or fewer.`,
+        key: "stock_tight",
+        title: "المخزون قرب يخلص على خطوط مطلوبة",
+        observation: `${tight.length} خامة وراء أصناف مطلوبة باقي فيها 3 وحدات أو أقل.`,
         evidence: tight.map(
-          (row) => `${row.stockName}: ${row.stockQty} ${row.unit} (used by ${row.item})`,
+          (row) => `${row.stockName}: ${row.stockQty} ${row.unit} (بتُستخدم في ${row.item})`,
         ),
-        suggestedAction: "Reorder these before the next service to avoid selling dishes you cannot fulfil.",
+        suggestedAction: "اطلبها تاني قبل الخدمة الجاية عشان متبيعش أصناف مش هتقدر تسلّمها.",
         confidence: "high",
-        confidenceReason: "Direct read of current stock rows against selling volumes.",
+        confidenceReason: "قراءة مباشرة لصفوف المخزون الحالية مقابل كميات البيع.",
         source: "data",
       });
     }
@@ -825,33 +852,35 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
 
   if (data.inactiveCustomers.count > 0) {
     out.push({
-      title: "Lapsed customer base",
-      observation: `${data.inactiveCustomers.count} customers have not ordered in over 30 days${data.inactiveCustomers.avgDaysSinceOrder !== null ? `, averaging ${data.inactiveCustomers.avgDaysSinceOrder} days since their last order` : ""}.`,
+      key: "lapsed_customers",
+      title: "عملاء بقالهم فترة مبطلبوش",
+      observation: `${data.inactiveCustomers.count} عميل بقالهم أكتر من 30 يوم مبطلبوش${data.inactiveCustomers.avgDaysSinceOrder !== null ? `، بمتوسط ${data.inactiveCustomers.avgDaysSinceOrder} يوم من آخر طلب` : ""}.`,
       evidence: [
-        `lapsed customers: ${data.inactiveCustomers.count}`,
-        `loyalty members who lapsed: ${data.loyalty.lapsedMembers}`,
-        `points outstanding: ${data.loyalty.pointsOutstanding}`,
+        `عملاء بقالهم فترة: ${data.inactiveCustomers.count}`,
+        `أعضاء ولاء بقالهم فترة: ${data.loyalty.lapsedMembers}`,
+        `نقاط معلّقة: ${data.loyalty.pointsOutstanding}`,
       ],
       suggestedAction:
-        "Send a win-back broadcast to the lapsed segment, and remind anyone holding unused points that they expire.",
+        "ابعت رسالة استرجاع للعملاء دول، وفكّر اللي عندهم نقاط مستخدمة إنها هتنتهي.",
       confidence: data.inactiveCustomers.count >= 10 ? "medium" : "low",
-      confidenceReason: `Based on ${data.inactiveCustomers.count} customers; reasons for lapsing are not captured in the data.`,
+      confidenceReason: `مبني على ${data.inactiveCustomers.count} عميل؛ أسباب توقفهم مش مسجلة في البيانات.`,
       source: "data",
     });
   }
 
   if (data.feedback.count > 0 && data.feedback.averageRating < 4) {
     out.push({
-      title: "Feedback rating below target",
-      observation: `Average rating is ${data.feedback.averageRating}/5 across ${data.feedback.count} responses.`,
+      key: "rating_below_target",
+      title: "تقييم العملاء أقل من المستهدف",
+      observation: `متوسط التقييم ${data.feedback.averageRating}/5 من ${data.feedback.count} رد.`,
       evidence: [
-        `average rating: ${data.feedback.averageRating}`,
-        ...data.feedback.negativeThemes.map((theme) => `low-rating theme — ${theme}`),
+        `متوسط التقييم: ${data.feedback.averageRating}`,
+        ...data.feedback.negativeThemes.map((theme) => `سبب تقييم منخفض — ${theme}`),
       ],
       suggestedAction:
-        "Read the low-rating feedback for the themes above and fix the specific issue before it repeats.",
+        "اقرا تقييمات النجوم القليلة حسب الأسباب اللي فوق وصلّح المشكلة بالتحديد قبل ما تتكرر.",
       confidence: data.feedback.count >= 10 ? "medium" : "low",
-      confidenceReason: `Only ${data.feedback.count} responses in the window.`,
+      confidenceReason: `في ${data.feedback.count} رد بس في المدة.`,
       source: "data",
     });
   }
@@ -860,16 +889,17 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
   const weakest = data.weakItems[0];
   if (best && weakest && best.name !== weakest.name && data.categoryMix.length > 1) {
     out.push({
-      title: "Menu breadth: strong and weak performers",
-      observation: `${best.name} sold ${best.quantity} units while ${weakest.name} sold ${weakest.quantity} in the same window.`,
+      key: "menu_breadth",
+      title: "المنيو فيه صنف قوي وصنف ضعيف",
+      observation: `${best.name} اتباع ${best.quantity} وحدة، و${weakest.name} اتباع ${weakest.quantity} في نفس المدة.`,
       evidence: [
-        `strongest: ${best.name} — ${best.quantity} units, ${best.revenue} EGP`,
-        `weakest: ${weakest.name} — ${weakest.quantity} units, ${weakest.revenue} EGP`,
+        `الأقوى: ${best.name} — ${best.quantity} وحدة، ${money(best.revenue)}`,
+        `الأضعف: ${weakest.name} — ${weakest.quantity} وحدة، ${money(weakest.revenue)}`,
       ],
-      suggestedAction: `Consider bundling ${weakest.name} with ${best.name}, or review its description and photo.`,
+      suggestedAction: `فكّر تعمل عرض يجمع ${weakest.name} مع ${best.name}، أو راجع وصفه وصورته.`,
       confidence: "medium",
       confidenceReason:
-        "Clear sales gap, but price, placement and stock availability all influence it and are not isolated here.",
+        "فرق مبيعات واضح، بس السعر والمكان في المنيو وتوفر المخزون كلهم بيأثروا ومش مفصولين هنا.",
       source: "data",
     });
   }
@@ -884,17 +914,18 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
     const mixTotal = data.categoryMix.reduce((sum, c) => sum + c.revenue, 0);
     const share = mixTotal > 0 ? Math.round((top.revenue / mixTotal) * 100) : 0;
     out.push({
-      title: `Category concentration: ${top.category}`,
-      observation: `${top.category} generated ${top.revenue} EGP, about ${share}% of item revenue in the window.`,
+      key: "category_concentration",
+      title: `تركيز المبيعات في قسم: ${top.category}`,
+      observation: `${top.category} عمل ${money(top.revenue)}، حوالي ${share}% من إيراد الأصناف في المدة.`,
       evidence: data.categoryMix
         .slice(0, 4)
-        .map((c) => `${c.category}: ${c.revenue} EGP across ${c.quantity} units`),
+        .map((c) => `${c.category}: ${money(c.revenue)} على ${c.quantity} وحدة`),
       suggestedAction:
         share > 60
-          ? `Dependence on one category is a risk. Test promoting a second category to balance the mix.`
-          : `The mix is reasonably balanced; keep monitoring whether any category starts to dominate.`,
+          ? "الاعتماد على قسم واحد مخاطرة. جرّب تعمل ترويج لقسم تاني عشان توازن المزيج."
+          : "المزيج متوازن بشكل معقول؛ تابع لو أي قسم بدأ يسيطر.",
       confidence: "medium",
-      confidenceReason: "Revenue share is exact for this window; it may shift with promotions.",
+      confidenceReason: "نسبة الإيراد دقيقة للمدة دي، وممكن تتغير مع العروض.",
       source: "data",
     });
   }

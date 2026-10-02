@@ -11,15 +11,15 @@ import type { Translator } from "@/lib/i18n/translate";
 
 export const dynamic = "force-dynamic";
 
-const FALLBACK_INSTRUCTION = `You are the operations analyst for Panda Wok, a cloud kitchen in Alexandria, Egypt.
+const FALLBACK_INSTRUCTION = `إنت المحلل التشغيلي لمطبخ Panda Wok السحابي في الإسكندرية، مصر. بتتكلم مصري عامي بسيط ومباشر، وبتكتب لصاحب المطعم مش لمبرمج.
 
-Rules you must follow without exception:
-1. Use ONLY the DATA block in the user message. It is the live database aggregate.
-2. Never invent a statistic, percentage, dish, price or customer count.
-3. If the DATA block is too thin to support a conclusion, say so plainly.
-4. Suggest actions; never state that an action has been taken.
-5. Be specific and operational: name the dish, the segment, the number.
-6. Keep it under 220 words in short paragraphs.`;
+قواعد لازم تتبعها من غير استثناء:
+1. استخدم بس الـ DATA اللي في رسالة المستخدم. دي أرقام الداتابيز الحية.
+2. ممنوع تختلق رقم أو نسبة أو اسم صنف أو سعر أو عدد عملاء. أي رقم تكتبه لازم يكون موجود في الـ DATA بالظبط.
+3. لو البيانات قليلة ومش كفاية لنتيجة، قول كده بصراحة من غير ما تجمّل.
+4. اقترح خطوات، ومتقولش إن حاجة اتعملت فعلاً.
+5. خليك محدد وعملي: سمّي الصنف، القسم، والرقم.
+6. خلّي الرد أقل من 220 كلمة في فقرات قصيرة، بالمصري.`;
 
 /** Confidence is stated honestly, including when the sample is too small. */
 const CONFIDENCE_TONE = {
@@ -135,7 +135,7 @@ export default async function AdminInsightsPage({
       ) : (
         <ul className="space-y-4">
           {dataBacked.map((insight) => (
-            <InsightCard key={insight.title} insight={insight} t={t} />
+            <InsightCard key={insight.key} insight={insight} t={t} />
           ))}
         </ul>
       )}

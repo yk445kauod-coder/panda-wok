@@ -2,11 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Mail, Phone, Star } from "lucide-react";
 import { requireCapability } from "@/lib/auth/session";
-import { getCrmCustomer, listActivity } from "@/lib/crm/customers";
+import {
+  getCrmCustomer,
+  listActivity,
+  listCustomerNotes,
+  listCustomerTags,
+  listCustomerTagsFor,
+} from "@/lib/crm/customers";
 import { getMyOrders } from "@/lib/services/orders";
 import { listFeedbackAdmin, listStaff } from "@/lib/services/admin-catalog";
 import { Badge } from "@/components/ui/button";
 import { BlockUserControl, StaffRoleForm } from "@/components/admin/customer-controls";
+import { CustomerNotesPanel } from "@/components/admin/crm-notes";
 import { formatDate, formatDateTime, formatNumber, formatPrice } from "@/lib/utils/format";
 import { getAdminLocale, getT } from "@/lib/i18n/server";
 
@@ -30,13 +37,20 @@ export default async function CrmCustomerPage({
   const customer = await getCrmCustomer(userId);
   if (!customer) notFound();
 
-  const [orders, activity, feedback, staff] = await Promise.all([
+  // Annotating a customer is support/admin work, never a kitchen task; the
+  // server action and RLS enforce the same line, this only hides the controls.
+  const canEditCrm = ["owner", "admin", "manager", "support", "marketing"].includes(session.role);
+
+  const [orders, activity, feedback, staff, notes, tags, assignedTags] = await Promise.all([
     getMyOrders(userId, 15).catch(() => []),
     listActivity({ userId, limit: 40 }).catch(() => []),
     listFeedbackAdmin({ limit: 100 })
       .then((rows) => rows.filter((row) => row.user_id === userId))
       .catch(() => []),
     listStaff().catch(() => []),
+    listCustomerNotes(userId).catch(() => []),
+    listCustomerTags().catch(() => []),
+    listCustomerTagsFor(userId).catch(() => []),
   ]);
 
   const staffRow = staff.find((row) => row.user_id === userId) ?? null;
@@ -153,6 +167,14 @@ export default async function CrmCustomerPage({
           </ul>
         </section>
       ) : null}
+
+      <CustomerNotesPanel
+        customerId={customer.user_id}
+        notes={notes}
+        tags={tags}
+        assigned={assignedTags}
+        canEdit={canEditCrm}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section

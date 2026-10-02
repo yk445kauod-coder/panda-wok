@@ -355,3 +355,108 @@ export async function getFunnel(days = 30): Promise<FunnelCounts> {
     customers: orderCount ?? 0,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Notes and tags — the staff-written half of a customer record.
+//
+// Everything above is *observed* (orders, spend, feedback). These are what a
+// staff member *knows*, and they are the reason a CRM is useful day to day.
+// ---------------------------------------------------------------------------
+
+export type CustomerNote = {
+  id: string;
+  customer_id: string;
+  author_id: string | null;
+  author_name: string | null;
+  body: string;
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomerTag = {
+  id: string;
+  key: string;
+  label_en: string;
+  label_ar: string;
+  tone: string;
+};
+
+export type CustomerTagLink = CustomerTag & { assigned_at: string };
+
+/** The owner's tag vocabulary, stable order so the picker does not jump. */
+export async function listCustomerTags(): Promise<CustomerTag[]> {
+  const admin = await createAdminSupabase();
+  const { data, error } = await admin
+    .from("customer_tags")
+    .select("id, key, label_en, label_ar, tone")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as CustomerTag[];
+}
+
+export async function listCustomerNotes(customerId: string): Promise<CustomerNote[]> {
+  const admin = await createAdminSupabase();
+  const { data, error } = await admin
+    .from("customer_notes")
+    .select("id, customer_id, author_id, body, is_pinned, created_at, updated_at")
+    .eq("customer_id", customerId)
+    // Pinned first, then newest — the order staff scan in.
+    .order("is_pinned", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+
+  const rows = (data ?? []) as Omit<CustomerNote, "author_name">[];
+  const authorIds = [...new Set(rows.map((r) => r.author_id).filter(Boolean))] as string[];
+
+  let names = new Map<string, string>();
+  if (authorIds.length > 0) {
+    const { data: profiles } = await admin
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", authorIds);
+    names = new Map(
+      (profiles ?? []).map((p) => [p.id, p.full_name ?? ""] as [string, string]),
+    );
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    author_name: row.author_id ? names.get(row.author_id) ?? null : null,
+  }));
+}
+
+export async function listCustomerTagsFor(customerId: string): Promise<CustomerTagLink[]> {
+  const admin = await createAdminSupabase();
+  const { data, error } = await admin
+    .from("customer_tag_links")
+    .select("assigned_at, customer_tags (id, key, label_en, label_ar, tone)")
+    .eq("customer_id", customerId);
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).flatMap((row) => {
+    const tag = row.customer_tags as unknown as CustomerTag | null;
+    if (!tag) return [];
+    return [{ ...tag, assigned_at: row.assigned_at }];
+  });
+}
+
+/**
+ * Tag counts across the whole book, for the segments page. One query rather
+ * than one per tag.
+ */
+export async function getTagCounts(): Promise<Record<string, number>> {
+  const admin = await createAdminSupabase();
+  const { data, error } = await admin
+    .from("customer_tag_links")
+    .select("tag_id, customer_tags (key)");
+  if (error) throw new Error(error.message);
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const tag = row.customer_tags as unknown as { key: string } | null;
+    if (!tag) continue;
+    counts[tag.key] = (counts[tag.key] ?? 0) + 1;
+  }
+  return counts;
+}

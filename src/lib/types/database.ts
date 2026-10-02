@@ -1049,6 +1049,121 @@ export type Database = {
           },
         ]
       }
+      customer_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          customer_id: string
+          id: string
+          is_pinned: boolean
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          is_pinned?: boolean
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          is_pinned?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_tag_links: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          customer_id: string
+          tag_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          customer_id: string
+          tag_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          customer_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_tag_links_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_tag_links_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_tag_links_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "customer_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_tags: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          label_ar: string
+          label_en: string
+          tone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          label_ar: string
+          label_en: string
+          tone?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          label_ar?: string
+          label_en?: string
+          tone?: string
+        }
+        Relationships: []
+      }
       delivery_zones: {
         Row: {
           areas: string[]
@@ -2996,11 +3111,13 @@ export type Database = {
       can_agent: { Args: never; Returns: boolean }
       can_backup: { Args: never; Returns: boolean }
       can_broadcast: { Args: never; Returns: boolean }
+      can_edit_crm: { Args: never; Returns: boolean }
       can_export: { Args: never; Returns: boolean }
       can_manage_feedback: { Args: never; Returns: boolean }
       can_manage_marketing: { Args: never; Returns: boolean }
       can_manage_offers: { Args: never; Returns: boolean }
       can_manage_orders: { Args: never; Returns: boolean }
+      can_view_crm: { Args: never; Returns: boolean }
       cancel_order: { Args: { p_order_id: string }; Returns: undefined }
       count_unread_notifications: {
         Args: { p_audience?: string; p_user_id?: string }

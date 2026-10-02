@@ -110,6 +110,48 @@ describe("pickGroundedReport — accept model prose only when its numbers are re
   });
 });
 
+describe("deterministic insights are Egyptian Arabic first", () => {
+  function dataWith(categoryMix: InsightData["categoryMix"]): InsightData {
+    return {
+      windowDays: 30,
+      totals: { orders: 2, revenue: 100, avgOrderValue: 50, canceled: 0 },
+      pairs: [{ a: "شاورما", b: "بيبسي", count: 3 }],
+      topItems: [{ name: "شاورما", quantity: 9, revenue: 90 }],
+      weakItems: [{ name: "سلطة", quantity: 1, revenue: 10 }],
+      itemTrend: [],
+      inactiveCustomers: { count: 2, avgDaysSinceOrder: 40 },
+      loyalty: { members: 1, pointsOutstanding: 5, lapsedMembers: 1 },
+      feedback: { count: 2, averageRating: 3, negativeThemes: ["بارد"] },
+      stockDemand: [],
+      categoryMix,
+    };
+  }
+
+  it("writes every finding in Arabic, never English", () => {
+    const findings = buildDeterministicInsights(
+      dataWith([
+        { category: "سوشي", quantity: 3, revenue: 60 },
+        { category: "ووك", quantity: 2, revenue: 40 },
+      ]),
+    );
+
+    expect(findings.length).toBeGreaterThan(0);
+    for (const finding of findings) {
+      // The console is Arabic-first, so an English-only sentence here is a bug.
+      expect(finding.title).toMatch(/[\u0600-\u06FF]/);
+      expect(finding.observation).toMatch(/[\u0600-\u06FF]/);
+      expect(finding.suggestedAction).toMatch(/[\u0600-\u06FF]/);
+    }
+  });
+
+  it("carries a stable machine key independent of the wording", () => {
+    const findings = buildDeterministicInsights(dataWith([]));
+
+    expect(findings.map((f) => f.key)).toContain("thin_history");
+    expect(findings.map((f) => f.key)).toContain("lapsed_customers");
+  });
+});
+
 describe("category concentration — the share must not exceed 100%", () => {
   function dataWith(categoryMix: InsightData["categoryMix"], finishedRevenue: number): InsightData {
     return {
@@ -131,7 +173,7 @@ describe("category concentration — the share must not exceed 100%", () => {
     const findings = buildDeterministicInsights(
       dataWith([{ category: "Appetizers", quantity: 2, revenue: 190 }], 0),
     );
-    const concentration = findings.find((f) => f.title.startsWith("Category concentration"));
+    const concentration = findings.find((f) => f.key === "category_concentration");
 
     expect(concentration).toBeDefined();
     expect(concentration?.observation).toContain("100%");
@@ -148,7 +190,7 @@ describe("category concentration — the share must not exceed 100%", () => {
         600,
       ),
     );
-    const concentration = findings.find((f) => f.title.startsWith("Category concentration"));
+    const concentration = findings.find((f) => f.key === "category_concentration");
 
     expect(concentration?.observation).toContain("50%");
   });
@@ -157,7 +199,7 @@ describe("category concentration — the share must not exceed 100%", () => {
     const findings = buildDeterministicInsights(
       dataWith([{ category: "Sushi", quantity: 0, revenue: 0 }], 0),
     );
-    const concentration = findings.find((f) => f.title.startsWith("Category concentration"));
+    const concentration = findings.find((f) => f.key === "category_concentration");
 
     expect(concentration?.observation).toContain("0%");
   });

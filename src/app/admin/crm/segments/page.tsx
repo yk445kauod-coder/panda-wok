@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { requireCapability } from "@/lib/auth/session";
-import { segmentOverview, SEGMENT_VALUE_LABELS } from "@/lib/crm/customers";
+import {
+  getTagCounts,
+  listCustomerTags,
+  segmentOverview,
+  SEGMENT_VALUE_LABELS,
+} from "@/lib/crm/customers";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/button";
 import { formatNumber } from "@/lib/utils/format";
 import { getAdminLocale, getT } from "@/lib/i18n/server";
 
@@ -9,9 +15,14 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminSegmentsPage() {
   await requireCapability("crm.view");
-  const t = await getT(await getAdminLocale());
+  const locale = await getAdminLocale();
+  const t = await getT(locale);
 
-  const segments = await segmentOverview();
+  const [segments, tags, tagCounts] = await Promise.all([
+    segmentOverview(),
+    listCustomerTags().catch(() => []),
+    getTagCounts().catch(() => ({}) as Record<string, number>),
+  ]);
   const totalAudience = segments.find((segment) => segment.segment === "all")?.count ?? 0;
 
   return (
@@ -96,6 +107,29 @@ export default async function AdminSegmentsPage() {
       </ul>
 
       <p className="text-xs text-ink-700/60">{t("admin.pages.segments.footnote")}</p>
+
+      {tags.length > 0 ? (
+        <section className="washi-panel p-4" aria-label={t("admin.pages.segments.tagsHeading")}>
+          <h2 className="font-display text-base font-semibold text-ink-900">
+            {t("admin.pages.segments.tagsHeading")}
+          </h2>
+          <p className="mt-1 text-xs text-ink-700/70">
+            {t("admin.pages.segments.tagsHint")}
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <li key={tag.id}>
+                <Badge tone={tag.tone as "neutral"}>
+                  {locale === "ar" ? tag.label_ar : tag.label_en}
+                  <span className="ms-1.5 tabular-nums opacity-80">
+                    {formatNumber(tagCounts[tag.key] ?? 0)}
+                  </span>
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

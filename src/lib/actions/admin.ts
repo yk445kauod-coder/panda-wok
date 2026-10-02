@@ -2113,3 +2113,133 @@ function parseRoutes(formData: FormData): Record<string, number> {
   }
   return routes;
 }
+
+// ---------------------------------------------------------------------------
+// CRM notes and tags
+//
+// `crm.view` is the read capability; annotating a customer is a support/admin
+// job, so writes require a role that actually works the CRM (never kitchen).
+// The database enforces the same line through `can_edit_crm()`.
+// ---------------------------------------------------------------------------
+
+const CRM_EDIT_ROLES = new Set(["owner", "admin", "manager", "support", "marketing"]);
+
+async function assertCrmEditor() {
+  const session = await assertCapability("crm.view");
+  if (!CRM_EDIT_ROLES.has(session.role)) {
+    return { session, denied: actionFail("FORBIDDEN", "You do not have access to customer records.") };
+  }
+  return { session, denied: null };
+}
+
+export async function saveCustomerNoteAction(
+  formData: FormData,
+): Promise<FormActionResult<undefined>> {
+  const { session, denied } = await assertCrmEditor();
+  if (denied) return denied;
+
+  const customerId = String(formData.get("customerId") ?? "").trim();
+  const noteId = String(formData.get("noteId") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
+  const isPinned = formData.get("isPinned") === "true";
+
+  if (!customerId) return actionFail("VALIDATION", "Missing customer.");
+  if (body.length < 1 || body.length > 2000) {
+    return actionFail("VALIDATION", "A note must be between 1 and 2000 characters.");
+  }
+
+  const supabase = await createServerSupabase();
+
+  const { error } = noteId
+    ? await supabase
+        .from("customer_notes")
+        .update({ body, is_pinned: isPinned })
+        .eq("id", noteId)
+    : await supabase
+        .from("customer_notes")
+        .insert({ customer_id: customerId, author_id: session.actorId, body, is_pinned: isPinned });
+
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: noteId ? "customer.note_updated" : "customer.note_added",
+    entity: "customer_notes",
+    entityId: noteId || customerId,
+  });
+
+  revalidatePath(`/admin/crm/${customerId}`);
+  return actionOk();
+}
+
+export async function deleteCustomerNoteAction(
+  formData: FormData,
+): Promise<FormActionResult<undefined>> {
+  const { session, denied } = await assertCrmEditor();
+  if (denied) return denied;
+
+  const customerId = String(formData.get("customerId") ?? "").trim();
+  const noteId = String(formData.get("noteId") ?? "").trim();
+  if (!noteId) return actionFail("VALIDATION", "Missing note.");
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("customer_notes").delete().eq("id", noteId);
+  if (error) return actionError(error);
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "customer.note_deleted",
+    entity: "customer_notes",
+    entityId: noteId,
+  });
+
+  if (customerId) revalidatePath(`/admin/crm/${customerId}`);
+  return actionOk();
+}
+
+/** Assign or remove one tag. The link table is the source of truth. */
+export async function toggleCustomerTagAction(
+  formData: FormData,
+): Promise<FormActionResult<undefined>> {
+  const { session, denied } = await assertCrmEditor();
+  if (denied) return denied;
+
+  const customerId = String(formData.get("customerId") ?? "").trim();
+  const tagId = String(formData.get("tagId") ?? "").trim();
+  const assign = formData.get("assign") === "true";
+
+  if (!customerId || !tagId) return actionFail("VALIDATION", "Missing customer or tag.");
+
+  const supabase = await createServerSupabase();
+
+  if (assign) {
+    const { error } = await supabase
+      .from("customer_tag_links")
+      .upsert(
+        { customer_id: customerId, tag_id: tagId, assigned_by: session.actorId },
+        { onConflict: "customer_id,tag_id" },
+      );
+    if (error) return actionError(error);
+  } else {
+    const { error } = await supabase
+      .from("customer_tag_links")
+      .delete()
+      .eq("customer_id", customerId)
+      .eq("tag_id", tagId);
+    if (error) return actionError(error);
+  }
+
+  await logAudit(supabase, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: assign ? "customer.tag_added" : "customer.tag_removed",
+    entity: "customer_tag_links",
+    entityId: customerId,
+  });
+
+  revalidatePath(`/admin/crm/${customerId}`);
+  revalidatePath("/admin/crm");
+  return actionOk();
+}
