@@ -318,6 +318,9 @@ export type InsightsReport = {
   error: string | null;
   deterministic: InsightRecommendation[];
   aiNarrative: string | null;
+  /** The full raw snapshot the findings were built from — same numbers only the
+   * wording is produced here — so the admin page can chart them directly. */
+  data: InsightData;
 };
 
 export type InsightData = {
@@ -332,6 +335,10 @@ export type InsightData = {
   feedback: { count: number; averageRating: number; negativeThemes: string[] };
   stockDemand: { item: string; quantity: number; stockName: string | null; stockQty: number | null; unit: string | null }[];
   categoryMix: { category: string; quantity: number; revenue: number }[];
+  /** Visual aggregates so the page can chart the raw window without extra queries. */
+  statusMix?: { status: string; count: number }[];
+  revenueByDay?: { day: string; revenue: number; orders: number }[];
+  feedbackDist?: { rating: number; count: number }[];
 };
 
 /**
@@ -591,6 +598,33 @@ async function loadInsightData(days: number): Promise<InsightData> {
         revenue: Math.round(v.revenue * 100) / 100,
       }))
       .sort((a, b) => b.revenue - a.revenue),
+    // Visual aggregates computed from the same window rows the findings cite,
+    // so the charts and the cards can never disagree. Status mix counts every
+    // order in the window (including un-finished), exactly as `totals.canceled`
+    // does; revenue by day splits finished revenue per UTC day.
+    statusMix: [...recent.reduce((map, o) => {
+      const bucket = map.get(o.status) ?? { status: o.status, count: 0 };
+      bucket.count += 1;
+      map.set(o.status, bucket);
+      return map;
+    }, new Map<string, { status: string; count: number }>()).values()],
+    revenueByDay: [...finishedRecent.reduce((map, o) => {
+      const day = o.created_at.slice(0, 10);
+      const bucket = map.get(day) ?? { day, revenue: 0, orders: 0 };
+      bucket.revenue += Number(o.total);
+      bucket.orders += 1;
+      map.set(day, bucket);
+      return map;
+    }, new Map<string, { day: string; revenue: number; orders: number }>()).values()]
+      .map((b) => ({ ...b, revenue: Math.round(b.revenue * 100) / 100 }))
+      .sort((a, b) => a.day.localeCompare(b.day)),
+    feedbackDist:
+      [...(feedbackRows ?? []).reduce((map,f) => {
+        const bucket = map.get(f.rating) ?? { rating: f.rating, count: 0 };
+        bucket.count += 1;
+        map.set(f.rating, bucket);
+        return map;
+      }, new Map<number, { rating: number; count: number }>()).values()].sort((a, b) => a.rating - b.rating),
     soldNames,
   } as InsightData & { soldNames: string[] };
 }
@@ -730,6 +764,7 @@ export async function generateInsights(params: {
     error: run.error,
     deterministic,
     aiNarrative: run.provider === "deterministic" ? null : run.text,
+    data,
   };
 }
 
