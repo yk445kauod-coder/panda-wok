@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublicData } from "@/lib/cache/revalidate";
+import { CACHE_TAGS } from "@/lib/cache/tags";
 import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { assertCapability } from "@/lib/auth/session";
@@ -30,6 +32,7 @@ function revalidateContent() {
     revalidatePath(path);
   }
   revalidatePath("/", "layout");
+  revalidatePublicData(CACHE_TAGS.content);
 }
 
 export async function savePageContentAction(

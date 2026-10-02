@@ -29,4 +29,19 @@
   "observability": {
     "enabled": true
   }
+
+  // Optional cross-isolate data cache. The public data layer wraps its reads in
+  // `cachedPublic` (Next's `unstable_cache`), which is a no-op without these
+  // namespaces — the site renders uncached but correctly. Bind them to reuse one
+  // Supabase read across requests instead of one per visitor:
+  //
+  //   npx wrangler kv namespace create NEXT_INC_CACHE_KV
+  //   npx wrangler kv namespace create NEXT_TAG_CACHE_KV
+  //
+  // then add the returned ids here (and to the Pages project's KV bindings):
+  //
+  //   "kv_namespaces": [
+  //     { "binding": "NEXT_INC_CACHE_KV", "id": "<id>" },
+  //     { "binding": "NEXT_TAG_CACHE_KV", "id": "<id>" }
+  //   ]
 }

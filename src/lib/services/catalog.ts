@@ -2,7 +2,9 @@ import "server-only";
 
 import { cache } from "react";
 import { createPublicSupabase } from "@/lib/supabase/server";
+import { cachedPublic } from "@/lib/cache/public-cache";
 import { STORE_TIME_ZONE, type StoreHours } from "@/lib/services/store-hours";
+import { CACHE_TAGS, PUBLIC_DATA_REVALIDATE } from "@/lib/cache/tags";
 import type { Database, Json } from "@/lib/types/database";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
@@ -103,8 +105,15 @@ const PUBLIC_ITEM_WITH_MODIFIERS_COLUMNS = `${PUBLIC_ITEM_COLUMNS}, modifier_gro
 /**
  * Public catalogue reads go through the anon/authenticated client so RLS is
  * the boundary. Only enabled categories and their items are returned.
+ *
+ * The read is cached: every visitor sees the same categories, so one Supabase
+ * query is reused across renders until the entry expires or an admin edit
+ * invalidates `CACHE_TAGS.menu`. The `raw` variant is the uncached query, kept
+ * separate so a cached function never calls another cached function — Next
+ * bypasses the cache for a nested `unstable_cache` call, which would silently
+ * make the outer entry depend on uncached reads.
  */
-export async function getPublicCategories(): Promise<Category[]> {
+async function getPublicCategoriesRaw(): Promise<Category[]> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("categories")
@@ -116,13 +125,19 @@ export async function getPublicCategories(): Promise<Category[]> {
   return data ?? [];
 }
 
-export async function getPublicMenu(): Promise<{
+export const getPublicCategories = cachedPublic(
+  getPublicCategoriesRaw,
+  ["public-categories"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
+);
+
+async function getPublicMenuRaw(): Promise<{
   categories: Category[];
   items: MenuItem[];
 }> {
   const supabase = createPublicSupabase();
   const [categories, items] = await Promise.all([
-    getPublicCategories(),
+    getPublicCategoriesRaw(),
     supabase
       .from("menu_items")
       .select(PUBLIC_ITEM_WITH_MODIFIERS_COLUMNS)
@@ -139,7 +154,13 @@ export async function getPublicMenu(): Promise<{
   };
 }
 
-export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+export const getPublicMenu = cachedPublic(
+  getPublicMenuRaw,
+  ["public-menu"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
+);
+
+async function getCategoryBySlugRaw(slug: string): Promise<Category | null> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("categories")
@@ -152,7 +173,13 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
   return data ?? null;
 }
 
-export async function getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> {
+export const getCategoryBySlug = cachedPublic(
+  getCategoryBySlugRaw,
+  ["public-category-by-slug"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
+);
+
+async function getMenuItemsByCategoryRaw(categoryId: string): Promise<MenuItem[]> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("menu_items")
@@ -165,7 +192,13 @@ export async function getMenuItemsByCategory(categoryId: string): Promise<MenuIt
   return data ?? [];
 }
 
-export async function getMenuItemBySlug(slug: string): Promise<MenuItemDetail | null> {
+export const getMenuItemsByCategory = cachedPublic(
+  getMenuItemsByCategoryRaw,
+  ["public-category-items"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
+);
+
+async function getMenuItemBySlugRaw(slug: string): Promise<MenuItemDetail | null> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("menu_items")
@@ -200,8 +233,14 @@ export async function getMenuItemBySlug(slug: string): Promise<MenuItemDetail | 
   };
 }
 
+export const getMenuItemBySlug = cachedPublic(
+  getMenuItemBySlugRaw,
+  ["public-menu-item-by-slug"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
+);
+
 /** Slugs for the sitemap. Disabled categories are excluded. */
-export async function getMenuSlugs(): Promise<{
+async function getMenuSlugsRaw(): Promise<{
   categories: { id: string; slug: string; name_en: string; updated_at: string }[];
   items: { slug: string; name_en: string; category_id: string; updated_at: string }[];
 }> {
@@ -226,7 +265,13 @@ export async function getMenuSlugs(): Promise<{
   };
 }
 
-export async function getUpsellRules(): Promise<UpsellRule[]> {
+export const getMenuSlugs = cachedPublic(
+  getMenuSlugsRaw,
+  ["public-menu-slugs"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
+);
+
+async function getUpsellRulesRaw(): Promise<UpsellRule[]> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("upsell_rules")
@@ -238,7 +283,13 @@ export async function getUpsellRules(): Promise<UpsellRule[]> {
   return data ?? [];
 }
 
-export async function getFeatureFlags(): Promise<FeatureFlag[]> {
+export const getUpsellRules = cachedPublic(
+  getUpsellRulesRaw,
+  ["public-upsell-rules"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
+);
+
+async function getFeatureFlagsRaw(): Promise<FeatureFlag[]> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("feature_flags")
@@ -249,10 +300,28 @@ export async function getFeatureFlags(): Promise<FeatureFlag[]> {
   return data ?? [];
 }
 
+const getFeatureFlagsCached = cachedPublic(
+  getFeatureFlagsRaw,
+  ["public-feature-flags"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.flags] },
+);
+
+export function getFeatureFlags(): Promise<FeatureFlag[]> {
+  return getFeatureFlagsCached();
+}
+
 /** Flag lookup as a plain map; defaults to enabled when a flag is absent. */
-export async function getFeatureFlagMap(): Promise<Record<string, boolean>> {
-  const flags = await getFeatureFlags();
-  return Object.fromEntries(flags.map((f) => [f.key, f.is_enabled]));
+const getFeatureFlagMapCached = cachedPublic(
+  async () => {
+    const flags = await getFeatureFlagsRaw();
+    return Object.fromEntries(flags.map((f) => [f.key, f.is_enabled]));
+  },
+  ["public-feature-flag-map"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.flags] },
+);
+
+export function getFeatureFlagMap(): Promise<Record<string, boolean>> {
+  return getFeatureFlagMapCached();
 }
 
 export type PublicSettings = {
@@ -323,8 +392,13 @@ function toNullableText(value: Json | undefined): string | null {
 /**
  * Public settings come from RLS-filtered rows marked is_public, so internal
  * values (VAT rate, point economics) never reach the browser.
+ *
+ * Cached twice on purpose: `unstable_cache` stores the parsed result across
+ * requests, and the React `cache()` wrapper dedupes concurrent calls within one
+ * render. The two are distinct — React's `cache` does not persist, so without
+ * the `unstable_cache` layer every request would re-read the settings table.
  */
-export const getPublicSettings = cache(async (): Promise<PublicSettings> => {
+async function loadPublicSettings(): Promise<PublicSettings> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("settings")
@@ -390,9 +464,17 @@ export const getPublicSettings = cache(async (): Promise<PublicSettings> => {
       ),
     },
   };
-});
+}
 
-export async function getRestaurant(): Promise<Restaurant | null> {
+const getPublicSettingsCached = cachedPublic(
+  loadPublicSettings,
+  ["public-settings"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.settings] },
+);
+
+export const getPublicSettings = cache(getPublicSettingsCached);
+
+async function getRestaurantRaw(): Promise<Restaurant | null> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("restaurants")
@@ -406,7 +488,13 @@ export async function getRestaurant(): Promise<Restaurant | null> {
   return data ?? null;
 }
 
-export async function getEnabledRewards(): Promise<LoyaltyReward[]> {
+export const getRestaurant = cachedPublic(
+  getRestaurantRaw,
+  ["public-restaurant"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.restaurant] },
+);
+
+async function getEnabledRewardsRaw(): Promise<LoyaltyReward[]> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("loyalty_rewards")
@@ -418,8 +506,14 @@ export async function getEnabledRewards(): Promise<LoyaltyReward[]> {
   return data ?? [];
 }
 
+export const getEnabledRewards = cachedPublic(
+  getEnabledRewardsRaw,
+  ["public-enabled-rewards"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.rewards] },
+);
+
 /** Featured and cheap-to-prepare picks for the home page. */
-export async function getFeaturedItems(limit = 6): Promise<MenuItem[]> {
+async function getFeaturedItemsRaw(limit: number): Promise<MenuItem[]> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("menu_items")
@@ -432,6 +526,18 @@ export async function getFeaturedItems(limit = 6): Promise<MenuItem[]> {
   return data ?? [];
 }
 
+// The `limit` argument is part of the cache key, so each distinct limit is
+// cached separately rather than the first caller's result being reused.
+const getFeaturedItemsCached = cachedPublic(
+  getFeaturedItemsRaw,
+  ["public-featured-items"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
+);
+
+export function getFeaturedItems(limit = 6): Promise<MenuItem[]> {
+  return getFeaturedItemsCached(limit);
+}
+
 /**
  * Star averages for every dish that has consented feedback, keyed by item id.
  *
@@ -440,8 +546,12 @@ export async function getFeaturedItems(limit = 6): Promise<MenuItem[]> {
  * fabricated score. A failure here is swallowed to an empty map on purpose —
  * a rating is decoration on top of the menu, and losing it must never take the
  * menu down with it.
+ *
+ * The cached value is a plain record, not a `Map`: `unstable_cache` persists its
+ * result as JSON, and a `Map` would round-trip to `{}` and silently drop every
+ * rating. The `Map` is rebuilt for callers after the cache read.
  */
-export async function getMenuRatings(): Promise<Map<string, MenuRating>> {
+async function getMenuRatingsRaw(): Promise<Record<string, MenuRating>> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("menu_item_ratings")
@@ -449,10 +559,10 @@ export async function getMenuRatings(): Promise<Map<string, MenuRating>> {
 
   if (error) {
     console.warn(`[catalog] ratings unavailable: ${error.message}`);
-    return new Map();
+    return {};
   }
 
-  const ratings = new Map<string, MenuRating>();
+  const ratings: Record<string, MenuRating> = {};
   for (const row of data ?? []) {
     // The view's columns are nullable in the generated types because SQL cannot
     // prove the group key is present. A row without an item id is not usable,
@@ -460,10 +570,20 @@ export async function getMenuRatings(): Promise<Map<string, MenuRating>> {
     if (!row.menu_item_id) continue;
     const count = Number(row.rating_count ?? 0);
     if (count < 1) continue;
-    ratings.set(row.menu_item_id, {
+    ratings[row.menu_item_id] = {
       average: Number(row.average_rating ?? 0),
       count,
-    });
+    };
   }
   return ratings;
+}
+
+const getMenuRatingsCached = cachedPublic(
+  getMenuRatingsRaw,
+  ["public-menu-ratings"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
+);
+
+export async function getMenuRatings(): Promise<Map<string, MenuRating>> {
+  return new Map(Object.entries(await getMenuRatingsCached()));
 }

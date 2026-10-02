@@ -2,43 +2,43 @@
 
 # This is NOT the Next.js you know
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+This version has breaking changes вҖ” APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+This block is written and re-added by `next dev` вҖ” verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
 
-## Ōøö ┘éž¦ž╣ž»ž® ž¦┘ä┘ģ┘å┘Ŗ┘ł ŌĆö ┘ģ┘ģ┘å┘łž╣ žŻ┘Ŗ žŁž» ┘Ŗ┘äž╣ž© ┘ü┘Ŗ ž»ž¦ž¬ž¦ž©┘Ŗž▓ ž¦┘ä┘ģ┘å┘Ŗ┘ł
+## ЕҢГёГ¶ в”ҳГ©ЕҫВҰЕҫв•ЈЕҫВ»ЕҫВ® ЕҫВҰв”ҳГӨв”ҳДЈв”ҳГҘв”ҳЕ–в”ҳЕӮ ЕҢДҶГ¶ в”ҳДЈв”ҳДЈв”ҳГҘв”ҳЕӮЕҫв•Ј ЕҫЕ»в”ҳЕ– ЕҫЕҒЕҫВ» в”ҳЕ–в”ҳГӨЕҫв•ЈЕҫВ© в”ҳГјв”ҳЕ– ЕҫВ»ЕҫВҰЕҫВ¬ЕҫВҰЕҫВ©в”ҳЕ–Еҫв–“ ЕҫВҰв”ҳГӨв”ҳДЈв”ҳГҘв”ҳЕ–в”ҳЕӮ
 
-**┘éž¦ž╣ž»ž® ž½ž¦ž©ž¬ž® ┘ä┘ā┘ä ž¦┘äž¼┘äž│ž¦ž¬žī ┘ģ┘å ž║┘Ŗž▒ ž¦ž│ž¬ž½┘åž¦žĪ.** (English below.)
+**в”ҳГ©ЕҫВҰЕҫв•ЈЕҫВ»ЕҫВ® ЕҫВҪЕҫВҰЕҫВ©ЕҫВ¬ЕҫВ® в”ҳГӨв”ҳДҒв”ҳГӨ ЕҫВҰв”ҳГӨЕҫВјв”ҳГӨЕҫв”ӮЕҫВҰЕҫВ¬ЕҫД« в”ҳДЈв”ҳГҘ Еҫв•‘в”ҳЕ–Еҫв–’ ЕҫВҰЕҫв”ӮЕҫВ¬ЕҫВҪв”ҳГҘЕҫВҰЕҫДӘ.** (English below.)
 
-- **┘ģ┘ģ┘å┘łž╣ ž¬┘ģž¦┘ģ┘ŗž¦** žŻ┘Ŗ žŁž░┘ü (`DELETE` / `DROP` / `TRUNCATE`) ┘ł┘äž¦ žŻ┘Ŗ ž¬ž╣ž»┘Ŗ┘ä ž╣┘ä┘ē
-  ž©┘Ŗž¦┘åž¦ž¬ ž¦┘ä┘ģ┘å┘Ŗ┘ł ž¦┘äžŁ┘Ŗž®: `categories`, `menu_items`, `menu_images`,
-  `modifier_groups`, `modifier_options`, `upsell_rules` ŌĆö ┘äž¦ žŻž│ž╣ž¦ž▒žī ┘äž¦ žŻž│┘ģž¦žĪžī
-  ┘äž¦ žĄ┘łž▒žī ┘äž¦ ž¬ž▒ž¬┘Ŗž©.
-- **┘ģ┘ģ┘å┘łž╣** ž¬ž┤ž║┘Ŗ┘ä žŻ┘Ŗ ž│┘āž▒ž©ž¬ ž¦ž│ž¬┘Ŗž▒ž¦ž»/ž¬žĄž»┘Ŗž▒ žŻ┘ł migration ž©┘Ŗ┘ä┘ģž│ žĄ┘ü┘ł┘ü ž¦┘ä┘ģ┘å┘Ŗ┘ł
-  (`scripts/import-menu.mjs` insert-only ┘łž©┘Ŗ┘é┘ü┘ä ┘å┘üž│┘ćžī ┘ł`scripts/import-menu-csv.mjs`
-  ž©┘Ŗ┘āž¬ž©). ┘ģ┘ü┘Ŗž┤ "žźž╣ž¦ž»ž® ž▒┘üž╣ ┘äž¬žŁž»┘Ŗž½ ž¦┘ä┘ģ┘å┘Ŗ┘ł" ┘ģ┘å ž║┘Ŗž▒ žĘ┘äž© žĄž▒┘ŖžŁ.
-- **┘ģ┘ü┘Ŗž┤ ž¦ž│ž¬┘åž¬ž¦ž¼ ┘ł┘äž¦ ž¬ž¼┘ģ┘Ŗ┘ä:** ┘ģ┘ģ┘å┘łž╣ ž¬žŻ┘ä┘Ŗ┘ü žŻ┘ł ž¬ž╣ž»┘Ŗ┘ä žĄ┘å┘ü/ž│ž╣ž▒ ┘ģ┘å ž╣┘åž»┘ā. žŻ┘Ŗ ž▒┘é┘ģ
-  žŻ┘ł ž¦ž│┘ģ ž©┘Ŗž¬┘āž¬ž© ┘äž¦ž▓┘ģ ┘Ŗ┘ā┘ł┘å ┘ģ┘å ž¦┘ä┘ģž¦┘ä┘ā ž©ž¦┘äžĖž©žĘ.
-- **ž¦┘äž¬ž╣ž»┘Ŗ┘ä ž¦┘äžĘž©┘Ŗž╣┘Ŗ ┘ģ┘å `/admin` ž©ž│** (žĘž©┘é žĘž©┘éžī ž©žź┘Ŗž» ž©┘å┘Ŗ žóž»┘ģ ┘łž©ž│┘Ŗž¦┘é ┘āž¦┘ģ┘ä).
-- **ž¦┘äžźž«┘üž¦žĪ ž©ž»┘ä ž¦┘äžŁž░┘ü:** ┘ä┘ł žĄ┘å┘ü ┘äž¦ž▓┘ģ ┘Ŗž«ž▒ž¼ ┘ģ┘å ž¦┘ä┘ģ┘ł┘éž╣ ž¦ž│ž¬ž«ž»┘ģ ž¦┘äž╣┘ä┘ģ
-  (`is_available = false` / `is_enabled = false`) ŌĆö ž¦┘äžĄ┘ü ┘łž¬ž▒ž¼┘ģž¦ž¬┘ć ┘łžĄ┘łž▒┘ć ž¬┘üžČ┘ä
-  ┘ü┘Ŗ ž¦┘äž»ž¦ž¬ž¦ž©┘Ŗž▓ ┘łž¬ž▒ž¼ž╣ ž©┘é┘äž© ž╣┘ä┘ģ ┘łž¦žŁž».
-- **┘ä┘ł ┘ģ┘ć┘ģž® ž┤┘ā┘ä┘ćž¦ ┘ģžŁž¬ž¦ž¼ž® ž¬ž╣ž»┘Ŗ┘ä/žŁž░┘ü ┘ü┘Ŗ ž¦┘ä┘ģ┘å┘Ŗ┘ł: ┘é┘ü ┘łž¦ž│žŻ┘ä ž¦┘ä┘ģž¦┘ä┘ā ž¦┘äžŻ┘ł┘ä**žī ┘łž¦ž░┘āž▒
-  ž©ž¦┘äžĖž©žĘ ž¦┘ä┘ä┘Ŗ ┘ć┘Ŗž¬ž║┘Ŗ┘æž▒žī ┘łž¦ž╣ž▒žČ ž¦┘äž©ž»┘Ŗ┘ä ž©ž¦┘äžźž«┘üž¦žĪ.
-- **ž¦┘ä┘ģ┘å┘Ŗ┘ł┘ćž¦┘å ž¦┘äž¦ž¬┘å┘Ŗ┘å ž╣ž¦┘ģ┘æ┘Ŗ┘å ┘ł┘Ŗ┘üžČ┘ä┘łž¦ ž╣ž¦┘ģ┘æ┘Ŗ┘å:** ž¦┘äžĄ┘Ŗ┘å┘Ŗ ┘łž¦┘ä┘Ŗž¦ž©ž¦┘å┘Ŗ (ž│┘łž┤┘Ŗ) ž┤ž║┘æž¦┘ä┘Ŗ┘å
-  ┘ģž╣ ž©ž╣žČ ž╣┘ä┘ē `/menu`žī ┘ł┘ģ┘ģ┘å┘łž╣ ž¬ž╣žĘ┘Ŗ┘ä žŻ┘Ŗ ┘łž¦žŁž» ┘ü┘Ŗ┘ć┘ģ.
+- **в”ҳДЈв”ҳДЈв”ҳГҘв”ҳЕӮЕҫв•Ј ЕҫВ¬в”ҳДЈЕҫВҰв”ҳДЈв”ҳЕ—ЕҫВҰ** ЕҫЕ»в”ҳЕ– ЕҫЕҒЕҫв–‘в”ҳГј (`DELETE` / `DROP` / `TRUNCATE`) в”ҳЕӮв”ҳГӨЕҫВҰ ЕҫЕ»в”ҳЕ– ЕҫВ¬Еҫв•ЈЕҫВ»в”ҳЕ–в”ҳГӨ Еҫв•Јв”ҳГӨв”ҳД“
+  ЕҫВ©в”ҳЕ–ЕҫВҰв”ҳГҘЕҫВҰЕҫВ¬ ЕҫВҰв”ҳГӨв”ҳДЈв”ҳГҘв”ҳЕ–в”ҳЕӮ ЕҫВҰв”ҳГӨЕҫЕҒв”ҳЕ–ЕҫВ®: `categories`, `menu_items`, `menu_images`,
+  `modifier_groups`, `modifier_options`, `upsell_rules` ЕҢДҶГ¶ в”ҳГӨЕҫВҰ ЕҫЕ»Еҫв”ӮЕҫв•ЈЕҫВҰЕҫв–’ЕҫД« в”ҳГӨЕҫВҰ ЕҫЕ»Еҫв”Ӯв”ҳДЈЕҫВҰЕҫДӘЕҫД«
+  в”ҳГӨЕҫВҰ ЕҫД„в”ҳЕӮЕҫв–’ЕҫД« в”ҳГӨЕҫВҰ ЕҫВ¬Еҫв–’ЕҫВ¬в”ҳЕ–ЕҫВ©.
+- **в”ҳДЈв”ҳДЈв”ҳГҘв”ҳЕӮЕҫв•Ј** ЕҫВ¬Еҫв”ӨЕҫв•‘в”ҳЕ–в”ҳГӨ ЕҫЕ»в”ҳЕ– Еҫв”Ӯв”ҳДҒЕҫв–’ЕҫВ©ЕҫВ¬ ЕҫВҰЕҫв”ӮЕҫВ¬в”ҳЕ–Еҫв–’ЕҫВҰЕҫВ»/ЕҫВ¬ЕҫД„ЕҫВ»в”ҳЕ–Еҫв–’ ЕҫЕ»в”ҳЕӮ migration ЕҫВ©в”ҳЕ–в”ҳГӨв”ҳДЈЕҫв”Ӯ ЕҫД„в”ҳГјв”ҳЕӮв”ҳГј ЕҫВҰв”ҳГӨв”ҳДЈв”ҳГҘв”ҳЕ–в”ҳЕӮ
+  (`scripts/import-menu.mjs` insert-only в”ҳЕӮЕҫВ©в”ҳЕ–в”ҳГ©в”ҳГјв”ҳГӨ в”ҳГҘв”ҳГјЕҫв”Ӯв”ҳДҮЕҫД« в”ҳЕӮ`scripts/import-menu-csv.mjs`
+  ЕҫВ©в”ҳЕ–в”ҳДҒЕҫВ¬ЕҫВ©). в”ҳДЈв”ҳГјв”ҳЕ–Еҫв”Ө "ЕҫЕәЕҫв•ЈЕҫВҰЕҫВ»ЕҫВ® Еҫв–’в”ҳГјЕҫв•Ј в”ҳГӨЕҫВ¬ЕҫЕҒЕҫВ»в”ҳЕ–ЕҫВҪ ЕҫВҰв”ҳГӨв”ҳДЈв”ҳГҘв”ҳЕ–в”ҳЕӮ" в”ҳДЈв”ҳГҘ Еҫв•‘в”ҳЕ–Еҫв–’ ЕҫДҳв”ҳГӨЕҫВ© ЕҫД„Еҫв–’в”ҳЕ–ЕҫЕҒ.
+- **в”ҳДЈв”ҳГјв”ҳЕ–Еҫв”Ө ЕҫВҰЕҫв”ӮЕҫВ¬в”ҳГҘЕҫВ¬ЕҫВҰЕҫВј в”ҳЕӮв”ҳГӨЕҫВҰ ЕҫВ¬ЕҫВјв”ҳДЈв”ҳЕ–в”ҳГӨ:** в”ҳДЈв”ҳДЈв”ҳГҘв”ҳЕӮЕҫв•Ј ЕҫВ¬ЕҫЕ»в”ҳГӨв”ҳЕ–в”ҳГј ЕҫЕ»в”ҳЕӮ ЕҫВ¬Еҫв•ЈЕҫВ»в”ҳЕ–в”ҳГӨ ЕҫД„в”ҳГҘв”ҳГј/Еҫв”ӮЕҫв•ЈЕҫв–’ в”ҳДЈв”ҳГҘ Еҫв•Јв”ҳГҘЕҫВ»в”ҳДҒ. ЕҫЕ»в”ҳЕ– Еҫв–’в”ҳГ©в”ҳДЈ
+  ЕҫЕ»в”ҳЕӮ ЕҫВҰЕҫв”Ӯв”ҳДЈ ЕҫВ©в”ҳЕ–ЕҫВ¬в”ҳДҒЕҫВ¬ЕҫВ© в”ҳГӨЕҫВҰЕҫв–“в”ҳДЈ в”ҳЕ–в”ҳДҒв”ҳЕӮв”ҳГҘ в”ҳДЈв”ҳГҘ ЕҫВҰв”ҳГӨв”ҳДЈЕҫВҰв”ҳГӨв”ҳДҒ ЕҫВ©ЕҫВҰв”ҳГӨЕҫД–ЕҫВ©ЕҫДҳ.
+- **ЕҫВҰв”ҳГӨЕҫВ¬Еҫв•ЈЕҫВ»в”ҳЕ–в”ҳГӨ ЕҫВҰв”ҳГӨЕҫДҳЕҫВ©в”ҳЕ–Еҫв•Јв”ҳЕ– в”ҳДЈв”ҳГҘ `/admin` ЕҫВ©Еҫв”Ӯ** (ЕҫДҳЕҫВ©в”ҳГ© ЕҫДҳЕҫВ©в”ҳГ©ЕҫД« ЕҫВ©ЕҫЕәв”ҳЕ–ЕҫВ» ЕҫВ©в”ҳГҘв”ҳЕ– ЕҫГіЕҫВ»в”ҳДЈ в”ҳЕӮЕҫВ©Еҫв”Ӯв”ҳЕ–ЕҫВҰв”ҳГ© в”ҳДҒЕҫВҰв”ҳДЈв”ҳГӨ).
+- **ЕҫВҰв”ҳГӨЕҫЕәЕҫВ«в”ҳГјЕҫВҰЕҫДӘ ЕҫВ©ЕҫВ»в”ҳГӨ ЕҫВҰв”ҳГӨЕҫЕҒЕҫв–‘в”ҳГј:** в”ҳГӨв”ҳЕӮ ЕҫД„в”ҳГҘв”ҳГј в”ҳГӨЕҫВҰЕҫв–“в”ҳДЈ в”ҳЕ–ЕҫВ«Еҫв–’ЕҫВј в”ҳДЈв”ҳГҘ ЕҫВҰв”ҳГӨв”ҳДЈв”ҳЕӮв”ҳГ©Еҫв•Ј ЕҫВҰЕҫв”ӮЕҫВ¬ЕҫВ«ЕҫВ»в”ҳДЈ ЕҫВҰв”ҳГӨЕҫв•Јв”ҳГӨв”ҳДЈ
+  (`is_available = false` / `is_enabled = false`) ЕҢДҶГ¶ ЕҫВҰв”ҳГӨЕҫД„в”ҳГј в”ҳЕӮЕҫВ¬Еҫв–’ЕҫВјв”ҳДЈЕҫВҰЕҫВ¬в”ҳДҮ в”ҳЕӮЕҫД„в”ҳЕӮЕҫв–’в”ҳДҮ ЕҫВ¬в”ҳГјЕҫДҢв”ҳГӨ
+  в”ҳГјв”ҳЕ– ЕҫВҰв”ҳГӨЕҫВ»ЕҫВҰЕҫВ¬ЕҫВҰЕҫВ©в”ҳЕ–Еҫв–“ в”ҳЕӮЕҫВ¬Еҫв–’ЕҫВјЕҫв•Ј ЕҫВ©в”ҳГ©в”ҳГӨЕҫВ© Еҫв•Јв”ҳГӨв”ҳДЈ в”ҳЕӮЕҫВҰЕҫЕҒЕҫВ».
+- **в”ҳГӨв”ҳЕӮ в”ҳДЈв”ҳДҮв”ҳДЈЕҫВ® Еҫв”Өв”ҳДҒв”ҳГӨв”ҳДҮЕҫВҰ в”ҳДЈЕҫЕҒЕҫВ¬ЕҫВҰЕҫВјЕҫВ® ЕҫВ¬Еҫв•ЈЕҫВ»в”ҳЕ–в”ҳГӨ/ЕҫЕҒЕҫв–‘в”ҳГј в”ҳГјв”ҳЕ– ЕҫВҰв”ҳГӨв”ҳДЈв”ҳГҘв”ҳЕ–в”ҳЕӮ: в”ҳГ©в”ҳГј в”ҳЕӮЕҫВҰЕҫв”ӮЕҫЕ»в”ҳГӨ ЕҫВҰв”ҳГӨв”ҳДЈЕҫВҰв”ҳГӨв”ҳДҒ ЕҫВҰв”ҳГӨЕҫЕ»в”ҳЕӮв”ҳГӨ**ЕҫД« в”ҳЕӮЕҫВҰЕҫв–‘в”ҳДҒЕҫв–’
+  ЕҫВ©ЕҫВҰв”ҳГӨЕҫД–ЕҫВ©ЕҫДҳ ЕҫВҰв”ҳГӨв”ҳГӨв”ҳЕ– в”ҳДҮв”ҳЕ–ЕҫВ¬Еҫв•‘в”ҳЕ–в”ҳГҰЕҫв–’ЕҫД« в”ҳЕӮЕҫВҰЕҫв•ЈЕҫв–’ЕҫДҢ ЕҫВҰв”ҳГӨЕҫВ©ЕҫВ»в”ҳЕ–в”ҳГӨ ЕҫВ©ЕҫВҰв”ҳГӨЕҫЕәЕҫВ«в”ҳГјЕҫВҰЕҫДӘ.
+- **ЕҫВҰв”ҳГӨв”ҳДЈв”ҳГҘв”ҳЕ–в”ҳЕӮв”ҳДҮЕҫВҰв”ҳГҘ ЕҫВҰв”ҳГӨЕҫВҰЕҫВ¬в”ҳГҘв”ҳЕ–в”ҳГҘ Еҫв•ЈЕҫВҰв”ҳДЈв”ҳГҰв”ҳЕ–в”ҳГҘ в”ҳЕӮв”ҳЕ–в”ҳГјЕҫДҢв”ҳГӨв”ҳЕӮЕҫВҰ Еҫв•ЈЕҫВҰв”ҳДЈв”ҳГҰв”ҳЕ–в”ҳГҘ:** ЕҫВҰв”ҳГӨЕҫД„в”ҳЕ–в”ҳГҘв”ҳЕ– в”ҳЕӮЕҫВҰв”ҳГӨв”ҳЕ–ЕҫВҰЕҫВ©ЕҫВҰв”ҳГҘв”ҳЕ– (Еҫв”Ӯв”ҳЕӮЕҫв”Өв”ҳЕ–) Еҫв”ӨЕҫв•‘в”ҳГҰЕҫВҰв”ҳГӨв”ҳЕ–в”ҳГҘ
+  в”ҳДЈЕҫв•Ј ЕҫВ©Еҫв•ЈЕҫДҢ Еҫв•Јв”ҳГӨв”ҳД“ `/menu`ЕҫД« в”ҳЕӮв”ҳДЈв”ҳДЈв”ҳГҘв”ҳЕӮЕҫв•Ј ЕҫВ¬Еҫв•ЈЕҫДҳв”ҳЕ–в”ҳГӨ ЕҫЕ»в”ҳЕ– в”ҳЕӮЕҫВҰЕҫЕҒЕҫВ» в”ҳГјв”ҳЕ–в”ҳДҮв”ҳДЈ.
 
 See `docs/data-safety.md` for the full standing policy.
 
-### Ōøö Menu database: do not touch (English)
+### ЕҢГёГ¶ Menu database: do not touch (English)
 
 **A standing rule for every session, no exceptions.**
 
 - **Never** delete (`DELETE` / `DROP` / `TRUNCATE`) and **never** update live menu
   data: `categories`, `menu_items`, `menu_images`, `modifier_groups`,
-  `modifier_options`, `upsell_rules` ŌĆö no prices, names, images or ordering.
+  `modifier_options`, `upsell_rules` ЕҢДҶГ¶ no prices, names, images or ordering.
 - **Never** run an import/export script or a migration that writes menu rows
   unless the owner asked for that exact change in writing. There is no
   "re-import to refresh the menu".
@@ -47,7 +47,7 @@ See `docs/data-safety.md` for the full standing policy.
   with full context).
 - **Hide, don't delete:** use a flag (`is_available = false` / `is_enabled = false`).
 - If a task seems to require touching the menu, **stop and ask the owner first**.
-- **Both catalogues are public and stay public** ŌĆö the Chinese menu and the
+- **Both catalogues are public and stay public** ЕҢДҶГ¶ the Chinese menu and the
   Japanese sushi menu are live together on `/menu`; neither is to be disabled.
 
 
@@ -59,14 +59,14 @@ Verified against the live database, not just the code:
   policy resolves through `current_staff_role()`, which reads `staff`. Nothing in the
   schema or seed ever created a row, so the whole admin/CRM surface was dead. Fixed by
   `20260923001000_bootstrap_staff_access.sql` (idempotent; promotes the founding
-  account to `owner`). The row is now live. Promote other staff from the CRM ┼ī─å├Č signup
+  account to `owner`). The row is now live. Promote other staff from the CRM в”јД«в”ҖГҘв”ңДҢ signup
   must never be able to grant a role.
 - **The shared delivery pin never reached staff.** `place_order` stores
   `latitude`/`longitude` in `orders.address_snapshot`, but the admin order detail
   rendered only the text address, so "share my exact location" did nothing for the
   driver. The detail page now links to the pin in Maps.
 - **Tenancy is currently inert.** `current_restaurant_id()` is
-  `select id from restaurants where is_active order by created_at asc limit 1` ┼ī─å├Č a
+  `select id from restaurants where is_active order by created_at asc limit 1` в”јД«в”ҖГҘв”ңДҢ a
   hardcoded "first active restaurant", not session-derived. There is exactly 1
   restaurant and every `restaurant_id` is populated (0 rows missing across
   orders/profiles/menu_items/categories), so the tenant columns and the
@@ -77,7 +77,7 @@ Verified against the live database, not just the code:
   inserting role; revoking from `anon` breaks anonymous inserts (verified: a bare
   `set role anon; select current_restaurant_id()` fails with 42501). The advisor
   warning about it is a false positive here. Same reasoning for `place_order`.
-- **Leaked-password protection cannot be enabled** ┼ī─å├Č Supabase gates
+- **Leaked-password protection cannot be enabled** в”јД«в”ҖГҘв”ңДҢ Supabase gates
   HaveIBeenPwned checks behind Pro plans (API returns 402/plan message). Noted, not
   fixed.
 - **i18n is genuinely complete.** `ar.ts` is typed as `Dictionary` from `en.ts`, so a
@@ -87,7 +87,7 @@ Verified against the live database, not just the code:
   client renders for business errors, so error copy does not translate.
 - **Auth:** anonymous sign-ins are now enabled on the project; email/password is
   still enabled because `staff`/admin login uses it (disabling it locks the owner out
-  of `/admin` ┼ī─å├Č verified). `profiles.email` is `citext` and nullable; placeholder
+  of `/admin` в”јД«в”ҖГҘв”ңДҢ verified). `profiles.email` is `citext` and nullable; placeholder
   phone emails are `panda-<last10digits>@phone.pandawok.app`.
 - **Perf advisors:** 21 `multiple_permissive_policies` warnings are mostly the
   `_public_read` OR `_staff_write` pattern, which is intentional. 52 `unused_index`
@@ -108,7 +108,7 @@ Verified against the live database, not just the code:
 > mode "cannot serve static" was wrong. Pages advanced mode *does* expose a working
 > `ASSETS` binding (proven with a diagnostic `_worker.js`: `hasAssets: true`,
 > `ASSETS.fetch('/panda-logo.svg') -> 200`). What Pages does not do is serve that
-> assets directory automatically the way Workers does ┼ī─å├Č with a bare OpenNext
+> assets directory automatically the way Workers does в”јД«в”ҖГҘв”ңДҢ with a bare OpenNext
 > `_worker.js` the HTML renders but every `/_next/static/*` request 404s. The fix is
 > `scripts/pages/_worker.js`, a thin entrypoint that offers static-looking requests to
 > `ASSETS` first and falls through to the OpenNext handler otherwise.
@@ -117,39 +117,39 @@ Verified against the live database, not just the code:
 > middleware auth redirects, dynamic slugs, Supabase-rendered data, robots/sitemap/llms,
 > opengraph image, Arabic RTL, and CSS/JS/assets all 200.
 > Caveat: the Pages *CI* bundler still fails on `wrangler pages functions build` with
-> "Could not resolve http/https/tty" even with `nodejs_compat` set in the dashboard ┼ī─å├Č
+> "Could not resolve http/https/tty" even with `nodejs_compat` set in the dashboard в”јД«в”ҖГҘв”ңДҢ
 > dashboard compatibility flags are not reaching the CI Functions bundler, so build via
 > CLI (`npm run pages:deploy`) until that is resolved.
 
-- ~~Live topology: https://panda-wok.pages.dev = **302 redirector** ┼ī├ź├å canonical **Worker** https://panda-wok.yk445kauod.workers.dev~~ (superseded: `panda-wok.pages.dev` now serves the app directly over SSR with no redirect; `num_redirects=0` verified).
+- ~~Live topology: https://panda-wok.pages.dev = **302 redirector** в”јД«в”ңЕәв”ңГҘ canonical **Worker** https://panda-wok.yk445kauod.workers.dev~~ (superseded: `panda-wok.pages.dev` now serves the app directly over SSR with no redirect; `num_redirects=0` verified).
 - Deploy worker: `npx opennextjs-cloudflare build && npx opennextjs-cloudflare deploy` (wrangler.jsonc: main `.open-next/worker.js` + assets `.open-next/assets`+ AI binding).
 - Worker alias: https://panda-wok.yk445kauod.workers.dev (from `opennextjs-cloudflare deploy`).
-- Remote Supabase project: xjbtsryidznsxqlynmfa; tenancy migration applied remotely as `011_tenancy_fk_hardening` (local file: supabase/migrations/20260922001000_tenancy_fk.sql ┼ī─å├Č same body, different version name ┼ī─å├Č avoid double-`db push` of the same body).
-- Pages project: static-only redirector site (`_redirects` `/* ┼ī├ź├å worker` 302 + fallback `index.html`;no `_worker.js`). Secrets NEXT_PUBLIC_SUPABASE_URL/ANON, SUPABASE_URL, SERVICE_ROLE_KEY, NEXT_PUBLIC_SITE_URL set on Pages;the Worker's secrets live in its own env ┼ī─å├Č keep both in sync.
-- Auth: email optional at signup (phone-first;placeholder email `panda-<last10digits>@phone.pandawok.app`;auto-confirmed via service-role `admin.updateUserById(email_confirm: true)` when no real email;sign-in accepts phone too (maps to the placeholder);`/auth/forgot-password` = phone-or-email reset (route was missing ┼ī├ź├å now created+live).
-- Branding: settings keys `brand.logo_url` / `brand.favicon_url` / `brand.banner_url` (optional,is_public) ┼ī─å├Č when set, footer/about/auth/OG render the uploaded logo via `BrandLogo`;fallback = `/icon.svg`(repo panda mark;file: `public/panda-logo.svg`). Admin sets via Settings ┼ī├ź├å brand rows (generic string editor).
+- Remote Supabase project: xjbtsryidznsxqlynmfa; tenancy migration applied remotely as `011_tenancy_fk_hardening` (local file: supabase/migrations/20260922001000_tenancy_fk.sql в”јД«в”ҖГҘв”ңДҢ same body, different version name в”јД«в”ҖГҘв”ңДҢ avoid double-`db push` of the same body).
+- Pages project: static-only redirector site (`_redirects` `/* в”јД«в”ңЕәв”ңГҘ worker` 302 + fallback `index.html`;no `_worker.js`). Secrets NEXT_PUBLIC_SUPABASE_URL/ANON, SUPABASE_URL, SERVICE_ROLE_KEY, NEXT_PUBLIC_SITE_URL set on Pages;the Worker's secrets live in its own env в”јД«в”ҖГҘв”ңДҢ keep both in sync.
+- Auth: email optional at signup (phone-first;placeholder email `panda-<last10digits>@phone.pandawok.app`;auto-confirmed via service-role `admin.updateUserById(email_confirm: true)` when no real email;sign-in accepts phone too (maps to the placeholder);`/auth/forgot-password` = phone-or-email reset (route was missing в”јД«в”ңЕәв”ңГҘ now created+live).
+- Branding: settings keys `brand.logo_url` / `brand.favicon_url` / `brand.banner_url` (optional,is_public) в”јД«в”ҖГҘв”ңДҢ when set, footer/about/auth/OG render the uploaded logo via `BrandLogo`;fallback = `/icon.svg`(repo panda mark;file: `public/panda-logo.svg`). Admin sets via Settings в”јД«в”ңЕәв”ңГҘ brand rows (generic string editor).
 
 ## Codebase map (2026-09-23)
 
-- Customer app: src/app/(site)/* ┼ī─å├Č home, menu, dish, cart, checkout, orders, tracking, account, loyalty, feedback, contact, about.
-- i18n: ALL customer pages run through `src/lib/i18n/` ┼ī─å├Č `dictionaries/en.ts` + `dictionaries/ar.ts` (single source of truth for strings), `server.ts` (`getLocale`/`getT`), `config.ts` (`Locale`), `translate.ts`, `catalog.ts`, `orders.ts`, `loyalty.ts` (`tierLabel`). RTL handled by `dir=rtl` on `<html>` + Tailwind logical props (`text-end`, `ms-`, `me-`, `start/end`). Server components call `getT(locale)`; client components use `useT()` from `i18n-provider`. Localised customer pages so far: menu, dish, cart, checkout, orders+detail, account+addresses, feedback, loyalty. Admin uses the shared i18n dictionary; page copy and operational labels must go through `admin.pages.*`, `admin.term.*` or `admin.common.*`.
-- Admin/CRM: src/app/admin/* ┼ī─å├Č dashboard, orders, kitchen, users, CRM, segments, loyalty, feedback, broadcast, messages, AI centre, analytics, stock, upsell, menu CMS, settings, backups, exports. Guarded by src/middleware.ts (role-based), non-indexable.
+- Customer app: src/app/(site)/* в”јД«в”ҖГҘв”ңДҢ home, menu, dish, cart, checkout, orders, tracking, account, loyalty, feedback, contact, about.
+- i18n: ALL customer pages run through `src/lib/i18n/` в”јД«в”ҖГҘв”ңДҢ `dictionaries/en.ts` + `dictionaries/ar.ts` (single source of truth for strings), `server.ts` (`getLocale`/`getT`), `config.ts` (`Locale`), `translate.ts`, `catalog.ts`, `orders.ts`, `loyalty.ts` (`tierLabel`). RTL handled by `dir=rtl` on `<html>` + Tailwind logical props (`text-end`, `ms-`, `me-`, `start/end`). Server components call `getT(locale)`; client components use `useT()` from `i18n-provider`. Localised customer pages so far: menu, dish, cart, checkout, orders+detail, account+addresses, feedback, loyalty. Admin uses the shared i18n dictionary; page copy and operational labels must go through `admin.pages.*`, `admin.term.*` or `admin.common.*`.
+- Admin/CRM: src/app/admin/* в”јД«в”ҖГҘв”ңДҢ dashboard, orders, kitchen, users, CRM, segments, loyalty, feedback, broadcast, messages, AI centre, analytics, stock, upsell, menu CMS, settings, backups, exports. Guarded by src/middleware.ts (role-based), non-indexable.
 - Auth: src/app/auth/* + supabase SSR session via src/lib/supabase/*
 - Server actions = the API layer for mutations: src/lib/actions/* (there is NO src/lib/server-actions dir)
-- Services: src/lib/services/catalog.ts (restaurant singleton, menu, slugs, flags), ai/ (assistant + provider chain + insights), crm/, services/orders.ts + services/order-workflow.ts. NOTE: README's src/lib/orders|backup|export|feedback|messages|broadcast|stock|loyalty dirs do NOT exist ┼ī─å├Č the code is consolidated under src/lib/services, src/lib/crm, src/lib/ai.
-- Schema: supabase/migrations/* ┼ī─å├Č single source of truth; RLS in 007_rls_and_storage; tenancy FK in 011 (remote) / 20260922001000 (local).
+- Services: src/lib/services/catalog.ts (restaurant singleton, menu, slugs, flags), ai/ (assistant + provider chain + insights), crm/, services/orders.ts + services/order-workflow.ts. NOTE: README's src/lib/orders|backup|export|feedback|messages|broadcast|stock|loyalty dirs do NOT exist в”јД«в”ҖГҘв”ңДҢ the code is consolidated under src/lib/services, src/lib/crm, src/lib/ai.
+- Schema: supabase/migrations/* в”јД«в”ҖГҘв”ңДҢ single source of truth; RLS in 007_rls_and_storage; tenancy FK in 011 (remote) / 20260922001000 (local).
 - SEO/AEO: src/lib/seo/, src/app/robots.ts, sitemap.ts, llms-txt/route.ts; schema.org from live DB only.
 - Deploy: wrangler.jsonc (opennext worker + AI binding), open-next.config.ts; next.config.ts (standalone, unoptimized images, llms.txt rewrite).
 
 ## Critical fixes (2026-09-23 session)
 Two live-breaking defects on the remote project `xjbtsryidznsxqlynmfa` (both verified fixed + regression-tested via a rolled-back transaction):
 
-1. **Signup and order placement were 100% broken.** Migration `011_tenancy_fk_hardening` added `restaurant_id` as `NOT NULL` to `profiles`/`orders`/`menu_items`/`categories` with **no default and no trigger**, while `handle_new_user()` and `place_order()` never set the column ┼ī├ź├å every insert raised `null value in column "restaurant_id"`. Fix: `alter column restaurant_id set default public.current_restaurant_id()` on all four tables (migration `20260923000100_tenancy_defaults_and_hardening.sql`, applied remotely as `tenancy_defaults_and_hardening`).
-2. **`orders_total_consistency_check` rejected every order.** The live constraint was `CHECK (total = round(subtotal - discount_total + delivery_fee + tax_total))` ┼ī─å├Č single-arg `round()` truncates to an INTEGER, so any total with piastres failed. Fix: re-create with `round(..., 2)` (migration `20260923000300_orders_total_constraint_fix.sql`, applied as `orders_total_constraint_fix`).
+1. **Signup and order placement were 100% broken.** Migration `011_tenancy_fk_hardening` added `restaurant_id` as `NOT NULL` to `profiles`/`orders`/`menu_items`/`categories` with **no default and no trigger**, while `handle_new_user()` and `place_order()` never set the column в”јД«в”ңЕәв”ңГҘ every insert raised `null value in column "restaurant_id"`. Fix: `alter column restaurant_id set default public.current_restaurant_id()` on all four tables (migration `20260923000100_tenancy_defaults_and_hardening.sql`, applied remotely as `tenancy_defaults_and_hardening`).
+2. **`orders_total_consistency_check` rejected every order.** The live constraint was `CHECK (total = round(subtotal - discount_total + delivery_fee + tax_total))` в”јД«в”ҖГҘв”ңДҢ single-arg `round()` truncates to an INTEGER, so any total with piastres failed. Fix: re-create with `round(..., 2)` (migration `20260923000300_orders_total_constraint_fix.sql`, applied as `orders_total_constraint_fix`).
 
 Also applied: `20260923000200_rls_initplan.sql` (22 self-row policies rewritten as `(select auth.uid())`), pinned `search_path` on `touch_updated_at`/`order_is_editable`/`next_order_number`, and revoked `rls_auto_enable` execute from `anon`/`authenticated`.
 
-**Migration drift ┼ī─å├Č resolved.** The repo is now linked to the live project (`supabase link --project-ref xjbtsryidznsxqlynmfa`; config in `supabase/config.toml`). The remote `supabase_migrations.schema_migrations` history was reconciled to match the 13 files in `supabase/migrations/` (locally-only and remote-only entries were repaired to a single aligned list; no schema/data change). `supabase db push` is now a verified no-op.
+**Migration drift в”јД«в”ҖГҘв”ңДҢ resolved.** The repo is now linked to the live project (`supabase link --project-ref xjbtsryidznsxqlynmfa`; config in `supabase/config.toml`). The remote `supabase_migrations.schema_migrations` history was reconciled to match the 13 files in `supabase/migrations/` (locally-only and remote-only entries were repaired to a single aligned list; no schema/data change). `supabase db push` is now a verified no-op.
 
 Two further defects surfaced while reconciling:
 
@@ -176,33 +176,33 @@ Verified live: anon menu/category/restaurant reads still 200, `rpc/current_resta
 
 ## Deployment topology (canonical, 2026-09-23)
 - **Never redirect.** `panda-wok.pages.dev` must not be used as a 302 hop. The app is served by the **Worker** `panda-wok` (alias `panda-wok.yk445kauod.workers.dev`); a custom domain attaches to the Worker directly. There is no zone on this account, so the `workers.dev` alias is the canonical URL until one exists.
-- The app Worker itself never redirects: the 307s on `/checkout` `/orders` `/loyalty` `/admin` are auth middleware, and `/<route>/` ┼ī├ź├å `/<route>` 308 is Next's trailing-slash canonicalisation.
+- The app Worker itself never redirects: the 307s on `/checkout` `/orders` `/loyalty` `/admin` are auth middleware, and `/<route>/` в”јД«в”ңЕәв”ңГҘ `/<route>` 308 is Next's trailing-slash canonicalisation.
 - Deploy: `npx opennextjs-cloudflare build && npx opennextjs-cloudflare deploy`. `NEXT_PUBLIC_*` are **inlined at build time**, so export production values before building or the deployed bundle keeps whatever was in scope.
 - Worker secrets (own env, set with `wrangler secret put`): `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, `VAULT_TOKEN`, `AI_API_TOKEN`, `AI_CLOUDFLARE_API_KEY`, `AI_CLOUDFLARE_NAME`.
-- `NEXT_PUBLIC_SITE_URL` must be the Worker URL (`https://panda-wok.yk445kauod.workers.dev`) ┼ī─å├Č it drives canonical/OG/sitemap URLs, so `localhost` there leaks into production metadata.
+- `NEXT_PUBLIC_SITE_URL` must be the Worker URL (`https://panda-wok.yk445kauod.workers.dev`) в”јД«в”ҖГҘв”ңДҢ it drives canonical/OG/sitemap URLs, so `localhost` there leaks into production metadata.
 
 ### Pages CI is disabled on purpose (2026-09-23)
 - The Pages project `panda-wok` is GitHub-connected (production branch `production`, preview on `*`), so **every push used to kick off a preview build that always failed**. Root cause: `src/app/api/analytics/route.ts` imports `src/lib/config/env.ts`, which throws at module load when `NEXT_PUBLIC_SUPABASE_URL`/`_ANON_KEY` are absent. Pages *preview* has `env_vars: null` and its *production* vars are present but **empty** (`secret_text` with `value: ""`), so the build died during "Collecting page data".
 - The Pages build config is also structurally wrong for this app: `build_command: npx next build` with `destination_dir: out`, but `next.config.ts` uses `output: "standalone"` and Next never emits `out/`.
-- **Fix applied:** `deployments_enabled: false` + `production_deployments_enabled: false` on the Pages project (via `PATCH /accounts/<id>/pages/projects/panda-wok` with `{"source":{"config":{...}}}` ┼ī─å├Č the top-level form is silently ignored). Pages is only a redirector here, so it has no business building the Next app. Re-enable deliberately only if you also set the preview vars and a matching build config.
-- The live `panda-wok.pages.dev` 302 ┼ī├ź├å Worker is served by an older **ad-hoc production deployment from 11:39**, not by any current build. If it ever needs replacing, publish the redirector as static assets rather than re-enabling the Next build.
+- **Fix applied:** `deployments_enabled: false` + `production_deployments_enabled: false` on the Pages project (via `PATCH /accounts/<id>/pages/projects/panda-wok` with `{"source":{"config":{...}}}` в”јД«в”ҖГҘв”ңДҢ the top-level form is silently ignored). Pages is only a redirector here, so it has no business building the Next app. Re-enable deliberately only if you also set the preview vars and a matching build config.
+- The live `panda-wok.pages.dev` 302 в”јД«в”ңЕәв”ңГҘ Worker is served by an older **ad-hoc production deployment from 11:39**, not by any current build. If it ever needs replacing, publish the redirector as static assets rather than re-enabling the Next build.
 
-## Satellite workers (2026-09-23, session 2 ┼ī─å├Č deployed)
-- `workers/ai-api` ┼ī├ź├å `https://panda-wok-ai-api.yk445kauod.workers.dev`. Bearer-guarded proxy over the account's Workers AI binding. Implements the exact `POST /ai/run/<model>` contract the app's `cloudflare` remote provider builds, so it is a drop-in base URL. `/health` is open; no token = 401. Default model `@cf/meta/llama-4-scout-17b-16e-instruct` (the previous `llama-3.1-8b-instruct` is deprecated ┼ī─å├Č the binding errors if named).
-- `workers/secrets-vault` ┼ī├ź├å `https://panda-wok-secrets.yk445kauod.workers.dev`. Single server-side home for service keys. `GET /secrets/<NAME>` returns one allow-listed value behind a constant-time bearer check; there is deliberately **no bulk-dump route** (requesting `/secrets` is 404). `/health` reports configured names only, never values.
-- Shared tokens live in `.agent_tmp/worker-tokens.env` (gitignored) ┼ī─å├Č regenerate and re-`secret put` if lost; they are not recoverable from the workers.
+## Satellite workers (2026-09-23, session 2 в”јД«в”ҖГҘв”ңДҢ deployed)
+- `workers/ai-api` в”јД«в”ңЕәв”ңГҘ `https://panda-wok-ai-api.yk445kauod.workers.dev`. Bearer-guarded proxy over the account's Workers AI binding. Implements the exact `POST /ai/run/<model>` contract the app's `cloudflare` remote provider builds, so it is a drop-in base URL. `/health` is open; no token = 401. Default model `@cf/meta/llama-4-scout-17b-16e-instruct` (the previous `llama-3.1-8b-instruct` is deprecated в”јД«в”ҖГҘв”ңДҢ the binding errors if named).
+- `workers/secrets-vault` в”јД«в”ңЕәв”ңГҘ `https://panda-wok-secrets.yk445kauod.workers.dev`. Single server-side home for service keys. `GET /secrets/<NAME>` returns one allow-listed value behind a constant-time bearer check; there is deliberately **no bulk-dump route** (requesting `/secrets` is 404). `/health` reports configured names only, never values.
+- Shared tokens live in `.agent_tmp/worker-tokens.env` (gitignored) в”јД«в”ҖГҘв”ңДҢ regenerate and re-`secret put` if lost; they are not recoverable from the workers.
 
-## AI provider chain (2026-09-23, session 2 ┼ī─å├Č live)
+## AI provider chain (2026-09-23, session 2 в”јД«в”ҖГҘв”ңДҢ live)
 - The assistant's chain is **DB-driven**: `buildDbProviderChain` reads `ai_providers` rows; the env `buildProviderChain` is only a fallback path.
 - Migration `20260923002000_ai_binding_provider.sql` adds row `workers-ai-binding` (`kind='cloudflare'`, `secret_ref=null`, `priority=10`) so the **keyless Workers AI binding** is the live primary. `resolveDbProvider` returns null when the binding is absent (plain `next dev`/`next build`), so the chain drops to the `deterministic` row at priority 900 and the assistant still answers without a key.
 - Verified live: `ai_requests` logged `provider: "Workers AI"`, `model: llama-4-scout`, `status: ok`. Before this row existed every request logged `deterministic`/`fallback`.
 - The AI worker's URL/model are wired on the app Worker as `AI_CLOUDFLARE_BASE_URL` / `AI_CLOUDFLARE_MODEL` vars (remote fallback), with `AI_CLOUDFLARE_API_KEY` holding the shared AI token.
 
-## i18n (AR/EN) ┼ī─å├Č verified live (2026-09-23, session 2)
+## i18n (AR/EN) в”јД«в”ҖГҘв”ңДҢ verified live (2026-09-23, session 2)
 - Both dictionaries are at parity: 481 keys each, no key missing from `ar.ts`. The switcher is mounted in `site-shell` (header + footer), `/account`, and `auth/layout`.
-- Resolution order in `getLocale()`: explicit cookie (`panda-wok.locale`) ┼ī├ź├å signed-in `profiles.locale` ┼ī├ź├å `Accept-Language` ┼ī├ź├å English.
-- Verified on the **live Worker**: `Cookie: panda-wok.locale=ar` ┼ī├ź├å `<html lang="ar" dir="rtl">`; default ┼ī├ź├å `<html lang="en" dir="ltr">`; `Accept-Language: ar` ┼ī├ź├å RTL. Arabic copy renders.
-- **Deploy gotcha:** locale switching appeared broken until the Worker was rebuilt. The live bundle predated the i18n commit ┼ī─å├Č always rebuild+redeploy after app changes, then re-test with the cookie before assuming a code bug.
+- Resolution order in `getLocale()`: explicit cookie (`panda-wok.locale`) в”јД«в”ңЕәв”ңГҘ signed-in `profiles.locale` в”јД«в”ңЕәв”ңГҘ `Accept-Language` в”јД«в”ңЕәв”ңГҘ English.
+- Verified on the **live Worker**: `Cookie: panda-wok.locale=ar` в”јД«в”ңЕәв”ңГҘ `<html lang="ar" dir="rtl">`; default в”јД«в”ңЕәв”ңГҘ `<html lang="en" dir="ltr">`; `Accept-Language: ar` в”јД«в”ңЕәв”ңГҘ RTL. Arabic copy renders.
+- **Deploy gotcha:** locale switching appeared broken until the Worker was rebuilt. The live bundle predated the i18n commit в”јД«в”ҖГҘв”ңДҢ always rebuild+redeploy after app changes, then re-test with the cookie before assuming a code bug.
 
 ## Audit pass (2026-09-23, session 3)
 
@@ -299,22 +299,22 @@ sign up and then could not sign in with the same credentials; the UI showed
   `01277593815` is already owned by profile `f7504be6-9c0d-474e-8ad7-75c2675980d0`
   (the owner account). `handle_new_user()` does a plain `insert ... on conflict
   (id) do nothing` into `profiles`, so the *unique* `profiles_phone_key` was hit,
-  the trigger raised 23505, and Supabase aborted the whole `auth.users` insert ┼ī─å├Č
+  the trigger raised 23505, and Supabase aborted the whole `auth.users` insert в”јД«в”ҖГҘв”ңДҢ
   a 500 the UI could only render as `UNKNOWN`. `signInWithPassword` then failed
   because no auth user had ever been created for that email/phone. Reproduced in
-  a rolled-back transaction: `insert into profiles (...) values (┼ī─åŌĆØ, '01277593815', ┼ī─åŌĆØ)`
-  ┼ī├ź├å `23505 duplicate key value violates unique constraint "profiles_phone_key"`.
+  a rolled-back transaction: `insert into profiles (...) values (в”јД«в”ҖГҘЕҢДҶГҳ, '01277593815', в”јД«в”ҖГҘЕҢДҶГҳ)`
+  в”јД«в”ңЕәв”ңГҘ `23505 duplicate key value violates unique constraint "profiles_phone_key"`.
 - **The live constraints are only on `profiles`**: `profiles_pkey (id)` plus a
   unique `profiles_phone_key` and `profiles_email_key` (not listed by a
   `pg_constraint` scan for `contype in ('u','p')` because they are unique
   *indexes*; query `pg_indexes`/`information_schema`, not just `pg_constraint`).
   Phone is stored in three shapes across history (`01277593815` legacy,
-  `+201┼ī─åŌĆØ` canonical), so any duplicate lookup must match all of them.
+  `+201в”јД«в”ҖГҘЕҢДҶГҳ` canonical), so any duplicate lookup must match all of them.
 - **Live auth config (Management API `/config/auth`)**: `mailer_autoconfirm=false`,
   no custom SMTP (`smtp_host=null`), `rate_limit_email_sent=2` per hour,
   `external_email_enabled=true`, `external_phone_enabled=false`,
   `external_anonymous_users_enabled=true`. Meaning: an emailed confirmation is
-  *not* dependable (no SMTP, 2/hour project-wide) ┼ī─å├Č every customer supplying an
+  *not* dependable (no SMTP, 2/hour project-wide) в”јД«в”ҖГҘв”ңДҢ every customer supplying an
   email would be either stranded at a confirmation wall or would exhaust the
   quota and fail signups for everyone. `external_phone_enabled=false` also means
   the derived placeholder **email** identifier is unavoidable.
@@ -324,45 +324,45 @@ sign up and then could not sign in with the same credentials; the UI showed
   profile lookup across every stored phone shape returns a specific
   `PHONE_ALREADY_EXISTS` / `EMAIL_ALREADY_EXISTS`; a race that slips past is
   classified from the provider's 23505. The profile row is read back and, if
-  missing, repaired ┼ī─å├Č else the auth user is deleted, so no partial account
+  missing, repaired в”јД«в”ҖГҘв”ңДҢ else the auth user is deleted, so no partial account
   remains. Structured one-line logs (`scope:"auth"`, `requestId`, hashed
   identifier) via `src/lib/auth/log.ts`; no password/token/PII is logged.
 - **Verified live end-to-end** (unique throwaway accounts, all deleted
-  afterwards; zero leftovers): phone-only signup ┼ī├ź├å created+confirmed ┼ī├ź├å session
-  minted ┼ī├ź├å profile row present with `restaurant_id`; email+phone signup likewise;
+  afterwards; zero leftovers): phone-only signup в”јД«в”ңЕәв”ңГҘ created+confirmed в”јД«в”ңЕәв”ңГҘ session
+  minted в”јД«в”ңЕәв”ңГҘ profile row present with `restaurant_id`; email+phone signup likewise;
   a repeated phone returns 23505. `handle_new_user` and the tenant
   `restaurant_id` defaults are healthy.
 - **Menu/basket regression (verified live):** the "Add an extra" group on Spicy
   Miso Ramen etc. is `max_select=2` with **3** options; the client used to replace
   the oldest selection instead of refusing, and `place_order` never checked group
   limits at all. Migration `20260923205905_modifier_limit_enforcement.sql`
-  re-creates `place_order` with a per-group count ┼ī├ź├å `MODIFIER_LIMIT_EXCEEDED`
+  re-creates `place_order` with a per-group count в”јД«в”ңЕәв”ңГҘ `MODIFIER_LIMIT_EXCEEDED`
   (verified: 3 extras rejected, 2 accepted). The client now refuses the extra tap
   and shows `addToCart.maxExtras`; basket + checkout list every extra with price.
-- **Tests:** vitest (`npm test`, config `vitest.config.ts`, `tests/`) ┼ī─å├Č 38 unit
+- **Tests:** vitest (`npm test`, config `vitest.config.ts`, `tests/`) в”јД«в”ҖГҘв”ңДҢ 38 unit
   tests over error mapping, phone canonicalisation, signup validation and the
   modifier rules. `server-only` is stubbed for the node test env. `npm run
   typecheck` added. Lint/typecheck/build green.
 
-## Design/UX engagement (2026-09-23, session 5) ┼ī─å├Č phased, awaiting approval
+## Design/UX engagement (2026-09-23, session 5) в”јД«в”ҖГҘв”ңДҢ phased, awaiting approval
 
 New brief: production-grade design overhaul; admin must control all visitor-facing
 content without a deploy; mascot must be the original sprite (no code-drawn SVG);
 public pages must not redirect; bilingual AR/EN. Executed in 8 phases; each phase
 is its own commit and is reported pass/fail before moving on. Docs committed:
 
-- `docs/baseline.md` (Phase 0) ┼ī─å├Č systems inventory, mock-content audit (0
+- `docs/baseline.md` (Phase 0) в”јД«в”ҖГҘв”ңДҢ systems inventory, mock-content audit (0
   fabricated items found), admin-control audit, mascot audit, live redirect
-  matrix, defects D1┼ī─å┼ŹD5.
-- `docs/env.md` (Phase 1) ┼ī─å├Č every env var, where each secret lives, leak check.
+  matrix, defects D1в”јД«в”ҖГҘв”јЕ№D5.
+- `docs/env.md` (Phase 1) в”јД«в”ҖГҘв”ңДҢ every env var, where each secret lives, leak check.
   `INTERNAL_LOG_SALT` documented (was read by `log.ts` but missing from
   `.env.example`).
-- `docs/deploy.md` (Phase 2) ┼ī─å├Č Pages/CI topology. `eslint.config.mjs` now ignores
+- `docs/deploy.md` (Phase 2) в”јД«в”ҖГҘв”ңДҢ Pages/CI topology. `eslint.config.mjs` now ignores
   `.pages/**` (`npm run lint`: 1186 errors to 0). CI is branch-aware
   (main/production to production, else preview).
-- `docs/architecture.md` (Phase 3) ┼ī─å├Č content model (`page_content`, `faqs`,
+- `docs/architecture.md` (Phase 3) в”јД«в”ҖГҘв”ңДҢ content model (`page_content`, `faqs`,
   `delivery_zones`, `announcements`, `page_seo`), admin `/admin/content`, design
-  tokens, motion, mascot plan. Stops for approval: Decisions A┼ī─å┼ŹD.
+  tokens, motion, mascot plan. Stops for approval: Decisions Aв”јД«в”ҖГҘв”јЕ№D.
 
 Two mascots exist (important). `page-mascot` sprite (M1) is the floating
 companion; a hand-drawn SVG `PandaMascot` (M2, `src/components/panda/mascot.tsx`)
@@ -395,16 +395,16 @@ Verified against the live project: the QA account's real email authenticates
 (`ok:true`) while the *derived* placeholder returns `invalid_credentials`.
 
 Refinement worth remembering: the discriminator is the **exact derived
-placeholder**, not the `example.com` domain ┼ī─å├Č customers (and the QA account)
+placeholder**, not the `example.com` domain в”јД«в”ҖГҘв”ңДҢ customers (and the QA account)
 legitimately register real mailboxes at `example.com`, and skipping those would
 lock them out.
 
 ### Added: `/admin` shared-passcode gate (layer 1)
-`src/lib/auth/admin-gate.ts` ┼ī─å├Č HMAC cookie keyed by the passcode, so rotating
+`src/lib/auth/admin-gate.ts` в”јД«в”ҖГҘв”ңДҢ HMAC cookie keyed by the passcode, so rotating
 `ADMIN_PASSCODE` (default `panda2026`) invalidates every existing cookie. The
 passcode never leaves the server; the client only sees the digest. Wired into
 `src/app/admin/layout.tsx` ahead of the staff-role check. This is a second factor,
-not a replacement: `requireCapability` and RLS still apply. Verified locally ┼ī─å├Č
+not a replacement: `requireCapability` and RLS still apply. Verified locally в”јД«в”ҖГҘв”ңДҢ
 unauthed `/admin` = 200 passcode form (no `/auth` redirect); valid cookie = 307 to
 `/auth/sign-in?next=/admin`; wrong cookie = passcode form.
 
@@ -416,7 +416,7 @@ that had been misdiagnosed as an env-var problem. Fixed in `35d0b46` by committi
 the missing closure (content service/actions/screens, reveal, schemas, admin nav).
 
 The Actions build step is now green. The **deploy step still fails** on the unset
-`CLOUDFLARE_API_TOKEN` repo secret ┼ī─å├Č an account owner must set it (the integration
+`CLOUDFLARE_API_TOKEN` repo secret в”јД«в”ҖГҘв”ңДҢ an account owner must set it (the integration
 token here gets 403 on `secrets: write`). Live `panda-wok.pages.dev` therefore
 still runs the old bundle; nothing in this session is deployed yet. Manual deploy:
 `npm run pages:deploy` with a token in the environment.
@@ -429,23 +429,23 @@ still runs the old bundle; nothing in this session is deployed yet. Manual deplo
   `01500988196`, socials TikTok/Instagram/Facebook (see below). The AI assistant
   grounding (`src/lib/ai/grounding.ts`) already renders these, so the assistant
   answers with the same numbers and links.
-- `src/components/icons/social.tsx` ┼ī─å├Č inline brand SVGs (no dependency) plus
+- `src/components/icons/social.tsx` в”јД«в”ҖГҘв”ңДҢ inline brand SVGs (no dependency) plus
   `socialIcon(key)` (falls back to a globe), `sortSocialEntries` (canonical
-  TikTok ┼ī├ź├å Instagram ┼ī├ź├å Facebook ┼ī├ź├å ┼ī─åŌĆØ order) and `socialLabel(t, key)` (translated
+  TikTok в”јД«в”ңЕәв”ңГҘ Instagram в”јД«в”ңЕәв”ңГҘ Facebook в”јД«в”ңЕәв”ңГҘ в”јД«в”ҖГҘЕҢДҶГҳ order) and `socialLabel(t, key)` (translated
   known platforms, capitalised fallback for unknown keys).
 - Footer (`SiteFooter` in `src/components/layout/site-shell.tsx`) renders tel /
   WhatsApp / mailto links plus labelled social icon buttons under
   `footer.followUs`; contact page (`/contact`) lists every channel with its icon
   and label.
-- WhatsApp links are normalised at render time: Egyptian `01X┼ī─åŌĆØ` ┼ī├ź├å `wa.me/20┼ī─åŌĆØ`
+- WhatsApp links are normalised at render time: Egyptian `01Xв”јД«в”ҖГҘЕҢДҶГҳ` в”јД«в”ңЕәв”ңГҘ `wa.me/20в”јД«в”ҖГҘЕҢДҶГҳ`
   (`replace(/\D/g,"").replace(/^0/,"20")`). Do not store the `20` prefix in
-  settings; keep the local `01┼ī─åŌĆØ` form as the display value.
+  settings; keep the local `01в”јД«в”ҖГҘЕҢДҶГҳ` form as the display value.
 - **Asian identity** is surfaced from real DB data, not a slogan: restaurant
   `cuisine_tags` (`Japanese-inspired`, `Chinese-inspired`) drive the hero line
-  and FAQ; `categories.name_ja` (├Ģ┬╗ŌöÉ├Ģ├ģ─¢/├Ą─¢┼ü─Č├ģ┬╗─Ę┼╣┼Ś/┼ā─ü┬«┼ā─üŌĢØ┼ā─ü─¬┼ā─üŌöé┼ī─åŌĆØ) shows beside the localised
+  and FAQ; `categories.name_ja` (в”ңДўв”¬в•—ЕҢГ¶Гүв”ңДўв”ңДЈв”ҖВў/в”ңД„в”ҖВўв”јГјв”ҖДҢв”ңДЈв”¬в•—в”ҖДҳв”јв•Јв”јЕҡ/в”јДҒв”ҖГјв”¬В«в”јДҒв”ҖГјЕҢДўГҳв”јДҒв”ҖГјв”ҖВ¬в”јДҒв”ҖГјЕҢГ¶Г©в”јД«в”ҖГҘЕҢДҶГҳ) shows beside the localised
   category name on `/menu`; the home `IdentityBand`
   (`src/components/customer/identity-band.tsx`) and the About "identity" section
-  name the two kitchens (Japanese sushi counter, Chinese wok) with ┬Ą┼Ü┼║┬Ą┬Ż┬╝ / ├Ą─¢┼ü├Ģ┼╣├ä
+  name the two kitchens (Japanese sushi counter, Chinese wok) with в”¬Д„в”јГңв”јв•‘в”¬Д„в”¬Е»в”¬в•қ / в”ңД„в”ҖВўв”јГјв”ңДўв”јв•Јв”ңГӨ
   glyphs. Dictionary keys are `home.identity*`.
 
 ### Social URLs (live)
@@ -456,30 +456,30 @@ still runs the old bundle; nothing in this session is deployed yet. Manual deplo
   `share/1bvsj3obpl/` is obsolete)
 These flow into JSON-LD `sameAs` automatically via `restaurantSchema`/`localBusinessSchema`.
 
-## Pages production branch ┼ī─å├Č must deploy with the right `--branch` (2026-09-24)
+## Pages production branch в”јД«в”ҖГҘв”ңДҢ must deploy with the right `--branch` (2026-09-24)
 - The Pages project `panda-wok` has `production_branch = feature/panda-wok-platform`
   (not `production`/`main`). `panda-wok.pages.dev` and the `production.panda-wok.pages.dev`
   alias both serve whatever was deployed **with that branch name**.
 - `npm run pages:deploy` used to pass `--branch production`, which created a
-  *preview* deployment ┼ī─å├Č the root domain kept serving the old bundle and it looked
+  *preview* deployment в”јД«в”ҖГҘв”ңДҢ the root domain kept serving the old bundle and it looked
   like the deploy silently failed. Fixed: the script no longer pins a branch, so
   wrangler uses the current git branch (which is `feature/panda-wok-platform` =
   production). If you deploy from another branch, pass `--branch feature/panda-wok-platform`
   explicitly to publish to production.
 - The `Deploy Pages` GitHub workflow already resolves this correctly for pushes to
   `feature/panda-wok-platform` (else-branch = ref name = production branch). Pushing
-  to `main` would produce a preview, not production ┼ī─å├Č only relevant if the default
+  to `main` would produce a preview, not production в”јД«в”ҖГҘв”ңДҢ only relevant if the default
   branch ever changes.
 - Verified live after deploying from `3c1cfc4`: `/`, `/menu`, `/about`, `/contact`,
   `/cart`, `/faq`, `/auth/sign-up`, `/auth/sign-in`, robots/sitemap/llms all 200;
   footer shows phone 01095052232 + WhatsApp 01500988196 + labelled TikTok/Instagram/
-  Facebook icon links; `wa.me/201500988196`; identity band (┬Ą┼Ü┼║┬Ą┬Ż┬╝/├Ą─¢┼ü├Ģ┼╣├ä) on home, About
-  and menu category names; Arabic cookie ┼ī├ź├å `dir="rtl"` with Arabic identity copy.
+  Facebook icon links; `wa.me/201500988196`; identity band (в”¬Д„в”јГңв”јв•‘в”¬Д„в”¬Е»в”¬в•қ/в”ңД„в”ҖВўв”јГјв”ңДўв”јв•Јв”ңГӨ) on home, About
+  and menu category names; Arabic cookie в”јД«в”ңЕәв”ңГҘ `dir="rtl"` with Arabic identity copy.
 - Still open: the repo secret `CLOUDFLARE_API_TOKEN` cannot be set with the
-  integration token here (`gh secret set` ┼ī├ź├å 403). An account owner must add it for
+  integration token here (`gh secret set` в”јД«в”ңЕәв”ңГҘ 403). An account owner must add it for
   push-to-deploy. Manual deploy works with the token in the environment.
 
-## 1102 on /admin (2026-09-24) ┼ī─å├Č transient, verified not reproducible + hardening
+## 1102 on /admin (2026-09-24) в”јД«в”ҖГҘв”ңДҢ transient, verified not reproducible + hardening
 
 - Symptom: correct admin passcode + staff sign-in -> "Error 1102 - Worker exceeded
   resource limits" (Ray a401adf8cc40243c, 12:09:19 UTC).
@@ -528,7 +528,7 @@ These flow into JSON-LD `sameAs` automatically via `restaurantSchema`/`localBusi
 
 ## Admin access, real data, and CJK typography (2026-09-25)
 
-### Admin gate ┼ī─å├Č single credential, verified live
+### Admin gate в”јД«в”ҖГҘв”ңДҢ single credential, verified live
 The `/admin` front door is **one field** (`name="secret"`,
 `src/components/admin/admin-gate-form.tsx`), resolved by `resolveSecret()` in
 `src/lib/auth/admin-gate.ts`:
@@ -564,15 +564,15 @@ before applying; the admin CMS is now the only menu source). The stray
 `QA Audit Live` profile/`auth.users` row from an earlier auth test was deleted
 too. Remaining profiles are real accounts (owner, second owner, one more).
 
-### CJK typography: ├Ģ┼╣├ä vs ─Č├ģ┬╗
+### CJK typography: в”ңДўв”јв•Јв”ңГӨ vs в”ҖДҢв”ңДЈв”¬в•—
 `.font-kana` uses **Shippori Mincho**, a *Japanese* Mincho. Its shipped subset
-(`subsets: ["latin","latin-ext"]` is a misnomer ┼ī─å├Č the woff2 carries 17,516 CJK
-codepoints) covers ┬Ą┼Ü┼║ ┬Ą┬Ż┬╝ ├Ą─¢┼ü ─Č├ģ┬╗ ├Ģ┬╗ŌöÉ ├Ģ├ģ─¢ ├Ģ├å─½ ─Ę┼╣┼Ś ─ĘŌĢæŌĢæ ├ĄŌĢæ┬Ż but **not** simplified ├Ģ┼╣├ä ├ĄŌĢæ├£.
-So `identityChineseScript: "├Ą─¢┼ü├Ģ┼╣├ä"` rendered ├Ģ┼╣├ä in a different fallback face ┼ī─å├Č a
-half-font badge. Fixed to `├Ą─¢┼ü─Č├ģ┬╗` (traditional, which the face ships), pinned by
+(`subsets: ["latin","latin-ext"]` is a misnomer в”јД«в”ҖГҘв”ңДҢ the woff2 carries 17,516 CJK
+codepoints) covers в”¬Д„в”јГңв”јв•‘ в”¬Д„в”¬Е»в”¬в•қ в”ңД„в”ҖВўв”јГј в”ҖДҢв”ңДЈв”¬в•— в”ңДўв”¬в•—ЕҢГ¶Гү в”ңДўв”ңДЈв”ҖВў в”ңДўв”ңГҘв”ҖВҪ в”ҖДҳв”јв•Јв”јЕҡ в”ҖДҳЕҢДўГҰЕҢДўГҰ в”ңД„ЕҢДўГҰв”¬Е» but **not** simplified в”ңДўв”јв•Јв”ңГӨ в”ңД„ЕҢДўГҰв”ңВЈ.
+So `identityChineseScript: "в”ңД„в”ҖВўв”јГјв”ңДўв”јв•Јв”ңГӨ"` rendered в”ңДўв”јв•Јв”ңГӨ in a different fallback face в”јД«в”ҖГҘв”ңДҢ a
+half-font badge. Fixed to `в”ңД„в”ҖВўв”јГјв”ҖДҢв”ңДЈв”¬в•—` (traditional, which the face ships), pinned by
 `tests/identity-script.test.ts`.
 
-Related: in Arabic the badges show country names (`┼Š┬”Ōöś├żŌöś┼¢┼Š┬”┼Š┬®┼Š┬”Ōöś├ź` / `┼Š┬”Ōöś├ż┼Š─äŌöś┼¢Ōöś├ź`), so the
+Related: in Arabic the badges show country names (`в”јЕ в”¬вҖқЕҢГ¶Еӣв”ңЕјЕҢГ¶Еӣв”јВўв”јЕ в”¬вҖқв”јЕ в”¬В®в”јЕ в”¬вҖқЕҢГ¶Еӣв”ңЕә` / `в”јЕ в”¬вҖқЕҢГ¶Еӣв”ңЕјв”јЕ в”ҖГӨЕҢГ¶Еӣв”јВўЕҢГ¶Еӣв”ңЕә`), so the
 component now tags them `lang="ar"` and drops `.font-kana` there, instead of
 labelling Arabic text as Japanese. Previously it hardcoded `ja`/`zh-Hans`,
 which would make a screen reader read Arabic with a Japanese voice.
@@ -587,13 +587,13 @@ saving. It writes hidden `latitude`/`longitude`/`accuracyM` fields so the same
 `addressSchema` path as the typed form is used. It is wired into
 `/account/addresses`; `/checkout` sends customers there with `?next=/checkout`
 when they have no address. So "the existing sterile system" the brief complained
-about is superseded ┼ī─å├Č verify before rebuilding it.
+about is superseded в”јД«в”ҖГҘв”ңДҢ verify before rebuilding it.
 
 ### Ambient layer (no binary assets, no audio)
-- `src/components/customer/leaf-field-2d.tsx` ┼ī─å├Č Canvas2D drifting leaves (the
+- `src/components/customer/leaf-field-2d.tsx` в”јД«в”ҖГҘв”ңДҢ Canvas2D drifting leaves (the
   only falling-leaf effect on the site; chosen over WebGL deliberately).
-- `src/components/customer/bamboo-ambience.tsx` ┼ī─å├Č pure-CSS bamboo culms.
-- `src/components/customer/asian-frames.tsx` ┼ī─å├Č asanoha / bamboo frame motifs.
+- `src/components/customer/bamboo-ambience.tsx` в”јД«в”ҖГҘв”ңДҢ pure-CSS bamboo culms.
+- `src/components/customer/asian-frames.tsx` в”јД«в”ҖГҘв”ңДҢ asanoha / bamboo frame motifs.
 - All are decorative and honour reduced-motion.
 
 **There is no sound layer and there must not be one.** No `AudioContext`, no
@@ -616,7 +616,7 @@ tax 14%, loyalty points 1:1.
 
 ### Two questions only the owner can answer
 1. **Delivery fee policy.** Live: EGP 30 flat, free over EGP 250. The earlier
-   brief said "delivery 100" ┼ī─å├Č if that was the intended fee, change
+   brief said "delivery 100" в”јД«в”ҖГҘв”ңДҢ if that was the intended fee, change
    `delivery.fee` in Admin -> Settings rather than in code.
 2. **Opening hours.** `support.opening_hours` is empty, so no hours are shown
    anywhere (including the assistant's grounding). Fill it to publish them.
@@ -633,7 +633,7 @@ garden-ambience toggle (`AmbienceToggle` in
 and `ambience.soundOn/soundOff` dictionary keys). It has been removed, and the
 removal is a standing rule, not a one-off cleanup: **do not add interface sound
 in any form.** No `AudioContext`, no oscillator, no `new Audio()`, no audio
-files in `public/`, no mute toggle ┼ī─å├Č there is nothing to mute. The site is
+files in `public/`, no mute toggle в”јД«в”ҖГҘв”ңДҢ there is nothing to mute. The site is
 silent by design; the visual ambience carries the Asian identity instead.
 `BambooAmbience` (CSS culms) and `LeafField2D` (Canvas2D drifting leaves) are
 visual only and stay.
@@ -641,8 +641,8 @@ visual only and stay.
 **The "our story" page was never missing.** `/about` existed and returned 200
 the whole time. What the user saw was two real defects on it:
 
-1. Its identity section still called `home.identityJapaneseScript` and friends ┼ī─å├Č
-   keys that an earlier session removed ┼ī─å├Č so the raw key strings rendered as
+1. Its identity section still called `home.identityJapaneseScript` and friends в”јД«в”ҖГҘв”ңДҢ
+   keys that an earlier session removed в”јД«в”ҖГҘв”ңДҢ so the raw key strings rendered as
    visible text. This is the same failure mode as the `{cuisine}` placeholder
    below: a `t()` lookup for a deleted key returns the key path. It now reads
    `about.identityHeading` / `about.identityBody` and renders the kitchen's live
@@ -669,14 +669,14 @@ as a last resort. `brandName` / `brandTagline` / `brandDescription` are used by
 
 **Place names are localised for display, not for structured data.**
 `localisedPlace` in the same module maps the proper nouns stored in English on
-the restaurant row (Alexandria -> ┼Š┬”Ōöś├ż┼Š┼║┼ŠŌöéŌöś─üŌöś├ź┼Š┬╗┼ŠŌ¢ÆŌöś┼¢┼Š┬«, Egypt -> Ōöś─Ż┼Š─ä┼ŠŌ¢Æ, plus Cairo, Giza and
+the restaurant row (Alexandria -> в”јЕ в”¬вҖқЕҢГ¶Еӣв”ңЕјв”јЕ в”јв•‘в”јЕ ЕҢГ¶Г©ЕҢГ¶Еӣв”ҖГјЕҢГ¶Еӣв”ңЕәв”јЕ в”¬в•—в”јЕ ЕҢВўГҶЕҢГ¶Еӣв”јВўв”јЕ в”¬В«, Egypt -> ЕҢГ¶Еӣв”ҖЕ»в”јЕ в”ҖГӨв”јЕ ЕҢВўГҶ, plus Cairo, Giza and
 two Gulf states) for rendered copy. The `restaurantSchema` JSON-LD deliberately
 keeps the canonical English names, because search engines read that graph rather
 than the reader's language.
 
 **Verified live after deploy:** `/`, `/about`, `/menu`, `/contact`, `/faq`,
 `/location`, `/cart`, `/privacy-policy` all 200; Arabic `/about` renders Arabic
-copy with ┼Š┬”Ōöś├ż┼Š┼║┼ŠŌöéŌöś─üŌöś├ź┼Š┬╗┼ŠŌ¢ÆŌöś┼¢┼Š┬« / Ōöś─Ż┼Š─ä┼ŠŌ¢Æ; no `AmbienceToggle` or "garden sounds" string in the
+copy with в”јЕ в”¬вҖқЕҢГ¶Еӣв”ңЕјв”јЕ в”јв•‘в”јЕ ЕҢГ¶Г©ЕҢГ¶Еӣв”ҖГјЕҢГ¶Еӣв”ңЕәв”јЕ в”¬в•—в”јЕ ЕҢВўГҶЕҢГ¶Еӣв”јВўв”јЕ в”¬В« / ЕҢГ¶Еӣв”ҖЕ»в”јЕ в”ҖГӨв”јЕ ЕҢВўГҶ; no `AmbienceToggle` or "garden sounds" string in the
 served HTML; `tsc` clean; 60 tests pass.
 
 **Data cleanup is complete.** > **Superseded (2026-09-26):** the Chinese menu was loaded after this note was written, and the Japanese sushi menu after that. See the catalogue note at the end of this file. The paragraphs below describe the moment the mock rows were removed, not the current state.
@@ -684,15 +684,15 @@ served HTML; `tsc` clean; 60 tests pass.
 `categories`, `menu_items`, `modifier_groups`,
 `modifier_options`, `orders`, `faqs`, `page_content`, `page_seo`,
 `loyalty_rewards`, `delivery_zones`, `announcements` and `stock_items` are all
-empty (0 rows) ┼ī─å├Č every mock item, category, policy, offer and FAQ is gone, and
+empty (0 rows) в”јД«в”ҖГҘв”ңДҢ every mock item, category, policy, offer and FAQ is gone, and
 the Admin CMS is the only source for the menu. The 28 `settings` rows are
 deliberately kept: they are operational configuration (contact numbers, tax
 rate, delivery fee, ETA), not fabricated content, and deleting them would break
 checkout.
 
-## UX scroll-reveal sweep (2026-09-25, session committed 83f7de1 ┼ī├ź├å c5a699e)
+## UX scroll-reveal sweep (2026-09-25, session committed 83f7de1 в”јД«в”ңЕәв”ңГҘ c5a699e)
 
-- `src/components/ui/reveal.tsx` ┼ī─å├Č bidirectional IntersectionObserver reveal;
+- `src/components/ui/reveal.tsx` в”јД«в”ҖГҘв”ңДҢ bidirectional IntersectionObserver reveal;
   starts "shown" (JS-off safe), demotes below-the-fold to pending in a layout
   effect, promotes on scroll, respects `prefers-reduced-motion`. `as` now also
   accepts `"header"` (the previous union was div/section/li/article).
@@ -710,17 +710,17 @@ checkout.
 - Brand fonts wired in `src/app/layout.tsx`: IBM Plex Sans + IBM Plex Sans
   Arabic (body/display) with Shippori Mincho as the Japanese accent.
 - Menu/loyalty/account empty states and all `washi-panel` sections inherit the
-  `data-reveal` treatment ┼ī─å├Č content stays in the DOM (readable, indexable).
+  `data-reveal` treatment в”јД«в”ҖГҘв”ңДҢ content stays in the DOM (readable, indexable).
 
 **Admin gate (verified present):** `/admin` is sealed by a single-field HMAC
 passcode gate (`src/lib/auth/admin-gate.ts`, cookie `panda-wok.admin`, default
 `Panda2026`). The owner's passcode unlocks the full console; staff accounts
-created in Admin ┼ī├ź├å Users carry a `login_id`, and typing that id in the gate
+created in Admin в”јД«в”ңЕәв”ңГҘ Users carry a `login_id`, and typing that id in the gate
 unlocks only the member's role-scoped console (`requireCapability` + RLS still
 apply). Owner creates accounts for any role with a chosen phone/id.
 
 **Map address picker (verified present):** `address-book.tsx` (used on
-`/account/addresses` + checkout) embeds `location-map.tsx` ┼ī─å├Č an OpenStreetMap
+`/account/addresses` + checkout) embeds `location-map.tsx` в”јД«в”ҖГҘв”ңДҢ an OpenStreetMap
 picker with GPS autofill via the browser geolocation API and reverse geocode,
 letting the customer confirm a pin on a map instead of typing only. The
 customer picks a point, the address fills in for confirmation.
@@ -739,7 +739,7 @@ customer picks a point, the address fills in for confirmation.
 
 
 
-- Mock-data cleanup (verified, DB, at the time): categories/menu_items/page_content/faqs/delivery_zones/announcements/orders were all 0 rows on the live project. **No longer true for the menu** ŌĆö see the catalogue note at the end of this file. Only real persistence remains: settings ( 28 rows - phones/socials/brand) + 2 ai_providers rows ( infra.). No offers/coupons tables exist - nothing stale to purge.
+- Mock-data cleanup (verified, DB, at the time): categories/menu_items/page_content/faqs/delivery_zones/announcements/orders were all 0 rows on the live project. **No longer true for the menu** ЕҢДҶГ¶ see the catalogue note at the end of this file. Only real persistence remains: settings ( 28 rows - phones/socials/brand) + 2 ai_providers rows ( infra.). No offers/coupons tables exist - nothing stale to purge.
 
 
 ## Perf + admin forms pass (2026-09-25, session 6 - pushed 9e32f46)
@@ -764,20 +764,20 @@ average rating). `/menu` section headings now use `font-display text-fluid-h3`.
 that nothing visitor-facing is fabricated, so there is no hardcoded "4.9": the
 card renders a star only when `rating_count > 0` and shows the count beside it.
 The single pre-existing live feedback row has `order_id = null` and
-`is_public = false`, so the menu currently shows no stars ┼ī─å├Č correct, not broken.
+`is_public = false`, so the menu currently shows no stars в”јД«в”ҖГҘв”ңДҢ correct, not broken.
 
 **Defect found and fixed (`20260926130000`): the view was dead for every
 visitor.** It was created `security_invoker` on the stated assumption that
-"all three base tables expose a public read path". They do not ┼ī─å├Č `feedback`
+"all three base tables expose a public read path". They do not в”јД«в”ҖГҘв”ңДҢ `feedback`
 has only `feedback_self_read` (auth.uid()) / `feedback_staff_read`, and
 `orders` only `orders_owner_read` / `orders_staff_read`; **all four are
 `authenticated`-only, there is no anon policy on either table.** Evaluated as
 `anon` the view matched zero rows and returned **HTTP 200 with no error and no
-log** ┼ī─å├Č a silent empty result, the worst failure mode. It is now
+log** в”јД«в”ҖГҘв”ңДҢ a silent empty result, the worst failure mode. It is now
 `security_invoker = false` (definer rights), which is sound because the view
 projects only `(menu_item_id, rounded average, count)`: no user id, no order
 id, no review text. Do **not** "fix" this by adding an anon SELECT policy to
-`feedback` ┼ī─å├Č that would expose raw review text, user ids and image URLs to
+`feedback` в”јД«в”ҖГҘв”ңДҢ that would expose raw review text, user ids and image URLs to
 every anonymous visitor.
 
 Two traps worth remembering from this one:
@@ -789,11 +789,11 @@ Two traps worth remembering from this one:
 
 Verified live in a rolled-back transaction: ratings 5+4 consented -> `4.5` /
 count 2, and an un-consented 1-star correctly excluded. Then confirmed in the
-DOM (`4.7 Ōö¼─ś 3 ratings Ōö¼─ś 4.7 out of 5`) with temporary rows, which were deleted.
+DOM (`4.7 ЕҢГ¶Вјв”ҖЕӣ 3 ratings ЕҢГ¶Вјв”ҖЕӣ 4.7 out of 5`) with temporary rows, which were deleted.
 
 ### Two layout bugs that only a real browser shows
 1. **A bare `grid` is not `grid-cols-1`.** An implicit grid column is `auto`,
-   so its min-content floor is set by the widest unbreakable child ┼ī─å├Č the
+   so its min-content floor is set by the widest unbreakable child в”јД«в”ҖГҘв”ңДҢ the
    `truncate` spans (nowrap reports full unwrapped width) forced the editorial
    column to 445px inside a 358px container and pushed the whole page
    sideways on a phone. Use `grid-cols-1` (`minmax(0, 1fr)`) or explicit
@@ -812,14 +812,14 @@ DOM (`4.7 Ōö¼─ś 3 ratings Ōö¼─ś 4.7 out of 5`) with temporary rows, 
 - Scroll the whole page first: reveal animations only run on intersection, and
   pending transforms are exactly what you are measuring.
 - To find the culprit, toggle each section's `display` and watch
-  `documentElement.scrollWidth` ┼ī─å├Č cheaper and more reliable than eyeballing
+  `documentElement.scrollWidth` в”јД«в”ҖГҘв”ңДҢ cheaper and more reliable than eyeballing
   bounding boxes.
 - `scrollW - clientW <= 1` is the pass bar (subpixel rounding).
 
 **Known pre-existing overflow, NOT introduced by this work and NOT yet
 fixed:** ~3px at phone width and ~57px at 768px, present on `/about`,
 `/contact`, `/faq` and `/cart` alike (identical numbers), so it lives in the
-shared shell ┼ī─å├Č the footer (`washi-panel`) and the footer link grid ┼ī─å├Č not in
+shared shell в”јД«в”ҖГҘв”ңДҢ the footer (`washi-panel`) and the footer link grid в”јД«в”ҖГҘв”ңДҢ not in
 any page. `main`'s decorative canvases are all `pointer-events-none` and were
 excluded as suspects. Worth a dedicated pass; it is unrelated to the design
 work above.
@@ -835,10 +835,10 @@ three raw-BMP entries plus one PNG). Confirmed by decoding it: the only colours
 present were pure `0,0,0` and `255,255,255`. `src/app/icon.svg` was already the
 hand-drawn panda, but browsers prefer `favicon.ico` when both are present, so
 the placeholder is what actually showed. If a favicon ever "doesn't update",
-decode the `.ico` before touching code ┼ī─å├Č a grayscale-only palette is the tell.
+decode the `.ico` before touching code в”јД«в”ҖГҘв”ңДҢ a grayscale-only palette is the tell.
 
 **Icons are generated, not hand-made:** `npm run icons`
-(`scripts/generate-icons.mjs`, requires `sharp` ┼ī─å├Č now an explicit devDependency,
+(`scripts/generate-icons.mjs`, requires `sharp` в”јД«в”ҖГҘв”ңДҢ now an explicit devDependency,
 it was previously only hoisted in via Next). It writes `src/app/favicon.ico`
 (16/32/48 PNG entries, hand-assembled because sharp cannot emit ICO),
 `src/app/icon.svg`, `src/app/apple-icon.png` (180) and `public/icon-{192,512}.png`
@@ -852,7 +852,7 @@ looking at the output rather than assuming:
   bounding box, so at 16px it reads as a dark smudge edge-to-edge.
 - **The plate must be ink, not rice.** The mark is a *white* panda on a
   transparent ground (drawn for the dark hero). On a cream plate the white
-  circle vanishes and the 32px icon samples as 100% rice/white ┼ī─å├Č i.e. invisible.
+  circle vanishes and the 32px icon samples as 100% rice/white в”јД«в”ҖГҘв”ңДҢ i.e. invisible.
   Ink plate + white mark is the only combination that reads on both light and
   dark tab strips.
 
@@ -864,8 +864,8 @@ Android's maskable crop.
 `SiteFooter` carries `hidden sm:block` by request. Nothing is orphaned: the
 header holds the nav + language switcher, and `/contact` lists every channel the
 footer had. The phone-specific accordion (`MobileFooterSections` in
-`mobile-footer.tsx`) became unreachable ┼ī─å├Č `sm:hidden` nested inside
-`hidden sm:block` can never render ┼ī─å├Č so it was deleted along with its imports;
+`mobile-footer.tsx`) became unreachable в”јД«в”ҖГҘв”ңДҢ `sm:hidden` nested inside
+`hidden sm:block` can never render в”јД«в”ҖГҘв”ңДҢ so it was deleted along with its imports;
 only `FooterSocial` remains in that file. **Watch for that pattern when hiding a
 container:** a child breakpoint inside a hidden parent is dead code, and `tsc`
 won't flag it.
@@ -873,19 +873,19 @@ won't flag it.
 ### Hero stats and menu pills (same session)
 Hero dropped the ETA and delivery-fee stats (`etaMinutes`/`deliveryFee`/
 `freeOver`); it now shows dish count, rating, city, plus a direct-order line
-(`home.heroOrderDirect`). The menu's dietary filter pills are gone ┼ī─å├Č no
+(`home.heroOrderDirect`). The menu's dietary filter pills are gone в”јД«в”ҖГҘв”ңДҢ no
 catalogue row carries a diet flag, so every pill but "available" matched
 nothing. Removed the dead `diet` query param and the orphaned dictionary keys
 (`dietaryFilter`/`filter*`/`noMatchTitle`, `menu.availableNow`).
 
 Careful when grepping for removed copy: `deliveryHint` ("{fee}, free over
 {freeOver}") and the FAQ's fee sentence legitimately still mention the delivery
-fee ┼ī─å├Č they render at checkout, not in the hero. Check the surrounding context
+fee в”јД«в”ҖГҘв”ңДҢ they render at checkout, not in the hero. Check the surrounding context
 before "cleaning up" a match.
 
 ### ImageKit asset is unreachable
 `https://ik.imagekit.io/fbwa3np7/IMG-20260922-WA0012.jpg` returns **404**, and so
-does the account root ┼ī─å├Č the whole ImageKit URL endpoint is not publicly serving,
+does the account root в”јД«в”ҖГҘв”ңДҢ the whole ImageKit URL endpoint is not publicly serving,
 so that image cannot be used as a favicon or anywhere else. If the owner wants a
 photo mark, the file needs uploading somewhere reachable (or into the existing
 public `menu-images` Supabase bucket).
@@ -905,7 +905,7 @@ Japanese is not a published language here (English + Arabic only), so the
 `validation/schemas.ts` (`nameJa`), `actions/admin.ts` (payloads + formData),
 both admin forms, the dish/category subtitles, the menu search haystack, and the
 Japanese-flavoured hero/editorial/About copy. `BRAND_SCRIPT_MARK` is now
-Chinese-only (├Ą─¢┼ü─Č├ģ┬╗); the cuisine identity comes from the live `cuisine_tags`.
+Chinese-only (в”ңД„в”ҖВўв”јГјв”ҖДҢв”ңДЈв”¬в•—); the cuisine identity comes from the live `cuisine_tags`.
 Commit `0121084`; guarded by `tests/identity-script.test.ts`.
 
 **The `categories.name_ja` / `menu_items.name_ja` columns were NOT dropped, on
@@ -913,7 +913,7 @@ purpose.** A `drop column` migration was written and applied, and it silently
 broke production: the deployed Pages worker is built and published separately
 from this repo, and that live bundle still selects `name_ja`. PostgREST answered
 the unknown-column select with an error, `getPublicMenu` threw, and `/menu` fell
-to its empty state ┼ī─å├Č **HTTP 200, no visible error, zero dishes**. The drop was
+to its empty state в”јД«в”ҖГҘв”ңДҢ **HTTP 200, no visible error, zero dishes**. The drop was
 reverted (columns re-added nullable; the migration row was deleted from
 `supabase_migrations.schema_migrations` so local and remote stay aligned), and
 `src/lib/types/database.ts` was regenerated against the restored schema.
@@ -926,7 +926,7 @@ How the breakage was proven (worth reusing): create a real dish with the
 service-role key, fetch `/menu` with `cache: "no-store"`, and grep the HTML for
 the dish name. With the column dropped the name was absent; after re-adding it,
 present. The empty state is indistinguishable from "no menu yet" by status code
-alone, so a status check will not catch this class of bug ┼ī─å├Č assert on rendered
+alone, so a status check will not catch this class of bug в”јД«в”ҖГҘв”ңДҢ assert on rendered
 content. The live worker's bundles contain no `name_ja` string, which is why
 grepping the served HTML for the column name proves nothing; the column list is
 data passed to PostgREST, not a literal in the client bundle.
@@ -946,7 +946,7 @@ so the app change is committed but not yet deployed.
 
 `scripts/import-menu.mjs` + `scripts/data/panda-wok-menu.json` (the owner's CMS
 manifest, committed verbatim). Live result: **10 categories, 53 dishes, 15
-modifier groups, 57 options**, Arabic on every dish, EGP 20┼ī─å┼Ź1560.
+modifier groups, 57 options**, Arabic on every dish, EGP 20в”јД«в”ҖГҘв”јЕ№1560.
 
 **The manifest is positional, and that is the whole difficulty.** It is a flat
 export of the owner's sheet (200 non-empty rows, 89 priced). Reading it as "each
@@ -955,16 +955,16 @@ priced row is a dish" is wrong and produces 89 junk dishes named `chicken`,
 
 - A **priced row is the dish name**; the *unpriced* line after it is that dish's
   description. (So `Vegetables spring rolls (4 pieces)` + `mixed vegetables and
-  glass noodles┼ī─åŌĆØ` + `95` is one dish, not two rows.)
+  glass noodlesв”јД«в”ҖГҘЕҢДҶГҳ` + `95` is one dish, not two rows.)
 - A run of priced `no protein / chicken / beef / shrimp` rows after a
   `your choice :` marker are **variants of the dish above**, not new dishes.
   Stored as a `Choose your protein` group (min 1, max 1) with `price_delta` from
-  the cheapest variant ┼ī─å├Č the sheet quotes absolute prices, the DB stores deltas.
-  `Lo-mein` is 125/208/249/275 ┼ī├ź├å base 125, deltas 0/83/124/150.
+  the cheapest variant в”јД«в”ҖГҘв”ңДҢ the sheet quotes absolute prices, the DB stores deltas.
+  `Lo-mein` is 125/208/249/275 в”јД«в”ңЕәв”ңГҘ base 125, deltas 0/83/124/150.
 - `your choice :` followed by *unpriced* words (`steamed`, `fried`) is a free
   choice group; the sauces in `Main dishes` likewise.
-- `your choice of X or Y with ┼ī─åŌĆØ` in a Box is **prose describing the dish**, not a
-  choice ┼ī─å├Č it stays in `description_en`. Treating it as a group produced a
+- `your choice of X or Y with в”јД«в”ҖГҘЕҢДҶГҳ` in a Box is **prose describing the dish**, not a
+  choice в”јД«в”ҖГҘв”ңДҢ it stays in `description_en`. Treating it as a group produced a
   one-option radio group with a 200-character label.
 
 Every one of the 200 rows is accounted for, and the script refuses to write when
@@ -976,7 +976,7 @@ failure.
 Verified live after import: English and Arabic `/menu` render, `/menu/<slug>`
 shows the protein group with `+EGP 83.00` deltas, home shows 53 dishes, and a
 rolled-back `place_order` priced Lo-mein + chicken at **208.00** with the delta
-snapshotted into `order_items.modifiers` (pickup, so no delivery fee; 14% tax ┼ī├ź├å
+snapshotted into `order_items.modifiers` (pickup, so no delivery fee; 14% tax в”јД«в”ңЕәв”ңГҘ
 237.12). Group limits are enforced server-side by `place_order`.
 
 ### Two things to raise with the owner
@@ -984,12 +984,12 @@ snapshotted into `order_items.modifiers` (pickup, so no delivery fee; 14% tax �
 1. **Japanese-flavoured dishes are in the real menu**: Teriyaki noodles, Japanese
    teppan fried rice, Korean ramen fried rice, Spicy tomato ramen noodles, Sweet
    and sour & teriyaki meal (single/twin), Teriyaki Chicken/Beef Box, Teriyaki
-   sauce ┼ī─å├Č 9 items. Chinese-only branding (the `├Ą─¢┼ü─Č├ģ┬╗` mark) is therefore a
+   sauce в”јД«в”ҖГҘв”ңДҢ 9 items. Chinese-only branding (the `в”ңД„в”ҖВўв”јГјв”ҖДҢв”ңДЈв”¬в•—` mark) is therefore a
    *branding* choice, not a claim about the menu. Renaming them is the owner's
    call, so they were imported as written.
 2. **`Main dishes` items are literally named `Chicken` and `Beef`** (333/378),
    with the sauce as the choice group. That is what the sheet says, but on a menu
-   card "Chicken" alone reads oddly ┼ī─å├Č a rename (e.g. "Chicken with your choice of
+   card "Chicken" alone reads oddly в”јД«в”ҖГҘв”ңДҢ a rename (e.g. "Chicken with your choice of
    sauce") needs the owner's approval.
 
 Also worth knowing: **`is_required` does not gate checkout.**
@@ -1012,7 +1012,7 @@ build with the real anon key baked in:
   are the same two icons (prep clock + view-dish arrow) repeated per card.
 - **Zero dishes have an `image_url`.** The import never set one, so `DishCard`
   renders its `asanoha` "photo soon" placeholder on all 52 cards. Image weight
-  is therefore not a factor in the current menu's slowness ┼ī─å├Č the card art path
+  is therefore not a factor in the current menu's slowness в”јД«в”ҖГҘв”ңДҢ the card art path
   (`dishImageSrc`/`srcSet`/`fetchpriority`) is simply unused. Uploading real
   photos is the biggest *visual* win available, and the upload path is ready.
 - All 52 dishes share `prep_minutes = 15`, so the clock chip is identical on
@@ -1023,7 +1023,7 @@ build with the real anon key baked in:
 
 What was actually changed: the two repeated icons are hoisted to module scope,
 which cut the RSC payload 258 KB -> 245 KB. **Hoisting does not shrink the
-rendered DOM** ┼ī─å├Č React still emits one SVG per card, so the 123 inline SVGs
+rendered DOM** в”јД«в”ҖГҘв”ңДҢ React still emits one SVG per card, so the 123 inline SVGs
 remain. Do not expect a DOM win from that change.
 
 Fixing the remaining payload means not shipping the full catalogue as HTML:
@@ -1037,14 +1037,14 @@ crawlers see the menu, so they need a decision, not a silent rewrite.
   `PICKUP_UNAVAILABLE`, and the timeline / order-detail / guide / FAQ / llms
   copy no longer mention it. Migration `20260926150000_offers_and_delivery_only.sql`.
 - `offers` (threshold discounts) + `Admin -> Offers` CRUD. **Checkout applies
-  the single best-saving offer, never stacked** ┼ī─å├Č the admin page says so
+  the single best-saving offer, never stacked** в”јД«в”ҖГҘв”ңДҢ the admin page says so
   explicitly because "two active offers" reading as "both apply" is the obvious
   and expensive misreading.
 - `Pancit canton filipino noodles` was deleted outright (row + modifier group +
   stock link + image rows), not archived, at the owner's request. `menu_items`
   is 52 rows.
 
-## Japanese removal ┼ī─å├Č what "removed" means here (2026-09-26)
+## Japanese removal в”јД«в”ҖГҘв”ңДҢ what "removed" means here (2026-09-26)
 
 Japanese was never a locale (`LOCALES = ["en","ar"]`). What was removed:
 `name_ja` reads/writes everywhere, the admin "Name (Japanese)" inputs, and the
@@ -1055,19 +1055,19 @@ Japanese-flavoured hero/editorial copy. What remains, deliberately:
   while that bundle is live made `/menu` fail silently to its empty state. Drop
   it only after the app deploy, and in this order: deploy app -> verify -> drop
   column (the reverse order is the trap recorded in `391d667`).
-- `.font-kana` is a **Chinese** script face, not Japanese ┼ī─å├Č `public/fonts/kana-mark.woff2`
-  is a 928-byte subset covering exactly ├Ą─¢┼ü and ─Č├ģ┬╗, built by `npm run fonts`.
+- `.font-kana` is a **Chinese** script face, not Japanese в”јД«в”ҖГҘв”ңДҢ `public/fonts/kana-mark.woff2`
+  is a 928-byte subset covering exactly в”ңД„в”ҖВўв”јГј and в”ҖДҢв”ңДЈв”¬в•—, built by `npm run fonts`.
   Shippori Mincho via `next/font` used to ship a 189 KB stylesheet of 244
   unicode-range chunks for that two-glyph mark.
 - The real menu still contains Japanese-*flavoured* dishes (teriyaki, teppan,
-  ramen, Korean ramen rice ┼ī─å├Č 9 items). Those are the owner's wording, imported
+  ramen, Korean ramen rice в”јД«в”ҖГҘв”ңДҢ 9 items). Those are the owner's wording, imported
   as written; renaming them is the owner's call.
 
 ## Deploy (2026-09-26, pushed 8f4b467)
 
-Pushed `feature/panda-wok-platform` (0 behind / 11 ahead ┼ī─å├Č a clean fast-forward)
+Pushed `feature/panda-wok-platform` (0 behind / 11 ahead в”јД«в”ҖГҘв”ңДҢ a clean fast-forward)
 and the `Deploy Pages` workflow ran green (run on `8f4b467`, conclusion
-`success`). **The `CLOUDFLARE_API_TOKEN` repository secret is set now** ┼ī─å├Č the
+`success`). **The `CLOUDFLARE_API_TOKEN` repository secret is set now** в”јД«в”ҖГҘв”ңДҢ the
 earlier "deploy step always fails" note is obsolete; the previous run
 (`c0213adc`) had already succeeded. Push-to-deploy works, so `npm run
 pages:deploy` is a fallback, not the only route.
@@ -1077,13 +1077,13 @@ Verified live on https://panda-wok.pages.dev after the deploy:
 - `/`, `/menu`, `/about`, `/faq` = 200; `/checkout` = 307 (auth middleware, as
   designed). The 307 is expected for an anonymous visitor, not a failure.
 - The free-delivery banner renders in **both** locales from the `announcements`
-  rows: EN shows "Free delivery on every order", AR shows "┼Š┬”Ōöś├ż┼Š┬¼Ōöś┼é┼Š─äŌöś┼¢Ōöś├ż Ōöś─Ż┼Š┬╝┼Š┬”Ōöś├źŌöś┼¢ ┼ŠŌĢŻŌöś├żŌöś─ō Ōöś─üŌöś├ż
-  ┼Š┬”Ōöś├ż┼Š─śŌöś├ż┼Š┬®┼Š┬”┼Š┬¼", and the Arabic page does **not** also render the English row ┼ī─å├Č the
+  rows: EN shows "Free delivery on every order", AR shows "в”јЕ в”¬вҖқЕҢГ¶Еӣв”ңЕјв”јЕ в”¬ВјЕҢГ¶Еӣв”јГ©в”јЕ в”ҖГӨЕҢГ¶Еӣв”јВўЕҢГ¶Еӣв”ңЕј ЕҢГ¶Еӣв”ҖЕ»в”јЕ в”¬в•қв”јЕ в”¬вҖқЕҢГ¶Еӣв”ңЕәЕҢГ¶Еӣв”јВў в”јЕ ЕҢДўЕ»ЕҢГ¶Еӣв”ңЕјЕҢГ¶Еӣв”ҖЕҚ ЕҢГ¶Еӣв”ҖГјЕҢГ¶Еӣв”ңЕј
+  в”јЕ в”¬вҖқЕҢГ¶Еӣв”ңЕјв”јЕ в”ҖЕӣЕҢГ¶Еӣв”ңЕјв”јЕ в”¬В®в”јЕ в”¬вҖқв”јЕ в”¬Вј", and the Arabic page does **not** also render the English row в”јД«в”ҖГҘв”ңДҢ the
   `getAnnouncements` `sort_order` dedup fix holds in production.
-- No `15m` / `15 ┼Š┬╗` prep chip anywhere, confirming the prep-time removal
+- No `15m` / `15 в”јЕ в”¬в•—` prep chip anywhere, confirming the prep-time removal
   reached the deployed bundle (a stale bundle was the failure mode last time).
 
-## Menu photo upload ┼ī─å├Č the "crash" was a 1 MB framework cap (2026-09-26)
+## Menu photo upload в”јД«в”ҖГҘв”ңДҢ the "crash" was a 1 MB framework cap (2026-09-26)
 
 The fear that uploading a photo would crash the admin was a real defect, and it
 had nothing to do with Supabase or the bucket:
@@ -1091,7 +1091,7 @@ had nothing to do with Supabase or the bucket:
 - Next caps **server-action request bodies at 1 MB** by default
   (`serverActions.bodySizeLimit`). `uploadMenuImageAction` is a server action
   that receives the raw `File`, while the field and the `menu-images` bucket both
-  advertise **8 MB**. So every ordinary phone photo (2┼ī─å┼Ź5 MB) was rejected by the
+  advertise **8 MB**. So every ordinary phone photo (2в”јД«в”ҖГҘв”јЕ№5 MB) was rejected by the
   framework *before the action ran*.
 - Reproduced and fixed in isolation. With the limit absent, a 2.43 MB PNG POST
   returns **HTTP 500 "Body exceeded 1 MB limit"** (`statusCode: 413`). With
@@ -1101,11 +1101,11 @@ had nothing to do with Supabase or the bucket:
   deleted afterwards; the bucket is empty.
 - The client now also wraps the action call in `try/catch/finally`. A *rejected*
   action (oversized body, dropped connection, stale deployment) previously left
-  the button spinning forever with no message ┼ī─å├Č which is exactly what "it
+  the button spinning forever with no message в”јД«в”ҖГҘв”ңДҢ which is exactly what "it
   crashes" looked like. It now clears the spinner and shows a message. The blob
   preview URL is revoked on completion instead of leaking.
 
-## The importer is insert-only ┼ī─å├Č re-running it duplicates the menu (2026-09-26)
+## The importer is insert-only в”јД«в”ҖГҘв”ңДҢ re-running it duplicates the menu (2026-09-26)
 
 `scripts/import-menu.mjs` uses `.insert()` on `categories`, `menu_items`,
 `modifier_groups` and `modifier_options`. It is **not** idempotent, despite the
@@ -1114,14 +1114,14 @@ upsert by `external_id`: `external_id` does not exist on any live table. Running
 `--apply` against the live DB would insert a **second** copy of the whole menu
 (another 10 categories / 53 items), because `categories_slug_key` /
 `menu_items_slug_key` are per-tenant unique and the existing rows occupy those
-slugs ┼ī─å├Č so it would either error on the first collision or duplicate whichever
+slugs в”јД«в”ҖГҘв”ңДҢ so it would either error on the first collision or duplicate whichever
 rows do not collide.
 
 Two further traps in that script, both of which bite on a re-run:
 
 1. **It resurrects `Pancit canton filipino noodles`.** The owner had that dish
    deleted outright (row + group + options), and the dry run still plans it
-   (`Pancit canton filipino noodles ┼ī─åŌĆØ Choose your protein(4)`), because the
+   (`Pancit canton filipino noodles в”јД«в”ҖГҘЕҢДҶГҳ Choose your protein(4)`), because the
    source manifest still contains it. A re-import undoes the deletion.
 2. **`--dry-run` is the default and is not read-only-safe by accident.** It
    performs no writes, which is correct, but it also reports `unmatched rows: 0`
@@ -1143,7 +1143,7 @@ and decide whether to replace the catalogue or extend it. Do not run
 
 The difference is the deleted `Pancit canton filipino noodles` and its group and
 options. Everything else matches, so the live menu is the manifest minus that
-one dish ┼ī─å├Č the menu is **not** half-imported. The Chinese menu is already live;
+one dish в”јД«в”ҖГҘв”ңДҢ the menu is **not** half-imported. The Chinese menu is already live;
 "upload the Chinese menu" is done in the DB sense and the remaining work is
 photos (0 of 52 items have an `image_url`).
 
@@ -1151,9 +1151,9 @@ photos (0 of 52 items have an `image_url`).
 
 `menu_items.name_ja` and `categories.name_ja` are **0-filled** live, so nothing
 Japanese is rendered from the database. `.font-kana` is a 928-byte **Chinese**
-subset (├Ą─¢┼ü, ─Č├ģ┬╗) and `.font-kana` is not Japanese at all. What remains is nine
-Japanese-*named* dishes (teriyaki Ōö£┼Ü4, ramen Ōö£┼Ü2, teppan Ōö£┼Ü1, Korean ramen rice Ōö£┼Ü1,
-teriyaki sauce Ōö£┼Ü1) ┼ī─å├Č these are the owner's menu wording, not UI localisation, and
+subset (в”ңД„в”ҖВўв”јГј, в”ҖДҢв”ңДЈв”¬в•—) and `.font-kana` is not Japanese at all. What remains is nine
+Japanese-*named* dishes (teriyaki ЕҢГ¶ВЈв”јГң4, ramen ЕҢГ¶ВЈв”јГң2, teppan ЕҢГ¶ВЈв”јГң1, Korean ramen rice ЕҢГ¶ВЈв”јГң1,
+teriyaki sauce ЕҢГ¶ВЈв”јГң1) в”јД«в”ҖГҘв”ңДҢ these are the owner's menu wording, not UI localisation, and
 renaming them changes the product. Treat "remove Japanese" as satisfied at the
 localisation layer and ask the owner before touching dish names.
 
@@ -1163,7 +1163,7 @@ Restating because it keeps coming up: `/menu` ships **382 KB of HTML, 245 KB of
 which is the inline RSC flight payload**, with **123 inline SVGs** (104 of them
 the same two icons repeated per card). Images contribute **nothing** today
 because no dish has one. Reducing weight means not serialising all 52 dishes
-into every `/menu` response ┼ī─å├Č paginate per category or render the grid
+into every `/menu` response в”јД«в”ҖГҘв”ңДҢ paginate per category or render the grid
 client-side from a small JSON payload. Both change what crawlers see, so they
 are an owner decision, not a silent rewrite.
 
@@ -1172,7 +1172,7 @@ are an owner decision, not a silent rewrite.
 
 ## Notifications, team chat and the ops shell (2026-09-26, commit 39a77d8)
 
-### The staff bell was silently dead ┼ī─å├Č passcode sessions have no `auth.uid()`
+### The staff bell was silently dead в”јД«в”ҖГҘв”ңДҢ passcode sessions have no `auth.uid()`
 `notifications` gained an audience split plus `list_my_notifications` /
 `count_unread_notifications` / mark-read RPCs that filter on `auth.uid()`. But
 **the ops console is unlocked with a passcode, not a Supabase session**, so
@@ -1193,7 +1193,7 @@ Two traps hit while writing this:
    bell stayed empty (verified: 4 rows present, RPC returned 0).
    `coalesce(auth.uid(), p_user_id)` is the correct rule on its own, because a
    session always pins the caller to their own uid.
-2. Probe with `set local role service_role` in a rolled-back transaction ┼ī─å├Č
+2. Probe with `set local role service_role` in a rolled-back transaction в”јД«в”ҖГҘв”ңДҢ
    `count_unread_notifications('staff', <uuid>)` must return the real count
    while the no-id form returns 0. That pair is the regression test.
 
@@ -1219,7 +1219,7 @@ down the phone screen. It is now an off-canvas drawer (`max-lg:fixed
 max-lg:inset-y-0 max-lg:start-0` + `max-lg:-translate-x-full
 rtl:max-lg:translate-x-full`) with a backdrop, Escape, scroll lock and focus
 move. Closing on navigation is done in each link's `onClick`, **not** an effect
-watching `usePathname` ┼ī─å├Č that pattern is a lint error
+watching `usePathname` в”јД«в”ҖГҘв”ңДҢ that pattern is a lint error
 (`setState` in an effect) and a cascading render.
 
 Same pattern for the bell's server re-sync: compare the props against a
@@ -1241,19 +1241,19 @@ Totals live: **18 categories, 90 items, 14 modifier groups, 53 options, 0 items
 with an image, 0 missing Arabic**. So the answer to "we still need the Chinese
 menu / the Japanese one" is: *both are in the database*. What is not done is
 photos (0 images on 90 items) and there is no bulk importer for an arbitrary
-sheet ┼ī─å├Č the admin CMS is the only entry point, one dish at a time.
+sheet в”јД«в”ҖГҘв”ңДҢ the admin CMS is the only entry point, one dish at a time.
 
 ### The Japanese seed is idempotent, unlike `scripts/import-menu.mjs`
 `20260927070000_japanese_sushi_menu.sql` keys on `menu_items.external_id` (plain
 unique index; a partial index would break `ON CONFLICT` inference) and upserts,
 so re-running it is safe. `scripts/import-menu.mjs` still uses `.insert()` and
-must never be re-run to "refresh" ┼ī─å├Č see the note above.
+must never be re-run to "refresh" в”јД«в”ҖГҘв”ңДҢ see the note above.
 
 ## Admin UX + chat + service keys (2026-09-26, session 7)
 
 ### Customer chat existed but was unreachable (fixed)
-`/(site)/chat` had been complete for a while ┼ī─å├Č inbox, thread, realtime, server
-action ┼ī─å├Č and was linked from **nowhere**: no header entry, no bottom-nav tab, no
+`/(site)/chat` had been complete for a while в”јД«в”ҖГҘв”ңДҢ inbox, thread, realtime, server
+action в”јД«в”ҖГҘв”ңДҢ and was linked from **nowhere**: no header entry, no bottom-nav tab, no
 account shortcut. The feature was built and invisible. It is now the `nav.messages`
 tab in the mobile bottom nav, a header link for signed-in desktop users, and an
 account shortcut. The bottom-nav slot it took was `feedback`; feedback is still
@@ -1267,13 +1267,13 @@ customer feature done, grep the customer chrome for its href.
 four capability-permitted entries of `ADMIN_MOBILE_NAV` plus a "More" button that
 opens the existing drawer. Below `lg` only; the desktop sidebar is unchanged. The
 admin `<main>` gained `pb-24` on small screens so the bar never covers the last
-row. Four tabs + More is the deliberate ceiling ┼ī─å├Č more targets on a phone makes
+row. Four tabs + More is the deliberate ceiling в”јД«в”ҖГҘв”ңДҢ more targets on a phone makes
 each too small to hit.
 
 ### One chat hub, three routes collapsed
 `/admin/chat` is now a two-tab screen (Customers / Team) with combined unread
 badges. `/admin/messages` and `/admin/team-chat` are `redirect()` stubs to the
-right tab so existing links and notifications keep working ┼ī─å├Č do not delete them
+right tab so existing links and notifications keep working в”јД«в”ҖГҘв”ңДҢ do not delete them
 without checking notification deep-links. `ADMIN_NAV` lost the duplicate
 "Messages"/"Team chat" entries.
 
@@ -1286,7 +1286,7 @@ keys" sits directly under the provider chain and "Add a key" opens a service
 picker (Cloudflare Workers AI, OpenRouter, OpenAI-compatible, Gemini, Anthropic)
 that fills the exact variable name; custom names still typeable. Cloudflare
 Workers AI works either keylessly through the `workers/ai-api` binding or with an
-account API token ┼ī─å├Č both paths exist in `provider.ts`.
+account API token в”јД«в”ҖГҘв”ңДҢ both paths exist in `provider.ts`.
 
 `Field` gained optional `value`/`onChange` (state-driven input). It stays
 uncontrolled when neither is passed, so no existing caller changed behaviour.
@@ -1295,11 +1295,11 @@ uncontrolled when neither is passed, so no existing caller changed behaviour.
 `tsc --noEmit` clean; lint 0 errors / 11 warnings; `next build` green; dev smoke:
 `/` and `/menu` render `href="/chat"` and a Messages tab, `/admin` 200 (passcode
 gate), `/admin/team-chat` 200 (redirect). 140 tests pass; 3 test *files*
-(`ai-chain`, `ai-live`, `skill-sources`) fail to load without `.env.local` ┼ī─å├Č a
+(`ai-chain`, `ai-live`, `skill-sources`) fail to load without `.env.local` в”јД«в”ҖГҘв”ңДҢ a
 pre-existing sandbox-only condition, identical on a clean tree.
 
 **Deploy still blocked:** `CLOUDFLARE_API_TOKEN` is not in this environment and
-the repo secret remains unset. Manual: `CLOUDFLARE_API_TOKEN=┼ī─åŌĆØ npm run pages:deploy`
+the repo secret remains unset. Manual: `CLOUDFLARE_API_TOKEN=в”јД«в”ҖГҘЕҢДҶГҳ npm run pages:deploy`
 (branch `feature/panda-wok-platform` is the production branch).
 
 ## Charts and the live two-menu state (2026-09-26, session 8, commit 5baa2fa)
@@ -1315,7 +1315,7 @@ into Chart.js colours so the charts inherit the brand rather than a new palette.
 **The bug today that tsc and `next build` both approved:** the radar needs
 `RadialLinearScale` + `RadarController` registered. Without them the page
 compiles, builds, and then throws at render with `"radialLinear" is not a
-registered scale.` ┼ī─å├Č a browser-only failure caught by the error boundary, not by
+registered scale.` в”јД«в”ҖГҘв”ңДҢ a browser-only failure caught by the error boundary, not by
 any static check. Register those two alongside the rest.
 
 **How to verify a chart change:** `tsc`, lint and the build are necessary but
@@ -1327,11 +1327,11 @@ which is exactly what happened.
 
 Empty-DB caveat: the dashboard trend/heatmap/radar sit behind `noData`, so on
 the current (zero-order) live data they are *not* exercised. Do not read a clean
-`/admin` as proof the charts work ┼ī─å├Č test with data.
+`/admin` as proof the charts work в”јД«в”ҖГҘв”ңДҢ test with data.
 
 ### The menu is TWO catalogues, and BOTH are public
 The DB holds 18 categories / 90 items, and **both** catalogues are live on
-`/menu`. Neither is hidden and neither is to be disabled ┼ī─å├Č this is the owner's
+`/menu`. Neither is hidden and neither is to be disabled в”јД«в”ҖГҘв”ңДҢ this is the owner's
 menu.
 
 - **Chinese menu.** 10 categories `sort_order 0-9` (Appetizers to
@@ -1341,7 +1341,7 @@ menu.
 
 **Rule to keep: do not hide or disable the owner's menu on an assumption.** Both
 catalogues are meant to be visible together; flagging any of it off is a change
-the owner has not asked for. Hiding is reversible, but it is still a change ┼ī─å├Č only
+the owner has not asked for. Hiding is reversible, but it is still a change в”јД«в”ҖГҘв”ңДҢ only
 flag content off on an explicit instruction, and flag rather than delete. See
 `docs/data-safety.md`.
 
@@ -1351,7 +1351,7 @@ admin (the ImageKit endpoint is unreachable, so use the `menu-images` bucket
 upload, not a pasted URL).
 
 Prices live in `menu_items.price` (EGP, `numeric`); nothing is invented for
-display. Apps/mains are single-word rows ("Chicken", "Beef", "Meal 1") ┼ī─å├Č if they
+display. Apps/mains are single-word rows ("Chicken", "Beef", "Meal 1") в”јД«в”ҖГҘв”ңДҢ if they
 need descriptive names that is an owner edit in the CMS, not a re-import
 (`scripts/import-menu.mjs` is insert-only and would duplicate the catalogue).
 
@@ -1371,11 +1371,11 @@ KDS smoother with more animation, smooth scrolling, SweetAlert and a sound alert
 `.washi-paper`, `.washi-banner`, `.glass-*`, `.hero-night`, `.page-sheet` to a
 single white panel, and strips `.asanoha` / `.asanoha-light` / `.bamboo-frame`
 textures and the sway/leaf/drift animations. `AdminShell` opts in by adding the
-class to its root div. **To restyle the whole console, edit that one block ┼ī─å├Č do
+class to its root div. **To restyle the whole console, edit that one block в”јД«в”ҖГҘв”ңДҢ do
 not hunt for decorative classes per page.** The customer site is untouched.
 
 ### A real dialog replaces the two-tap confirm
-`ui/confirm.tsx` provides `ConfirmProvider` + `useConfirm()` ┼ī├ź├å `confirm()` /
+`ui/confirm.tsx` provides `ConfirmProvider` + `useConfirm()` в”јД«в”ңЕәв”ңГҘ `confirm()` /
 `alert()` (promise-based). Mounted in `app/layout.tsx` inside `ToastProvider`.
 `AdminButtonAction`'s `confirm` prop now opens this dialog instead of relabelling
 the button to "Confirm?", so nothing changes under the cursor mid-click. Tone,
@@ -1385,20 +1385,20 @@ destructive action; do not add `window.confirm`.
 ### Sound is admin-only, and that is enforced by imports
 `lib/sound/ting.ts` synthesises a two-note "ting ting" with WebAudio (no asset).
 The only importer is `admin/kitchen-board.tsx`. The standing rule holds: **the
-customer site is silent ┼ī─å├Č never import this under `(site)`.** The preference is
+customer site is silent в”јД«в”ҖГҘв”ңДҢ never import this under `(site)`.** The preference is
 a subscribable store read via `useSyncExternalStore` (not an effect) and stored
 in `localStorage` under `panda-wok.admin.sound`.
 
 ### KDS
 `admin/kitchen-board.tsx` holds realtime + 12 s fallback polling, the arrival
-diff (new fresh-order ids ┼ī├ź├å chime + toast + header pulse) and the Motion tickets.
+diff (new fresh-order ids в”јД«в”ңЕәв”ңГҘ chime + toast + header pulse) and the Motion tickets.
 The page stays a server render and passes `signature` (comma-joined fresh ids).
 Tickets are `motion.li` with `layout`, so reorders slide. Copy is `kds.*` in the
 dictionaries (en + ar).
 
 ### Two traps hit here
-1. **Hyphenated dictionary keys must be quoted.** `crm-activity: "┼ī─åŌĆØ"` is invalid
-   TS; write `"crm-activity": "┼ī─åŌĆØ"`. `tsc` catches it, but only after you add it.
+1. **Hyphenated dictionary keys must be quoted.** `crm-activity: "в”јД«в”ҖГҘЕҢДҶГҳ"` is invalid
+   TS; write `"crm-activity": "в”јД«в”ҖГҘЕҢДҶГҳ"`. `tsc` catches it, but only after you add it.
 2. **`tsc`, lint and `next build` cannot see a browser-only failure** (the
    earlier Chart.js radar bug is the canonical example). For anything animated,
    sound-driven or canvas-based, render it and check the browser; static checks
@@ -1406,7 +1406,7 @@ dictionaries (en + ar).
 
 ### Admin i18n status
 Shell chrome, nav, groups, roles and the KDS are translated (follows the locale
-cookie). **Screen bodies are still English-only** ┼ī─å├Č orders, CRM, settings, menu
+cookie). **Screen bodies are still English-only** в”јД«в”ҖГҘв”ңДҢ orders, CRM, settings, menu
 forms, etc. Translating those is the next chunk of the Arabic task, screen by
 screen against the `admin.*` dictionary namespace.
 
@@ -1454,7 +1454,7 @@ PAT path because the hosted OAuth path needs a Copilot licence.
 **Dictionary-path bug fixed:** the manager called `t("admin.mcp.*")` while the
 keys live at `admin.agent.mcp.*`, so `catalogTitle` etc. rendered as raw key
 strings. `tsc` cannot catch this (the dictionary is typed as a whole and `t()`
-accepts any string) ┼ī─å├Č the same failure mode as deleted keys. Grep the rendered
+accepts any string) в”јД«в”ҖГҘв”ңДҢ the same failure mode as deleted keys. Grep the rendered
 page for `admin\.` when adding admin strings.
 
 ### Verification pitfalls hit here
@@ -1466,7 +1466,7 @@ forged passcode cookie
 ### Live menu (unchanged by this session, counted)
 18 categories / 90 items across two catalogues: the Chinese menu (10 cats,
 `external_id is null`) and the Japanese sushi menu (8 cats, `external_id` set).
-**Both are public and must stay visible.** 0 of 90 items have an image ┼ī─å├Č photos
+**Both are public and must stay visible.** 0 of 90 items have an image в”јД«в”ҖГҘв”ңДҢ photos
 are the real remaining menu job, uploaded one dish at a time to `menu-images`.
 
 ## Menu import: current truth and the safe path (2026-09-26, session 10)
@@ -1479,7 +1479,7 @@ above, which predate the Japanese sushi import:
 - Japanese sushi menu: 8 categories (`sort_order 10-17`), 38 items,
   `external_id` set (`menu-item-N@I`).
 Both are enabled and public. The older table (10 cats / 52 items) describes the
-Chinese catalogue alone ┼ī─å├Č do not read it as the whole menu.
+Chinese catalogue alone в”јД«в”ҖГҘв”ңДҢ do not read it as the whole menu.
 
 **There is still no bulk import into the DB.** Two different scripts exist and
 neither is the right tool for a new sheet from the owner:
@@ -1492,7 +1492,7 @@ neither is the right tool for a new sheet from the owner:
 **Uniqueness available for a safe upsert (verified live):**
 - `categories.slug` UNIQUE, `menu_items.slug` UNIQUE, `menu_items.external_id`
   UNIQUE (plain unique index, so `ON CONFLICT` infers it).
-- `modifier_groups` and `modifier_options` have **only** a primary key ┼ī─å├Č no
+- `modifier_groups` and `modifier_options` have **only** a primary key в”јД«в”ҖГҘв”ңДҢ no
   natural key. Re-syncing options needs a name match or a delete-and-recreate per
   dish, or a sheet-supplied key added upstream.
 
@@ -1501,7 +1501,7 @@ a Sheets/CSV importer that upserts `categories` by slug, then `menu_items` by
 slug (or by `external_id` when the sheet supplies one), then reconciles each
 dish's modifier groups by name. Preview the diff, then apply inside one
 transaction. A paste-to-server-action route that carries the service role is the
-wrong shape ┼ī─å├Č keep service-role work in a script, capability-gated work in the
+wrong shape в”јД«в”ҖГҘв”ңДҢ keep service-role work in a script, capability-gated work in the
 admin action.
 
 
@@ -1521,7 +1521,7 @@ Two changes, both live on `panda-wok.pages.dev`, let the public site absorb a
 traffic rush on the free plans. No menu data was touched.
 
 ### 1. Anonymous requests skip Supabase in middleware
-`src/lib/supabase/middleware.ts` ŌĆö `updateSession` used to call
+`src/lib/supabase/middleware.ts` ЕҢДҶГ¶ `updateSession` used to call
 `supabase.auth.getClaims()` on *every* request, including crawlers and
 logged-out menu browsers, spending one subrequest per hit. It now checks for a
 Supabase auth cookie first (`hasAuthCookie`) and returns immediately when there
@@ -1531,7 +1531,7 @@ Supabase splits a large session across `...-auth-token.0/.1/...`, and an
 as logged out. Pinned by `tests/auth-cookie.test.ts`.
 
 ### 2. Edge cache for anonymous public pages
-Cloudflare never cached this app ŌĆö every customer page is `force-dynamic` and
+Cloudflare never cached this app ЕҢДҶГ¶ every customer page is `force-dynamic` and
 Next sends `no-store`, so 100% of rush traffic reached the Worker and the
 per-request CPU/subrequest cap (not the CDN) was the ceiling. The Pages front
 door (`scripts/pages/_worker.js` + `scripts/pages/edge-cache.js`) now caches
@@ -1566,14 +1566,14 @@ than the Worker problem we were chasing:
   quota -> grace period -> Fair Use restrictions: project **paused**, DB switched
   to **read-only**, or **402** on *all* API requests. That would take down
   checkout and admin, not just slow pages.
-- **Realtime free**: 200 concurrent connections, 100 msg/s ŌĆö a live-orders
+- **Realtime free**: 200 concurrent connections, 100 msg/s ЕҢДҶГ¶ a live-orders
   dashboard or broadcast to many roasters will hit this first.
 - Free plan pauses idle projects (restore in the dashboard), 500 MB DB, 1 GB
   storage, 2 active free projects per org.
 
 Therefore the *better* fix is to keep the expensive traffic off Supabase
 altogether (edge cache + tiny column select), rather than looking for a more
-generous free Supabase tier ŌĆö there is none. If a paid tier is ever chosen,
+generous free Supabase tier ЕҢДҶГ¶ there is none. If a paid tier is ever chosen,
 Pro (250 GB + 250 GB egress) is the natural step and supersedes all of this.
 
 ### Edits are never stale: the worker purges its own cache
@@ -1592,7 +1592,7 @@ live: HIT -> admin POST -> MISS.
 The customer tracking page subscribes to `order_status_history` INSERTs and the
 KDS to `orders`. Both were dead because `supabase_realtime` contained **no
 tables** (`select * from pg_publication_tables` came back empty). Realtime does
-not error for an unlisted table ŌĆö it reports `SUBSCRIBED` and then delivers
+not error for an unlisted table ЕҢДҶГ¶ it reports `SUBSCRIBED` and then delivers
 nothing, which is the nastiest possible failure: the client looks healthy.
 Migration `20260929000100` adds `orders` and `order_status_history` to the
 publication. RLS still runs per subscriber, so a customer only receives their
@@ -1610,7 +1610,7 @@ labelled a transport hint, not a guarantee.
 
 ### `order_status_history` is not loyalty state
 `log_order_status()` also writes `order_status_history`, and a first pass gated
-that insert on the `loyalty` flag ŌĆö which would have re-broken tracking exactly
+that insert on the `loyalty` flag ЕҢДҶГ¶ which would have re-broken tracking exactly
 when loyalty is off (the default). History is always written; only points
 accrual (`award_loyalty_on_finish`) and clawback
 (`clawback_loyalty_on_failure`) are gated. Corrective migration
@@ -1637,7 +1637,7 @@ the key path itself ("contact.faqHeading") to the visitor, only at runtime.
 and asserts each resolves to a real dictionary key. It found, fixed, and locked:
 
 - contact page rendered raw `contact.faqHeading` / `contact.faqSubtitle` (keys never existed)
-- admin automations form rendered every label raw ŌĆö the keys live under
+- admin automations form rendered every label raw ЕҢДҶГ¶ the keys live under
   `admin.agent.automations` but the component looked up `admin.automations`
 - `/orders/[orderId]` rendered raw `orders.delivery`
 - feedback form rendered raw `feedback.orderLabel`
@@ -1654,7 +1654,7 @@ test and `tsc` will fail.
 The customer mobile drawer (`MobileNav`) and the bottom tab bar were audited live
 (headless Chromium at 320-414px, both locales): fully translated, and
 `documentElement.scrollWidth - clientWidth == 0` on every customer page in both
-locales. There is no customer sidebar ŌĆö "the mobile sidebar" is the `MobileNav`
+locales. There is no customer sidebar ЕҢДҶГ¶ "the mobile sidebar" is the `MobileNav`
 sheet. The admin console drawer is `src/components/admin/admin-shell.tsx`.
 
 ## Menu system (verified 2026-09-26)
@@ -1680,25 +1680,25 @@ Open question for the owner: the Chinese sections (Appetizers, Noodles, RICE,
 Main dishes, Set menu, Fasting Meal, Special Offers, Box, Extra sauces, Drinks)
 are already loaded with Arabic names and prices; the Japanese sushi sections
 (RAW/FRIED URA MAKI ROLL, NIGIRI RAW/FRIED, COMBO RAW/FRIED, SALADS, Sauces) are
-also live. "Upload the Chinese menu" needs confirming ŌĆö replace prices? add dishes?
+also live. "Upload the Chinese menu" needs confirming ЕҢДҶГ¶ replace prices? add dishes?
 add Japanese names? add per-dish modifiers?
 
-### Catalogue state, verified live (2026-09-26) ŌĆö answers the open question above
+### Catalogue state, verified live (2026-09-26) ЕҢДҶГ¶ answers the open question above
 
 Re-counted against the live DB (`xjbtsryidznsxqlynmfa`): **18 categories, 84
 menu_items, 20 modifier_groups, 65 modifier_options, 5 orders.** Every dish has an
 Arabic name and a price; 73 of 84 carry an image. The two earlier "0 rows" notes in
-this file are historical and were corrected in place ŌĆö do not describe the menu as
+this file are historical and were corrected in place ЕҢДҶГ¶ do not describe the menu as
 empty.
 
-- **Chinese menu** ŌĆö 10 sections, 52 dishes, sort_order 0ŌĆō9 (Appetizers 9, Noodles
+- **Chinese menu** ЕҢДҶГ¶ 10 sections, 52 dishes, sort_order 0ЕҢДҶЕҚ9 (Appetizers 9, Noodles
   10, RICE 5, Main dishes 2, Set menu 6, Fasting Meal 2, Special Offers 3, Box 8,
   Extra sauces 5, Drinks 2).
-- **Japanese sushi menu** ŌĆö 8 sections, 32 dishes, sort_order 10ŌĆō17 (RAW/FRIED URA
+- **Japanese sushi menu** ЕҢДҶГ¶ 8 sections, 32 dishes, sort_order 10ЕҢДҶЕҚ17 (RAW/FRIED URA
   MAKI ROLL 6+6, NIGIRI RAW/FRIED 3+3, COMBO FRIED 4, COMBO RAW 5, SALADS 2,
   Sauces 3). Loaded by `20260927070000_japanese_sushi_menu.sql`, keyed on
   `menu_items.external_id` (`menu-item-N@I`), so it is idempotent.
-- **So "upload the Chinese menu" is already done** ŌĆö both catalogues are live
+- **So "upload the Chinese menu" is already done** ЕҢДҶГ¶ both catalogues are live
   together on `/menu`, per the standing rule that neither is ever disabled.
 - **4-piece/8-piece rolls are ONE dish each, not two.** The import first stored
   both prices as separate rows; `20260928000100_roll_piece_options.sql` (remote
@@ -1714,7 +1714,7 @@ empty.
   categories, 0 new dishes, 0 updates, 84 unchanged, no problems*. The pipeline is
   therefore trustworthy for a real edit. Both sheet files are gitignored.
 - `scripts/import-menu.mjs` is the **older insert-only** loader (refuses to run once
-  the table is populated) ŌĆö it is not the tool for updating an existing menu.
+  the table is populated) ЕҢДҶГ¶ it is not the tool for updating an existing menu.
 - Standing rule unchanged: **no agent writes menu rows unless the owner asked for
   that exact change.** The price sheet is the owner's to fill in; hiding via
   `is_available`/`is_enabled` is the reversible alternative to deleting.
@@ -1724,11 +1724,11 @@ empty.
 The agent was never "not in Arabic". Its prompt has been Egyptian Arabic since
 `8edcd31`; the prose was being thrown away after the model produced it.
 
-**Defect 1 ŌĆö the model's report was parsed and discarded.** `runOpsReport`
+**Defect 1 ЕҢДҶГ¶ the model's report was parsed and discarded.** `runOpsReport`
 (`src/lib/agent/ops-agent.ts`) builds a prompt asking for an Arabic
 `headline`/`summary`/`recommendations`, then read only `parsed.actions` from the
 reply. `headline` and `summary` were computed *before* the model call from
-`buildDeterministicInsights` ŌĆö whose strings are English ŌĆö and the model's own
+`buildDeterministicInsights` ЕҢДҶГ¶ whose strings are English ЕҢДҶГ¶ and the model's own
 wording was dropped on the floor. The stored run is the proof: `provider:
 "workers-ai"`, four Arabic actions, English headline ("Not enough order history
 for reliable patterns yet"). Nothing was misconfigured; the good output was
@@ -1736,13 +1736,13 @@ simply not read.
 
 Fix: `pickGroundedReport()` (exported for tests) accepts the model's prose, but
 only after the **whole reply** passes `findUngroundedFigures` against the
-snapshot ŌĆö the same figure-grounding guard the chat agent gets from
+snapshot ЕҢДҶГ¶ the same figure-grounding guard the chat agent gets from
 `finaliseAnswer`. An ungrounded reply is rejected whole and the deterministic
 report stands, so switching to Arabic did not also open a path for invented
 figures. Verified live: provider `workers-ai`, headline
-"ž¬žŁ┘ä┘Ŗ┘ä žŻž»ž¦žĪ ž¦┘ä┘ģžĘž©ž« ž¦┘äž│žŁž¦ž©┘Ŗ ┘ä┘ģ Panda Wok ┘ü┘Ŗ ┘ģžĄž▒".
+"ЕҫВ¬ЕҫЕҒв”ҳГӨв”ҳЕ–в”ҳГӨ ЕҫЕ»ЕҫВ»ЕҫВҰЕҫДӘ ЕҫВҰв”ҳГӨв”ҳДЈЕҫДҳЕҫВ©ЕҫВ« ЕҫВҰв”ҳГӨЕҫв”ӮЕҫЕҒЕҫВҰЕҫВ©в”ҳЕ– в”ҳГӨв”ҳДЈ Panda Wok в”ҳГјв”ҳЕ– в”ҳДЈЕҫД„Еҫв–’".
 
-**Defect 2 ŌĆö "about 19000% of finished revenue".** In `insights.ts`, the
+**Defect 2 ЕҢДҶГ¶ "about 19000% of finished revenue".** In `insights.ts`, the
 category-concentration share divided `categoryMix[0].revenue` (summed over every
 *non-cancelled* order) by `totals.revenue` (only *finished* orders), with
 `Math.max(..., 1)` standing in for a zero base. A window with no finished
@@ -1752,7 +1752,7 @@ item revenue" (215 of 405).
 
 `tests/ops-agent-report.test.ts` covers both. `InsightData` is now exported.
 
-**Reports already had daily/weekly cadence** ŌĆö `ops_agent_settings
+**Reports already had daily/weekly cadence** ЕҢДҶГ¶ `ops_agent_settings
 .report_interval_hours` (24 = daily, 168 = weekly) plus `agent_automations`
 `cadence: daily | weekly | monthly | interval`. No new scheduler was needed.
 
@@ -1761,12 +1761,12 @@ item revenue" (215 of 405).
 
 The home hero can carry an owner-supplied background photo. It is a **setting,
 not a code path**: `brand.hero_url` (public) is read by `getPublicSettings` and
-rendered by the hero. `brand.banner_url` was read but rendered nowhere ŌĆö a dead
+rendered by the hero. `brand.banner_url` was read but rendered nowhere ЕҢДҶГ¶ a dead
 key; `brand.hero_url` is the one actually wired.
 
 - **The admin surface already existed.** `listSettings` selects every row and
   `SettingsForm` groups rows by the prefix before the first dot, so adding the
-  row is the *entire* admin work ŌĆö no component, no page, no deploy. Verified:
+  row is the *entire* admin work ЕҢДҶГ¶ no component, no page, no deploy. Verified:
   `/admin/settings` renders `<input id="setting-brand-hero_url">` prefilled.
 - **Absence is meaningful.** The `<img>` and the wash render only when the value
   is set, and the hero's own lantern glows sit *behind* the photo layer, so a
@@ -1776,14 +1776,14 @@ key; `brand.hero_url` is the one actually wired.
   only rewrote Unsplash URLs, so an ImageKit hero was served raw (~285 KB) on
   every load. `imagekitSrc()` emits `?tr=w-<w>,q-70,f-webp,c-at_max`. `c-at_max`
   ("do not enlarge") is load-bearing: `w-1600` from a 941px original otherwise
-  returns an upscaled 1600├Ś2843 (191 KB) instead of the sharp 941├Ś1672 (109 KB).
+  returns an upscaled 1600в”ңЕҡ2843 (191 KB) instead of the sharp 941в”ңЕҡ1672 (109 KB).
   Live variants measured: 400px 33 KB, 800px 88 KB, 1200px 107 KB.
 - **The hero uses an `<img>`, not a CSS background.** A background cannot carry
   `srcSet`/`sizes`, and Next's optimizer is disabled site-wide
   (`images.unoptimized`), so the `<img>` + ImageKit CDN is the only way to ship
   a width-tuned WebP. `fetchPriority="high"`, `decoding="async"`,
   `alt=""`/`aria-hidden` (decorative), `object-cover object-[62%_64%]`.
-- **Focal point is measured, not guessed.** The photo is portrait (941├Ś1672) and
+- **Focal point is measured, not guessed.** The photo is portrait (941в”ңЕҡ1672) and
   the hero is wide. Row-wise detail analysis put the brightest subject at 62-84%
   of the height, so `object-position: 62% 64%` crops to the subject rather than
   the empty upper half.
@@ -1793,28 +1793,28 @@ key; `brand.hero_url` is the one actually wired.
 regimes because the hero's layout changes at `lg`:
 
 - below 1024px the hero is one column and copy spans the full width, so the wash
-  stays deep across it (165deg, 80%ŌåÆ68%ŌåÆ58% ink);
-- at Ōēź1024px the copy takes the left column, so the wash opens to the right
-  (100deg, 84%ŌåÆ58%ŌåÆ24%) where the photo's subject and the ringed plate sit.
+  stays deep across it (165deg, 80%ЕҢГҘГҶ68%ЕҢГҘГҶ58% ink);
+- at ЕҢД“Еә1024px the copy takes the left column, so the wash opens to the right
+  (100deg, 84%ЕҢГҘГҶ58%ЕҢГҘГҶ24%) where the photo's subject and the ringed plate sit.
 
 `[dir="rtl"] .hero-wash` mirrors the angle (260deg), because in Arabic the copy
 column is on the right and would otherwise sit on the open end.
 
 **Contrast was measured on real rendered pixels, not the gradient maths.**
-Screenshot at 1920├Ś1080, background pixels only (anything below luminance 0.25):
-median 0.004, p99 0.139, and the brightest background column at 66% across ŌĆö
+Screenshot at 1920в”ңЕҡ1080, background pixels only (anything below luminance 0.25):
+median 0.004, p99 0.139, and the brightest background column at 66% across ЕҢДҶГ¶
 i.e. exactly where the wash opens. Cream headline measures **19.3:1** and the
 body copy 15:1, both far above the 7:1 AAA bar. The photo reads as texture
 (stddev 0.02) rather than being flattened to ink. This holds because the source
-photograph is very dark to begin with (peak luminance 98/255) ŌĆö a *bright* hero
+photograph is very dark to begin with (peak luminance 98/255) ЕҢДҶГ¶ a *bright* hero
 photo would need a stronger wash, so re-measure if the owner swaps it.
 
-`SakuraField density` went 0.7 ŌåÆ 1.15 (petals are drawn on a canvas above the
-photo) and `LeafField2D` 9 ŌåÆ 11, so the sakura reads against the photo and not
-just against flat ink. The site remains silent by design ŌĆö no audio was added.
+`SakuraField density` went 0.7 ЕҢГҘГҶ 1.15 (petals are drawn on a canvas above the
+photo) and `LeafField2D` 9 ЕҢГҘГҶ 11, so the sakura reads against the photo and not
+just against flat ink. The site remains silent by design ЕҢДҶГ¶ no audio was added.
 
 
-## Admin form text was invisible (2026-09-29) ŌĆö 1.07:1 on every field
+## Admin form text was invisible (2026-09-29) ЕҢДҶГ¶ 1.07:1 on every field
 
 **Every form control in the ops console had cream text on a near-white field.**
 Not a subtle low-contrast issue: `color: rgb(247,243,232)` (rice-100) on
@@ -1828,11 +1828,11 @@ rice-100 (cream). The console's restyle (`792b841`) scoped `.admin-scope` with
 `background-color: var(--color-rice-100)` and **never reset `color`**, so
 everything inside the console inherited cream from `body`. `.input` and the
 inline `bg-rice-50` fields then paired that cream text with a light background.
-The defect is entirely inside the console ŌĆö it was *not* introduced by the hero
+The defect is entirely inside the console ЕҢДҶГ¶ it was *not* introduced by the hero
 work, and the customer surface was never affected.
 
 **Fix (two layers):**
-1. `.admin-scope` now sets `color: var(--color-ink-900)` ŌĆö the console inverts
+1. `.admin-scope` now sets `color: var(--color-ink-900)` ЕҢДҶГ¶ the console inverts
    the surface, so it must invert the text colour with it. This is the actual
    fix: 396 controls across 19 admin routes.
 2. `.input` now sets `color` and `::placeholder` explicitly instead of
@@ -1863,7 +1863,7 @@ Two traps this exposed, worth keeping:
 
 ## Hero photo is bare; the legibility wash was removed (2026-09-29)
 
-The owner's call: **no shading on the hero photo at all ŌĆö show it as it is.**
+The owner's call: **no shading on the hero photo at all ЕҢДҶГ¶ show it as it is.**
 The `.hero-wash` overlay (and its four breakpoint variants) has been deleted
 from `globals.css`, and the `<div class="hero-wash">` removed from the hero
 markup in `src/app/(site)/page.tsx`. The `<img>` is now the only layer over the
@@ -1888,7 +1888,7 @@ still ~17:1 because the photo is mostly dark.
 **Do not re-add a wash without asking.** If the owner later wants the copy
 readable, the options are, in order of least damage to the photo:
 1. a stronger crop bias (`object-position`) so the copy sits on the dark region;
-2. per-text legibility (`color`, `text-shadow`) ŌĆö *not* a surface overlay, so
+2. per-text legibility (`color`, `text-shadow`) ЕҢДҶГ¶ *not* a surface overlay, so
    the photo stays untouched;
 3. a localised gradient scrim behind the copy column only.
 Note the whites are part of the artwork (a garnish/plate highlight), so unshaded
@@ -1920,13 +1920,13 @@ v_result := public.place_order_internal(...);   -- returns table(...)
 ```
 
 `place_order` is not `returns table`, so `v_result := fn(...)` does not *call*
-the function ŌĆö it reads the row as a whole and coerces the composite
+the function ЕҢДҶГ¶ it reads the row as a whole and coerces the composite
 `(order_id, order_number, total, reused)` to `uuid`. That type-checks while the
 call is unresolved (which is why the migration applied cleanly) and fails at
 **run** time:
 
     ERROR: 22P02: invalid input syntax for type uuid:
-           "(5253bbb4-ŌĆ”,PW-2609-1043,680.00,f)"
+           "(5253bbb4-ЕҢДҶвҖқ,PW-2609-1043,680.00,f)"
 
 The order row is inserted and the transaction then aborts, so no order ever
 survived. `20260929190000_fix_place_order_return_type.sql` restores the table
@@ -1934,8 +1934,8 @@ return type and keeps the guard:
 `return query select * from public.place_order_internal(...)`.
 
 Verified live in a rolled-back transaction (the exact basket from the report,
-2 ├Ś combo fried 8 pieces): returns `PW-2609-1045 / 340.00`. Also verified a
-non-combo item (2 ├Ś combo 8 pieces, 696.00) and that the guard still fires ŌĆö
+2 в”ңЕҡ combo fried 8 pieces): returns `PW-2609-1045 / 340.00`. Also verified a
+non-combo item (2 в”ңЕҡ combo 8 pieces, 696.00) and that the guard still fires ЕҢДҶГ¶
 a `points_redeem > 0` call while the flag is off still raises `LOYALTY_DISABLED`.
 
 **Trap worth keeping: a scalar assignment from a `returns table` function is a
@@ -1944,8 +1944,8 @@ lazily, so the migration is green, `tsc` is green, and every request 400s. When
 a wrapper changes a function's return type, assert the result with
 `pg_get_function_result()` and call it once in a rolled-back transaction.
 
-**Repro method** (no browser needed): `set_config('request.jwt.claims', ŌĆ”)` +
-`set_config('role','authenticated',true)` inside `begin; ŌĆ” rollback;` gives a
+**Repro method** (no browser needed): `set_config('request.jwt.claims', ЕҢДҶвҖқ)` +
+`set_config('role','authenticated',true)` inside `begin; ЕҢДҶвҖқ rollback;` gives a
 real `auth.uid()`, so `place_order` can be exercised as the customer would.
 
 ## Loyalty is off, and now actually stops (2026-09-29)
@@ -1957,7 +1957,7 @@ of a programme that is not running were closed:
   this order." The line is now gated on `loyaltyEnabled`, so no promise is made
   for points the kitchen is not honouring. (`place_order` still records
   `points_earned`; that is a database column, not a promise.)
-- `SiteFooter` rendered `/loyalty` unconditionally ŌĆö the header already gated it
+- `SiteFooter` rendered `/loyalty` unconditionally ЕҢДҶГ¶ the header already gated it
   on the flag, the footer did not. The footer now takes `flags` and drops the
   link the same way. Account page shortcuts and `/loyalty` itself already
   respected the flag; `/loyalty` shows its "not available" empty state.
@@ -1965,20 +1965,20 @@ of a programme that is not running were closed:
 Note the `loyalty` flag gates **both** earning and redemption; the assistant's
 grounding (`src/lib/ai/grounding.ts`) still states the earn rate regardless.
 Spend lives in `loyalty_transactions` (ledger) + `loyalty_rewards` (thresholds)
-ŌĆö there is no single `redeem` table.
+ЕҢДҶГ¶ there is no single `redeem` table.
 
 ## Combo choices are option groups, not description prose (2026-09-29)
 
 `combo-8-pieces` and `combo-fried-8-pieces` now carry a required single-select
 **"Your choice"** group (migration `20260929180000`), so the customer picks the
 roll instead of reading a note. Their descriptions lost the redundant
-`your choice: ŌĆ”` clause (migration `combo_description_cleanup`) and keep the
+`your choice: ЕҢДҶвҖқ` clause (migration `combo_description_cleanup`) and keep the
 rest of the text verbatim. The other combos (16/24/32/48 piece, raw and fried)
-are **meal compositions, not choices** ŌĆö their descriptions stay as written and
+are **meal compositions, not choices** ЕҢДҶГ¶ their descriptions stay as written and
 they get no group. Verified live in both locales: the group renders as radio
 inputs on `/menu/combo-fried-8-pieces` and the old note is gone.
 
-Live menu state: both catalogues public ŌĆö Chinese (10 cats, `external_id is
+Live menu state: both catalogues public ЕҢДҶГ¶ Chinese (10 cats, `external_id is
 null`) and Japanese sushi (8 cats, `external_id` set). Do not disable either;
 hide with a flag instead.
 
@@ -1988,7 +1988,7 @@ The owner preferred "out of stock" over "sold out". Changed in
 `en.ts` (`dish.soldOut`, `addToCart.soldOutChoice`, `addToCart.unavailable`),
 the admin menu `menu-item-row.tsx` badge and visibility option, and the
 assistant grounding's option annotation so the agent's wording matches the UI.
-Arabic was already `┘å┘üž»ž¬ ž¦┘ä┘ā┘ģ┘Ŗž®` (= out of stock) and is unchanged.
+Arabic was already `в”ҳГҘв”ҳГјЕҫВ»ЕҫВ¬ ЕҫВҰв”ҳГӨв”ҳДҒв”ҳДЈв”ҳЕ–ЕҫВ®` (= out of stock) and is unchanged.
 
 ## Mobile hero copy is centred (verified live, 2026-09-29)
 
@@ -1997,7 +1997,7 @@ deployed page at 390px: `h1`, tagline, and CTA row all report
 `text-align: center`, `documentElement.scrollWidth - clientWidth == 0` (no
 horizontal overflow). At `lg` it returns to the leading edge because the
 two-column layout puts the copy in one column. Note the hero *stats* strip
-(`dl`) stays `text-start` at every width by design ŌĆö it is a data table, not
+(`dl`) stays `text-start` at every width by design ЕҢДҶГ¶ it is a data table, not
 copy.
 
 ## Ops agent deliverables (2026-09-29)
@@ -2006,7 +2006,7 @@ The ops agent can now *produce documents*, not only propose changes. Deliverable
 render from the live database, are stored in the private `artifacts` bucket, and
 are downloadable from Admin -> AI ops (signed URLs).
 
-- `src/lib/agent/deliverables.ts` ŌĆö seven kinds: `daily_sales`, `weekly_kpi`,
+- `src/lib/agent/deliverables.ts` ЕҢДҶГ¶ seven kinds: `daily_sales`, `weekly_kpi`,
   `menu_engineering`, `stock_reorder`, `winback_draft`, `pricing_review`,
   `eod_reconciliation`. `createDeliverable()` opens an `agent_artifacts` row
   (`building`), renders, uploads, then marks it `ready`; a failure marks it
@@ -2021,10 +2021,10 @@ are downloadable from Admin -> AI ops (signed URLs).
   (`p_run_id?: string`). Passing an explicit `undefined` is what the optional
   signature wants; do not reintroduce a non-defaulted `uuid` parameter or the
   call fails typecheck again.
-- **Do not chain `.catch()` on a PostgREST builder** ŌĆö it is a thenable, not a
+- **Do not chain `.catch()` on a PostgREST builder** ЕҢДҶГ¶ it is a thenable, not a
   real Promise, so `.catch` does not exist. Use `.then(ok, err)`.
 - The agent proposes a `deliverable` action (`payload.deliverable` is one of the
-  kinds); approving it renders and files the document. Read-only by design ŌĆö a
+  kinds); approving it renders and files the document. Read-only by design ЕҢДҶГ¶ a
   document never changes an order, price or menu. Constraint migration
   `20260929201000_agent_deliverable_action.sql` adds `deliverable` to
   `ops_agent_actions.kind`.
@@ -2037,7 +2037,7 @@ are downloadable from Admin -> AI ops (signed URLs).
 
 `getCheckoutConfig()` fell back to a hardcoded **14%** when `tax.rate` was not
 readable, because `tax.rate` is not a public setting. After the rate was set to 0
-the customer preview still showed 14% tax while `place_order` charged 0 ŌĆö the
+the customer preview still showed 14% tax while `place_order` charged 0 ЕҢДҶГ¶ the
 preview and the charge disagreed. It now reads the key through the **service
 role** (`tryCreateAdminSupabase()`), falling back to the request client only if no
 service key is configured, so the preview matches the authoritative value.
@@ -2049,7 +2049,7 @@ Settings (verified by a set -> read -> revert round-trip).
 ## Task-based model routing, and the AI centre was invisible (2026-09-29)
 
 ### The AI centre silently showed nothing (fixed)
-`/admin/ai` rendered "┘äž¦ ┘Ŗ┘łž¼ž» ┘ģž▓┘łž»┘ł┘å ┘ģž│ž¼┘ä┘ł┘å" while five `ai_providers` rows were
+`/admin/ai` rendered "в”ҳГӨЕҫВҰ в”ҳЕ–в”ҳЕӮЕҫВјЕҫВ» в”ҳДЈЕҫв–“в”ҳЕӮЕҫВ»в”ҳЕӮв”ҳГҘ в”ҳДЈЕҫв”ӮЕҫВјв”ҳГӨв”ҳЕӮв”ҳГҘ" while five `ai_providers` rows were
 live. Two independent defects, both the same class of silent-empty bug:
 
 1. **`RunStatusBadge` called the client hook `useT()` from a server component.**
@@ -2060,19 +2060,19 @@ live. Two independent defects, both the same class of silent-empty bug:
    *"Attempted to call useT() from the server but useT is on the client"* and the
    whole `/admin/ai` render failed. Fixed: `RunStatusBadge` is now `async` and
    uses `await getT(await getAdminLocale())`. **A component that is neither
-   `"use client"` nor obviously server-side is the trap ŌĆö check its importers.**
+   `"use client"` nor obviously server-side is the trap ЕҢДҶГ¶ check its importers.**
 
 2. **The AI tables are `has_role('admin')` RLS, but the console has no session.**
    `ai_providers`/`ai_prompts`/`ai_requests`/`ai_usage_daily`/`ai_knowledge_sources`
    and every `agent_*`/`ops_agent_*` table are `authenticated`-only, so a
    passcode-gate console (no `auth.uid()`) reads zero rows. **This is already
-   handled centrally** ŌĆö `createServerSupabase()` elevates any request whose
+   handled centrally** ЕҢДҶГ¶ `createServerSupabase()` elevates any request whose
    `x-pw-path` header starts with `/admin` to the service role, and the
    middleware sets that header (and strips it everywhere else). So a service
    layer that calls `createServerSupabase()` is fine on `/admin`; the bug was
    purely the `useT()` crash, which aborted the render *after* the queries had
    returned. Do not "fix" these reads by switching to `tryCreateAdminSupabase()`
-   ŌĆö that was tried, verified unnecessary, and reverted.
+   ЕҢДҶГ¶ that was tried, verified unnecessary, and reverted.
 
 ### Routing
 `ai_providers.routes` (jsonb, migration `20260929210000_ai_task_routing.sql`) is a
@@ -2135,9 +2135,9 @@ every group/option form label rendered in English. Fixed in `249c5eb` by reading
 Verified live in dev with a forged gate cookie (`panda-wok.admin` =
 `createHmac("sha256","Panda2026:panda-wok-gate").update("open:admin")`):
 `/admin/menu?edit=65f8da1e...` renders the Arabic options editor and the Arabic
-`┘å┘üž»ž¬ ž¦┘ä┘ā┘ģ┘Ŗž®` state; English renders `Live / Out of stock / Hidden / Copy / Hide`.
+`в”ҳГҘв”ҳГјЕҫВ»ЕҫВ¬ ЕҫВҰв”ҳГӨв”ҳДҒв”ҳДЈв”ҳЕ–ЕҫВ®` state; English renders `Live / Out of stock / Hidden / Copy / Hide`.
 
-Wording is already the owner's preference: EN "Out of stock" / AR "┘å┘üž»ž¬ ž¦┘ä┘ā┘ģ┘Ŗž®".
+Wording is already the owner's preference: EN "Out of stock" / AR "в”ҳГҘв”ҳГјЕҫВ»ЕҫВ¬ ЕҫВҰв”ҳГӨв”ҳДҒв”ҳДЈв”ҳЕ–ЕҫВ®".
 
 Note the two conditional strings that are legitimately absent from a static
 fetch: `saving` only shows during a save, `restore` only for an archived dish.
@@ -2151,14 +2151,14 @@ errors; `next build` green.
 
 The owner asked, in writing, for one dish to sit alone in a new category:
 
-- new category `Combo mix` / `┘ā┘ł┘ģž©┘ł ┘ģ┘Ŗ┘āž│`, slug `combo-mix`;
+- new category `Combo mix` / `в”ҳДҒв”ҳЕӮв”ҳДЈЕҫВ©в”ҳЕӮ в”ҳДЈв”ҳЕ–в”ҳДҒЕҫв”Ӯ`, slug `combo-mix`;
 - `combo mix 48 pieces` (`83b33e26-b48a-48bb-91c1-795f4e3c9c0f`, EGP 1540)
   moved out of `COMBO RAW` and into it.
 
 Applied live as `20260929215322_combo_mix_category.sql`. Additive and idempotent:
 one category inserted (`where not exists` by slug), then the dish repointed
 (`is distinct from`). Nothing was deleted and no price, name, description or
-image was touched ŌĆö this is the owner's menu, and this is the only change asked
+image was touched ЕҢДҶГ¶ this is the owner's menu, and this is the only change asked
 for.
 
 **Position: with the combos, not at the end.** A follow-up,
@@ -2182,16 +2182,16 @@ value is 16.
 and do not repoint anything else; the owner moved exactly one dish.
 
 Verified live: `/menu` lists 19 categories and the section ids render in order
-`combo-fried ┬Ę combo-raw ┬Ę combo-mix ┬Ę salads ┬Ę sauces`; `/menu/combo-mix` = 200
+`combo-fried в”¬Дҳ combo-raw в”¬Дҳ combo-mix в”¬Дҳ salads в”¬Дҳ sauces`; `/menu/combo-mix` = 200
 with the dish and its 1540 price; `/menu/combo-raw` = 200 with four combos and
-**no** `combo mix 48`; the Arabic cookie renders `┘ā┘ł┘ģž©┘ł ┘ģ┘Ŗ┘āž│`. Counts before/after:
+**no** `combo mix 48`; the Arabic cookie renders `в”ҳДҒв”ҳЕӮв”ҳДЈЕҫВ©в”ҳЕӮ в”ҳДЈв”ҳЕ–в”ҳДҒЕҫв”Ӯ`. Counts before/after:
 categories 18 -> 19, menu_items 84 -> 84 (0 archived), 1 item in the new section.
 
 **Note for the next session: `name_ja` is still being written.** The live schema
 still carries `categories.name_ja` / `menu_items.name_ja` (the column drop was
 reverted once because the separately-deployed Pages bundle still selected it),
 and the Japanese seed `20260927070000_japanese_sushi_menu.sql` still sets it. The
-new category's `name_ja` is left null on purpose ŌĆö dropping the column is still
+new category's `name_ja` is left null on purpose ЕҢДҶГ¶ dropping the column is still
 "deploy the app first, then drop", never the reverse.
 
 Deploy credentials are not in this environment (`CLOUDFLARE_API_TOKEN` absent), so
@@ -2199,7 +2199,7 @@ the DB change is live immediately while this repo note ships with the next push.
 
 ## The ops agent never called a single tool (2026-09-29)
 
-The agent looked healthy ŌĆö it answered in Arabic, with numbers ŌĆö while it had
+The agent looked healthy ЕҢДҶГ¶ it answered in Arabic, with numbers ЕҢДҶГ¶ while it had
 executed **zero** tools. The numbers were the model's own prose. Three
 independent defects, all silent:
 
@@ -2210,12 +2210,12 @@ independent defects, all silent:
    first step. The wrapped `RemoteProvider` had the method the whole time. Fixed
    by forwarding it (and declaring `toolCapable` through the wrapper), with the
    quota floor answered as `{...floor, toolCalls: []}` so enforcement still holds.
-   **This is the class of bug no static check catches** ŌĆö the method was optional
+   **This is the class of bug no static check catches** ЕҢДҶГ¶ the method was optional
    on the interface, so omitting it was valid TypeScript.
 
 2. **Cloudflare's REST reply was not unwrapped.** The API nests the completion
    under `result`; handing the raw envelope to `parseToolTurnOpenAiLike` yields
-   zero calls and empty text ŌĆö indistinguishable from a model that declined a
+   zero calls and empty text ЕҢДҶГ¶ indistinguishable from a model that declined a
    tool. Now unwrapped before parsing.
 
 3. **Gemini could not call tools at all**, yet `agentic` routing puts
@@ -2233,13 +2233,13 @@ whether it works. Declare the capability, do not infer it.
 ### The loop now walks the chain on a provider error
 A mid-loop provider failure used to `break` and discard the rest of the chain.
 It now shifts to the next provider once, and **clears `providerError` on a
-successful call** ŌĆö otherwise a recovered answer rendered the "no model"
+successful call** ЕҢДҶГ¶ otherwise a recovered answer rendered the "no model"
 notice. The step-budget return reports `active`, not the routed primary.
 
 ### The agent's ops reads must not depend on a request
 `listStockItems` / `listOffers` are staff-RLS tables. Reading them through
 `createServerSupabase()` works on `/admin` only because the middleware sets
-`x-pw-path` and that function elevates ŌĆö so the **scheduled report throws
+`x-pw-path` and that function elevates ЕҢДҶГ¶ so the **scheduled report throws
 "`headers` was called outside a request scope"**, and the cron route (no
 `x-pw-path`) silently reads zero rows. Both look like "there is no data". They
 now go through `staffTableClient()` (service role, request client as fallback).
@@ -2250,27 +2250,27 @@ Same reasoning as the deliverables note: a background agent has no request.
 the `toolCapable` contract, `selectToolProvider` ordering, both parsers and the
 Cloudflare unwrap. `tests/agent-live.test.ts` (opt-in `AI_LIVE=1`) is the test
 that would have caught this: it asserts `steps.length > 0`, because an answer
-alone proves nothing ŌĆö the model can write a confident sentence with no data.
-Verified live: chain picks `gemini-free`, the loop runs `menu_summary` ŌåÆ
-`orders_metrics` ŌåÆ `business_settings`, and the Arabic answer's figures are all
+alone proves nothing ЕҢДҶГ¶ the model can write a confident sentence with no data.
+Verified live: chain picks `gemini-free`, the loop runs `menu_summary` ЕҢГҘГҶ
+`orders_metrics` ЕҢГҘГҶ `business_settings`, and the Arabic answer's figures are all
 grounded. 282 tests pass, lint 0 errors, build green.
 
 ## Combo mix category (2026-09-29, owner request)
 
-`combo mix 48 pieces` now sits alone in its own `Combo mix` / `┘ā┘ł┘ģž©┘ł ┘ģ┘Ŗ┘āž│`
+`combo mix 48 pieces` now sits alone in its own `Combo mix` / `в”ҳДҒв”ҳЕӮв”ҳДЈЕҫВ©в”ҳЕӮ в”ҳДЈв”ҳЕ–в”ҳДҒЕҫв”Ӯ`
 category, ordered with the other combos. Applied live and committed as two
 migrations, both **additive and idempotent**:
 
-- `20260929215322_combo_mix_category.sql` ŌĆö inserts the category if absent, then
+- `20260929215322_combo_mix_category.sql` ЕҢДҶГ¶ inserts the category if absent, then
   repoints the one dish. Nothing deleted; `COMBO RAW` keeps its other four dishes
   and both catalogues stay public.
-- `20260929215655_combo_mix_category_order.sql` ŌĆö reordering only: `Combo mix`
+- `20260929215655_combo_mix_category_order.sql` ЕҢДҶГ¶ reordering only: `Combo mix`
   moves to `sort_order` 16, after `COMBO RAW` (15), with `SALADS` (17) and
   `Sauces` (18) shifting down. No name, price, dish or flag touched.
 
 Live result: 19 categories, 84 dishes, `combo-mix` at 16 holding exactly
 `combo-mix-48-pieces` (EGP 1540, available). Per the standing rule this is the
-owner's own instruction, so it was applied ŌĆö the general prohibition on writing
+owner's own instruction, so it was applied ЕҢДҶГ¶ the general prohibition on writing
 menu rows still holds for anything not explicitly requested.
 
 
@@ -2278,18 +2278,18 @@ menu rows still holds for anything not explicitly requested.
 
 The owner asked the agent to handle the hard things: reports, an inventory count,
 CRM summaries, user reports, statistics, charts, boards, plans, docs and slide
-decks. All of it now renders from live data ŌĆö but the interesting part is that
+decks. All of it now renders from live data ЕҢДҶГ¶ but the interesting part is that
 **most of it was already written and invisible.**
 
 ### The reachability trap: tools.ts and registry.ts are two different lists
 `callAgentTool()` in `tools.ts` had CRM, users, full-inventory and recent-orders
 logic for a while. The model never called any of it, because the loop only sends
-`specsForCapabilities()` ŌĆö i.e. `AGENT_TOOLS`, built from `registry.ts` ŌĆö and
+`specsForCapabilities()` ЕҢДҶГ¶ i.e. `AGENT_TOOLS`, built from `registry.ts` ЕҢДҶГ¶ and
 `registry.ts` listed six tools. So the agent answered "I have no way to show you
 order details" while `orders_recent` sat one file away, fully working.
 
 `READ_TOOLS` is typed `Record<AgentToolName, AgentToolDef>`, so `tsc` **does**
-catch an unregistered read tool ŌĆö that is why adding the entries to `tools.ts`
+catch an unregistered read tool ЕҢДҶГ¶ that is why adding the entries to `tools.ts`
 alone failed to compile. But nothing catches the reverse, and nothing catches a
 *write* tool. `tests/agent-reachability.test.ts` now asserts every tool the
 prompt catalogue advertises is registered and reachable for the owner, and that
@@ -2306,7 +2306,7 @@ kinds through the *same* `createDeliverable()` the panel uses, so a chart in cha
 and a chart in the console are the same numbers. It is `mode: "read"` on purpose:
 it writes a document, never business data, so it must not queue for approval.
 
-The interactive SYSTEM_PROMPT also had to say so ŌĆö it described reading and
+The interactive SYSTEM_PROMPT also had to say so ЕҢДҶГ¶ it described reading and
 writing but never mentioned documents, so the model talked *about* reports
 instead of making one. The spec being present is not the same as the model
 knowing to use it.
@@ -2318,7 +2318,7 @@ slide) feed `html-deliverables.ts`:
 
 | kind | what it is |
 |---|---|
-| `sales_dashboard` | statistics page ŌĆö revenue trend, status mix, category mix, top dishes, ratings, stock warnings |
+| `sales_dashboard` | statistics page ЕҢДҶГ¶ revenue trend, status mix, category mix, top dishes, ratings, stock warnings |
 | `crm_summary` | customer totals, every segment, newest signups, top customers by lifetime value |
 | `users_report` | all users, staff by role, active/suspended |
 | `inventory_report` | full stock count with values, thresholds and a reorder list |
@@ -2334,7 +2334,7 @@ slide) feed `html-deliverables.ts`:
   (45.2%)"), so a chart and its table cannot disagree.
 - `agent_artifacts.kind` gained the six kinds (migration
   `20260929230000_agent_html_deliverables.sql`, applied live; constraint-only, no
-  row touched). `format` already allowed `html` ŌĆö `createDeliverable` had
+  row touched). `format` already allowed `html` ЕҢДҶГ¶ `createDeliverable` had
   hardcoded `"md"`, so an HTML page would have been filed as markdown and
   rendered as source. It now takes the format from the renderer, and
   `deliverableContentType()` maps it to a real MIME type.
@@ -2344,7 +2344,7 @@ slide) feed `html-deliverables.ts`:
    are computed by the `crm_customers` RPC. Selecting them off the table is a
    `tsc` error (good) and would be a silent empty result (bad). Use
    `listCrmCustomers()`.
-2. **`InsightData` field names are not the obvious ones** ŌĆö `pairs`, `itemTrend`,
+2. **`InsightData` field names are not the obvious ones** ЕҢДҶГ¶ `pairs`, `itemTrend`,
    `weakItems`, `inactiveCustomers.count`, `inactiveCustomers.avgDaysSinceOrder`.
    Grep the interface before writing a renderer against it.
 
@@ -2358,20 +2358,20 @@ status and total); stock -> `stock_inventory`; users -> `users_summary`
 `tsc` clean, lint 0 errors (17 pre-existing `no-img-element` warnings),
 `next build` green.
 
-Note: one run returned an empty model turn ("no result written") ŌĆö the model
+Note: one run returned an empty model turn ("no result written") ЕҢДҶГ¶ the model
 emitted no tool call, not a wiring fault. The prompt fix above addresses the
 cause; the loop's empty-turn fallback is unchanged.
 
 ## Vector memory, skill index and the team document library (2026-09-30)
 
 The brief was "give the ops agent strong short- and long-term vector memory, and
-let it do hard work ŌĆö detailed reports and a deck". The agent could already do
+let it do hard work ЕҢДҶГ¶ detailed reports and a deck". The agent could already do
 the work; what was broken was the memory layer, and most of it was *silently*
 broken in the same way as the earlier reachability and `security_invoker` bugs.
 
 ### Long-term memory was write-only, and 5 of its rows were unreadable
 `agent_memory` (pgvector + HNSW) held rows, but the interactive chat never wrote
-one ŌĆö only `ops-agent.ts` did. Worse, **5 of the 6 live rows had `embedding is
+one ЕҢДҶГ¶ only `ops-agent.ts` did. Worse, **5 of the 6 live rows had `embedding is
 null`**, so vector search could never return them. The chat *read* memory (3
 recalled rows) and produced confident answers while learning nothing.
 
@@ -2392,9 +2392,9 @@ Three repairs, all live-verified:
    `has_embedding = true`; `recall` returned it at **0.676**; a duplicate write
    returned `null` (suppressed).
 3. **Auto-capture from chat.** `extractMemoryCandidates` only fires on an
-   explicit instruction (`ž¦┘üž¬┘āž▒` / `remember` / `ž«ž» ž©ž¦┘ä┘ā` / ŌĆ”) and strips the
+   explicit instruction (`ЕҫВҰв”ҳГјЕҫВ¬в”ҳДҒЕҫв–’` / `remember` / `ЕҫВ«ЕҫВ» ЕҫВ©ЕҫВҰв”ҳГӨв”ҳДҒ` / ЕҢДҶвҖқ) and strips the
    instruction so the memory reads as the fact. A bare `"remember"` is now
-   rejected (`MIN_FACT_CHARS`) ŌĆö it used to store the word itself. Wired into the
+   rejected (`MIN_FACT_CHARS`) ЕҢДҶГ¶ it used to store the word itself. Wired into the
    `agent-chat` action, so a chat turn can teach the agent, not just query it.
 
 **Short-term memory:** long threads were truncated to the last 8 messages, so
@@ -2403,13 +2403,13 @@ anything older vanished. `agent_threads.summary` / `summary_upto` (migration
 `src/lib/services/agent-chat.ts` keep a summary of the turns that fell out of the
 verbatim window.
 
-### The skill index was genuinely empty ŌĆö and re-seeding it is the fix
+### The skill index was genuinely empty ЕҢДҶГ¶ and re-seeding it is the fix
 `agent_skills` had **0 rows**, so `retrieveSkills` always returned nothing and
 the agent answered from the prompt alone. The sources are generated
-(`scripts/generate-repo-skills.mjs` ŌåÆ `repo-skills.generated.ts`) and synced by
+(`scripts/generate-repo-skills.mjs` ЕҢГҘГҶ `repo-skills.generated.ts`) and synced by
 `syncSkillSources`. Live result: **repo:AGENTS.md 231 chunks, repo:skills.md 10
 chunks**, and a price-quoting query retrieved skills.md at 0.571 / 0.538 / 0.530.
-Re-index from Admin ŌåÆ AI ops ŌåÆ Skills & memory ("Re-index repo skills"), or the
+Re-index from Admin ЕҢГҘГҶ AI ops ЕҢГҘГҶ Skills & memory ("Re-index repo skills"), or the
 sync runs on every `prebuild`/`predev`.
 
 ### The team library: comments and reuse on deliverables
@@ -2419,7 +2419,7 @@ of reuse. Migration `20260930121000` adds `agent_artifact_comments` and
 `agent_artifacts.reuse_count` / `last_reused_at`; `src/lib/agent/library.ts`
 provides `listArtifactComments` / `addArtifactComment` / `markArtifactReused`
 (the last through the atomic definer RPC `mark_artifact_reused`). Visibility is
-unchanged ŌĆö the library does not widen who can read a document, only lets the
+unchanged ЕҢДҶГ¶ the library does not widen who can read a document, only lets the
 people who can read one discuss it.
 
 ### The admin Skills & memory panel is now a real memory surface
@@ -2428,13 +2428,13 @@ It showed a count and nothing else. It now lists the remembered rows
 Remove button, plus an "Embed pending" button for the backfill. Rendered and
 checked live in **both locales** (`/admin/agent` 200 with a forged gate cookie):
 EN "Remembered / Embed pending / Reuse / Comment / No comments yet", AR
-"ž¦┘ä┘ģž│ž¬┘åž»ž¦ž¬ / ž¬ž╣┘ä┘Ŗ┘é / žźž╣ž¦ž»ž® ž¦ž│ž¬ž«ž»ž¦┘ģ / ┘äž¦ ž¬┘łž¼ž» ž¬ž╣┘ä┘Ŗ┘éž¦ž¬ / ž¬┘åž▓┘Ŗ┘ä" with `dir="rtl"`.
+"ЕҫВҰв”ҳГӨв”ҳДЈЕҫв”ӮЕҫВ¬в”ҳГҘЕҫВ»ЕҫВҰЕҫВ¬ / ЕҫВ¬Еҫв•Јв”ҳГӨв”ҳЕ–в”ҳГ© / ЕҫЕәЕҫв•ЈЕҫВҰЕҫВ»ЕҫВ® ЕҫВҰЕҫв”ӮЕҫВ¬ЕҫВ«ЕҫВ»ЕҫВҰв”ҳДЈ / в”ҳГӨЕҫВҰ ЕҫВ¬в”ҳЕӮЕҫВјЕҫВ» ЕҫВ¬Еҫв•Јв”ҳГӨв”ҳЕ–в”ҳГ©ЕҫВҰЕҫВ¬ / ЕҫВ¬в”ҳГҘЕҫв–“в”ҳЕ–в”ҳГӨ" with `dir="rtl"`.
 
 ### Two traps hit again
 1. **A `select` list is a contract.** `listDeliverables` did not select
-   `reuse_count`, so the page's new `reuse_count` read failed `tsc` ŌĆö the good
+   `reuse_count`, so the page's new `reuse_count` read failed `tsc` ЕҢДҶГ¶ the good
    direction. Add the column to the select, not a cast.
-2. **`createServerSupabase()` is async**; three `logAudit(createServerSupabase(), ŌĆ”)`
+2. **`createServerSupabase()` is async**; three `logAudit(createServerSupabase(), ЕҢДҶвҖқ)`
    calls passed a Promise where a client was expected. The admin-only elevation
    only works on the resolved client.
 
@@ -2454,7 +2454,7 @@ left as-is rather than renumbered.
 
 The brief moved from "produce a report" to "be a real workspace agent": work on
 hard tasks, produce large documents and visuals, and keep strong short- and
-long-term vector memory. The gap was not rendering ŌĆö it was *working with* what
+long-term vector memory. The gap was not rendering ЕҢДҶГ¶ it was *working with* what
 the agent produced.
 
 ### Creating a document is not the same as working in a workspace
@@ -2464,12 +2464,12 @@ was auto-captured only. Three tools close that loop, all gated on `ai.manage`
 
 | tool | what it does |
 |---|---|
-| `list_documents` | the library ŌĆö title, kind, format, size, when, reuse count, id |
+| `list_documents` | the library ЕҢДҶГ¶ title, kind, format, size, when, reuse count, id |
 | `recall_memory` | vector + lexical search of long-term memory for owner rules |
 | `remember_memory` | store a lasting fact; returns `stored: false` on an exact duplicate |
 
 `READ_TOOLS` is a complete `Record<AgentToolName, ...>`, so adding the names to
-`tools.ts` *and* `registry.ts` is required ŌĆö the union change fails `tsc` until
+`tools.ts` *and* `registry.ts` is required ЕҢДҶГ¶ the union change fails `tsc` until
 both are done. That is the reachability contract working as intended.
 `tests/agent-reachability.test.ts` now pins all four workspace tools and the
 kitchen-role exclusion.
@@ -2478,13 +2478,13 @@ The interactive SYSTEM_PROMPT gained MEMORY and THE WORKSPACE sections, because 
 tool the model does not know to call is a tool that does not exist. It now says
 to `recall_memory` before answering from a standing rule, to `remember_memory`
 *proactively* when the owner states a policy, to store the **rule not the
-reading** ("ž¦┘äž┤žŁ┘å ┘ģž¼ž¦┘å┘Ŗ ┘ü┘ł┘é 250" is memory; "ž¦┘ä┘å┘ćž¦ž▒ž»ž® 12 žŻ┘łž▒ž»ž▒" is not), and to
+reading** ("ЕҫВҰв”ҳГӨЕҫв”ӨЕҫЕҒв”ҳГҘ в”ҳДЈЕҫВјЕҫВҰв”ҳГҘв”ҳЕ– в”ҳГјв”ҳЕӮв”ҳГ© 250" is memory; "ЕҫВҰв”ҳГӨв”ҳГҘв”ҳДҮЕҫВҰЕҫв–’ЕҫВ»ЕҫВ® 12 ЕҫЕ»в”ҳЕӮЕҫв–’ЕҫВ»Еҫв–’" is not), and to
 `list_documents` before re-making a report.
 
 ### A killed invocation left documents spinning forever
 `agent_artifacts` held **3 rows stuck in `building`**, all `slide_deck`, all
 30-70 minutes old. `createDeliverable` marks its own row `failed` on a thrown
-error ŌĆö but a Worker killed at the CPU/subrequest cap never throws, the
+error ЕҢДҶГ¶ but a Worker killed at the CPU/subrequest cap never throws, the
 invocation just ends, and the row sits in `building` for good. The console then
 shows a document that spins and never resolves, which is the same
 silent-failure shape as the empty-rating view and the dead notification bell.
@@ -2497,9 +2497,9 @@ than that is dead, not slow.
 
 Live verification of the whole hard-task path (artifacts created and then deleted,
 so the library is not polluted):
-- `slide_deck` -> "ž╣ž▒žČ ž¬┘éž»┘Ŗ┘ģ┘Ŗ ŌĆö žŻž»ž¦žĪ ž¦┘ä┘ģžĘž╣┘ģ" / 6 ž┤ž▒ž¦ž”žŁ from 4 orders
-- `sales_dashboard` -> "┘ä┘łžŁž® ž¦┘ä┘ģž©┘Ŗž╣ž¦ž¬" / 4 orders, 0.00 EGP finished revenue, 4 dishes
-- `strategy_brief` -> "ž«žĘž® ž╣┘ģ┘ä" / 4 plan items
+- `slide_deck` -> "Еҫв•ЈЕҫв–’ЕҫДҢ ЕҫВ¬в”ҳГ©ЕҫВ»в”ҳЕ–в”ҳДЈв”ҳЕ– ЕҢДҶГ¶ ЕҫЕ»ЕҫВ»ЕҫВҰЕҫДӘ ЕҫВҰв”ҳГӨв”ҳДЈЕҫДҳЕҫв•Јв”ҳДЈ" / 6 Еҫв”ӨЕҫв–’ЕҫВҰЕҫвҖқЕҫЕҒ from 4 orders
+- `sales_dashboard` -> "в”ҳГӨв”ҳЕӮЕҫЕҒЕҫВ® ЕҫВҰв”ҳГӨв”ҳДЈЕҫВ©в”ҳЕ–Еҫв•ЈЕҫВҰЕҫВ¬" / 4 orders, 0.00 EGP finished revenue, 4 dishes
+- `strategy_brief` -> "ЕҫВ«ЕҫДҳЕҫВ® Еҫв•Јв”ҳДЈв”ҳГӨ" / 4 plan items
 - `inventory_report` -> `.xlsx` 2,641 bytes; `weekly_kpi` -> `.pdf` 120,498 bytes
 - `list_documents` -> 40 rows with reuse counts; `remember_memory` stored a fact,
   `recall_memory` returned it at **0.703**, and a repeat write returned
@@ -2519,14 +2519,14 @@ reports plus a presentation explaining status. It was, against the live DB, and
 that surfaced two real defects.
 
 ### What actually ran
-One plain Arabic request ŌĆö "ž¦ž╣┘ģ┘ä┘Ŗ ž¬┘éž¦ž▒┘Ŗž▒ ┘ģ┘üžĄ┘äž® ┘ł ž╣ž▒žČ ž¬┘éž»┘Ŗ┘ģ┘Ŗ ┘Ŗž┤ž▒žŁ žŁž¦┘äž¬┘åž¦" ŌĆö through
+One plain Arabic request ЕҢДҶГ¶ "ЕҫВҰЕҫв•Јв”ҳДЈв”ҳГӨв”ҳЕ– ЕҫВ¬в”ҳГ©ЕҫВҰЕҫв–’в”ҳЕ–Еҫв–’ в”ҳДЈв”ҳГјЕҫД„в”ҳГӨЕҫВ® в”ҳЕӮ Еҫв•ЈЕҫв–’ЕҫДҢ ЕҫВ¬в”ҳГ©ЕҫВ»в”ҳЕ–в”ҳДЈв”ҳЕ– в”ҳЕ–Еҫв”ӨЕҫв–’ЕҫЕҒ ЕҫЕҒЕҫВҰв”ҳГӨЕҫВ¬в”ҳГҘЕҫВҰ" ЕҢДҶГ¶ through
 the real `runAgentTurn` loop, provider `workers-ai`:
 
 | step | tool | result |
 |---|---|---|
-| 1 | `create_document({kind: sales_dashboard})` | ┘ä┘łžŁž® ž¦┘ä┘ģž©┘Ŗž╣ž¦ž¬ ŌĆö 10,193 B, 3 SVG charts |
-| 2 | `create_document({kind: crm_summary})` | ┘ģ┘äž«žĄ CRM ŌĆö 8,733 B |
-| 3 | `create_document({kind: slide_deck})` | ž╣ž▒žČ ž¬┘éž»┘Ŗ┘ģ┘Ŗ ŌĆö 9,281 B, **6 slides**, 3 charts |
+| 1 | `create_document({kind: sales_dashboard})` | в”ҳГӨв”ҳЕӮЕҫЕҒЕҫВ® ЕҫВҰв”ҳГӨв”ҳДЈЕҫВ©в”ҳЕ–Еҫв•ЈЕҫВҰЕҫВ¬ ЕҢДҶГ¶ 10,193 B, 3 SVG charts |
+| 2 | `create_document({kind: crm_summary})` | в”ҳДЈв”ҳГӨЕҫВ«ЕҫД„ CRM ЕҢДҶГ¶ 8,733 B |
+| 3 | `create_document({kind: slide_deck})` | Еҫв•ЈЕҫв–’ЕҫДҢ ЕҫВ¬в”ҳГ©ЕҫВ»в”ҳЕ–в”ҳДЈв”ҳЕ– ЕҢДҶГ¶ 9,281 B, **6 slides**, 3 charts |
 
 The deck is real and grounded: overview KPIs (4 orders, 0.00 EGP finished
 revenue, 2 new customers), revenue-by-day, status mix (refunded 2, canceled /
@@ -2536,16 +2536,16 @@ window is too small to trust. Every document is self-contained: **0 `<script>`,
 0 external URLs**, `dir="rtl"`, Arabic copy.
 
 ### Defect: a tool call written as text was dropped in silence
-A "ž«ž» ž©ž¦┘ä┘ā ┘łž¦┘üž¬┘āž▒ ŌĆ”" turn produced `steps: (none)` and **stored 0 rows**. The
-model had asked to call `remember_memory` ŌĆö but as *prose*:
-`[remember_memory, {"content": "ŌĆ”"}]`. `parseToolTurnOpenAiLike` only reads
+A "ЕҫВ«ЕҫВ» ЕҫВ©ЕҫВҰв”ҳГӨв”ҳДҒ в”ҳЕӮЕҫВҰв”ҳГјЕҫВ¬в”ҳДҒЕҫв–’ ЕҢДҶвҖқ" turn produced `steps: (none)` and **stored 0 rows**. The
+model had asked to call `remember_memory` ЕҢДҶГ¶ but as *prose*:
+`[remember_memory, {"content": "ЕҢДҶвҖқ"}]`. `parseToolTurnOpenAiLike` only reads
 `choices[].message.tool_calls`, so the provider returned zero calls, the loop saw
 an empty turn, and it answered as if the tool did not exist. Memory looked
 unimplemented for a request the model had handled correctly.
 
 `salvageToolCalls(text, allowed)` in `tool-protocol.ts` now recovers the three
-shapes weak models emit ŌĆö `[name, {ŌĆ”}]`, `{"name": ŌĆ”, "arguments": ŌĆ”}` and
-`name({ŌĆ”})` ŌĆö and the loop calls it when the structured list is empty. It is
+shapes weak models emit ЕҢДҶГ¶ `[name, {ЕҢДҶвҖқ}]`, `{"name": ЕҢДҶвҖқ, "arguments": ЕҢДҶвҖқ}` and
+`name({ЕҢДҶвҖқ})` ЕҢДҶГ¶ and the loop calls it when the structured list is empty. It is
 deliberately conservative: only names **already offered this turn** match, the
 JSON must parse, and the call text is stripped from the prose so the operator
 does not see raw JSON. `tests/tool-salvage.test.ts` (9) pins the recovery *and*
@@ -2553,13 +2553,13 @@ that it never invents a tool that was not offered.
 
 Verified live after the fix: `remember_memory:ok`, the row stored **with a real
 embedding** (`has_embedding: true`), and a **fresh conversation** recalled the
-rule correctly ŌĆö so long-term memory round-trips across sessions, not just
+rule correctly ЕҢДҶГ¶ so long-term memory round-trips across sessions, not just
 within one.
 
 ### The chain is mostly dead, which is why the fallback path matters
 Live `ai_providers`: `agentic` routes gemini-free first (10), openrouter 20,
 workers-ai 40. Probed directly: **gemini 429** (free quota exhausted),
-**pollinations 500**, **openrouter 404** ŌĆö only `workers-ai` answers, and it
+**pollinations 500**, **openrouter 404** ЕҢДҶГ¶ only `workers-ai` answers, and it
 returns proper structured tool calls. So every agentic turn burns three failed
 model calls before reaching a working one, and the salvage path is what keeps the
 weaker providers from silently losing a call when they are reached.
@@ -2569,7 +2569,7 @@ Owner decision worth raising: `agentic` should probably put `workers-ai` first
 tiers.
 
 ### Documents left spinning: fixed at the source
-The 3 `building` rows from the previous session were all `slide_deck` ŌĆö the
+The 3 `building` rows from the previous session were all `slide_deck` ЕҢДҶГ¶ the
 heaviest render. `sweepStaleArtifacts` now retires them, and `listDeliverables`
 sweeps on read. Live after: `still_building: 0`.
 
@@ -2579,7 +2579,7 @@ sweeps on read. Live after: `still_building: 0`.
 ## Store opening hours, and the false-completion class of agent bug (2026-09-30)
 
 ### Opening hours are a setting, not a code path
-The owner asked for configurable hours ("┘ģ┘å 2 ž¦┘äžĖ┘ćž▒ ┘äžŁž» 1 ž©ž¦┘ä┘ä┘Ŗ┘ä") with the
+The owner asked for configurable hours ("в”ҳДЈв”ҳГҘ 2 ЕҫВҰв”ҳГӨЕҫД–в”ҳДҮЕҫв–’ в”ҳГӨЕҫЕҒЕҫВ» 1 ЕҫВ©ЕҫВҰв”ҳГӨв”ҳГӨв”ҳЕ–в”ҳГӨ") with the
 storefront closed outside them. `ordering.hours_enabled` / `ordering.open_time` /
 `ordering.close_time` (all public, `HH:MM`, Africa/Cairo) drive everything through
 one source of truth: `store_is_open()` in SQL and `resolveStoreAvailability()` in
@@ -2597,7 +2597,7 @@ how a restaurant that closes after midnight is configured, so `isWithinWindow`
 inverts to "after open OR before close" when close <= open, and equal times mean a
 full day rather than a zero-length window.
 
-The window is evaluated in **Africa/Cairo, not UTC** ŌĆö Workers run in UTC, so
+The window is evaluated in **Africa/Cairo, not UTC** ЕҢДҶГ¶ Workers run in UTC, so
 `Intl.DateTimeFormat` (TS) and `p_now at time zone 'Africa/Cairo'` (SQL) are used
 rather than arithmetic on the epoch.
 
@@ -2612,48 +2612,48 @@ manual-off veto holds inside the window; `store_is_open()` returns false at 03:1
 local for a 03:00-03:30 window and true across midnight.
 
 ### The agent's real failure was a *false completion*, not a missing capability
-`create_document` was registered and working, yet "ž¦ž╣┘ģ┘ä┘Ŗ ž¬┘éž¦ž▒┘Ŗž▒ ┘ģ┘üžĄ┘äž® ┘ł ž╣ž▒žČ
-ž¬┘éž»┘Ŗ┘ģ┘Ŗ" produced nothing. Three successive live runs showed three distinct
+`create_document` was registered and working, yet "ЕҫВҰЕҫв•Јв”ҳДЈв”ҳГӨв”ҳЕ– ЕҫВ¬в”ҳГ©ЕҫВҰЕҫв–’в”ҳЕ–Еҫв–’ в”ҳДЈв”ҳГјЕҫД„в”ҳГӨЕҫВ® в”ҳЕӮ Еҫв•ЈЕҫв–’ЕҫДҢ
+ЕҫВ¬в”ҳГ©ЕҫВ»в”ҳЕ–в”ҳДЈв”ҳЕ–" produced nothing. Three successive live runs showed three distinct
 failures, which is why one fix was not enough:
 
-1. **Empty turn** ŌĆö the model returned no text and no tool call. Retried once with
+1. **Empty turn** ЕҢДҶГ¶ the model returned no text and no tool call. Retried once with
    a nudge; if it still says nothing, the honest summary stands.
-2. **Claimed document** ŌĆö the model wrote "ž¬┘ģ žźž╣ž»ž¦ž» ž¦┘äž¬┘éž¦ž▒┘Ŗž▒ŌĆ” ┘ģž¬ž¦žŁž® ┘ü┘Ŗ Admin ŌåÆ AI
-   ops ŌåÆ Deliverables" listing four documents it had never created. Withholding
+2. **Claimed document** ЕҢДҶГ¶ the model wrote "ЕҫВ¬в”ҳДЈ ЕҫЕәЕҫв•ЈЕҫВ»ЕҫВҰЕҫВ» ЕҫВҰв”ҳГӨЕҫВ¬в”ҳГ©ЕҫВҰЕҫв–’в”ҳЕ–Еҫв–’ЕҢДҶвҖқ в”ҳДЈЕҫВ¬ЕҫВҰЕҫЕҒЕҫВ® в”ҳГјв”ҳЕ– Admin ЕҢГҘГҶ AI
+   ops ЕҢГҘГҶ Deliverables" listing four documents it had never created. Withholding
    the prose alone (the first attempt) left the operator *empty-handed* rather
    than wrong, so the guard now **corrects and retries**: it appends a user turn
    saying the call never happened and naming the kinds, and the model then really
    creates the files.
-3. **Duplicate document** ŌĆö on retry the model called `create_document` twice for
+3. **Duplicate document** ЕҢДҶГ¶ on retry the model called `create_document` twice for
    the same `slide_deck`, saving the identical file twice. `takeToken` now uses a
    per-`kind:format` key with limit 1, so an exact duplicate is refused while the
    same report can still be produced as both PDF and XLSX.
 
 **The detection regex is the hard part, and each iteration was too narrow.**
-Keying on the destination phrase alone missed "ž¬┘ģ žźž╣ž»ž¦ž» ž¦┘äž¬┘éž¦ž▒┘Ŗž▒"; keying on
-past-tense verbs alone missed "┘ģž¬ž¦žŁž® ž¦┘äžó┘å ┘ü┘Ŗ ŌĆ”". It now requires a document noun
+Keying on the destination phrase alone missed "ЕҫВ¬в”ҳДЈ ЕҫЕәЕҫв•ЈЕҫВ»ЕҫВҰЕҫВ» ЕҫВҰв”ҳГӨЕҫВ¬в”ҳГ©ЕҫВҰЕҫв–’в”ҳЕ–Еҫв–’"; keying on
+past-tense verbs alone missed "в”ҳДЈЕҫВ¬ЕҫВҰЕҫЕҒЕҫВ® ЕҫВҰв”ҳГӨЕҫГів”ҳГҘ в”ҳГјв”ҳЕ– ЕҢДҶвҖқ". It now requires a document noun
 *plus* either a production/existence signal or a mention of the Deliverables path,
-**minus** a preceding negation ŌĆö because "┘ģ┘ü┘Ŗž┤ ž¬┘éž▒┘Ŗž▒ ┘ģžŁ┘ü┘łžĖ" is an honest denial
+**minus** a preceding negation ЕҢДҶГ¶ because "в”ҳДЈв”ҳГјв”ҳЕ–Еҫв”Ө ЕҫВ¬в”ҳГ©Еҫв–’в”ҳЕ–Еҫв–’ в”ҳДЈЕҫЕҒв”ҳГјв”ҳЕӮЕҫД–" is an honest denial
 and must never be rewritten. `claimsDocumentExists()` is exported for the tests,
-which cover the offer ("žŻ┘éž»ž▒ žŻž╣┘ģ┘ä┘ā ž¬┘éž▒┘Ŗž▒"), the denial, the pending (not-yet-saved)
+which cover the offer ("ЕҫЕ»в”ҳГ©ЕҫВ»Еҫв–’ ЕҫЕ»Еҫв•Јв”ҳДЈв”ҳГӨв”ҳДҒ ЕҫВ¬в”ҳГ©Еҫв–’в”ҳЕ–Еҫв–’"), the denial, the pending (not-yet-saved)
 document, and the real claim.
 
 `tests/agent-live.test.ts` now asserts the owner's exact request produces
-`create_document: ok` steps ŌĆö the assertion is on the artifacts, never on the
+`create_document: ok` steps ЕҢДҶГ¶ the assertion is on the artifacts, never on the
 prose, because a confident sentence with no file behind it is precisely the bug.
 
 ### A no-argument tool call written as text was never recovered
 The salvage layer from `85088f3` recovers calls a weak model writes as prose, but
 all three of its finders required a `{...}` argument object. So `[menu_summary()]`
-— a tool that takes *no* arguments — matched nothing. Live symptom: asking
-"المنيو فيه كام طبق؟" returned the literal marker `[menu_summary()]` plus `{:ok}`
+вҖ” a tool that takes *no* arguments вҖ” matched nothing. Live symptom: asking
+"Ш§Щ„Щ…ЩҶЩҠЩҲ ЩҒЩҠЩҮ ЩғШ§Щ… Ш·ШЁЩӮШҹ" returned the literal marker `[menu_summary()]` plus `{:ok}`
 as the entire answer, with `steps.length === 0`. The model had chosen the right
 tool; the recovery just could not see it.
 
 `findBracketSpans` / `findParenSpans` now also match the bare forms
-(`[menu_summary]`, `menu_summary()`), producing `args: "{}"` — which
+(`[menu_summary]`, `menu_summary()`), producing `args: "{}"` вҖ” which
 `parseToolArguments` already handles, so nothing downstream changed. Verified
-live: the same question now runs `menu_summary` and answers "١٨ قسم و ٨٤ طبق",
+live: the same question now runs `menu_summary` and answers "ЩЎЩЁ ЩӮШіЩ… ЩҲ ЩЁЩӨ Ш·ШЁЩӮ",
 matching the live DB.
 
 **The lesson generalises:** a tool-call parser is only as good as the shapes it
@@ -2661,7 +2661,7 @@ accepts, and the zero-argument shape is the one every "does this exist?" tool
 takes. `tests/tool-salvage.test.ts` covers it and pins that `[note]` (a bracket
 naming no tool) stays prose.
 
-### The memory layer was already complete ŌĆö verified, not assumed
+### The memory layer was already complete ЕҢДҶГ¶ verified, not assumed
 `agent_memory` (6 rows, all embedded) and `agent_skills` (241 chunks across
 AGENTS.md and skills.md, all embedded) are live, and `recall`/`remember` are real
 registry tools wired into the loop. A live probe proved the parts a mocked test
@@ -2673,14 +2673,14 @@ through the binding, degrading to lexical Jaccard when unreachable.
 
 The team library is capability-correct: every deliverable action asserts
 `ai.manage`, which only `owner` and `admin` hold, and the RLS on
-`agent_artifacts` / `agent_artifact_comments` is `can_agent()` ŌĆö i.e.
+`agent_artifacts` / `agent_artifact_comments` is `can_agent()` ЕҢДҶГ¶ i.e.
 `role in ('owner','admin')`, not merely `authenticated`.
 
 Live tests are opt-in: `MEMORY_LIVE=1` for the memory/skills round-trip,
 `AI_LIVE=1` for the agent loop, `OFFICE_LIVE=1` for office exports. All write to
 the live project and clean up after themselves; verified zero leftovers.
 
-**Cleanup trap:** storage objects cannot be deleted with SQL ŌĆö `storage.objects`
+**Cleanup trap:** storage objects cannot be deleted with SQL ЕҢДҶГ¶ `storage.objects`
 is guarded by `storage.protect_delete()`. Remove them through the Storage API
 (`supabase.storage.from(bucket).remove(paths)`); deleting the DB row alone leaves
 an orphaned object.
@@ -2777,23 +2777,23 @@ is Arabic; the shell strings are not localised yet.
 
 ## Settings save: the Worker subrequest ceiling, not a data bug (2026-09-30)
 
-The owner's "حدث خطأ ما" when saving settings was **not** a bad value, a
+The owner's "ШӯШҜШ« Ш®Ш·ШЈ Щ…Ш§" when saving settings was **not** a bad value, a
 permission, or a trigger. It was the free-plan Worker's **per-request
 subrequest budget**.
 
 `updateSettingsAction` looped `updateSettingsSchema.values` and issued **one
-PostgREST PATCH per row — 34 of them today**. Reproduced on production with CDP
+PostgREST PATCH per row вҖ” 34 of them today**. Reproduced on production with CDP
 and bisected by truncating the form payload:
 
 | keys saved | result |
 |---|---|
-| 4 | `تم الحفظ.` |
-| 17 | `تم الحفظ.` |
-| 26 | `تم الحفظ.` |
-| 34 | `حدث خطأ ما` (generic) |
+| 4 | `ШӘЩ… Ш§Щ„ШӯЩҒШё.` |
+| 17 | `ШӘЩ… Ш§Щ„ШӯЩҒШё.` |
+| 26 | `ШӘЩ… Ш§Щ„ШӯЩҒШё.` |
+| 34 | `ШӯШҜШ« Ш®Ш·ШЈ Щ…Ш§` (generic) |
 
 **The misleading part:** the server-action response is still **HTTP 200** with
-`{"ok":false,"error":{"code":"UNKNOWN"}}` — a failed server action is a normal
+`{"ok":false,"error":{"code":"UNKNOWN"}}` вҖ” a failed server action is a normal
 200 in the RSC stream, so no status check, edge log, or Postgres log shows
 anything. Local `next dev` (no Worker, no subrequest cap) saved all 34 keys
 successfully, which is exactly why it looked like a data-dependent bug. The
@@ -2804,27 +2804,27 @@ the Worker.
 (`20260930230000_apply_settings_batch.sql`), `SECURITY INVOKER` so the
 `settings_staff_write` RLS policy stays the authority, `search_path` pinned,
 execute granted to `authenticated`/`service_role` only. One subrequest, one
-transaction — so a bad value can no longer leave the settings half-written
-either. Verified live after deploy: 34 keys → `تم الحفظ.`
+transaction вҖ” so a bad value can no longer leave the settings half-written
+either. Verified live after deploy: 34 keys вҶ’ `ШӘЩ… Ш§Щ„ШӯЩҒШё.`
 
 **Two lessons worth keeping:**
 1. **A `for` loop of PostgREST writes in a server action is a budget leak, not a
    style choice.** Anything that writes N rows from one request should be one
    RPC. The same shape exists wherever a form maps to many rows.
 2. **An action failure is HTTP 200.** Debug it by reading the RSC response body
-   (`Network.getResponseBody` shows `"ok":false,…`), never by status code, and
-   reproduce it in the *deployed* runtime — `next dev` cannot show a Worker cap.
+   (`Network.getResponseBody` shows `"ok":false,вҖҰ`), never by status code, and
+   reproduce it in the *deployed* runtime вҖ” `next dev` cannot show a Worker cap.
 
 ## The hard task, verified end to end (2026-09-30)
 
 The owner's request ("detailed reports + a presentation deck") runs green live:
 
-- `AI_LIVE=1 tests/agent-live.test.ts` — 4/4, including the exact Arabic prompt;
+- `AI_LIVE=1 tests/agent-live.test.ts` вҖ” 4/4, including the exact Arabic prompt;
   `create_document` produces real `sales_dashboard`, `crm_summary`,
   `inventory_report` and `slide_deck` artifacts.
-- `MEMORY_LIVE=1 tests/agent-memory-live.test.ts` — 8/8: embed → recall **by
-  meaning** → identical fact is a no-op → a `customer`-scope row is invisible to
-  an `owner` query → skill retrieval bounded to ≤6 chunks → full cleanup.
+- `MEMORY_LIVE=1 tests/agent-memory-live.test.ts` вҖ” 8/8: embed вҶ’ recall **by
+  meaning** вҶ’ identical fact is a no-op вҶ’ a `customer`-scope row is invisible to
+  an `owner` query вҶ’ skill retrieval bounded to вүӨ6 chunks вҶ’ full cleanup.
 
 **The memory layer is complete and live**, not aspirational: `agent_memory`
 (embedded, `match_agent_memory` cosine-ranked) plus a lazy `agent_skills` index
@@ -2835,41 +2835,41 @@ dims) keyless via the binding, degrading to lexical Jaccard when unreachable.
 
 ## Error 1102 is `exceededCpu` on cold starts, and the Free plan is the ceiling (2026-09-30)
 
-**Root cause, proven, not inferred.** Error 1102 is `outcome: "exceededCpu"` —
-`"Worker exceeded CPU time limit."` — on **cold-start renders**, and it is
+**Root cause, proven, not inferred.** Error 1102 is `outcome: "exceededCpu"` вҖ”
+`"Worker exceeded CPU time limit."` вҖ” on **cold-start renders**, and it is
 *systemic*, not route-specific:
 
 - `wrangler pages deployment tail` while bursting shows the failure record:
   `"outcome": "exceededCpu"`, `"cpuTime": 10`, `"wallTime": 12-25`, exceptions
-  `"Worker exceeded CPU time limit."`. `cpuTime` pins at exactly **10 ms** — the
+  `"Worker exceeded CPU time limit."`. `cpuTime` pins at exactly **10 ms** вҖ” the
   Workers **Free** plan per-request CPU ceiling.
 - The same route in the same burst succeeds with `cpuTime` 137-165 ms
   (`/admin/orders` 137, `/admin/analytics` 165) and up to 1216 ms. Cloudflare
   grants isolates "flexibility" for occasional overshoot, which is why a warm
   request passes and a concurrent cold one dies.
 - Per-route CPU (warm, sequential): `/admin/settings` 78 ms, `/admin/orders`
-  137, `/admin/analytics` 165, and even `/about` — the lightest page — is over
+  137, `/admin/analytics` 165, and even `/about` вҖ” the lightest page вҖ” is over
   10 ms cold. **No route can cold-start on Free.**
 - The Pages analytics confirm it: `pagesFunctionsInvocationsAdaptiveGroups` with
   `status: "exceededResources"` counts 3 (09-24), **479 (09-28)**, 159 (09-29),
-  17 (09-30), 44 (10-01). `subrequests` are **1.0-1.6 per request** — the
+  17 (09-30), 44 (10-01). `subrequests` are **1.0-1.6 per request** вҖ” the
   subrequest budget is *not* the cause, CPU is.
 
 **What does NOT fix it.** `usage_model: "unbound"` was applied to both Pages
-deployment configs and changed nothing — the higher CPU limit (up to 5 minutes)
+deployment configs and changed nothing вҖ” the higher CPU limit (up to 5 minutes)
 is a **Workers Paid** feature. The only real lever is a plan upgrade, or keeping
 the origin off the hot path.
 
 **What the edge cache already does.** `scripts/pages/edge-cache.js` +
 `_worker.js` answer anonymous public GETs from `caches.default`, so warm traffic
 is unaffected (verified: 20/20 `x-edge-cache: HIT` under burst). The failure
-window is a **cold cache** — after a deploy, or after the short TTL let the only
+window is a **cold cache** вҖ” after a deploy, or after the short TTL let the only
 copies expire. This is why the 09-28 spike lines up with a burst of deployments.
 
 **What was changed (free-plan hardening).** The cache is now durable rather than
 short-lived: `s-maxage=600`, `stale-while-revalidate=86400`,
 `stale-if-error=604800` (was 60/300/600). `stale-while-revalidate` is the
-property that matters — after the fresh window the CDN keeps answering and
+property that matters вҖ” after the fresh window the CDN keeps answering and
 refreshes in the background, so the cache never goes cold between visits. Admin
 edits still purge immediately (`shouldPurgeAfter`), so no edit waits for the TTL.
 A failed render is still never stored.
@@ -2883,7 +2883,7 @@ can get a 1102.
 **Still open, and the honest answer:** admin routes cannot run on Free at all
 (78-165 ms vs a 10 ms cap), so a cold admin load or a burst of staff activity
 will still 1102. That is a **plan decision**, not a code bug. Caching admin pages
-is not an option — they are per-session and must stay `no-store`. Reducing their
+is not an option вҖ” they are per-session and must stay `no-store`. Reducing their
 CPU (fewer `motion` components, narrower selects, `optimizePackageImports` for
 `lucide-react`/`motion`) is worth doing regardless, but it will not close a
 10 ms gap.
@@ -2893,44 +2893,44 @@ and read `wrangler pages deployment tail` for the `cpuTime`/`outcome` pair. The
 Cloudflare GraphQL `pagesFunctionsInvocationsAdaptiveGroups` (dimensions:
 `datetime`, `date`, `status`, `scriptName`; sums: `requests`, `subrequests`,
 `duration`) is the historical view. `curl -I` sends HEAD, which the edge cache
-refuses — always verify cache behaviour with a real GET.
+refuses вҖ” always verify cache behaviour with a real GET.
 
 ## Hard-task exercise: reports, deck, and the memory system (2026-10-02)
 
-The owner asked the ops agent to be tried on a hard task — detailed reports, a
-presentation explaining the business — with strong short- and long-term vector
+The owner asked the ops agent to be tried on a hard task вҖ” detailed reports, a
+presentation explaining the business вҖ” with strong short- and long-term vector
 memory. All of it was exercised **live**, not read from the code.
 
 ### Deliverables all render, and the "failed" rows are honest, not a bug
 All 13 kinds render against the live DB. Verified with a throwaway probe:
 `sales_dashboard`, `crm_summary`, `inventory_report`, `strategy_brief`,
-`slide_deck`, `menu_engineering`, `weekly_kpi` — every HTML page had **0
+`slide_deck`, `menu_engineering`, `weekly_kpi` вҖ” every HTML page had **0
 `<script>`, 0 external URLs** and parsed SVG charts. Then created the six
 owner-facing documents for real via `createDeliverable()`; all landed `ready` in
 `agent_artifacts` and the signed download URL resolved (`DOWNLOAD_URL_OK=true`).
 
 Two rows in the library were `failed` with *"Rendering did not finish (the
-process was interrupted). Try again."* — every one of them a `slide_deck`, the
+process was interrupted). Try again."* вҖ” every one of them a `slide_deck`, the
 heaviest kind (charts + many slides). That is the designed outcome, not a
 defect: a Worker killed at the CPU/subrequest cap never throws, so
 `sweepStaleArtifacts()` retires the orphaned `building` row instead of leaving it
-spinning. The deck renders fine in-process (8.4–9.6 KB, 3 SVGs, 6 slides). If it
+spinning. The deck renders fine in-process (8.4вҖ“9.6 KB, 3 SVGs, 6 slides). If it
 fails from the admin UI it is a Cloudflare plan limit, and the honest fix is a
 longer-lived render (queue/`waitUntil`), not a code change.
 
 ### Vector memory is genuinely two-tier, verified end to end
 - **Long-term (vector):** `remember()` stores a fact and `recall()` finds it by
-  **meaning**. Live proof: stored *"العميل المميز بيطلب دايماً بدون بصل"*, recalled
-  with the paraphrase *"تفضيلات العميل بدون بصل"* at **0.71 similarity** (the
+  **meaning**. Live proof: stored *"Ш§Щ„Ш№Щ…ЩҠЩ„ Ш§Щ„Щ…Щ…ЩҠШІ ШЁЩҠШ·Щ„ШЁ ШҜШ§ЩҠЩ…Ш§ЩӢ ШЁШҜЩҲЩҶ ШЁШөЩ„"*, recalled
+  with the paraphrase *"ШӘЩҒШ¶ЩҠЩ„Ш§ШӘ Ш§Щ„Ш№Щ…ЩҠЩ„ ШЁШҜЩҲЩҶ ШЁШөЩ„"* at **0.71 similarity** (the
   `match_agent_memory` RPC does the semantic ranking; lexical similarity is the
   fallback). `captureTurnMemory()` also auto-captures a turn from the operator's
-  own words when they say "افتكر…" — no explicit tool call needed. Live
+  own words when they say "Ш§ЩҒШӘЩғШұвҖҰ" вҖ” no explicit tool call needed. Live
   `agent_memory`: 4 rows, all `has_embedding = true`, kinds `owner_note` +
   `ops_report`.
 - **Short-term:** `compactAgentHistory()` keeps the newest turns verbatim and
   folds older ones into a rolling summary built from the operator's **own
   question lines** (never a model paraphrase, so it cannot invent), capped at
-  1600 chars and refreshed only every `SUMMARY_REFRESH_AFTER` uncovered turns —
+  1600 chars and refreshed only every `SUMMARY_REFRESH_AFTER` uncovered turns вҖ”
   deterministic and free, no model call per turn.
 
 **Gap worth noting, not yet closed:** the thread summary is not promoted into
@@ -2940,40 +2940,107 @@ lost unless it matched a "remember" pattern. A `captureTurnMemory` that also
 files the compacted summary as an `ops_report`-style memory would close it.
 
 ### Ops agent runs the hard path live
-`runOpsReport({trigger:"manual"})` → provider `workers-ai`, model
+`runOpsReport({trigger:"manual"})` вҶ’ provider `workers-ai`, model
 `llama-4-scout-17b-16e-instruct`, Egyptian-Arabic headline/summary, 4 proposed
 actions (`newsletter`, `restock`, `price_review`, `deliverable`). The figure
 grounding guard fired on that run (*"model reply cited figures absent from the
 snapshot; keeping the deterministic report"*) and fell back to the Arabic
-deterministic findings — the guard working, not a failure. Deterministic
+deterministic findings вҖ” the guard working, not a failure. Deterministic
 insights are Arabic-first: `[thin_history]`, `[category_concentration]` with
-`Appetizers عمل 380 ج.م، حوالي 100% من إيراد الأصناف`.
+`Appetizers Ш№Щ…Щ„ 380 Ш¬.Щ…ШҢ ШӯЩҲШ§Щ„ЩҠ 100% Щ…ЩҶ ШҘЩҠШұШ§ШҜ Ш§Щ„ШЈШөЩҶШ§ЩҒ`.
 
 ### CRM notes + tags verified in a real browser
 With a forged gate cookie, `/admin/crm/<id>` renders the panel and a tag click
 through the **real server action** wrote a `customer_tag_links` row
-(`assigned_by` set), and `/admin/crm/segments` then showed *"عميل مميز 1"*.
+(`assigned_by` set), and `/admin/crm/segments` then showed *"Ш№Щ…ЩҠЩ„ Щ…Щ…ЩҠШІ 1"*.
 All verification rows (note + tag link) were deleted afterwards; 0 leftovers.
 
-### Other original goals — confirmed already implemented
+### Other original goals вҖ” confirmed already implemented
 - **Team library:** `/admin/agent` lists deliverables with signed downloads,
-  `listArtifactComments` (discuss), and `reuseArtifactAction` (reuse_count) —
+  `listArtifactComments` (discuss), and `reuseArtifactAction` (reuse_count) вҖ”
   owner/admin view/export/comment/reuse all present.
 - **Configurable availability hours:** `src/lib/services/store-hours.ts`
   (17 tests) gates ordering on `ordering.accepting_orders` +
   `ordering.hours_enabled` + `open_time`/`close_time`, evaluated in
   **Africa/Cairo** with overnight windows supported. Live settings are
-  `14:00`–`01:00` but `hours_enabled = false` (24h open, the owner's current
-  choice); flipping the switch in Admin → Settings enforces it with no deploy.
+  `14:00`вҖ“`01:00` but `hours_enabled = false` (24h open, the owner's current
+  choice); flipping the switch in Admin вҶ’ Settings enforces it with no deploy.
 - **Skill index:** `retrieveSkills()` returned the right repo skill for a
-  "تقرير مبيعات وعرض تقديمي" query.
+  "ШӘЩӮШұЩҠШұ Щ…ШЁЩҠШ№Ш§ШӘ ЩҲШ№ШұШ¶ ШӘЩӮШҜЩҠЩ…ЩҠ" query.
 
 ### Verification method that caught things
 Probes were run as temporary `tests/*-tmp.test.ts` (so they load `.env.local`
-via the vitest config) and deleted afterwards — `npx tsx` on a bare script
+via the vitest config) and deleted afterwards вҖ” `npx tsx` on a bare script
 hung, because a module in the import graph reaches `env.ts`/a request scope.
 Never leave a probe in `tests/`.
 
 State: typecheck clean, lint 0 errors (17 pre-existing `no-img-element`
 warnings), **381 passed / 15 skipped**, `next build` green. Committed `acf7fe5`.
+
+
+## Cross-isolate data cache: safe without KV, transparent everywhere (2026-10-02)
+
+The public, cookie-free reads (menu, categories, slugs, settings, restaurant,
+rewards, feature flags, page content, FAQs, announcements, delivery zones, page
+SEO) now go through `cachedPublic` (`src/lib/cache/public-cache.ts`), which wraps
+Next's `unstable_cache` and invalidates by tag.
+
+**Why a wrapper and not `unstable_cache` directly.** `unstable_cache` throws
+`Invariant: incrementalCache missing` when there is no request-scoped cache
+store. Every page render has one, so the pages look fine — but the **scheduled
+ops agent and the cron handler call the same readers with no request**, and a
+script or `next build` config collection would too. `cachedPublic` catches only
+that missing-store invariant (three message forms) and falls back to the direct
+query; a genuine read failure still propagates, so the fallback can never hide a
+data bug. Verified live: `getPublicSettings()` and `getPublicMenu()` resolve in a
+bare vitest process (no request scope) against the real project.
+`tests/public-cache.test.ts` pins the three branches, `tests/public-cache-live.test.ts`
+the live readers.
+
+**The KV namespace is optional by construction.** `open-next.config.ts` wires
+`incrementalCache: resilientIncrementalCache` and `tagCache: kvNextTagCache`.
+Both degrade safely when unbound: the tag cache guards return early, and
+`src/lib/cache/incremental-cache.ts` treats a missing `NEXT_INC_CACHE_KV` as a
+cache *miss* rather than the stock cache's `IgnorableError("No KV Namespace")`.
+Without that wrapper a missing binding would 500 the menu and home page — Next
+does not catch a throw from the incremental cache. `tests/incremental-cache.test.ts`
+pins it (binding absent → miss, no KV touched; no context at all → miss; binding
+present → delegates).
+
+**Binding the namespaces is a pure speed/egress win, and needs credentials.**
+This environment has no `CLOUDFLARE_API_TOKEN`, so the namespaces are **not
+created** — the site runs uncached, which is correct but re-queries Supabase per
+render. To turn caching on:
+
+    npx wrangler kv namespace create NEXT_INC_CACHE_KV
+    npx wrangler kv namespace create NEXT_TAG_CACHE_KV
+
+then add the two ids to `wrangler.jsonc` (Worker) and the Pages project's KV
+bindings (both files carry the exact snippet as a comment).
+
+**Tags and invalidation.** `CACHE_TAGS` (`menu`, `settings`, `content`,
+`rewards`, `flags`, `restaurant`) with `PUBLIC_DATA_REVALIDATE = 600s`. Admin
+mutations call `revalidatePublicData(tag)` — menu/category/modifier/stock/upsell
+→ `menu`, reward → `rewards`, settings/feature-flag → `settings`+`flags`+
+`restaurant`, content → `content`, feedback publish → `menu` (ratings). So an
+edit is visible on the next request, not after the TTL. `revalidateTag` needs a
+request scope; `revalidatePublicData` swallows that failure on purpose (a cache
+miss must never fail the mutation) and the entry then expires at the TTL.
+
+**Nested caches bypass.** A cached function must not call another cached
+function — Next bypasses the cache for a nested `unstable_cache` call, silently
+making the outer entry depend on uncached reads. Hence the `*Raw` helpers
+(`getPublicMenuRaw` calls `getPublicCategoriesRaw`, `getFeatureFlagMapCached`
+calls `getFeatureFlagsRaw`).
+
+**Verification honesty.** `next build` + `opennextjs-cloudflare build` are green
+and the custom cache is present in the bundled `.open-next/server-functions/default/handler.mjs`.
+Booting the built worker in miniflare/workerd to prove the no-KV path in the
+runtime was **not possible here** — workerd fails to start in this sandbox
+(`ERR_RUNTIME_FAILURE`, "internal error"). The safety property is proven at the
+unit level instead. Re-verify on a machine where `wrangler pages dev .pages`
+starts.
+
+State: typecheck clean, lint 0 errors (14 pre-existing warnings), **391 passed /
+15 skipped**, `next build` and OpenNext build green.
 

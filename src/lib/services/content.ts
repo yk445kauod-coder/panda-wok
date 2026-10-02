@@ -1,6 +1,8 @@
 import "server-only";
 
 import { createPublicSupabase } from "@/lib/supabase/server";
+import { cachedPublic } from "@/lib/cache/public-cache";
+import { CACHE_TAGS, PUBLIC_DATA_REVALIDATE } from "@/lib/cache/tags";
 import type { Database } from "@/lib/types/database";
 
 export type PageContentRow = Database["public"]["Tables"]["page_content"]["Row"];
@@ -31,7 +33,7 @@ export type PageSection = {
  * to an empty list rather than throwing: copy is an enhancement, and losing it
  * must degrade a page to its built-in text, never blank it with a 500.
  */
-export async function getPageContent(
+async function getPageContentRaw(
   pageKey: string,
   locale: Locale,
 ): Promise<PageSection[]> {
@@ -66,8 +68,14 @@ export async function getPageContent(
     }));
 }
 
+export const getPageContent = cachedPublic(
+  getPageContentRaw,
+  ["public-page-content"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.content] },
+);
+
 /** Published FAQs for the locale, falling back to English when untranslated. */
-export async function getFaqs(locale: Locale): Promise<FaqRow[]> {
+async function getFaqsRaw(locale: Locale): Promise<FaqRow[]> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("faqs")
@@ -86,8 +94,13 @@ export async function getFaqs(locale: Locale): Promise<FaqRow[]> {
   return [...seen.values()];
 }
 
+export const getFaqs = cachedPublic(getFaqsRaw, ["public-faqs"], {
+  revalidate: PUBLIC_DATA_REVALIDATE,
+  tags: [CACHE_TAGS.content],
+});
+
 /** Active delivery zones, ordered for display. */
-export async function getDeliveryZones(): Promise<DeliveryZoneRow[]> {
+async function getDeliveryZonesRaw(): Promise<DeliveryZoneRow[]> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
     .from("delivery_zones")
@@ -98,6 +111,12 @@ export async function getDeliveryZones(): Promise<DeliveryZoneRow[]> {
   if (error) return [];
   return data ?? [];
 }
+
+export const getDeliveryZones = cachedPublic(
+  getDeliveryZonesRaw,
+  ["public-delivery-zones"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.content] },
+);
 
 /**
  * Announcements for the reader's locale, honouring the schedule window.
@@ -110,7 +129,7 @@ export async function getDeliveryZones(): Promise<DeliveryZoneRow[]> {
  * locale, so the English row only appears when no localised one covers that
  * slot.
  */
-export async function getAnnouncements(locale: Locale): Promise<AnnouncementRow[]> {
+async function getAnnouncementsRaw(locale: Locale): Promise<AnnouncementRow[]> {
   const supabase = createPublicSupabase();
   const nowIso = new Date().toISOString();
   const { data, error } = await supabase
@@ -134,8 +153,18 @@ export async function getAnnouncements(locale: Locale): Promise<AnnouncementRow[
   return [...chosen.values()].sort((a, b) => a.sort_order - b.sort_order);
 }
 
+// The schedule window is evaluated when the entry is computed, so a
+// start/end boundary takes effect within the revalidate window rather than to
+// the second. That is the same latency the edge cache already gives these
+// notices, and it is the right trade for a marketing banner.
+export const getAnnouncements = cachedPublic(
+  getAnnouncementsRaw,
+  ["public-announcements"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.content] },
+);
+
 /** Per-page SEO override, when staff have entered one. */
-export async function getPageSeo(
+async function getPageSeoRaw(
   pageKey: string,
   locale: Locale,
 ): Promise<PageSeoRow | null> {
@@ -152,3 +181,9 @@ export async function getPageSeo(
   if (error) return null;
   return data;
 }
+
+export const getPageSeo = cachedPublic(
+  getPageSeoRaw,
+  ["public-page-seo"],
+  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.content] },
+);

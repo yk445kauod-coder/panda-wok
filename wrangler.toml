@@ -13,3 +13,19 @@ name = "panda-wok"
 pages_build_output_dir = ".pages"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+# Optional cross-isolate data cache (same two namespaces as wrangler.jsonc).
+# Unbound, the public readers simply recompute; bind them to reuse one Supabase
+# read across requests:
+#
+#   npx wrangler kv namespace create NEXT_INC_CACHE_KV
+#   npx wrangler kv namespace create NEXT_TAG_CACHE_KV
+#
+# [[kv_namespaces]]
+# binding = "NEXT_INC_CACHE_KV"
+# id = "<id>"
+#
+# [[kv_namespaces]]
+# binding = "NEXT_TAG_CACHE_KV"
+# id = "<id>"
+
