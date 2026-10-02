@@ -187,6 +187,16 @@ type ParsedOk = {
   text: string;
   promptTokens: number | null;
   completionTokens: number | null;
+  /**
+   * Wire-level diagnostics for an empty completion. A reasoning model
+   * (e.g. OpenRouter's `nvidia/nemotron-...:free`) can spend the whole token
+   * budget on hidden reasoning and return `content: null` with
+   * `finish_reason: "length"`. Without these two fields that failure is
+   * indistinguishable from a genuine provider outage, and the chain silently
+   * falls through every reasoning model.
+   */
+  finishReason?: string | null;
+  reasoningTokens?: number | null;
 };
 
 type WireSpec = {
@@ -305,16 +315,46 @@ export function toGeminiTools(tools: { name: string; description: string; parame
   ];
 }
 
+/**
+ * The message for a provider that answered 200 but with no text. The common
+ * cause here is a reasoning model burning the whole `max_tokens` budget on
+ * hidden reasoning (`finish_reason: "length"`, `reasoning_tokens` ≈ the
+ * budget), which returns `content: null` — a *retryable* condition, not an
+ * outage. Naming it in the error is what makes that visible in `ai_requests`
+ * instead of looking like every provider is down.
+ */
+export function emptyCompletionMessage(name: string, parsed: ParsedOk): string {
+  const truncated =
+    parsed.finishReason === "length" ||
+    (parsed.reasoningTokens != null &&
+      parsed.completionTokens != null &&
+      parsed.reasoningTokens >= parsed.completionTokens);
+  const detail = truncated
+    ? ` (the model spent its token budget on reasoning: finish_reason=length, reasoning_tokens=${parsed.reasoningTokens ?? "?"})`
+    : "";
+  return `Provider ${name} returned an empty completion${detail}`;
+}
+
 function parseOpenAiLike(text: string): ParsedOk {
   const payload = JSON.parse(text) as {
-    choices?: { message?: { content?: string } }[];
-    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    choices?: {
+      message?: { content?: string };
+      finish_reason?: string;
+    }[];
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      completion_tokens_details?: { reasoning_tokens?: number };
+    };
   };
-  const content = payload.choices?.[0]?.message?.content?.trim() ?? "";
+  const choice = payload.choices?.[0];
+  const content = choice?.message?.content?.trim() ?? "";
   return {
     text: content,
     promptTokens: payload.usage?.prompt_tokens ?? null,
     completionTokens: payload.usage?.completion_tokens ?? null,
+    finishReason: choice?.finish_reason ?? null,
+    reasoningTokens: payload.usage?.completion_tokens_details?.reasoning_tokens ?? null,
   };
 }
 
@@ -415,7 +455,7 @@ export class RemoteProvider implements AiProvider {
     const parsed = await postJson(spec, this.cfg.timeoutMs ?? 25_000);
     const estimatedCost = estimateCostUsd(this.model, parsed.promptTokens, parsed.completionTokens);
 
-    if (!parsed.text) throw new Error(`Provider ${this.name} returned an empty completion`);
+    if (!parsed.text) throw new Error(emptyCompletionMessage(this.name, parsed));
 
     return {
       text: parsed.text,

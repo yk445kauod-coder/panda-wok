@@ -28,20 +28,16 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
 
-  // Optional cross-isolate data cache. The public data layer wraps its reads in
+  // Cross-isolate data cache. The public data layer wraps its reads in
   // `cachedPublic` (Next's `unstable_cache`), which is a no-op without these
-  // namespaces — the site renders uncached but correctly. Bind them to reuse one
-  // Supabase read across requests instead of one per visitor:
-  //
-  //   npx wrangler kv namespace create NEXT_INC_CACHE_KV
-  //   npx wrangler kv namespace create NEXT_TAG_CACHE_KV
-  //
-  // then add the returned ids here (and to the Pages project's KV bindings):
-  //
-  //   "kv_namespaces": [
-  //     { "binding": "NEXT_INC_CACHE_KV", "id": "<id>" },
-  //     { "binding": "NEXT_TAG_CACHE_KV", "id": "<id>" }
-  //   ]
+  // namespaces — the site renders uncached but correctly. Bound, one Supabase
+  // read is reused across requests instead of one per visitor. Both degrade
+  // safely if the binding ever disappears (the incremental cache is wrapped in
+  // `src/lib/cache/incremental-cache.ts`; the tag cache guards internally).
+  "kv_namespaces": [
+    { "binding": "NEXT_INC_CACHE_KV", "id": "9275068b465c4518b64ad36e24b876b5" },
+    { "binding": "NEXT_TAG_CACHE_KV", "id": "41e3b5120d8d48c08c04cedca8082e33" }
+  ]
 }

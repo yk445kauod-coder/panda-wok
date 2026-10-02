@@ -3044,3 +3044,74 @@ starts.
 State: typecheck clean, lint 0 errors (14 pre-existing warnings), **391 passed /
 15 skipped**, `next build` and OpenNext build green.
 
+
+## KV cache is live, and the hard task produces the deck (2026-10-02)
+
+### Cross-isolate cache: namespaces created, bound, verified in production
+The two KV namespaces are now **created and bound**, so the public-data cache is
+no longer a no-op:
+
+- `NEXT_INC_CACHE_KV` = `9275068b465c4518b64ad36e24b876b5`
+- `NEXT_TAG_CACHE_KV` = `41e3b5120d8d48c08c04cedca8082e33`
+
+Bound in `wrangler.jsonc` (Worker), `wrangler.toml` (Pages bundler) and the
+Pages project's KV bindings (production + preview, env vars preserved).
+`pages:deploy` ran green and production `https://panda-wok.pages.dev` is serving
+the new bundle.
+
+**Verified live, not assumed:** after the deploy + `pages:warm`, the
+`incremental-cache/*` keys in `NEXT_INC_CACHE_KV` went **13 -> 42** as real
+renders wrote through, and `/menu` answers `x-edge-cache: HIT` with
+`s-maxage=600, stale-while-revalidate=86400`. The KV namespace is genuinely read
+and written in production, which is the only proof that matters — the unit tests
+pin the *fallback*, not the live path.
+
+**Build note:** `.env.local` pins `NEXT_PUBLIC_SITE_URL=http://localhost:3000`,
+and `NEXT_PUBLIC_*` are inlined at build time. The deploy exported
+`NEXT_PUBLIC_SITE_URL=https://panda-wok.pages.dev` for the build so `localhost`
+did not leak into canonical/OG/sitemap metadata (the `localhost` strings that
+remain in the bundle are Zod *defaults*, not the inlined value).
+
+### AI provider keys live in Vault, and OpenRouter's free model is a reasoning trap
+The three owner keys are stored via `set_ai_secret` (Vault), which is what the
+live `ai_providers.secret_ref` rows resolve — no redeploy needed, because
+`resolveSecretValueWithEnv` reads Vault first. Verified with a direct provider
+call (all three 200) and with `AI_LIVE=1 tests/ai-live.test.ts` (chain
+`openrouter-free -> workers-ai -> pollinations -> gemini-free`, real answer).
+
+**`nvidia/nemotron-3-super-120b-a12b:free` is a reasoning model.** With a small
+`max_tokens` it can spend the *entire* budget on hidden reasoning and return
+`content: null` with `finish_reason: "length"` — HTTP 200, no error, and the
+chain silently falls through. This is the real cause of the live
+`crm_insights` failures (`error: "Provider openrouter-free returned an empty
+completion"`). `parseOpenAiLike` now captures `finish_reason` and
+`reasoning_tokens`, and `emptyCompletionMessage()` names reasoning-budget
+exhaustion explicitly so `ai_requests.error` is self-explaining instead of
+looking like an outage. It is intermittent (a realistic 900-token call
+succeeded), so the fix is diagnosis, not a hard-coded knob.
+
+### The hard task ("تقارير مفصلة و عرض تقديمي") now produces the deck
+The agentic loop runs the exact Arabic request live. The **first** run made four
+documents — `sales_dashboard`, `crm_summary`, `inventory_report`, `users_report`
+— and **no deck**, because the model spent the 4-document cap on kinds it chose
+itself. The prompt now says an explicitly-named kind is required and to spend the
+budget on the owner's named kinds first (عرض تقديمي = slide_deck). Re-run: the
+deck is produced. `tests/agent-live.test.ts` now asserts the step's `kind` set
+**contains `slide_deck`**, so this regression cannot come back silently — the old
+assertion only checked "a document was made", which the buggy run satisfied.
+
+The deck itself is real: 7 Arabic slides (overview, revenue by day, order
+status, top dishes, category mix, recommendations), 3 inline SVG charts, 0
+`<script>`, 0 external URLs, ~8.4 KB. All verification artifacts were deleted
+afterwards; `agent_artifacts` has 0 leftovers from this session.
+
+**Memory is two-tier and live-verified** (`MEMORY_LIVE=1
+tests/agent-memory-live.test.ts`, 8/8): embed via Workers AI bge-m3 → recall by
+*meaning* (not substring) → identical fact is a no-op → a `customer`-scope row
+is invisible to an `owner` query → skill retrieval bounded to ≤6 chunks. The
+agent's `recall_memory` / `remember_memory` are real registry tools in the loop,
+and `captureTurnMemory` auto-files a fact from the operator's own words.
+
+State: typecheck clean, lint 0 errors (17 pre-existing `no-img-element`
+warnings), **394 passed / 15 skipped**, `next build` + OpenNext build green.
+

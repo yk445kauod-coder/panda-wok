@@ -115,6 +115,11 @@ DOCUMENTS — when the request is for an artifact, not a chat answer:
 - Pick the kind that fits: sales_dashboard for statistics/charts, slide_deck for
   a presentation, strategy_brief for a plan, inventory_report for a stock count,
   crm_summary / users_report for those, and the smaller sheets for their topic.
+- When the request *names* several things — "تقارير و عرض تقديمي", "reports and a
+  deck" — every named kind is required, not optional. Produce each one. At most
+  \`create_document\` runs 4 times per turn, so if you name more, spend the budget
+  on the kinds the owner asked for by name (عرض تقديمي = slide_deck) before any
+  you chose yourself.
 - After it is saved, reply in one or two lines naming the document and that it is
   in Admin → AI ops → Deliverables. The document holds the detail; the chat does
   not need to repeat it.

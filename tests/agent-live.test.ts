@@ -78,6 +78,13 @@ describe.skipIf(!enabled || !hasSupabase)("agent tool calling (live)", () => {
     );
     expect(created.length).toBeGreaterThan(0);
 
+    // The request named a presentation explicitly ("عرض تقديمي"). A turn that
+    // spends its 4-document budget on self-chosen reports and never makes the
+    // deck is the failure this assertion exists to catch — the owner asked for
+    // the deck by name, so it is required, not optional.
+    const kinds = created.map((s) => (s.arguments as { kind?: string }).kind);
+    expect(kinds).toContain("slide_deck");
+
     // A document claimed in the answer must be one the turn actually made.
     if (result.answer.includes("Deliverables")) {
       expect(created.length).toBeGreaterThan(0);
