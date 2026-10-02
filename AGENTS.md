@@ -451,7 +451,9 @@ still runs the old bundle; nothing in this session is deployed yet. Manual deplo
 ### Social URLs (live)
 - TikTok `https://www.tiktok.com/@panda.wok21122`
 - Instagram `https://www.instagram.com/panda.wok21122`
-- Facebook `https://www.facebook.com/share/1bvsj3obpl/`
+- Facebook `https://www.facebook.com/share/1JrgXPtHet/` (updated 2026-10-02 by
+  migration `20261001130000_facebook_link_update.sql`; the previous
+  `share/1bvsj3obpl/` is obsolete)
 These flow into JSON-LD `sameAs` automatically via `restaurantSchema`/`localBusinessSchema`.
 
 ## Pages production branch ┼ī─å├Č must deploy with the right `--branch` (2026-09-24)
