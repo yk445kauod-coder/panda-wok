@@ -715,6 +715,10 @@ export async function generateInsights(params: {
     estimatedCost: run.estimatedCost,
     status: run.error ? "error" : run.status,
     error: run.error,
+    // Only the deterministic floor sets this on success, and it is a genuine
+    // chain-wide failure ("insight generation failed"). A remote fallback that
+    // answered is `error: null` with the tripped providers in `providerErrors`.
+    providerErrors: run.providerErrors,
   });
 
   return {

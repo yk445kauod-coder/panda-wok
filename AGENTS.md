@@ -3137,3 +3137,43 @@ a *new* session, not only while the thread is open. It is:
   promoted digest is recallable by meaning from a fresh query, re-promoting
   the same thread leaves exactly one row, and cleanup removes it.
 
+
+## crm_insights "errors" were a logging bug, and it is fixed (2026-10-02)
+
+The AI-usage screen showed `crm_insights` rows like
+`status=error / provider=workers-ai / error="Provider openrouter-free returned
+an empty completion"`. That was **not** a failure of the answer — it was a bug in
+how the chain reported itself:
+
+**Root cause.** `runCompletion` set `error` to *every earlier provider's failure*
+even when a later provider answered. With OpenRouter's reasoning model
+intermittently burning its whole `max_tokens` on hidden reasoning
+(`content: null`, `finish_reason: "length"`), the chain fell through to
+workers-ai, answered fine, and still logged `error` — branding a *good* answer as
+a crash.
+
+**Fix (two layers).**
+1. `runCompletion` now returns `error: null` whenever *any* provider answered.
+   The deterministic floor answering still reports an error (a real chain-wide
+   failure). The tripped providers travel in a new `providerErrors: string[]`
+   field — still observable, never error-branded.
+2. Ledger + admin screen carry that separation: `ai_requests.provider_errors`
+   (text, JSON string; migration `20261002140000_ai_requests_provider_errors.sql`,
+   added live) records the skipped providers, and the AI-usage log shows them as
+   a light amber "fallback" hint with a detail tooltip instead of a red
+   "failed". `recordAiRequest` accepts `providerErrors?`.
+
+**Verified live:** drove the real `generateInsights` (30-day window) against the
+live DB with the fix. The chain this time tripped on a rate limit and a first
+provider aborting, then pollinations answered: the recorded row is
+`provider=pollinations, status=ok, error=""`, with the two tripped providers
+captured in `provider_errors` (`"...aborted"`, `"...429 free-models-per-day"`).
+Before the fix that exact row would have been branded `status=error` with the
+primary's "empty completion" message. The old 10:44 `status=error` row is the
+pre-fix behaviour; new runs record clean outcomes.
+
+Added `tests/ai-run-completion.test.ts` (pins the three outcome semantics without
+a network) and the live `tests/crm-insights-outcome.test.ts` probe (skipped
+unless `AI_LIVE=1`). Both green; suite **397 passed / 16 skipped**, typecheck
+clean, lint 0 errors.
+

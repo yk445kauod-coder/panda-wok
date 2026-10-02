@@ -1067,14 +1067,28 @@ export class QuotaEnforcedProvider implements AiProvider {
 export type AiRunResult = CompletionResult & {
   latencyMs: number;
   error: string | null;
+  /**
+   * The per-provider failures tripped on the way to an answer, newest first.
+   * Kept because they are observability gold — a reasoning model that burned
+   * its budget at the primary is exactly what the operator needs to see — while
+   * the status/error of a *successful* fallback stays clean. `[]` when the
+   * first try answered or the chain answered on its own.
+   */
+  providerErrors: string[];
 };
 
 /**
  * Runs the chain and reports the outcome. Every provider is tried in order —
  * primary, then each fallback, then the deterministic floor — so one provider
  * being down, rate-limited or over quota never surfaces to the customer as an
- * error. Failures are collected into the returned `error` for the usage ledger
- * but never thrown.
+ * error.
+ *
+ * The chain's *outcome* is `ok` when any provider answered, `fallback` when only
+ * the deterministic floor did. A fallback that answers after a primary failure
+ * is the designed behaviour, not an error: `error` is non-null only when the
+ * whole chain failed. Per-provider failures still travel in `providerErrors` for
+ * the ledger and the admin screen — a reasoning model that burned its budget at
+ * the primary is exactly what the operator needs to see.
  */
 export async function runCompletion(
   chain: ProviderChain,
@@ -1093,8 +1107,8 @@ export async function runCompletion(
       return {
         ...result,
         latencyMs: Date.now() - started,
-        // Keep a trace of what went wrong earlier, without failing the answer.
-        error: failures.length > 0 ? failures.join(" | ") : null,
+        error: null,
+        providerErrors: [...failures].reverse(),
       };
     } catch (error) {
       failures.push(error instanceof Error ? error.message : "provider failed");
@@ -1102,12 +1116,13 @@ export async function runCompletion(
   }
 
   // Nothing remote answered — answer deterministically, which is always correct
-  // and grounded, and report why in `error`.
+  // and grounded.
   const result = await chain.fallback.complete(request);
   return {
     ...result,
     latencyMs: Date.now() - started,
     error: failures.length > 0 ? failures.join(" | ") : null,
+    providerErrors: [...failures].reverse(),
   };
 }
 

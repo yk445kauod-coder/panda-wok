@@ -19,6 +19,11 @@ export async function recordAiRequest(params: {
   estimatedCost: number | null;
   status: "ok" | "fallback" | "error" | "rate_limited";
   error: string | null;
+  /**
+   * The failures other providers tripped while this call found an answer. Single
+   * JSON string, so the ledger can carry the detail without a schema change.
+   */
+  providerErrors?: string[];
 }): Promise<void> {
   const admin = tryCreateAdminSupabase();
   if (!admin) return;
@@ -36,6 +41,10 @@ export async function recordAiRequest(params: {
       estimated_cost: params.estimatedCost,
       status: params.status,
       error: params.error ? params.error.slice(0, 500) : null,
+      provider_errors:
+        params.providerErrors && params.providerErrors.length > 0
+          ? JSON.stringify(params.providerErrors.slice(-5)).slice(0, 1500)
+          : null,
     });
 
     const day = new Date().toISOString().slice(0, 10);

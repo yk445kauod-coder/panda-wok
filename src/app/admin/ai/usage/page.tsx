@@ -8,6 +8,17 @@ import { cn, formatDateTime, formatNumber, humanise } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
+/** Parses the `provider_errors` JSON column for the tooltip, tolerant of bad data. */
+function tryParseProviderErrors(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [raw];
+  }
+}
+
 /**
  * AI usage and logs. Every number comes from ai_requests / ai_usage_daily —
  * nothing is estimated beyond the provider-reported token counts.
@@ -165,6 +176,17 @@ export default async function AdminAiUsagePage({
                       {row.error ? (
                         <span className="ml-2 text-xs text-chili-600" title={row.error}>
                           failed
+                        </span>
+                      ) : null}
+                      {row.provider_errors ? (
+                        <span
+                          className="ml-2 inline-flex items-center gap-1 text-xs text-amber-700"
+                          title={`Earlier providers in the chain were skipped:\n${tryParseProviderErrors(row.provider_errors).join("\n")}`}
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3 w-3 fill-current">
+                            <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM7.2 4.5h1.6v4.8H7.2V4.5Zm.8 7.8a.9.9 0 1 1 0-1.8.9.9 0 0 1 0 1.8Z" />
+                          </svg>
+                          fallback
                         </span>
                       ) : null}
                     </td>

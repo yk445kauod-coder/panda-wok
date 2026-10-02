@@ -579,6 +579,7 @@ export type Database = {
           prompt_key: string | null
           prompt_tokens: number | null
           provider: string | null
+          provider_errors: string | null
           status: string
           surface: string
           user_id: string | null
@@ -594,6 +595,7 @@ export type Database = {
           prompt_key?: string | null
           prompt_tokens?: number | null
           provider?: string | null
+          provider_errors?: string | null
           status?: string
           surface?: string
           user_id?: string | null
@@ -609,6 +611,7 @@ export type Database = {
           prompt_key?: string | null
           prompt_tokens?: number | null
           provider?: string | null
+          provider_errors?: string | null
           status?: string
           surface?: string
           user_id?: string | null
