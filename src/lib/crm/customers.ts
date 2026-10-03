@@ -384,6 +384,43 @@ export type CustomerTag = {
 
 export type CustomerTagLink = CustomerTag & { assigned_at: string };
 
+export type CustomerAddress = {
+  id: string;
+  label: string;
+  contact_name: string | null;
+  contact_phone: string | null;
+  address_line: string;
+  building: string | null;
+  floor: string | null;
+  apartment: string | null;
+  landmark: string | null;
+  area: string | null;
+  city: string | null;
+  notes: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  is_default: boolean;
+  created_at: string;
+};
+
+/**
+ * Every saved delivery address for one customer, default first. Support reads
+ * this to confirm where an order was going without opening each order.
+ */
+export async function listCustomerAddresses(customerId: string): Promise<CustomerAddress[]> {
+  const admin = await createAdminSupabase();
+  const { data, error } = await admin
+    .from("addresses")
+    .select(
+      "id, label, contact_name, contact_phone, address_line, building, floor, apartment, landmark, area, city, notes, latitude, longitude, is_default, created_at",
+    )
+    .eq("user_id", customerId)
+    .order("is_default", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as CustomerAddress[];
+}
+
 /** The owner's tag vocabulary, stable order so the picker does not jump. */
 export async function listCustomerTags(): Promise<CustomerTag[]> {
   const admin = await createAdminSupabase();

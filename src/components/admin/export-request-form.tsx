@@ -22,7 +22,7 @@ export type DatasetOption = {
 export function ExportRequestForm({ datasets }: { datasets: DatasetOption[] }) {
   const t = useT();
   const [dataset, setDataset] = useState(datasets[0]?.key ?? "orders");
-  const [format, setFormat] = useState<"csv" | "json">("csv");
+  const [format, setFormat] = useState<"xlsx" | "csv" | "txt" | "json">("xlsx");
 
   const selected = datasets.find((option) => option.key === dataset);
 
@@ -61,7 +61,7 @@ export function ExportRequestForm({ datasets }: { datasets: DatasetOption[] }) {
           </legend>
           <input type="hidden" name="format" value={format} />
           <div className="mt-1.5 flex gap-2">
-            {(["csv", "json"] as const).map((option) => (
+            {(["xlsx", "csv", "txt", "json"] as const).map((option) => (
               <button
                 key={option}
                 type="button"
@@ -77,6 +77,9 @@ export function ExportRequestForm({ datasets }: { datasets: DatasetOption[] }) {
               </button>
             ))}
           </div>
+          <p className="mt-1 text-xs text-ink-700/65">
+            {t("admin.pages.exports.form.formatHint")}
+          </p>
         </fieldset>
       </div>
 

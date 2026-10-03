@@ -2,9 +2,9 @@
 
 # This is NOT the Next.js you know
 
-This version has breaking changes вҖ” APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
-This block is written and re-added by `next dev` вҖ” verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
 
@@ -3177,3 +3177,128 @@ a network) and the live `tests/crm-insights-outcome.test.ts` probe (skipped
 unless `AI_LIVE=1`). Both green; suite **397 passed / 16 skipped**, typecheck
 clean, lint 0 errors.
 
+
+## Order alert: loud, repeating, console-wide, stops on action (2026-10-03)
+
+The kitchen asked for the new-order alert to be **loud**, to **keep going until
+somebody takes an action on the order**, and to be **much louder** than the old
+one-off "ting". Delivered as a console-wide watcher, not just a KDS feature.
+
+### What changed
+- `src/lib/sound/ting.ts` gained a second mode. `playTing()` (the polite single
+  chime) is unchanged and still used by the confirm dialog. New:
+  `startOrderAlarm()` / `stopOrderAlarm()` / `isOrderAlarmRunning()` /
+  `unlockAudio()`. The alarm is a **square-wave two-tone siren** (988 Hz then
+  1319 Hz, gain 0.5) that repeats every 1.2 s, scheduled ~3 bursts ahead so the
+  loop never gaps. Much louder and brighter than the old triangle `ting`
+  (gain 0.16/0.13), which is the "higher/louder" part.
+- `setSoundEnabled(false)` now also calls `stopOrderAlarm()`, so muting the
+  console silences a running alarm instead of leaving it ringing.
+- `unlockAudio()` must be called from a real gesture (autoplay policy) - the
+  watcher does it once on the first pointer/key event, otherwise an alarm
+  triggered by a background poll would be silently dropped.
+- `src/lib/sound/alert-state.ts` - pure, tested rules: `shouldRing(count,
+  muted)`, `unacknowledgedOrders`, `arrivedIds`, `pendingSignature`.
+- `src/lib/sound/alert-ack.ts` - per-browser acknowledgement in localStorage
+  (`panda-wok.admin.ack-orders`), read through `useSyncExternalStore`. This is
+  the "I've seen it but can't action it" escape hatch; bounded to 200 ids.
+- `getPendingNewOrders()` in `src/lib/services/admin-orders.ts` returns orders
+  still in `new` only. `listPendingOrderAlertsAction` (gated on `orders.view`)
+  is the poll source.
+- `src/components/admin/order-alert-watcher.tsx` - mounted **once in
+  `AdminShell`**, so it rings on every console page. Realtime on `orders` plus
+  an 8 s poll, visibility-change refresh, toast + (opt-in) desktop notification
+  on arrival, flashing document title, and an in-flow alert bar with the order
+  numbers, an unmute button and **Acknowledge**.
+- The kitchen board no longer plays its own chime or toast (the shell owns
+  them); it keeps only the header flash.
+
+### The stop rule ("until somebody takes an action")
+An order is pending while its status is `new`. It stops ringing when the status
+moves to anything else (`accepted`, `rejected`, `canceled`, ...) - the server
+list simply no longer contains it - or when the operator presses Acknowledge.
+
+### Verified
+- `tests/order-alert.test.ts` (7) pins the state machine, including the exact
+  "stop when the status changes from new" case; `tests/order-alert-watcher.test.tsx`
+  (3) renders the bar with `role="alert"`, the order number, the order link and
+  Acknowledge, and renders nothing with no pending orders.
+- Live end-to-end against the dev server with a forged owner gate cookie
+  (`createHmac("sha256","Panda2026:panda-wok-gate").update("open:admin")`):
+  inserted a temporary `new` order -> `/admin` rendered the alert bar with the
+  order number and `role="alert"`; flipped it to `accepted` -> the bar
+  disappeared; deleted the temp order (0 leftovers).
+- `tsc` clean, lint 0 errors (19 pre-existing warnings), `next build` green,
+  **407 passed / 18 skipped**.
+
+### Notes
+- Gating: the layout only fetches pending orders when the role holds
+  `orders.view`; the watcher's poll action asserts the same, so marketing (no
+  orders) never rings.
+- Still admin-only and silent by design on the customer site - no audio is
+  imported under `(site)`.
+- Requires no DB change and no new env var.
+
+
+## Louder order alarm, and local-first exports/backups (2026-10-03)
+
+### The order alarm is now much louder (owner request)
+The kitchen asked for the new-order alert to be *loud* and to keep ringing until
+somebody acts. It already rang until an action; this session made it far louder
+and more urgent, all in `src/lib/sound/ting.ts`:
+
+- **A master bus with a safety-net limiter.** Every tone now routes through one
+  `GainNode -> DynamicsCompressor` (`getMaster()`). The limiter only bites at the
+  very peaks (`threshold -1`, `ratio 20`) so the siren stays as loud as the
+  browser allows without clipping into a crackle; the quiet confirmation `ting`
+  is far below the threshold and passes through untouched.
+- **The siren is a full-gain square wave plus an octave partial.** `sirenStrike`
+  pushes gain to 0.9 and adds a second square oscillator at `freq * 2` (gain
+  `0.45`) for brightness/edge - that octave is what makes it read as an alarm
+  rather than a musical note.
+- **Faster repeat:** `ALARM_PERIOD_MS` 1200 -> 700, `ALARM_BURSTS_PER_TICK` 3 ->
+  4, so it is a rapid "wee-woo wee-woo" that cannot be mistaken for background.
+- Still **admin-only**. The customer site stays silent by design - no audio is
+  imported under `(site)`. The watcher, ack store and `shouldRing` rules are
+  unchanged (`tests/order-alert*.test.*` still pass).
+
+### Exports and backups are local-first now, and readable
+The owner asked to keep the work on our own infrastructure rather than
+round-tripping files through Supabase Storage, and to produce genuinely readable
+output. Both export and backup now:
+
+- **Store their bytes in the database**, not object storage. Migration
+  `20261003000300_local_first_exports_backups.sql` (applied live as
+  `local_first_exports_backups`) adds `exports.content` + `content_encoding`,
+  and `backup_records.format` + `content` + `content_encoding`, and adds `xlsx`
+  / `txt` to the `export_format` enum. `content_encoding` is `utf8` for text and
+  `base64` for the binary workbook.
+- **Stream back via an admin route**, not a signed URL:
+  `src/app/admin/exports/[id]/download/route.ts` and
+  `.../backups/[id]/download/route.ts`, both authorised through the ops gate
+  (`exports.manage` / `backups.view`). `src/lib/files/download.ts` decodes the
+  row and sets the right MIME + filename. Rows written before this change still
+  carry a `storage_path`, so the pages fall back to a signed URL for those.
+- **Produce XLSX and TXT, not just CSV/JSON.** `src/lib/export/render.ts` gives
+  each dataset human column labels and types (money columns become real numbers
+  with Excel's `#,##0.00` format, so they sum), and `src/lib/backup/render.ts`
+  renders a workbook with one sheet per table or a readable summary. The
+  restore-faithful JSON bundle is unchanged and remains the backup default.
+- **`listExports`/`listBackups` exclude `content`** (they select the columns
+  explicitly) so the list page never pulls every file body into memory;
+  `content_encoding` is the lightweight "is this local?" indicator.
+- XLSX is written by the existing `src/lib/agent/xlsx.ts` `buildWorkbook`, so
+  there is one OOXML writer, not two.
+
+Verified live (temporary rows, deleted after - 0 leftovers): an `orders` XLSX
+export and a `menu` TXT export build and store locally; a `menu` backup renders
+both formats; the download route returns 200 with the correct MIME and filename,
+403 without the gate cookie, and 404 for an unknown id. `tests/export-render.test.ts`
+(4) pins the workbook ZIP magic, the aligned TXT report and the per-table backup
+sheets; `tests/export-backup-live.test.ts` is the opt-in (`EXPORT_LIVE=1`) live
+probe. `tsc` clean, lint 0 errors, `next build` green, **411 passed / 18 skipped**.
+
+**Note:** the same session also completed the earlier in-flight work - the admin
+hard-delete customer action + control, per-customer targeted offers (form, list,
+CRM panel, own-read RLS migration), and surfacing the applied offer name/discount
+on both order-detail pages. All typecheck and build clean.

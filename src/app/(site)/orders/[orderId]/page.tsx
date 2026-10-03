@@ -200,7 +200,12 @@ export default async function OrderTrackingPage({
           </div>
           {Number(order.discount_total) > 0 ? (
             <div className="flex justify-between text-jade-600">
-              <dt>{t("orders.discount")}</dt>
+              <dt>
+                {t("orders.discount")}
+                {order.offer_name ? (
+                  <span className="ms-1 text-xs text-ink-700/60">{order.offer_name}</span>
+                ) : null}
+              </dt>
               <dd className="tabular-nums">
                 −{formatPrice(order.discount_total, undefined, locale)}
               </dd>

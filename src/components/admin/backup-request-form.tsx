@@ -16,6 +16,7 @@ type KindKey = (typeof KINDS)[number];
 export function BackupRequestForm({ kinds = KINDS }: { kinds?: readonly KindKey[] }) {
   const t = useT();
   const [kind, setKind] = useState<string>(kinds[0] ?? "database");
+  const [format, setFormat] = useState<"json" | "xlsx" | "txt">("json");
 
   return (
     <AdminForm
@@ -44,6 +45,33 @@ export function BackupRequestForm({ kinds = KINDS }: { kinds?: readonly KindKey[
           {t(`admin.pages.backups.kindHint.${kind}`)}
         </p>
       </div>
+
+      <fieldset>
+        <legend className="text-sm font-medium text-ink-900">
+          {t("admin.pages.backups.form.format")}
+        </legend>
+        <input type="hidden" name="format" value={format} />
+        <div className="mt-1.5 flex gap-2">
+          {(["json", "xlsx", "txt"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setFormat(option)}
+              aria-pressed={format === option}
+              className={
+                format === option
+                  ? "h-11 flex-1 rounded-xl border border-vermilion-600 bg-vermilion-600/8 text-sm font-medium text-ink-900"
+                  : "h-11 flex-1 rounded-xl border border-ink-900/12 bg-rice-50 text-sm text-ink-800 hover:bg-rice-100"
+              }
+            >
+              {option.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <p className="mt-1 text-xs text-ink-700/65">
+          {t("admin.pages.backups.form.formatHint")}
+        </p>
+      </fieldset>
 
       <Field
         name="label"

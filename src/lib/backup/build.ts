@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { buildBackupTxt, buildBackupXlsx } from "@/lib/backup/render";
 
 export type BackupKind =
   | "database"
@@ -8,6 +9,8 @@ export type BackupKind =
   | "menu"
   | "media_refs"
   | "snapshot";
+
+export type BackupFormat = "json" | "xlsx" | "txt";
 
 /**
  * Row caps per table. A backup that streams an unbounded `activity_logs` into
@@ -130,13 +133,26 @@ export type BackupBundle = {
 
 /**
  * Collects the tables for one backup kind and returns the bundle plus its
- * serialised size. Service role is used because the caller already passed the
+ * serialised body. Service role is used because the caller already passed the
  * `backups.create` capability check.
+ *
+ * `format` decides the artefact: `json` is the restore-faithful bundle (the
+ * default), `xlsx` is a workbook with one sheet per table, and `txt` is a
+ * readable summary with a preview of each table.
  */
 export async function buildBackup(params: {
   kind: BackupKind;
   label: string | null;
-}): Promise<{ bundle: BackupBundle; body: string; bytes: number; tables: number }> {
+  format?: BackupFormat;
+}): Promise<{
+  bundle: BackupBundle;
+  body: string;
+  bytes: number;
+  tables: number;
+  extension: string;
+  mime: string;
+  encoding: "utf8" | "base64";
+}> {
   const admin = createAdminSupabase();
   const names = KIND_TABLES[params.kind];
 
@@ -184,15 +200,55 @@ export async function buildBackup(params: {
     media_refs: mediaRefs,
   };
 
+  const format = params.format ?? "json";
+
+  if (format === "xlsx") {
+    const workbook = buildBackupXlsx({
+      tables,
+      kind: params.kind,
+      generatedAt: bundle.generated_at,
+    });
+    return {
+      bundle,
+      body: Buffer.from(workbook).toString("base64"),
+      bytes: workbook.byteLength,
+      tables: results.length,
+      extension: "xlsx",
+      mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      encoding: "base64",
+    };
+  }
+
+  if (format === "txt") {
+    const body = buildBackupTxt({
+      tables,
+      kind: params.kind,
+      label: params.label,
+      generatedAt: bundle.generated_at,
+    });
+    return {
+      bundle,
+      body,
+      bytes: Buffer.byteLength(body, "utf8"),
+      tables: results.length,
+      extension: "txt",
+      mime: "text/plain; charset=utf-8",
+      encoding: "utf8",
+    };
+  }
+
   const body = JSON.stringify(bundle, null, 2);
   return {
     bundle,
     body,
     bytes: Buffer.byteLength(body, "utf8"),
     tables: results.length,
+    extension: "json",
+    mime: "application/json",
+    encoding: "utf8",
   };
 }
 
-export function backupObjectPath(backupId: string) {
-  return `${backupId}.json`;
+export function backupObjectPath(backupId: string, extension = "json") {
+  return `${backupId}.${extension}`;
 }

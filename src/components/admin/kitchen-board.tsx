@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Bell, BellOff, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useToast } from "@/components/ui/toast";
 import { useT } from "@/components/i18n-provider";
 import {
   setSoundEnabled,
-  playTing,
   subscribeSound,
   soundServerSnapshot,
   isSoundEnabled,
@@ -21,10 +19,11 @@ import { cn } from "@/lib/utils/format";
  * board can animate.
  *
  * Ticket movement is announced rather than re-rendered blindly: when a poll or
- * a realtime event brings new state, the changed tickets are diffed, the board
- * cross-fades the affected columns, and a genuinely new ticket rings the
- * "ting ting" chime and raises a toast. The chime only fires for arrivals, so
- * moving a ticket along does not make the kitchen listen to noise all day.
+ * a realtime event brings new state, the changed tickets are diffed and the
+ * board cross-fades the affected columns. The loud, repeating order siren and
+ * its alert bar are owned by `OrderAlertWatcher` in the admin shell — that runs
+ * on every console page, not just here — so this board only pulses its header
+ * for local feedback and leaves the alerting to the shell.
  *
  * A KDS is an always-on screen, so this is the one admin surface that polls
  * aggressively when realtime is unavailable (12s rather than the 30s default).
@@ -40,7 +39,6 @@ export function KitchenLiveBoard({
   freshCount: number;
 }) {
   const router = useRouter();
-  const toast = useToast();
   const t = useT();
   const [live, setLive] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,7 +49,7 @@ export function KitchenLiveBoard({
   const sound = useSyncExternalStore(subscribeSound, isSoundEnabled, soundServerSnapshot);
 
   // Previous state is kept in a ref: comparing against it must not itself
-  // trigger a render, and the first mount must seed it without ringing.
+  // trigger a render, and the first mount must seed it without flashing.
   const seen = useRef<Set<string>>(new Set());
   const seeded = useRef(false);
   const lastSync = useRef(0);
@@ -64,7 +62,8 @@ export function KitchenLiveBoard({
   }, [router]);
 
   // Diff the current signature against what we have seen. A brand new order id
-  // is an arrival: ring, toast, and pulse the header.
+  // is an arrival: pulse the header. The siren, toast and alert bar are the
+  // shell watcher's job, so they are not duplicated here.
   useEffect(() => {
     const ids = signature ? signature.split(",").filter(Boolean) : [];
     const next = new Set(ids);
@@ -79,15 +78,9 @@ export function KitchenLiveBoard({
     seen.current = next;
     if (added.length === 0) return;
 
-    playTing();
     setFlash(true);
-    toast.success(
-      added.length === 1
-        ? t("kds.newTicket")
-        : t("kds.newTickets", { count: added.length }),
-    );
     window.setTimeout(() => setFlash(false), 900);
-  }, [signature, toast, t]);
+  }, [signature]);
 
   useEffect(() => {
     const supabase = createClient();

@@ -5,14 +5,16 @@ import { requireCapability } from "@/lib/auth/session";
 import {
   getCrmCustomer,
   listActivity,
+  listCustomerAddresses,
   listCustomerNotes,
   listCustomerTags,
   listCustomerTagsFor,
 } from "@/lib/crm/customers";
 import { getMyOrders } from "@/lib/services/orders";
-import { listFeedbackAdmin, listStaff } from "@/lib/services/admin-catalog";
+import { listFeedbackAdmin, listOffers, listStaff } from "@/lib/services/admin-catalog";
 import { Badge } from "@/components/ui/button";
-import { BlockUserControl, StaffRoleForm } from "@/components/admin/customer-controls";
+import { BlockUserControl, DeleteCustomerControl, StaffRoleForm } from "@/components/admin/customer-controls";
+import { CustomerOffersPanel } from "@/components/admin/customer-offers-panel";
 import { CustomerNotesPanel } from "@/components/admin/crm-notes";
 import { formatDate, formatDateTime, formatNumber, formatPrice } from "@/lib/utils/format";
 import { getAdminLocale, getT } from "@/lib/i18n/server";
@@ -41,17 +43,22 @@ export default async function CrmCustomerPage({
   // server action and RLS enforce the same line, this only hides the controls.
   const canEditCrm = ["owner", "admin", "manager", "support", "marketing"].includes(session.role);
 
-  const [orders, activity, feedback, staff, notes, tags, assignedTags] = await Promise.all([
-    getMyOrders(userId, 15).catch(() => []),
-    listActivity({ userId, limit: 40 }).catch(() => []),
-    listFeedbackAdmin({ limit: 100 })
-      .then((rows) => rows.filter((row) => row.user_id === userId))
-      .catch(() => []),
-    listStaff().catch(() => []),
-    listCustomerNotes(userId).catch(() => []),
-    listCustomerTags().catch(() => []),
-    listCustomerTagsFor(userId).catch(() => []),
-  ]);
+  const [orders, activity, feedback, staff, notes, tags, assignedTags, addresses, allOffers] =
+    await Promise.all([
+      getMyOrders(userId, 15).catch(() => []),
+      listActivity({ userId, limit: 40 }).catch(() => []),
+      listFeedbackAdmin({ limit: 100 })
+        .then((rows) => rows.filter((row) => row.user_id === userId))
+        .catch(() => []),
+      listStaff().catch(() => []),
+      listCustomerNotes(userId).catch(() => []),
+      listCustomerTags().catch(() => []),
+      listCustomerTagsFor(userId).catch(() => []),
+      listCustomerAddresses(userId).catch(() => []),
+      listOffers().catch(() => []),
+    ]);
+
+  const customerOffers = allOffers.filter((offer) => offer.customer_id === userId);
 
   const staffRow = staff.find((row) => row.user_id === userId) ?? null;
 
@@ -115,12 +122,19 @@ export default async function CrmCustomerPage({
           </div>
         </div>
 
-        <div className="w-full max-w-xs">
+        <div className="w-full max-w-xs space-y-2">
           <BlockUserControl
             userId={customer.user_id}
             isBlocked={customer.is_blocked}
             name={customer.full_name ?? t("admin.pages.customerProfile.unnamed")}
           />
+          {session.role === "owner" || session.role === "admin" ? (
+            <DeleteCustomerControl
+              userId={customer.user_id}
+              name={customer.full_name ?? t("admin.pages.customerProfile.unnamed")}
+              hasOrders={customer.order_count > 0}
+            />
+          ) : null}
         </div>
       </header>
 
@@ -175,6 +189,81 @@ export default async function CrmCustomerPage({
         assigned={assignedTags}
         canEdit={canEditCrm}
       />
+
+      <CustomerOffersPanel
+        customerId={customer.user_id}
+        customerName={customer.full_name ?? t("admin.pages.customerProfile.unnamed")}
+        offers={customerOffers}
+      />
+
+      <section
+        className="washi-panel p-4"
+        aria-label={t("admin.pages.customerProfile.addresses")}
+      >
+        <h2 className="font-display text-base font-semibold text-ink-900">
+          {t("admin.pages.customerProfile.addresses")}
+        </h2>
+        {addresses.length === 0 ? (
+          <p className="mt-2 text-sm text-ink-700/70">
+            {t("admin.pages.customerProfile.noAddresses")}
+          </p>
+        ) : (
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {addresses.map((address) => {
+              const line = [
+                address.address_line,
+                address.building,
+                address.floor,
+                address.apartment,
+              ]
+                .filter(Boolean)
+                .join(", ");
+              const area = [address.area, address.city].filter(Boolean).join(", ");
+              const pin =
+                address.latitude != null && address.longitude != null
+                  ? `https://www.google.com/maps/search/?api=1&query=${address.latitude},${address.longitude}`
+                  : null;
+              return (
+                <li key={address.id} className="rounded-xl border border-ink-900/10 p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-ink-900">{address.label}</span>
+                    {address.is_default ? (
+                      <Badge tone="success">
+                        {t("admin.pages.customerProfile.defaultAddress")}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-xs text-ink-800">{line}</p>
+                  {area ? <p className="text-xs text-ink-700/75">{area}</p> : null}
+                  {address.landmark ? (
+                    <p className="text-xs text-ink-700/75">
+                      {t("admin.pages.customerProfile.landmarkPrefix")} {address.landmark}
+                    </p>
+                  ) : null}
+                  {address.contact_phone ? (
+                    <a
+                      href={`tel:${address.contact_phone}`}
+                      className="mt-1 inline-flex text-xs text-vermilion-600 hover:text-vermilion-700"
+                    >
+                      {address.contact_phone}
+                    </a>
+                  ) : null}
+                  {pin ? (
+                    <a
+                      href={pin}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="mt-1 block text-xs font-medium text-jade-700 hover:text-jade-800"
+                    >
+                      {t("admin.pages.customerProfile.openPin")}
+                    </a>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section

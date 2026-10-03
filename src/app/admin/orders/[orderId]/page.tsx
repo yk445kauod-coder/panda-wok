@@ -106,6 +106,17 @@ export default async function AdminOrderDetailPage({
                 <dt>{t("admin.pages.orderDetail.subtotal")}</dt>
                 <dd className="tabular-nums">{formatPrice(order.subtotal)}</dd>
               </div>
+              {Number(order.discount_total) > 0 ? (
+                <div className="flex justify-between text-jade-700">
+                  <dt>
+                    {t("admin.pages.orderDetail.discount")}
+                    {order.offer_name ? (
+                      <span className="ms-1 text-ink-700/60">{order.offer_name}</span>
+                    ) : null}
+                  </dt>
+                  <dd className="tabular-nums">−{formatPrice(order.discount_total)}</dd>
+                </div>
+              ) : null}
               <div className="flex justify-between">
                 <dt>{t("admin.pages.orderDetail.delivery")}</dt>
                 <dd className="tabular-nums">{formatPrice(order.delivery_fee)}</dd>

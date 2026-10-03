@@ -377,6 +377,8 @@ export const offerSchema = z
       (raw) => (raw === "" || raw == null ? undefined : raw),
       z.coerce.number().min(0).max(1_000_000).optional(),
     ),
+    // Empty string means "everyone"; a uuid targets one customer.
+    customerId: optionalUuid,
     isEnabled: z.coerce.boolean().default(true),
     sortOrder: z.coerce.number().int().min(0).max(999).default(0),
   })
@@ -399,11 +401,14 @@ export const exportRequestSchema = z.object({
     "ai_usage",
     "segments",
   ]),
-  format: z.enum(["csv", "json"]).default("csv"),
+  format: z.enum(["csv", "json", "xlsx", "txt"]).default("xlsx"),
 });
 
 export const backupRequestSchema = z.object({
   kind: z.enum(["database", "configuration", "menu", "media_refs", "snapshot"]),
+  // `json` stays the restore-faithful bundle; `xlsx` and `txt` are readable
+  // copies of the same data for a human.
+  format: z.enum(["json", "xlsx", "txt"]).default("json"),
   label: z.string().trim().max(120).optional(),
   confirm: z.coerce.boolean().default(false),
 });

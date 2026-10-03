@@ -43,6 +43,8 @@ export type OfferRule = {
   threshold: number;
   value: number;
   max_discount: number | null;
+  /** Non-null when the offer is targeted at one customer rather than everyone. */
+  customer_id?: string | null;
 };
 
 export type AppliedOffer = {

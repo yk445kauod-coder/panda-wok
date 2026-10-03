@@ -10,7 +10,7 @@ import {
   isExportDataset,
 } from "@/lib/export/build";
 import { createExportJob } from "@/lib/export/create";
-import { backupObjectPath, buildBackup } from "@/lib/backup/build";
+import { buildBackup } from "@/lib/backup/build";
 import {
   actionError,
   actionFail,
@@ -1325,6 +1325,7 @@ export async function saveOfferAction(
     threshold: formData.get("threshold") || 0,
     value: formData.get("value"),
     maxDiscount: formData.get("maxDiscount"),
+    customerId: formData.get("customerId"),
     isEnabled: formData.get("isEnabled") === "on",
     sortOrder: formData.get("sortOrder") || 0,
   });
@@ -1339,6 +1340,8 @@ export async function saveOfferAction(
     value: parsed.data.value,
     // A ceiling only means something for a percentage offer.
     max_discount: parsed.data.kind === "percent" ? parsed.data.maxDiscount ?? null : null,
+    // Null means "everyone" — an untargeted offer, the original behaviour.
+    customer_id: parsed.data.customerId ?? null,
     is_enabled: parsed.data.isEnabled,
     sort_order: parsed.data.sortOrder,
   };
@@ -1362,7 +1365,12 @@ export async function saveOfferAction(
     action: parsed.data.id ? "offer.updated" : "offer.created",
     entity: "offers",
     entityId: result.data.id,
-    after: { kind: payload.kind, threshold: payload.threshold, value: payload.value },
+    after: {
+      kind: payload.kind,
+      threshold: payload.threshold,
+      value: payload.value,
+      customer_id: payload.customer_id,
+    },
   });
 
   revalidatePath("/admin/offers");
@@ -1772,6 +1780,92 @@ export async function setUserBlockedAction(
   return actionOk();
 }
 
+/**
+ * Permanently delete one customer and their account.
+ *
+ * This is the hard delete the owner asked for — distinct from blocking, which
+ * only stops ordering. It is irreversible, so it takes an explicit typed
+ * confirmation and refuses the owner's own account.
+ *
+ * `orders.user_id` is `on delete restrict`, so a customer with order history
+ * cannot be removed without destroying that history. Rather than silently
+ * cascading sales data away, the action refuses and says so; the operator can
+ * block them instead, or remove the orders deliberately first.
+ */
+export async function deleteCustomerAction(
+  formData: FormData,
+): Promise<FormActionResult<undefined>> {
+  const session = await assertCapability("users.manage");
+
+  const userId = String(formData.get("userId") ?? "").trim();
+  const confirm = String(formData.get("confirm") ?? "").trim();
+
+  if (!isUuid(userId)) {
+    return actionFail("VALIDATION", "Missing customer.");
+  }
+  if (userId === session.actorId) {
+    return actionFail("FORBIDDEN", "You cannot delete your own account.");
+  }
+  if (confirm !== "DELETE") {
+    return actionFail("VALIDATION", "Type DELETE to confirm this permanent deletion.");
+  }
+
+  const admin = tryCreateAdminSupabase();
+  if (!admin) {
+    return actionFail(
+      "UNKNOWN",
+      "Deleting customers needs the service-role key on the server.",
+    );
+  }
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id, full_name, phone")
+    .eq("id", userId)
+    .maybeSingle();
+  if (!profile) {
+    return actionFail("NOT_FOUND", "That customer no longer exists.");
+  }
+
+  // Order history is a hard blocker: `on delete restrict` will reject the delete
+  // anyway, so check first and return a message the operator can act on.
+  const { count } = await admin
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if ((count ?? 0) > 0) {
+    return actionFail(
+      "VALIDATION",
+      `This customer has ${count} order${count === 1 ? "" : "s"} on record. Deleting would erase that history, so it is blocked — block the account instead, or remove the orders first.`,
+    );
+  }
+
+  // Deleting the auth user cascades to `profiles` (and the CRM rows that hang
+  // off it). If no auth row exists, remove the orphaned profile directly.
+  const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
+  if (deleteError) {
+    const missing = /not found|does not exist/i.test(deleteError.message);
+    if (!missing) {
+      return actionError(deleteError);
+    }
+    const { error: profileError } = await admin.from("profiles").delete().eq("id", userId);
+    if (profileError) return actionError(profileError);
+  }
+
+  await logAudit(admin, {
+    actorId: session.actorId,
+    actorRole: session.role,
+    action: "customer.deleted",
+    entity: "profiles",
+    entityId: userId,
+    before: { name: profile.full_name, phone: profile.phone },
+  });
+
+  revalidatePath("/admin/crm");
+  revalidatePath("/admin/users");
+  return actionOk();
+}
+
 /* ---------------------------------------------------------------- exports */
 
 export async function requestExportAction(
@@ -1835,6 +1929,7 @@ export async function requestBackupAction(
 
   const parsed = backupRequestSchema.safeParse({
     kind: formData.get("kind"),
+    format: formData.get("format") || "json",
     label: formData.get("label") ?? undefined,
     confirm: formData.get("confirm") === "on",
   });
@@ -1860,6 +1955,7 @@ export async function requestBackupAction(
       kind: parsed.data.kind,
       status: "running",
       label: parsed.data.label ?? null,
+      format: parsed.data.format,
       created_by: session.actorId,
     })
     .select("id")
@@ -1873,20 +1969,17 @@ export async function requestBackupAction(
     const built = await buildBackup({
       kind: parsed.data.kind,
       label: parsed.data.label ?? null,
+      format: parsed.data.format,
     });
 
-    const path = backupObjectPath(job.id);
-    const { error: uploadError } = await admin.storage
-      .from("backups")
-      .upload(path, built.body, { contentType: "application/json", upsert: true });
-    if (uploadError) throw new Error(uploadError.message);
-
+    // Local-first: the bytes live in the row, not in object storage.
     const { error: finishError } = await admin
       .from("backup_records")
       .update({
         status: "ready",
         bytes: built.bytes,
-        storage_path: path,
+        content: built.body,
+        content_encoding: built.encoding,
         manifest: JSON.parse(JSON.stringify(built.bundle)),
         completed_at: new Date().toISOString(),
       })

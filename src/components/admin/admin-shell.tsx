@@ -36,7 +36,9 @@ import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { AdminBottomNav } from "@/components/admin/admin-bottom-nav";
+import { OrderAlertWatcher } from "@/components/admin/order-alert-watcher";
 import type { AppNotification } from "@/lib/services/notifications";
+import type { OrderAlert } from "@/lib/services/admin-orders";
 import { useI18n } from "@/components/i18n-provider";
 import { cn } from "@/lib/utils/format";
 
@@ -92,6 +94,7 @@ export function AdminShell({
   brand,
   notifications = [],
   unreadCount = 0,
+  pendingOrders = [],
   children,
 }: {
   role: StaffRole;
@@ -100,6 +103,7 @@ export function AdminShell({
   brand?: { name: string; logo_url: string | null };
   notifications?: AppNotification[];
   unreadCount?: number;
+  pendingOrders?: OrderAlert[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -310,6 +314,7 @@ export function AdminShell({
       </nav>
 
       <main id="main" className="min-w-0 flex-1">
+        <OrderAlertWatcher initialPending={pendingOrders} />
         <div className="hidden items-center justify-between gap-3 border-b border-ink-900/10 bg-rice-100/60 px-6 py-2.5 lg:flex">
           <div className="flex items-center gap-2 text-xs text-ink-700/75">
             <span className="inline-flex h-6 items-center rounded-full bg-vermilion-600/10 px-2.5 font-semibold tracking-wide text-vermilion-700 uppercase">

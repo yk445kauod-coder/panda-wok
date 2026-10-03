@@ -249,9 +249,14 @@ export async function listBroadcasts(limit = 50) {
 
 export async function listExports(limit = 50) {
   const supabase = await createServerSupabase();
+  // `content` holds the file bytes and is deliberately excluded: the list page
+  // must not pull every export body into memory. `content_encoding` is the
+  // lightweight indicator that a row stores its file locally.
   const { data, error } = await supabase
     .from("exports")
-    .select("*")
+    .select(
+      "id, dataset, format, filters, status, row_count, storage_path, bytes, error, requested_by, created_at, completed_at, expires_at, content_encoding",
+    )
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -261,9 +266,12 @@ export async function listExports(limit = 50) {
 
 export async function listBackups(limit = 50) {
   const supabase = await createServerSupabase();
+  // `content` excluded for the same reason as exports.
   const { data, error } = await supabase
     .from("backup_records")
-    .select("*")
+    .select(
+      "id, kind, status, label, format, storage_path, bytes, manifest, error, created_by, created_at, completed_at, content_encoding",
+    )
     .order("created_at", { ascending: false })
     .limit(limit);
 

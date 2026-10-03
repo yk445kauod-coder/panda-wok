@@ -7,6 +7,8 @@ import type { Database } from "@/lib/types/database";
 
 type Offer = Database["public"]["Tables"]["offers"]["Row"];
 
+export type CustomerOption = { id: string; name: string };
+
 /**
  * Create/edit form for a threshold promotion.
  *
@@ -14,10 +16,27 @@ type Offer = Database["public"]["Tables"]["offers"]["Row"];
  * amount — so the label and hint swap with the kind rather than leaving the
  * owner to remember which is which. A percentage offer also gets a ceiling,
  * because "20% off" with no cap is an unbounded giveaway on a large order.
+ *
+ * A promotion is either for everyone (the default) or targeted at one customer.
+ * `fixedCustomerId` locks the form to a single person for the per-customer
+ * shortcut; otherwise `customers` drives a picker.
  */
-export function OfferForm({ offer }: { offer: Offer | null }) {
+export function OfferForm({
+  offer,
+  customers = [],
+  fixedCustomerId,
+  fixedCustomerName,
+}: {
+  offer: Offer | null;
+  customers?: CustomerOption[];
+  fixedCustomerId?: string;
+  fixedCustomerName?: string;
+}) {
   const editing = Boolean(offer);
   const [kind, setKind] = useState<"percent" | "fixed">(offer?.kind ?? "fixed");
+  const [customerId, setCustomerId] = useState<string>(
+    fixedCustomerId ?? offer?.customer_id ?? "",
+  );
 
   return (
     <AdminForm
@@ -42,6 +61,35 @@ export function OfferForm({ offer }: { offer: Offer | null }) {
         defaultValue={offer?.name_ar ?? ""}
         dir="rtl"
       />
+
+      {fixedCustomerId ? (
+        <input type="hidden" name="customerId" value={fixedCustomerId} />
+      ) : (
+        <div>
+          <label htmlFor="customerId" className="block text-sm font-medium text-ink-900">
+            Who gets this offer
+          </label>
+          <select
+            id="customerId"
+            name="customerId"
+            value={customerId}
+            onChange={(event) => setCustomerId(event.target.value)}
+            className="mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
+          >
+            <option value="">Everyone</option>
+            {customers.map((customer) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-ink-700/65">
+            {customerId
+              ? "Only this customer will see and get this discount at checkout."
+              : "Applies to every customer at checkout, as before."}
+          </p>
+        </div>
+      )}
 
       <div>
         <label htmlFor="kind" className="block text-sm font-medium text-ink-900">
@@ -104,6 +152,13 @@ export function OfferForm({ offer }: { offer: Offer | null }) {
         hint="Inactive offers are kept but never applied at checkout."
         defaultChecked={offer?.is_enabled ?? true}
       />
+
+      {fixedCustomerName ? (
+        <p className="rounded-xl bg-rice-100/70 p-3 text-xs text-ink-700/80">
+          This offer is only for {fixedCustomerName}. It shows in their checkout
+          and on their invoice; no other customer can see or receive it.
+        </p>
+      ) : null}
     </AdminForm>
   );
 }

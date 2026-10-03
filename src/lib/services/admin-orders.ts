@@ -11,7 +11,10 @@ export type AdminOrderRow = {
   status: OrderStatus;
   total: number;
   subtotal: number;
+  discount_total: number;
   delivery_fee: number;
+  /** Name of the promotion applied at placement time, when one was. */
+  offer_name: string | null;
   created_at: string;
   fulfillment: Database["public"]["Enums"]["fulfillment_type"];
   payment_method: Database["public"]["Enums"]["payment_method"];
@@ -33,7 +36,7 @@ export type AdminOrderDetail = AdminOrderRow & {
 };
 
 const ADMIN_ORDER_COLUMNS =
-  "id, order_number, status, total, subtotal, delivery_fee, created_at, fulfillment, payment_method, payment_status, customer_note, address_snapshot, user_id, order_items (id, name_snapshot, quantity), profiles (full_name, phone)";
+  "id, order_number, status, total, subtotal, discount_total, delivery_fee, offer_name, created_at, fulfillment, payment_method, payment_status, customer_note, address_snapshot, user_id, order_items (id, name_snapshot, quantity), profiles (full_name, phone)";
 
 type RawAdminOrder = {
   id: string;
@@ -41,7 +44,9 @@ type RawAdminOrder = {
   status: OrderStatus;
   total: number;
   subtotal: number;
+  discount_total: number;
   delivery_fee: number;
+  offer_name: string | null;
   created_at: string;
   fulfillment: Database["public"]["Enums"]["fulfillment_type"];
   payment_method: Database["public"]["Enums"]["payment_method"];
@@ -66,7 +71,9 @@ function shapeOrder(row: RawAdminOrder): AdminOrderRow {
     status: row.status,
     total: Number(row.total),
     subtotal: Number(row.subtotal),
+    discount_total: Number(row.discount_total),
     delivery_fee: Number(row.delivery_fee),
+    offer_name: row.offer_name,
     created_at: row.created_at,
     fulfillment: row.fulfillment,
     payment_method: row.payment_method,
@@ -219,6 +226,35 @@ export async function getOrderStatusCounts(): Promise<
 
   return counts as Record<string, number> & { active: number; all: number };
 }
+
+/**
+ * Orders still sitting in the `new` stage, i.e. nobody has accepted them yet.
+ * This is the set the console's order alert rings for: the siren stops the
+ * moment an order leaves `new`, so the query deliberately narrows to that one
+ * status rather than reusing the whole active queue.
+ */
+export async function getPendingNewOrders(limit = 50): Promise<OrderAlert[]> {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, order_number, created_at")
+    .eq("status", "new")
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to load new orders: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    orderNumber: row.order_number,
+    createdAt: row.created_at,
+  }));
+}
+
+export type OrderAlert = {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+};
 
 /** Kitchen board: the active queue grouped so staff can work top-down. */
 export async function getKitchenQueue(): Promise<{

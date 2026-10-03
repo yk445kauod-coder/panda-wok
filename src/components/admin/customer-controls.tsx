@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import { Badge, Button } from "@/components/ui/button";
 import { cn, humanise } from "@/lib/utils/format";
-import { setUserBlockedAction, saveStaffAction, createStaffAccountAction, adjustLoyaltyPointsAction } from "@/lib/actions/admin";
+import { setUserBlockedAction, saveStaffAction, createStaffAccountAction, adjustLoyaltyPointsAction, deleteCustomerAction } from "@/lib/actions/admin";
 import { AdminForm, Field, Toggle } from "@/components/admin/form-kit";
 import type { StaffRole } from "@/lib/auth/rbac";
 
@@ -84,6 +84,112 @@ export function BlockUserControl({
       ) : null}
       {error ? (
         <span role="alert" className="text-[11px] text-chili-600">
+          {error}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Permanently delete one customer. Distinct from blocking: blocking is a flag,
+ * this removes the account and profile from the database. It is irreversible,
+ * so it takes a typed DELETE confirmation and surfaces the server's refusal
+ * when the customer still has order history.
+ */
+export function DeleteCustomerControl({
+  userId,
+  name,
+  hasOrders,
+}: {
+  userId: string;
+  name: string;
+  hasOrders: boolean;
+}) {
+  const router = useRouter();
+  const errorText = useErrorText();
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setPending(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.set("userId", userId);
+    formData.set("confirm", confirm);
+
+    const result = await deleteCustomerAction(formData);
+
+    if (!result.ok) {
+      setError(errorText(result.error));
+      setPending(false);
+      return;
+    }
+
+    setPending(false);
+    router.push("/admin/crm");
+    router.refresh();
+  }
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen(true)}
+        disabled={hasOrders}
+        title={hasOrders ? t("admin.pages.customerProfile.deleteBlocked") : undefined}
+      >
+        <Trash2 className="size-3.5" aria-hidden="true" />
+        {t("admin.pages.customerProfile.delete")}
+      </Button>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-chili-500/30 bg-chili-500/6 p-3">
+      <p className="flex items-start gap-2 text-xs font-medium text-chili-700">
+        <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+        {t("admin.pages.customerProfile.deleteWarning", { name })}
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input
+          value={confirm}
+          onChange={(event) => setConfirm(event.target.value)}
+          placeholder="DELETE"
+          className="h-9 w-28 rounded-lg border border-ink-900/15 bg-rice-50 px-2 text-sm text-ink-900 outline-none focus:border-chili-500"
+          aria-label={t("admin.pages.customerProfile.deleteConfirmLabel")}
+        />
+        <Button
+          type="button"
+          variant="danger"
+          size="sm"
+          loading={pending}
+          disabled={confirm !== "DELETE"}
+          onClick={run}
+        >
+          {t("admin.pages.customerProfile.delete")}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setOpen(false);
+            setConfirm("");
+            setError(null);
+          }}
+        >
+          {t("common.cancel")}
+        </Button>
+      </div>
+      {error ? (
+        <span role="alert" className="mt-2 block text-[11px] text-chili-600">
           {error}
         </span>
       ) : null}

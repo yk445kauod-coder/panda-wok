@@ -2,9 +2,9 @@ import "server-only";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import {
   buildExport,
-  exportObjectPath,
   isExportDataset,
   type ExportDataset,
+  type ExportFormat,
 } from "@/lib/export/build";
 
 /**
@@ -14,15 +14,21 @@ import {
  * could not reuse it without either duplicating the upload/status dance or
  * calling a server action from the server. Extracting it keeps a single path for
  * both a human in the Exports screen and an approved agent proposal: create the
- * job row first (so a failure is auditable), build the file, upload it, then flip
- * the row to ready. A caller must have already passed its capability check.
+ * job row first (so a failure is auditable), build the file, then flip the row
+ * to ready.
+ *
+ * The bytes are stored **locally** in the `exports.content` column rather than
+ * uploaded to Supabase Storage. That is the owner's call: keeping the work on
+ * our own database avoids cloud object churn and egress on a free plan, and the
+ * file is streamed straight back by an admin route. The `storage_path` column
+ * still exists for rows written before this change.
  */
 
 export type ExportJobResult = { id: string; rows: number };
 
 export async function createExportJob(params: {
   dataset: ExportDataset;
-  format: "csv" | "json";
+  format: ExportFormat;
   /** Null is honest for a passcode-gated owner with no auth user row. */
   requestedBy: string | null;
 }): Promise<ExportJobResult> {
@@ -45,12 +51,6 @@ export async function createExportJob(params: {
 
   try {
     const built = await buildExport({ dataset: params.dataset, format: params.format });
-    const path = exportObjectPath(job.id, built.extension);
-
-    const { error: uploadError } = await admin.storage
-      .from("exports")
-      .upload(path, built.body, { contentType: built.mime, upsert: true });
-    if (uploadError) throw new Error(uploadError.message);
 
     const { error: finishError } = await admin
       .from("exports")
@@ -58,7 +58,8 @@ export async function createExportJob(params: {
         status: "ready",
         row_count: built.rows,
         bytes: Buffer.byteLength(built.body, "utf8"),
-        storage_path: path,
+        content: built.body,
+        content_encoding: built.encoding,
         completed_at: new Date().toISOString(),
       })
       .eq("id", job.id);

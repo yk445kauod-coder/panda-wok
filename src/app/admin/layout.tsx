@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { getAdminSession } from "@/lib/auth/session";
 import { getPublicSettings } from "@/lib/services/catalog";
-import { capabilitiesFor, ROLE_LABELS } from "@/lib/auth/rbac";
+import { capabilitiesFor, can, ROLE_LABELS } from "@/lib/auth/rbac";
 import { listStaffNotifications, countStaffUnread } from "@/lib/services/notifications";
+import { getPendingNewOrders } from "@/lib/services/admin-orders";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminGateForm } from "@/components/admin/admin-gate-form";
 import { I18nProvider } from "@/components/i18n-provider";
@@ -63,6 +64,13 @@ export default async function AdminLayout({
     countStaffUnread().catch(() => 0),
   ]);
 
+  // The order alert rings on every console page, so its data is fetched here and
+  // handed to the shell. Only roles that can see orders receive it; a failure
+  // must never block the console.
+  const pendingOrders = can(adminSession.role, "orders.view")
+    ? (await getPendingNewOrders().catch(() => [])) ?? []
+    : [];
+
   return (
     <I18nProvider locale={locale} dict={dict}>
       <AdminShell
@@ -72,6 +80,7 @@ export default async function AdminLayout({
         brand={brand}
         notifications={notifications}
         unreadCount={unread}
+        pendingOrders={pendingOrders}
       >
         {children}
       </AdminShell>

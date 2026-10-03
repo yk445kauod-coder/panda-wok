@@ -796,9 +796,12 @@ export type Database = {
         Row: {
           bytes: number | null
           completed_at: string | null
+          content: string | null
+          content_encoding: string | null
           created_at: string
           created_by: string | null
           error: string | null
+          format: string
           id: string
           kind: Database["public"]["Enums"]["backup_kind"]
           label: string | null
@@ -809,9 +812,12 @@ export type Database = {
         Insert: {
           bytes?: number | null
           completed_at?: string | null
+          content?: string | null
+          content_encoding?: string | null
           created_at?: string
           created_by?: string | null
           error?: string | null
+          format?: string
           id?: string
           kind: Database["public"]["Enums"]["backup_kind"]
           label?: string | null
@@ -822,9 +828,12 @@ export type Database = {
         Update: {
           bytes?: number | null
           completed_at?: string | null
+          content?: string | null
+          content_encoding?: string | null
           created_at?: string
           created_by?: string | null
           error?: string | null
+          format?: string
           id?: string
           kind?: Database["public"]["Enums"]["backup_kind"]
           label?: string | null
@@ -1224,6 +1233,8 @@ export type Database = {
         Row: {
           bytes: number | null
           completed_at: string | null
+          content: string | null
+          content_encoding: string | null
           created_at: string
           dataset: string
           error: string | null
@@ -1239,6 +1250,8 @@ export type Database = {
         Insert: {
           bytes?: number | null
           completed_at?: string | null
+          content?: string | null
+          content_encoding?: string | null
           created_at?: string
           dataset: string
           error?: string | null
@@ -1254,6 +1267,8 @@ export type Database = {
         Update: {
           bytes?: number | null
           completed_at?: string | null
+          content?: string | null
+          content_encoding?: string | null
           created_at?: string
           dataset?: string
           error?: string | null
@@ -2063,6 +2078,7 @@ export type Database = {
       offers: {
         Row: {
           created_at: string
+          customer_id: string | null
           id: string
           is_enabled: boolean
           kind: Database["public"]["Enums"]["offer_kind"]
@@ -2077,6 +2093,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_id?: string | null
           id?: string
           is_enabled?: boolean
           kind?: Database["public"]["Enums"]["offer_kind"]
@@ -2091,6 +2108,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_id?: string | null
           id?: string
           is_enabled?: boolean
           kind?: Database["public"]["Enums"]["offer_kind"]
@@ -2104,6 +2122,13 @@ export type Database = {
           value?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "offers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "offers_restaurant_id_fkey"
             columns: ["restaurant_id"]
@@ -3465,7 +3490,7 @@ export type Database = {
         | "failed"
         | "canceled"
       conversation_status: "open" | "pending" | "closed"
-      export_format: "csv" | "json"
+      export_format: "csv" | "json" | "xlsx" | "txt"
       export_status: "queued" | "running" | "ready" | "failed" | "expired"
       feedback_category:
         | "food_quality"
@@ -3662,7 +3687,7 @@ export const Constants = {
         "canceled",
       ],
       conversation_status: ["open", "pending", "closed"],
-      export_format: ["csv", "json"],
+      export_format: ["csv", "json", "xlsx", "txt"],
       export_status: ["queued", "running", "ready", "failed", "expired"],
       feedback_category: [
         "food_quality",

@@ -26,8 +26,17 @@ function describe(offer: OfferRow): string {
 /**
  * Offer list. The enabled state is toggled inline because pausing a promotion
  * is the common action and it should not require an edit round trip.
+ *
+ * `customerNames` maps a customer id to a display name so a targeted offer
+ * reads as "for <name>" rather than an opaque uuid.
  */
-export function OfferList({ offers }: { offers: OfferRow[] }) {
+export function OfferList({
+  offers,
+  customerNames = {},
+}: {
+  offers: OfferRow[];
+  customerNames?: Record<string, string>;
+}) {
   return (
     <ul className="space-y-2">
       {offers.map((offer) => (
@@ -46,6 +55,13 @@ export function OfferList({ offers }: { offers: OfferRow[] }) {
                 <Badge tone="indigo">
                   {offer.kind === "percent" ? "Percentage" : "Flat"}
                 </Badge>
+                {offer.customer_id ? (
+                  <Badge tone="warning">
+                    {customerNames[offer.customer_id]
+                      ? `For ${customerNames[offer.customer_id]}`
+                      : "For one customer"}
+                  </Badge>
+                ) : null}
               </div>
 
               <p className="mt-1 text-xs text-ink-800">{describe(offer)}</p>

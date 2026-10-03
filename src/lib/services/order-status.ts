@@ -75,13 +75,18 @@ export async function getCheckoutConfig(): Promise<CheckoutConfig> {
  * Enabled threshold promotions, in the canonical order the admin set. Returns
  * an empty list rather than throwing: a promotion lookup failure must not stop
  * a customer from checking out, and "no offer" is always a valid answer.
+ *
+ * The caller's own session decides which rows are visible: the public policy
+ * exposes untargeted offers to everyone, and `offers_own_read` additionally
+ * exposes an offer targeted at the signed-in customer. So a personal discount
+ * previews at checkout exactly as `place_order` will apply it.
  */
 async function getEnabledOffers(
   supabase: Awaited<ReturnType<typeof createServerSupabase>>,
 ): Promise<OfferRule[]> {
   const { data } = await supabase
     .from("offers")
-    .select("id, name_en, name_ar, kind, threshold, value, max_discount")
+    .select("id, name_en, name_ar, kind, threshold, value, max_discount, customer_id")
     .eq("is_enabled", true)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -94,5 +99,6 @@ async function getEnabledOffers(
     threshold: Number(row.threshold),
     value: Number(row.value),
     max_discount: row.max_discount == null ? null : Number(row.max_discount),
+    customer_id: row.customer_id ?? null,
   }));
 }

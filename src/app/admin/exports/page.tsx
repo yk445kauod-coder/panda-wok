@@ -50,11 +50,13 @@ export default async function AdminExportsPage() {
   );
   const personalCount = datasets.filter((dataset) => dataset.sensitivity === "personal").length;
 
-  const downloadUrls = await getExportDownloadUrls(
-    exports
-      .filter((record) => record.status === "ready" && record.storage_path)
-      .map((record) => record.storage_path as string),
-  );
+  // Files are local-first: a ready row carries its own bytes and is streamed by
+  // `/admin/exports/<id>/download`. Rows written before that change still point
+  // at object storage, so a signed URL is minted for them as a fallback.
+  const legacyPaths = exports
+    .filter((record) => record.status === "ready" && !record.content_encoding && record.storage_path)
+    .map((record) => record.storage_path as string);
+  const downloadUrls = await getExportDownloadUrls(legacyPaths);
 
   return (
     <div className="space-y-6">
@@ -96,9 +98,11 @@ export default async function AdminExportsPage() {
         ) : (
           <ul className="mt-3 space-y-2">
             {exports.map((record) => {
-              const href = record.storage_path
-                ? downloadUrls[record.storage_path]
-                : undefined;
+              const href = record.content_encoding
+                ? `/admin/exports/${record.id}/download`
+                : record.storage_path
+                  ? downloadUrls[record.storage_path]
+                  : undefined;
               return (
                 <li key={record.id} className="washi-panel p-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">

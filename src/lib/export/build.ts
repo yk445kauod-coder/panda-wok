@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdminSupabase } from "@/lib/supabase/server";
+import { buildTxt, buildXlsx, columnsFor } from "@/lib/export/render";
 
 /**
  * Dataset definitions behind the export centre. Each entry names a real table,
@@ -19,6 +20,8 @@ export type ExportDataset =
   | "analytics"
   | "ai_usage"
   | "segments";
+
+export type ExportFormat = "csv" | "json" | "xlsx" | "txt";
 
 type DatasetSpec = {
   table: string;
@@ -121,11 +124,20 @@ function csvCell(value: unknown): string {
  * Row-level reads use the service role because a caller holding
  * `exports.manage` is authorised for the whole table; the capability check
  * happens before this function is reached.
+ *
+ * `encoding` says how the caller should persist the body: text formats are
+ * stored as utf8, the XLSX workbook as base64 (it is binary).
  */
 export async function buildExport(params: {
   dataset: ExportDataset;
-  format: "csv" | "json";
-}): Promise<{ body: string; rows: number; mime: string; extension: string }> {
+  format: ExportFormat;
+}): Promise<{
+  body: string;
+  rows: number;
+  mime: string;
+  extension: string;
+  encoding: "utf8" | "base64";
+}> {
   const spec = DATASETS[params.dataset];
   const admin = createAdminSupabase();
 
@@ -139,6 +151,7 @@ export async function buildExport(params: {
   }
 
   const rows = (data ?? []) as unknown as Record<string, unknown>[];
+  const generatedAt = new Date().toISOString();
 
   if (params.format === "json") {
     return {
@@ -146,7 +159,7 @@ export async function buildExport(params: {
         {
           dataset: params.dataset,
           label: spec.label,
-          generated_at: new Date().toISOString(),
+          generated_at: generatedAt,
           row_count: rows.length,
           rows,
         },
@@ -156,9 +169,42 @@ export async function buildExport(params: {
       rows: rows.length,
       mime: "application/json",
       extension: "json",
+      encoding: "utf8",
     };
   }
 
+  if (params.format === "xlsx") {
+    const workbook = buildXlsx({
+      dataset: params.dataset,
+      label: spec.label,
+      rows,
+      generatedAt,
+    });
+    return {
+      body: Buffer.from(workbook).toString("base64"),
+      rows: rows.length,
+      mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      extension: "xlsx",
+      encoding: "base64",
+    };
+  }
+
+  if (params.format === "txt") {
+    return {
+      body: buildTxt({
+        dataset: params.dataset,
+        label: spec.label,
+        rows,
+        generatedAt,
+      }),
+      rows: rows.length,
+      mime: "text/plain; charset=utf-8",
+      extension: "txt",
+      encoding: "utf8",
+    };
+  }
+
+  // CSV: the raw column order, which is what a downstream tool expects.
   const header =
     rows.length > 0
       ? Object.keys(rows[0])
@@ -173,6 +219,7 @@ export async function buildExport(params: {
     rows: rows.length,
     mime: "text/csv; charset=utf-8",
     extension: "csv",
+    encoding: "utf8",
   };
 }
 
@@ -180,3 +227,6 @@ export async function buildExport(params: {
 export function exportObjectPath(exportId: string, extension: string) {
   return `${exportId}.${extension}`;
 }
+
+/** Column labels for a dataset, for a caller that wants to describe the file. */
+export { columnsFor };

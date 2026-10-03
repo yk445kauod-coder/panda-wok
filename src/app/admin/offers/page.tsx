@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { requireCapability } from "@/lib/auth/session";
+import { can } from "@/lib/auth/rbac";
 import { listOffers } from "@/lib/services/admin-catalog";
-import { OfferForm } from "@/components/admin/offer-form";
+import { listCrmCustomers } from "@/lib/crm/customers";
+import { OfferForm, type CustomerOption } from "@/components/admin/offer-form";
 import { OfferList } from "@/components/admin/offer-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatNumber } from "@/lib/utils/format";
@@ -14,13 +16,17 @@ export const dynamic = "force-dynamic";
  * customer the most, so these rows are alternatives rather than a stack — the
  * console says so, because "two active offers" reading as "both apply" is the
  * obvious and expensive misunderstanding.
+ *
+ * An offer is either for everyone or targeted at one customer. The customer
+ * picker only appears for roles that may read CRM records; everyone else can
+ * still create an untargeted offer.
  */
 export default async function AdminOffersPage({
   searchParams,
 }: {
   searchParams: Promise<{ edit?: string }>;
 }) {
-  await requireCapability("menu.manage");
+  const session = await requireCapability("menu.manage");
   const t = await getT(await getAdminLocale());
   const params = await searchParams;
 
@@ -29,7 +35,17 @@ export default async function AdminOffersPage({
     ? (offers.find((offer) => offer.id === params.edit) ?? null)
     : null;
 
+  const customers: CustomerOption[] = can(session.role, "crm.view")
+    ? (await listCrmCustomers({ limit: 500 }).catch(() => [])).map((customer) => ({
+        id: customer.user_id,
+        name: customer.full_name ?? customer.phone ?? customer.email ?? "Unnamed customer",
+      }))
+    : [];
+
   const active = offers.filter((offer) => offer.is_enabled).length;
+
+  const customerNames: Record<string, string> = {};
+  for (const customer of customers) customerNames[customer.id] = customer.name;
 
   return (
     <div className="space-y-6">
@@ -68,7 +84,7 @@ export default async function AdminOffersPage({
               : t("admin.pages.offers.addHint")}
           </p>
           <div className="mt-4">
-            <OfferForm offer={editing} />
+            <OfferForm offer={editing} customers={customers} />
           </div>
         </section>
 
@@ -91,7 +107,7 @@ export default async function AdminOffersPage({
               description={t("admin.pages.offers.emptyBody")}
             />
           ) : (
-            <OfferList offers={offers} />
+            <OfferList offers={offers} customerNames={customerNames} />
           )}
         </section>
       </div>

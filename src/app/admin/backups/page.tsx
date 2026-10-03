@@ -49,7 +49,7 @@ export default async function AdminBackupsPage() {
 
   const downloadUrls = await getBackupDownloadUrls(
     backups
-      .filter((record) => record.status === "ready" && record.storage_path)
+      .filter((record) => record.status === "ready" && !record.content_encoding && record.storage_path)
       .map((record) => record.storage_path as string),
   );
 
@@ -194,7 +194,15 @@ export default async function AdminBackupsPage() {
                     </div>
 
                     {record.status === "ready" ? (
-                      downloadUrls[record.storage_path ?? ""] ? (
+                      record.content_encoding ? (
+                        <a
+                          href={`/admin/backups/${record.id}/download`}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-vermilion-600 px-3 text-xs font-medium text-rice-50 hover:bg-vermilion-700"
+                        >
+                          <Download className="size-3.5" aria-hidden="true" />
+                          {t("admin.pages.backups.download")}
+                        </a>
+                      ) : downloadUrls[record.storage_path ?? ""] ? (
                         <a
                           href={downloadUrls[record.storage_path as string]}
                           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-vermilion-600 px-3 text-xs font-medium text-rice-50 hover:bg-vermilion-700"
