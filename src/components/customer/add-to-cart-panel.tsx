@@ -7,6 +7,7 @@ import { Badge, Button } from "@/components/ui/button";
 import { useCart } from "@/components/customer/cart-provider";
 import { useT } from "@/components/i18n-provider";
 import { trackEvent } from "@/components/customer/analytics-beacon";
+import { trackMeta } from "@/components/customer/meta-pixel";
 import { formatPrice } from "@/lib/utils/format";
 import { toggleModifierOption } from "@/lib/services/modifier-selection";
 import type { MenuItemDetail } from "@/lib/services/catalog";
@@ -146,6 +147,16 @@ export function AddToCartPanel({
       slug: dish.slug,
       quantity,
       unit_price: unitPrice,
+    });
+
+    // Standard Meta event so the ad can optimise for "added to cart".
+    trackMeta("AddToCart", {
+      content_ids: [dish.id],
+      content_name: localName(dish),
+      content_type: "product",
+      value: unitPrice * quantity,
+      currency: "EGP",
+      quantity,
     });
 
     setJustAdded(true);

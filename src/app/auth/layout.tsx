@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth/session";
 import { getPublicSettings } from "@/lib/services/catalog";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { MetaPixel } from "@/components/customer/meta-pixel";
 import { getLocale, getT } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -58,6 +59,7 @@ export default async function AuthLayout({
           </Link>
         </p>
       </div>
+      <MetaPixel pixelId={settings.marketing.metaPixelId} />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { AlertTriangle, CheckCircle2, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useErrorText, useI18n, useT } from "@/components/i18n-provider";
 import { signUpAction } from "@/lib/actions/auth";
+import { trackMeta } from "@/components/customer/meta-pixel";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils/format";
@@ -65,11 +66,13 @@ export function SignUpForm({ next }: { next: string }) {
       }
 
       if (result.data.requiresConfirmation) {
+        trackMeta("CompleteRegistration", { status: "pending" });
         setNotice(t("auth.signUp.successBody"));
         setPending(false);
         return;
       }
 
+      trackMeta("CompleteRegistration", { status: "complete" });
       router.replace("/account");
       router.refresh();
     } catch (caught) {

@@ -99,7 +99,9 @@ function applySecurityHeaders(response: NextResponse) {
   );
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
   // wss: is required for Supabase Realtime; img/connect allow Supabase Storage
-  // and the AI providers. Keep this list in sync with the app's outbound hosts.
+  // and the AI providers. connect.facebook.net is the Meta Pixel script origin
+  // (only emitted when the owner has a pixel configured). Keep this list in sync
+  // with the app's outbound hosts.
   response.headers.set(
     "Content-Security-Policy",
     [
@@ -107,7 +109,7 @@ function applySecurityHeaders(response: NextResponse) {
       "img-src 'self' data: blob: *.supabase.co https:",
       "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
       "font-src 'self' fonts.gstatic.com data:",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net",
       "connect-src 'self' https: wss:",
       "base-uri 'self'",
       "form-action 'self'",

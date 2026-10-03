@@ -7,6 +7,7 @@ import { SiteWidgets } from "@/components/layout/site-widgets";
 import { SiteFooter, SiteHeader } from "@/components/layout/site-shell";
 import { AssistantProvider } from "@/components/panda/assistant-context";
 import { AnalyticsBeacon } from "@/components/customer/analytics-beacon";
+import { MetaPixel } from "@/components/customer/meta-pixel";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { restaurantSchema, websiteSchema, organisationSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";
@@ -105,6 +106,7 @@ export default async function SiteLayout({
               </>
             ) : null}
             <AnalyticsBeacon enabled={flags.analytics !== false} />
+            <MetaPixel pixelId={settings.marketing.metaPixelId} />
           </div>
         <JsonLdScript data={structuredData} />
       </CartProvider>

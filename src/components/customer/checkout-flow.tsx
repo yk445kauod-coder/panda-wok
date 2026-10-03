@@ -19,6 +19,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { useCart } from "@/components/customer/cart-provider";
 import { useErrorText, useT } from "@/components/i18n-provider";
 import { trackEvent } from "@/components/customer/analytics-beacon";
+import { trackMeta } from "@/components/customer/meta-pixel";
 import { placeOrderAction } from "@/lib/actions/checkout";
 import { computeTotals, type CheckoutConfig } from "@/lib/services/checkout-math";
 import { formatClock } from "@/lib/services/store-hours";
@@ -104,6 +105,11 @@ export function CheckoutFlow({
     if (hydrated && lines.length > 0 && !startedTracked.current) {
       startedTracked.current = true;
       trackEvent("CHECKOUT_STARTED", { lines: lines.length, subtotal });
+      trackMeta("InitiateCheckout", {
+        num_items: lines.reduce((count, line) => count + line.quantity, 0),
+        value: subtotal,
+        currency: "EGP",
+      });
     }
   }, [hydrated, lines.length, subtotal]);
 
@@ -178,6 +184,15 @@ export function CheckoutFlow({
       }
 
       // Only clear the basket once the server confirms the order exists.
+      // The Purchase event fires with the server's order number and total, so
+      // the ad's reported revenue is the amount actually charged, not a
+      // client-computed estimate.
+      trackMeta("Purchase", {
+        value: result.data.total,
+        currency: "EGP",
+        num_items: lines.reduce((count, line) => count + line.quantity, 0),
+        order_id: result.data.orderNumber,
+      });
       clear();
       router.replace(`/orders/${result.data.orderId}?placed=1`);
     } catch (caught) {

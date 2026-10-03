@@ -3302,3 +3302,64 @@ probe. `tsc` clean, lint 0 errors, `next build` green, **411 passed / 18 skipped
 hard-delete customer action + control, per-customer targeted offers (form, list,
 CRM panel, own-read RLS migration), and surfacing the applied offer name/discount
 on both order-detail pages. All typecheck and build clean.
+
+## Meta (Facebook) Pixel installed (2026-10-03)
+
+The owner is running Facebook lead ads and asked for the pixel to be installed.
+Live pixel id **1626139359047880**.
+
+### It is a setting, not a constant
+Two **flat, public** settings (migration `20261003000400_meta_pixel.sql`, applied
+live), chosen flat rather than one jsonb blob so the generic Admin -> Settings
+form renders a text field and a boolean switch automatically (jsonb only gets a
+raw textarea):
+
+- `marketing.meta_pixel_id` (string) - "Facebook (Meta) Pixel ID". Empty disables.
+- `marketing.meta_pixel_enabled` (boolean) - "Facebook (Meta) Pixel enabled".
+
+`getPublicSettings()` resolves them into `settings.marketing.metaPixelId`, which
+is `null` unless the id is **digits-only** and `enabled` is true. The id is
+interpolated into a `<script>` string literal in the document, so
+`metaPixelId()` (exported from `src/lib/services/catalog.ts`) is the injection
+guard; `tests/meta-pixel.test.ts` pins that a quote/`<`/non-numeric value is
+refused rather than emitted. The id is public by design (it ships in the page
+source); the Conversions API token would be a server-side secret, not this.
+
+### Where it is mounted, and why two places
+`src/components/customer/meta-pixel.tsx` (`MetaPixel`) loads the base snippet and
+fires a `PageView` on every client-side navigation (the initial `fbq('init')
+... fbq('track','PageView')` covers the landing page, so the route effect skips
+the first run). It is mounted in **both** `(site)/layout.tsx` and
+`auth/layout.tsx` - signup lives under `/auth`, not `(site)`, so without the auth
+mount `CompleteRegistration` would never fire. `/admin` never emits it.
+
+### Conversion events (standard Meta names)
+- `AddToCart` - `add-to-cart-panel.tsx`, value = unitPrice x qty, currency EGP.
+- `InitiateCheckout` - `checkout-flow.tsx`, on the existing checkout-started effect.
+- `Purchase` - `checkout-flow.tsx`, fired **after** the server confirms the order,
+  with the server's `orderNumber` and `total` so reported revenue is the amount
+  actually charged, not a client estimate.
+- `CompleteRegistration` - `sign-up-form.tsx`, status `complete`/`pending`.
+
+`trackMeta(event, params)` is a no-op until the pixel loads or when tracking is
+off, so callers never guard.
+
+### CSP had to change
+`script-src` gained `https://connect.facebook.net` in **both** `src/middleware.ts`
+(dynamic documents) and `public/_headers` (static assets). Without it the browser
+blocks `fbevents.js` and the pixel silently never loads.
+
+### Verified live (local `next start`, real Supabase)
+`/` served `fbq('init','1626139359047880')` + `PageView` + the `<noscript>`
+tracking image + the CSP header carrying the facebook origin; `/menu` and
+`/auth/sign-up` both emit it; `/admin` emits nothing. Admin -> Settings renders
+the two fields with friendly labels in **both** locales
+("Facebook (Meta) Pixel ID/enabled" and "معرّف بيكسل فيسبوك (ميتا)"). `tsc` clean,
+lint 0 errors (19 pre-existing warnings), `next build` green, **417 passed /
+21 skipped**.
+
+**Still needs the owner:** submit the ad with the pixel attached, then in Meta
+Ads Manager choose the website event (`Purchase` or `CompleteRegistration`) as the
+conversion - the pixel just feeds the data. The Meta "lead form" objective itself
+does not use the pixel; both can run together.
+
