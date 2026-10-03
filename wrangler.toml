@@ -1,0 +1,28 @@
+name = "panda-wok"
+
+# Cloudflare Pages configuration.
+#
+# Cloudflare's Git-connected Pages CI bundles `_worker.js` with its own bundled
+# wrangler (3.x), and that bundler only reads a Pages `wrangler.toml` — the
+# Workers-style `wrangler.jsonc` is ignored with "does not appear to be valid"
+# and `nodejs_compat` is silently dropped. Without the flag the naive resolver
+# cannot see Node builtins (async_hooks/fs/path/crypto/...) inside the OpenNext
+# server, so every push failed with "Could not resolve ... built into node".
+# The JSONC file stays the source of truth for the Worker deploy path; these two
+# configs coexist (verified: `wrangler deploy --dry-run` still reads JSONC).
+pages_build_output_dir = ".pages"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+# Cross-isolate data cache (same two namespaces as wrangler.jsonc). Unbound, the
+# public readers simply recompute; bound, one Supabase read is reused across
+# requests. Created 2026-10-02.
+[[kv_namespaces]]
+binding = "NEXT_INC_CACHE_KV"
+id = "9275068b465c4518b64ad36e24b876b5"
+
+[[kv_namespaces]]
+binding = "NEXT_TAG_CACHE_KV"
+id = "41e3b5120d8d48c08c04cedca8082e33"
+
+
