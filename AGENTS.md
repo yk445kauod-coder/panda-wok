@@ -3393,4 +3393,64 @@ Verified live after deploy: the KDS ticket and the order queue both render
 CI run 37205009700 success, plus a direct `pages:deploy` (uploaded bundle
 `8c76d7eb`, edge cache warmed). 425 tests pass, `tsc` clean, lint 0 errors.
 
+## Console showed the wrong time and half the order (2026-10-04)
+
+Two defects the kitchen hit on a live order. Both were read-path bugs — the data
+was in the database the whole time.
+
+### 1. Every timestamp was three hours early
+The Cloudflare Worker runs in **UTC**, and `Intl.DateTimeFormat` defaults to the
+runtime's zone when none is given. So an order placed at **15:40 in Alexandria
+showed as 12:40** in the console, and the KDS age was wrong with it. Verified
+live: `curl` the admin order list and grep the rendered time — it printed
+`04 Oct, 12:40` for a `12:40Z` order, while `created_at at time zone
+'Africa/Cairo'` is `15:40`.
+
+Fix: `formatDate`, `formatDateTime` and `formatTime` in `src/lib/utils/format.ts`
+now pass `timeZone: STORE_TIME_ZONE` (`Africa/Cairo`), imported from the existing
+`store-hours` module so there is one timezone constant, not two. The dashboard
+date and the KDS `ElapsedTimer` title were doing their own `Intl` /
+`toLocaleTimeString` and were fixed too. `tests/format-timezone.test.ts` (5)
+pins the Cairo rendering, including the near-midnight calendar-day case.
+
+**Rule:** on a Worker, a date formatter is UTC unless it says otherwise. Pin the
+zone explicitly in the shared helper; do not rely on the host's.
+
+### 2. The order record was missing data
+`ADMIN_ORDER_COLUMNS` selected only `order_items (id, name_snapshot, quantity,
+modifiers)`. Consequences, all visible on the live order detail page:
+
+- **every line total rendered `EGP 0.00`** — `line_total` was never selected, so
+  `formatPrice(undefined)` printed zero;
+- **item notes were dropped** (`notes` not selected);
+- **the tax line was absent** (`tax_total` not selected, and the page never
+  rendered it);
+- **the delivery name/phone the customer entered was never shown** — only the
+  account profile phone. The `address_snapshot` *does* carry `contact_name` /
+  `contact_phone` ("Enjy", "+201276761163"), and the customer typed them for the
+  rider. Worse, a profile phone can be malformed signup input: one live account
+  has `+2012556349155699`, so the queue would have sent the rider to a bad
+  number.
+
+Fix: the select now carries `unit_price, line_total, notes, tax_total,
+eta_minutes`; `shapeOrder` maps them; the detail page renders a tax line, the
+ETA, and a "Delivery contact" block. `readDeliveryContact()` (exported) reads the
+snapshot safely, and `customer_name` / `customer_phone` now fall back to the
+**delivery contact first**, profile second — the rider needs the person at the
+door, not the account holder. `tests/order-summary.test.ts` gained 4 cases
+(12 total).
+
+**Same class as the `modifiers` bug fixed the day before:** a service `select`
+list is a contract, and a missing column degrades to a plausible-looking zero or
+an absent block rather than an error. When a field is added to a query, the
+display path that reads it ships in the same change.
+
+Verified on the dev server with a forged gate cookie: order `PW-2610-1059` now
+renders `04 Oct, 15:40` (was `12:40`), line total `EGP 333.00` (was `0.00`), the
+tax row, and the delivery contact `Enjy / +201276761163`; order `PW-2610-1063`
+shows `+201277593815` (the delivery phone) instead of the malformed profile
+number. 434 tests pass, `tsc` clean, lint 0 errors (19 pre-existing
+`no-img-element` warnings), `next build` green.
+
+
 
