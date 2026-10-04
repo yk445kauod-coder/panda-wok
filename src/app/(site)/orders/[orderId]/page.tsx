@@ -219,12 +219,14 @@ export default async function OrderTrackingPage({
                 : formatPrice(order.delivery_fee, undefined, locale)}
             </dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-ink-700/85">{t("orders.tax")}</dt>
-            <dd className="tabular-nums">
-              {formatPrice(order.tax_total, undefined, locale)}
-            </dd>
-          </div>
+          {Number(order.tax_total) > 0 ? (
+            <div className="flex justify-between">
+              <dt className="text-ink-700/85">{t("orders.tax")}</dt>
+              <dd className="tabular-nums">
+                {formatPrice(order.tax_total, undefined, locale)}
+              </dd>
+            </div>
+          ) : null}
           <div className="mt-2 flex justify-between border-t border-ink-900/8 pt-2.5 text-base font-semibold">
             <dt>{t("orders.total")}</dt>
             <dd className="tabular-nums">

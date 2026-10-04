@@ -124,10 +124,12 @@ export default async function AdminOrderDetailPage({
                 <dt>{t("admin.pages.orderDetail.delivery")}</dt>
                 <dd className="tabular-nums">{formatPrice(order.delivery_fee)}</dd>
               </div>
-              <div className="flex justify-between">
-                <dt>{t("admin.pages.orderDetail.tax")}</dt>
-                <dd className="tabular-nums">{formatPrice(order.tax_total)}</dd>
-              </div>
+              {Number(order.tax_total) > 0 ? (
+                <div className="flex justify-between">
+                  <dt>{t("admin.pages.orderDetail.tax")}</dt>
+                  <dd className="tabular-nums">{formatPrice(order.tax_total)}</dd>
+                </div>
+              ) : null}
             </dl>
           </div>
 
