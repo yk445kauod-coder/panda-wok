@@ -3454,3 +3454,32 @@ number. 434 tests pass, `tsc` clean, lint 0 errors (19 pre-existing
 
 
 
+
+## Tax is unused, and order times read on a 12-hour clock (2026-10-04)
+
+Two owner requests, both about what the console shows.
+
+### The tax line is gone
+Tax is **not used** on this business — `tax.rate` is 0 — so an "EGP 0.00" row is
+noise on every order. The admin order detail rendered it unconditionally, and the
+customer order page did too. Both now render the row only when
+`Number(order.tax_total) > 0`, matching the checkout summary, which already hid a
+zero rate. The `admin.pages.orderDetail.tax` / `orders.tax` dictionary keys stay
+(the row is data-gated, not deleted), so a non-zero rate would show it again
+without a code change.
+
+### Times are 12-hour now
+The owner reads a 12-hour clock. `formatDateTime` and `formatTime` in
+`src/lib/utils/format.ts` gained `hour12: true`, so an order renders
+`04 Oct, 04:27 pm` (en) / `04 Oct, 04:27 م` (ar) instead of 24-hour. The timezone
+was already pinned to `Africa/Cairo` and was re-verified end to end: the live DB
+`created_at at time zone 'Africa/Cairo'` for `2026-10-04 14:02:13+00` is
+`17:02:13`, and the deployed console renders order `PW-2610-1064` as
+`04 Oct, 05:02 pm`. Cairo is UTC+3 with DST active in October, so 14:02Z -> 17:02
+is correct; `formatDate` (calendar day) is unchanged.
+
+`tests/format-timezone.test.ts` (6) now asserts the 12-hour form in both locales
+and the Cairo rendering. Deployed: `pages:deploy` + edge warm, verified live
+(time `05:02 pm`, no tax row). 435 tests pass, `tsc` clean, lint 0 errors (19
+pre-existing `no-img-element` warnings), `next build` green.
+
