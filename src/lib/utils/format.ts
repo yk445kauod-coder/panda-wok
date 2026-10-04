@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { STORE_TIME_ZONE } from "@/lib/services/store-hours";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -59,6 +60,7 @@ export function formatDate(
   const d = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return "—";
   return new Intl.DateTimeFormat(dateLocale(locale), {
+    timeZone: STORE_TIME_ZONE,
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -73,7 +75,11 @@ export function formatDateTime(
   if (!value) return "—";
   const d = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return "—";
+  // Rendered in the kitchen's timezone, not the runtime's. The Cloudflare
+  // Worker runs in UTC, so without this every timestamp is three hours early
+  // for Egypt — an order placed at 15:40 displayed as 12:40.
   return new Intl.DateTimeFormat(dateLocale(locale), {
+    timeZone: STORE_TIME_ZONE,
     day: "2-digit",
     month: "short",
     hour: "2-digit",
@@ -137,6 +143,7 @@ export function formatTime(value: string | Date | null | undefined) {
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("en-GB", {
+    timeZone: STORE_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);

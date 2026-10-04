@@ -13,6 +13,7 @@ export type AdminOrderRow = {
   subtotal: number;
   discount_total: number;
   delivery_fee: number;
+  tax_total: number;
   /** Name of the promotion applied at placement time, when one was. */
   offer_name: string | null;
   created_at: string;
@@ -20,6 +21,7 @@ export type AdminOrderRow = {
   payment_method: Database["public"]["Enums"]["payment_method"];
   payment_status: Database["public"]["Enums"]["payment_status"];
   customer_note: string | null;
+  eta_minutes: number | null;
   address_snapshot: Database["public"]["Tables"]["orders"]["Row"]["address_snapshot"];
   user_id: string;
   customer_name: string | null;
@@ -36,7 +38,7 @@ export type AdminOrderDetail = AdminOrderRow & {
 };
 
 const ADMIN_ORDER_COLUMNS =
-  "id, order_number, status, total, subtotal, discount_total, delivery_fee, offer_name, created_at, fulfillment, payment_method, payment_status, customer_note, address_snapshot, user_id, order_items (id, name_snapshot, quantity, modifiers), profiles (full_name, phone)";
+  "id, order_number, status, total, subtotal, discount_total, delivery_fee, tax_total, offer_name, created_at, fulfillment, payment_method, payment_status, customer_note, eta_minutes, address_snapshot, user_id, order_items (id, name_snapshot, quantity, unit_price, line_total, notes, modifiers), profiles (full_name, phone)";
 
 export type RawOrderItemModifier = {
   name?: string | null;
@@ -48,6 +50,9 @@ export type RawOrderItem = {
   id: string;
   name_snapshot: string;
   quantity: number;
+  unit_price?: number | null;
+  line_total?: number | null;
+  notes?: string | null;
   modifiers?: RawOrderItemModifier[] | null;
 };
 
@@ -59,12 +64,14 @@ type RawAdminOrder = {
   subtotal: number;
   discount_total: number;
   delivery_fee: number;
+  tax_total: number;
   offer_name: string | null;
   created_at: string;
   fulfillment: Database["public"]["Enums"]["fulfillment_type"];
   payment_method: Database["public"]["Enums"]["payment_method"];
   payment_status: Database["public"]["Enums"]["payment_status"];
   customer_note: string | null;
+  eta_minutes: number | null;
   address_snapshot: Database["public"]["Tables"]["orders"]["Row"]["address_snapshot"];
   user_id: string;
   order_items?: RawOrderItem[];
@@ -95,6 +102,24 @@ export function orderItemLine(item: RawOrderItem): string {
 }
 
 /**
+ * The name and phone the customer attached to the delivery, read off the
+ * snapshot `place_order` stored. Both are optional and may be absent on an
+ * older order or a malformed snapshot, so this never throws and returns null
+ * rather than undefined.
+ */
+export function readDeliveryContact(
+  snapshot: unknown,
+): { name: string | null; phone: string | null } {
+  if (!snapshot || typeof snapshot !== "object") return { name: null, phone: null };
+  const record = snapshot as Record<string, unknown>;
+  const pick = (key: string): string | null => {
+    const value = record[key];
+    return typeof value === "string" && value.trim() ? value.trim() : null;
+  };
+  return { name: pick("contact_name"), phone: pick("contact_phone") };
+}
+
+/**
  * A ticket/queue summary of the first few lines, each with its chosen options.
  * The options matter as much as the dish name here — "Chicken (sweet & sour
  * sauce)" and "Chicken (oyster sauce)" are different plates, so a summary that
@@ -109,6 +134,11 @@ export function summariseOrderItems(items: RawOrderItem[], max = 3): string | nu
 function shapeOrder(row: RawAdminOrder): AdminOrderRow {
   const items = row.order_items ?? [];
   const summary = summariseOrderItems(items);
+  // The delivery address carries the name/phone the customer gave for this
+  // specific delivery, which is what the rider actually needs. The account
+  // profile is only a fallback — a customer may order for someone else, and a
+  // malformed profile phone (bad signup input) should not be the number shown.
+  const contact = readDeliveryContact(row.address_snapshot);
 
   return {
     id: row.id,
@@ -118,16 +148,18 @@ function shapeOrder(row: RawAdminOrder): AdminOrderRow {
     subtotal: Number(row.subtotal),
     discount_total: Number(row.discount_total),
     delivery_fee: Number(row.delivery_fee),
+    tax_total: Number(row.tax_total),
     offer_name: row.offer_name,
     created_at: row.created_at,
     fulfillment: row.fulfillment,
     payment_method: row.payment_method,
     payment_status: row.payment_status,
     customer_note: row.customer_note,
+    eta_minutes: row.eta_minutes ?? null,
     address_snapshot: row.address_snapshot,
     user_id: row.user_id,
-    customer_name: row.profiles?.full_name ?? null,
-    customer_phone: row.profiles?.phone ?? null,
+    customer_name: contact.name ?? row.profiles?.full_name ?? null,
+    customer_phone: contact.phone ?? row.profiles?.phone ?? null,
     item_count: items.reduce((sum, item) => sum + item.quantity, 0),
     items_summary:
       items.length > 3 ? `${summary} +${items.length - 3} more` : summary || null,

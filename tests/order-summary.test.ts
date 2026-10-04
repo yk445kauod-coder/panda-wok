@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { orderItemLine, summariseOrderItems } from "@/lib/services/admin-orders";
+import {
+  orderItemLine,
+  readDeliveryContact,
+  summariseOrderItems,
+} from "@/lib/services/admin-orders";
 
 /**
  * The kitchen reads a ticket's `items_summary`, not the order row. Before this
@@ -89,3 +93,39 @@ describe("summariseOrderItems", () => {
     );
   });
 });
+
+/**
+ * The rider needs the name and number the customer gave *for this delivery*,
+ * which `place_order` stores in `address_snapshot`. The account profile is only
+ * a fallback — a customer may order for someone else, and a profile phone can be
+ * malformed signup input. Before this, the admin order page rendered the profile
+ * phone and ignored the snapshot, so the rider could be sent to the wrong number.
+ */
+describe("readDeliveryContact", () => {
+  it("reads the delivery contact off the snapshot", () => {
+    expect(
+      readDeliveryContact({ contact_name: "Enjy", contact_phone: "+201276761163" }),
+    ).toEqual({ name: "Enjy", phone: "+201276761163" });
+  });
+
+  it("returns nulls for an absent or non-object snapshot", () => {
+    expect(readDeliveryContact(null)).toEqual({ name: null, phone: null });
+    expect(readDeliveryContact("pickup")).toEqual({ name: null, phone: null });
+    expect(readDeliveryContact({})).toEqual({ name: null, phone: null });
+  });
+
+  it("ignores blank and non-string values", () => {
+    expect(readDeliveryContact({ contact_name: "   ", contact_phone: 12345 })).toEqual({
+      name: null,
+      phone: null,
+    });
+  });
+
+  it("trims a padded value", () => {
+    expect(readDeliveryContact({ contact_name: "  Enjy  " })).toEqual({
+      name: "Enjy",
+      phone: null,
+    });
+  });
+});
+

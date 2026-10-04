@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils/format";
+import { cn, formatTime } from "@/lib/utils/format";
 
 /** Minutes since a ticket was placed, coloured by how overdue it is. */
 function tone(minutes: number) {
@@ -42,7 +42,7 @@ export function ElapsedTimer({
 
   return (
     <span
-      title={`Placed ${new Date(start).toLocaleTimeString()}`}
+      title={`Placed ${formatTime(since)}`}
       className={cn(
         "inline-flex items-center rounded-full border px-2 py-0.5 text-3xs font-semibold tabular-nums",
         tone(minutes),

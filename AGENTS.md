@@ -3363,3 +3363,34 @@ Ads Manager choose the website event (`Purchase` or `CompleteRegistration`) as t
 conversion - the pixel just feeds the data. The Meta "lead form" objective itself
 does not use the pixel; both can run together.
 
+## Chosen dish options were missing from the kitchen ticket (2026-10-04)
+
+The customer picks a protein/sauce/piece count on a dish; `place_order` snapshots
+the choice into `order_items.modifiers` as `[{id,name,price_delta}]` (verified in a
+rolled-back transaction: Chicken + "sweet & sour sauce"). The **full order-detail
+page already showed it**, but the two places a cook actually works from did not:
+
+- `ADMIN_ORDER_COLUMNS` in `src/lib/services/admin-orders.ts` selected
+  `order_items (id, name_snapshot, quantity)` - **no `modifiers`** - and
+  `shapeOrder` built `items_summary` from just `quantity × name_snapshot`.
+- So the KDS ticket (`/admin/kitchen`) and both order lists (`/admin/orders`)
+  printed "1× Chicken" with the sauce dropped. Two Chicken orders with different
+  sauces were indistinguishable, and the kitchen would cook the wrong plate.
+
+Fix: select `modifiers` and render the option names into the summary
+(`1× Chicken (sweet & sour sauce)`). The helpers `orderItemLine` /
+`summariseOrderItems` are exported and read either `name` or the legacy `name_en`
+key in the stored JSON, so an older row still shows its choice. `itemOptionNames`
+ignores blanks and malformed entries.
+
+**A service `select` list is a contract** - the same class of bug as the earlier
+`listDeliverables` missing `reuse_count`. Adding a column to a query is not the
+fix; the display path that reads it must be in the same change. `tests/order-summary.test.ts`
+(8) pins options present / absent / multiple / legacy shape / blanks / the +N cap.
+
+Verified live after deploy: the KDS ticket and the order queue both render
+`1× Chicken (sweet & sour sauce)`; temp orders were deleted (0 leftovers). Deploy:
+CI run 37205009700 success, plus a direct `pages:deploy` (uploaded bundle
+`8c76d7eb`, edge cache warmed). 425 tests pass, `tsc` clean, lint 0 errors.
+
+

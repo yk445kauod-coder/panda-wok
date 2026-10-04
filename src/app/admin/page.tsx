@@ -15,6 +15,7 @@ import { Heatmap } from "@/components/charts/heatmap";
 import { formatDateTime, formatNumber, formatPrice, humanise } from "@/lib/utils/format";
 import { getAdminLocale, getT } from "@/lib/i18n/server";
 import { getPublicSettings } from "@/lib/services/catalog";
+import { STORE_TIME_ZONE } from "@/lib/services/store-hours";
 import { ManualCloseLever } from "@/components/admin/manual-close-lever";
 
 /**
@@ -79,7 +80,10 @@ export default async function AdminOverviewPage() {
         <div className="relative flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-3xs font-semibold tracking-widest text-rice-300/70 uppercase">
-              {new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(new Date())}
+              {new Intl.DateTimeFormat(locale, {
+                dateStyle: "long",
+                timeZone: STORE_TIME_ZONE,
+              }).format(new Date())}
             </p>
             <h1 className="mt-1 font-display text-2xl font-semibold text-rice-50">
               {session.profile?.full_name

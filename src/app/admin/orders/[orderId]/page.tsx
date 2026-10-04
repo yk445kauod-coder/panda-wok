@@ -74,6 +74,9 @@ export default async function AdminOrderDetailPage({
             {t("admin.pages.orderDetail.placed")} {formatDateTime(order.created_at)} ·{" "}
             {t(`admin.term.fulfilment.${order.fulfillment}`)} ·{" "}
             {t(`admin.term.paymentMethod.${order.payment_method}`)}
+            {order.eta_minutes
+              ? ` · ${t("admin.pages.orderDetail.eta", { count: order.eta_minutes })}`
+              : ""}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge
@@ -120,6 +123,10 @@ export default async function AdminOrderDetailPage({
               <div className="flex justify-between">
                 <dt>{t("admin.pages.orderDetail.delivery")}</dt>
                 <dd className="tabular-nums">{formatPrice(order.delivery_fee)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>{t("admin.pages.orderDetail.tax")}</dt>
+                <dd className="tabular-nums">{formatPrice(order.tax_total)}</dd>
               </div>
             </dl>
           </div>
@@ -187,6 +194,26 @@ export default async function AdminOrderDetailPage({
                 <Phone className="size-3.5" aria-hidden="true" />
                 {order.customer_phone}
               </a>
+            ) : null}
+
+            {address.contact_name || address.contact_phone ? (
+              <div className="mt-3 rounded-lg bg-rice-200/60 px-3 py-2">
+                <p className="text-2xs font-semibold tracking-wide text-ink-600 uppercase">
+                  {t("admin.pages.orderDetail.deliveryContact")}
+                </p>
+                <p className="mt-0.5 text-sm text-ink-900">
+                  {address.contact_name ?? order.customer_name ?? "—"}
+                </p>
+                {address.contact_phone ? (
+                  <a
+                    href={`tel:${address.contact_phone}`}
+                    className="mt-0.5 inline-flex items-center gap-1.5 text-sm text-vermilion-600 hover:text-vermilion-700"
+                  >
+                    <Phone className="size-3.5" aria-hidden="true" />
+                    {address.contact_phone}
+                  </a>
+                ) : null}
+              </div>
             ) : null}
 
             <address className="mt-3 flex items-start gap-2 text-sm not-italic text-ink-800">
