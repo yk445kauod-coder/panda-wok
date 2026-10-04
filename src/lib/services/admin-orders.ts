@@ -36,7 +36,20 @@ export type AdminOrderDetail = AdminOrderRow & {
 };
 
 const ADMIN_ORDER_COLUMNS =
-  "id, order_number, status, total, subtotal, discount_total, delivery_fee, offer_name, created_at, fulfillment, payment_method, payment_status, customer_note, address_snapshot, user_id, order_items (id, name_snapshot, quantity), profiles (full_name, phone)";
+  "id, order_number, status, total, subtotal, discount_total, delivery_fee, offer_name, created_at, fulfillment, payment_method, payment_status, customer_note, address_snapshot, user_id, order_items (id, name_snapshot, quantity, modifiers), profiles (full_name, phone)";
+
+export type RawOrderItemModifier = {
+  name?: string | null;
+  name_en?: string | null;
+  price_delta?: number;
+};
+
+export type RawOrderItem = {
+  id: string;
+  name_snapshot: string;
+  quantity: number;
+  modifiers?: RawOrderItemModifier[] | null;
+};
 
 type RawAdminOrder = {
   id: string;
@@ -54,16 +67,48 @@ type RawAdminOrder = {
   customer_note: string | null;
   address_snapshot: Database["public"]["Tables"]["orders"]["Row"]["address_snapshot"];
   user_id: string;
-  order_items?: { id: string; name_snapshot: string; quantity: number }[];
+  order_items?: RawOrderItem[];
   profiles?: { full_name: string | null; phone: string | null } | null;
 };
 
+/**
+ * The chosen options for one line, as names. `place_order` snapshots each
+ * option into `order_items.modifiers` as `{ id, name, price_delta }`; this reads
+ * either `name` or the older `name_en` shape so a ticket never loses the choice
+ * to a naming difference in the stored JSON.
+ */
+export function itemOptionNames(
+  modifiers: RawOrderItemModifier[] | null | undefined,
+): string[] {
+  if (!Array.isArray(modifiers)) return [];
+  return modifiers
+    .map((mod) => mod?.name ?? mod?.name_en ?? "")
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+/** One line as a cook reads it: `2× Chicken (sweet & sour sauce)`. */
+export function orderItemLine(item: RawOrderItem): string {
+  const options = itemOptionNames(item.modifiers);
+  const base = `${item.quantity}× ${item.name_snapshot}`;
+  return options.length > 0 ? `${base} (${options.join(", ")})` : base;
+}
+
+/**
+ * A ticket/queue summary of the first few lines, each with its chosen options.
+ * The options matter as much as the dish name here — "Chicken (sweet & sour
+ * sauce)" and "Chicken (oyster sauce)" are different plates, so a summary that
+ * dropped the choice would send the kitchen the wrong food.
+ */
+export function summariseOrderItems(items: RawOrderItem[], max = 3): string | null {
+  if (items.length === 0) return null;
+  const summary = items.slice(0, max).map(orderItemLine).join(", ");
+  return items.length > max ? `${summary} +${items.length - max} more` : summary;
+}
+
 function shapeOrder(row: RawAdminOrder): AdminOrderRow {
   const items = row.order_items ?? [];
-  const summary = items
-    .slice(0, 3)
-    .map((item) => `${item.quantity}× ${item.name_snapshot}`)
-    .join(", ");
+  const summary = summariseOrderItems(items);
 
   return {
     id: row.id,
