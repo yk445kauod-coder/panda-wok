@@ -15,11 +15,17 @@ describe("formatDateTime", () => {
   const placedAt = "2026-10-04T12:40:38.252584+00:00";
 
   it("renders the kitchen's local time, not UTC", () => {
-    expect(formatDateTime(placedAt)).toContain("15:40");
+    expect(formatDateTime(placedAt)).toContain("03:40");
     expect(formatDateTime(placedAt)).not.toContain("12:40");
   });
 
-  it("renders in Arabic 12-hour convention but still Cairo time", () => {
+  it("uses the 12-hour clock in English", () => {
+    // 15:40 Cairo is "03:40 pm" — the convention the owner reads.
+    expect(formatDateTime(placedAt)).toContain("pm");
+    expect(formatDateTime(placedAt)).not.toContain("15:40");
+  });
+
+  it("uses the Arabic 12-hour convention (م) but still Cairo time", () => {
     // ar-EG shows 03:40 م — the same 15:40, in the convention Egyptian readers
     // expect. The point of the assertion is the *zone*, not the notation.
     expect(formatDateTime(placedAt, "ar")).toContain("03:40");
@@ -40,7 +46,7 @@ describe("formatDate", () => {
 });
 
 describe("formatTime", () => {
-  it("shows the local clock time", () => {
-    expect(formatTime("2026-10-04T12:40:38Z")).toBe("15:40");
+  it("shows the local clock time in 12-hour form", () => {
+    expect(formatTime("2026-10-04T12:40:38Z")).toBe("03:40 pm");
   });
 });

@@ -77,13 +77,15 @@ export function formatDateTime(
   if (Number.isNaN(d.getTime())) return "—";
   // Rendered in the kitchen's timezone, not the runtime's. The Cloudflare
   // Worker runs in UTC, so without this every timestamp is three hours early
-  // for Egypt — an order placed at 15:40 displayed as 12:40.
+  // for Egypt — an order placed at 15:40 displayed as 12:40. The clock is
+  // 12-hour (the convention the owner reads) in both locales.
   return new Intl.DateTimeFormat(dateLocale(locale), {
     timeZone: STORE_TIME_ZONE,
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: true,
     numberingSystem: "latn",
   }).format(d);
 }
@@ -137,7 +139,7 @@ export function humanise(value: string | null | undefined) {
     .join(" ");
 }
 
-/** Clock time for chat bubbles, locale-aware but short. */
+/** Clock time for chat bubbles, locale-aware but short (12-hour). */
 export function formatTime(value: string | Date | null | undefined) {
   if (!value) return "";
   const date = typeof value === "string" ? new Date(value) : value;
@@ -146,6 +148,7 @@ export function formatTime(value: string | Date | null | undefined) {
     timeZone: STORE_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
+    hour12: true,
   }).format(date);
 }
 
