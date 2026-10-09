@@ -3483,3 +3483,75 @@ and the Cairo rendering. Deployed: `pages:deploy` + edge warm, verified live
 (time `05:02 pm`, no tax row). 435 tests pass, `tsc` clean, lint 0 errors (19
 pre-existing `no-img-element` warnings), `next build` green.
 
+
+## Box choices were never captured: prose-only options (2026-10-09)
+
+**Defect (live, owner-reported).** Every Box dish — Sweet & Sour Chicken Box and
+the other seven — states its choice only as prose in `description_en`: *"your
+choice of vegetables noodles or vegetables rice with topping chicken sweet &
+sour sauce ..."*. There was **no `modifier_groups` row** for any box, so the
+customer page rendered only the dish text plus a free-text note box and an "Add"
+button — no radios. The choice was never captured, `place_order` never validated
+one, and the kitchen/console received "Sweet & Sour Chicken Box" with no idea
+whether rice or noodles was wanted. Order `PW-2610-1069` is the proof:
+`Sweet & Sour Chicken Box`, `modifiers: []`, and the admin order detail shows no
+option line.
+
+**Scope, counted, not assumed.** Exactly the **8** dishes in the `box` category
+are affected; a broad `description ~* 'choice|choose|select|either| or '` scan
+with `groups = 0` returns those eight and nothing else. This is the same class of
+defect the two `combo-8` dishes had (fixed in `20260929180000`).
+
+**Fix, owner-requested and deep, not a patch for one dish.**
+`supabase/migrations/20261009000100_box_rice_noodles_options.sql` (remote name
+`box_rice_noodles_options`), insert-only and idempotent — it mirrors the combo
+migration exactly:
+
+- A required single-select **"Rice or noodles"** / **"أرز أو نودلز"** group
+  (`min 1 / max 1`, delta 0) on **all eight** boxes, with options
+  **Vegetables rice** / **Vegetables noodles** (`أرز بالخضروات` /
+  `نودلز بالخضروات`), every name taken verbatim from the dish's own description.
+- `Double Box` carries a **second** prose choice (*"your choice of sauce
+  (sweet&sour - kungpao -oyster)"*), so it also gets a required
+  **"Choose your sauce"** / **"اختر الصوص"** group (sweet & sour / kung-pao /
+  oyster, Arabic reused from the existing sauce options).
+- Guarded on `name_en` not already existing, so re-running inserts nothing
+  (verified in a rolled-back tx: 9 groups / 19 options both times).
+
+**Verified end to end, not just in the DB.**
+- Live customer page `/menu/sweet-sour-chicken-box` now emits the group (before:
+  zero `<input>`; the dish body had no fieldset at all).
+- Rolled-back `place_order` as a real customer (`request.jwt.claims` +
+  `role authenticated`): **no choice → `22023 VALIDATION:Sweet & Sour Chicken Box`**;
+  **with the rice option → accepted `PW-2610-1071 / 349.00`**, and
+  `order_items.modifiers` stored `[{name:"Vegetables rice", price_delta:0.00}]`.
+  The console's `orderItemLine` (already correct, pinned by
+  `tests/order-summary.test.ts`) renders that as `1× Sweet & Sour Chicken Box
+  (Vegetables rice)`.
+- `tests/box-choices-live.test.ts` (opt-in `BOX_OPTIONS_LIVE=1`, 10 tests) pins
+  every box's group, its required/single-select shape, delta 0, the Double Box
+  sauce group, and Arabic on every name — so a re-import or manual edit that
+  drops the groups fails loudly instead of silently returning to prose-only.
+
+**Why required is safe here.** Dish cards are pure links (`dish-card.tsx`); a
+dish is only added from its detail page, where `AddToCartPanel` derives the
+first available option for any `min_select>0 && max_select===1` group. So the
+customer can never reach checkout without a choice, and `place_order`'s
+`is_required` gate cannot strand a well-behaved basket. Same contract as the
+existing `Size` / `Your choice` / `Choose your protein` groups.
+
+**Cache safety.** The dish reader is `unstable_cache`-wrapped (`revalidate 600`,
+tag `public:menu`) and the Pages front door caches dish HTML (`s-maxage 600,
+swr 86400`). Both the KV entry and the edge HTML cache would otherwise hold the
+old (group-less) page for up to the TTL, and a customer on that stale page could
+add a box with no choice and now be **rejected** at checkout. New
+`refreshPublicCacheAction` (`settings.manage`) + a "Refresh storefront cache"
+control on Admin -> Settings force `revalidateAllPublicData()` and
+`revalidatePath("/", "/menu")`; the POST also triggers the edge worker's
+automatic `purgePublicCache`. This covers the one case admin actions miss — a
+change made **directly in the database** (exactly this migration) — and is the
+standing tool for future direct-DB menu edits.
+
+State: `tsc` clean, lint 0 errors (19 pre-existing `no-img-element` warnings),
+**435 passed / 31 skipped**, `next build` green.
+

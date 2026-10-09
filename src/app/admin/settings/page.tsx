@@ -7,6 +7,7 @@ import {
   type SettingRow,
 } from "@/components/admin/settings-forms";
 import { StoreHoursControl } from "@/components/admin/store-hours-control";
+import { CacheRefreshControl } from "@/components/admin/cache-refresh-control";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatNumber } from "@/lib/utils/format";
 import { getAdminLocale, getT } from "@/lib/i18n/server";
@@ -94,6 +95,8 @@ export default async function AdminSettingsPage() {
           <SettingsForm settings={settingRows} />
         )}
       </section>
+
+      <CacheRefreshControl />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { revalidatePublicData } from "@/lib/cache/revalidate";
+import { revalidateAllPublicData, revalidatePublicData } from "@/lib/cache/revalidate";
 import { CACHE_TAGS } from "@/lib/cache/tags";
 import { createServerSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
 import { assertCapability } from "@/lib/auth/session";
@@ -2353,3 +2353,26 @@ export async function toggleCustomerTagAction(
   revalidatePath("/admin/crm");
   return actionOk();
 }
+
+/* ------------------------------------------------------------- public cache */
+
+/**
+ * Force-refresh the public data cache for the storefront.
+ *
+ * Admin edits already revalidate their slice (see `revalidatePublicData` calls
+ * above), and the Pages front door purges its own HTML cache on any non-GET
+ * under `/admin`. This exists for the two cases those do not cover: a change
+ * made *directly in the database* (so no action ran to revalidate a tag), and an
+ * owner who simply wants the menu to refresh now rather than wait out the TTL.
+ *
+ * `revalidateAllPublicData` needs a request scope, which a server action always
+ * has; the edge cache is purged by the POST itself when this response returns.
+ */
+export async function refreshPublicCacheAction(): Promise<FormActionResult<undefined>> {
+  await assertCapability("settings.manage");
+  revalidateAllPublicData();
+  revalidatePath("/");
+  revalidatePath("/menu");
+  return actionOk();
+}
+
