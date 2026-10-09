@@ -50,3 +50,26 @@ export function toggleModifierOption(
 export function selectionCount(selection: Selection, groupId: string): number {
   return (selection[groupId] ?? []).length;
 }
+
+export type GroupRule = {
+  id: string;
+  min_select: number;
+};
+
+/**
+ * The groups a customer still has to complete before the dish can be added.
+ *
+ * Every group with `min_select > 0` is mandatory: a protein, a size, a piece
+ * count, a rice-or-noodles base. An earlier version of the add-to-cart panel
+ * pre-selected the first option of a single-select required group, so this list
+ * was always empty and the customer could add a dish without ever choosing —
+ * producing an order the kitchen could not cook as intended. Nothing may be
+ * chosen on the customer's behalf, so this is the single rule the UI and the
+ * server both speak.
+ */
+export function unmetRequiredGroups<T extends GroupRule>(
+  groups: readonly T[],
+  selection: Selection,
+): T[] {
+  return groups.filter((group) => (selection[group.id]?.length ?? 0) < group.min_select);
+}

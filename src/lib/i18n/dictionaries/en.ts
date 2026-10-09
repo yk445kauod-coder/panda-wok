@@ -237,11 +237,15 @@ export const en = {
     chooseOne: "Choose one",
     chooseUpTo: "Choose up to {count}",
     chooseAtLeast: ", at least {count}",
+    chooseToContinue: "Choose your options first",
+    finishRequired: "Still to choose: {groups}.",
+    choiceRequired: "Please choose: {groups}. The order can't go through until you do.",
     unfinished: "Please finish choosing: {groups}.",
     maxInBasket: "You already have the maximum of this dish in your basket.",
     maxExtras: "You can choose up to {count} extras. Deselect one first.",
     soldOutChoice:
       "Every option in {groups} is out of stock right now, so this dish cannot be ordered. Please try again later.",
+    soldOutChoiceShort: "Out of stock",
     unavailableTitle: "This dish is unavailable right now.",
     unavailableBody:
       "It is out of stock or paused right now. Try another dish, or check back later.",

@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils/format";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline" | "warning" | "error";
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
@@ -12,6 +12,12 @@ const VARIANTS: Record<Variant, string> = {
     "border border-ink-900/15 bg-rice-50/70 text-ink-900 hover:bg-rice-100",
   ghost: "text-ink-800 hover:bg-ink-900/5",
   danger: "bg-chili-500 text-rice-50 hover:bg-chili-600",
+  // A required choice is still missing: the action stays enabled (so a tap can
+  // explain and focus it) but the button itself says "not yet", rather than
+  // looking ready and silently sending a default.
+  warning: "bg-miso-600 text-ink-950 hover:bg-miso-500",
+  // The dish cannot be ordered at all (a required choice is sold out).
+  error: "bg-chili-600 text-rice-50 hover:bg-chili-500",
 };
 
 const SIZES: Record<Size, string> = {

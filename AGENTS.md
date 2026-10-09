@@ -3581,3 +3581,67 @@ audio. Volume is still hardware-bound: browser/OS/system volume is the final
 ceiling, and the operator must interact once (autoplay policy) before a
 poll-driven alarm is audible.
 
+
+## Dish options were not truly mandatory (2026-10-09)
+
+The owner reported that a customer can complete an order without choosing an
+option. Two independent defects, both real:
+
+### 1. The add-to-cart panel silently pre-selected the first option
+For any `min_select > 0, max_select === 1` group the panel seeded `selected`
+with `options[0].id` (a "never leave a required choice blank" convenience from an
+earlier session). The consequence was the opposite of the intent: the Add button
+was enabled from the start, the customer added the dish without ever tapping a
+radio, and a Box arrived as **rice** when they wanted noodles. The choice looked
+mandatory but was satisfied by a hidden default. That is the "serious UX defect"
+the owner hit.
+
+Fix (`add-to-cart-panel.tsx`): nothing is pre-selected — `selected` is exactly
+the customer's own taps (`{ ...overrides }`). A missing required group now
+
+- tints the fieldset (miso border + wash), and
+- switches the Add button to the `warning` variant reading
+  **"Choose your options first"** (new `ui/button.tsx` variants `warning` /
+  `error`),
+- and if the customer taps it anyway, the add is refused, an assertive
+  `role="alert"` names the groups, and the fieldset is scrolled to and focused.
+
+The out-of-stock case (`orderBlocked`) stays disabled and switches to the `error`
+variant. The pure rule lives in `unmetRequiredGroups` (`modifier-selection.ts`)
+so the client and the server speak one contract.
+
+### 2. Eleven protein groups were NOT required server-side
+`place_order_internal` only enforces a minimum when `is_required` is true:
+
+    if v_group.is_required and v_group.chosen < v_group.min_select then
+      raise exception 'VALIDATION:%' ...
+
+The eleven **"Choose your protein"** groups (44 options / 11 dishes) were
+`min_select = 1` but `is_required = false`, so the server accepted an order with
+no protein chosen — the exact hole the client auto-select had been papering over.
+The `Size`, `Rice or noodles`, `Your choice` and `Choose your sauce` groups were
+already required.
+
+Fix (`20261009000200_require_all_modifier_choices`, remote
+`require_all_modifier_choices`): `update modifier_groups set is_required = true
+where min_select > 0 and is_required = false`. Owner-requested, additive and
+idempotent — 28 groups now required, 0 left optional-with-minimum, and no name,
+option, price or ordering touched. The legend badge now keys on `min_select > 0`
+rather than `is_required`, so the UI cannot disagree with the server again.
+
+Verified in a rolled-back transaction as a real customer: `Singapore noodles`
+with no protein → **`22023 VALIDATION:Singapore noodles`**; with chicken →
+accepted `PW-2610-1077 / 278.00`. Live SSR (`next dev`): the dish page emits no
+`checked` radio and shows "Choose your options first" on both a Box and a protein
+dish. `tests/modifier-selection.test.ts` (15) covers `unmetRequiredGroups` and
+pins that the auto-select cannot return; `tests/modifier-required-live.test.ts`
+(`MODIFIER_LIVE=1`) asserts the DB invariant.
+
+Note: **`orderBlocked` is now shown before `needsChoice` is messaged**, but a
+group whose every option is sold out also counts as missing, so the alert fires
+first — worth remembering if the two states ever need different copy.
+
+State: `tsc` clean, lint 0 errors (19 pre-existing warnings), **448 passed / 33
+skipped**, `next build` green.
+
+
