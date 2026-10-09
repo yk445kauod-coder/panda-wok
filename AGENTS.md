@@ -3555,3 +3555,29 @@ standing tool for future direct-DB menu edits.
 State: `tsc` clean, lint 0 errors (19 pre-existing `no-img-element` warnings),
 **435 passed / 31 skipped**, `next build` green.
 
+
+## Order alarm made much louder (2026-10-09)
+
+The console already had the "keep ringing until someone acts" behaviour the
+kitchen asked for: `startOrderAlarm` rings loudly on any admin page and only
+stops when the order leaves `new` (accepted/rejected), or a member presses
+Acknowledge (`src/lib/sound/alert-state.ts` + `alert-ack.ts`, mounted once in
+`AdminShell` via `order-alert-watcher.tsx`). The follow-up ask was **louder**.
+
+The siren rode the shared master bus at unity gain, the same bus the polite
+confirmation `ting` uses, so raising it meant raising everything. Instead
+`src/lib/sound/ting.ts` now gives the alarm its **own boosted bus**
+(`getAlarmBus`, `ALARM_GAIN = 3`) that feeds the master/limiter, and
+`sirenStrike` connects its oscillators to that bus — so the siren is roughly 3x
+hotter (into the limiter, which absorbs the peaks) while `playTing` / `playBuzz`
+are unchanged. The strike also gained a **two-octave "edge" layer** on top of the
+fundamental + octave, because high frequencies are what cut through the
+mid-range noise of extractors and a crowd. Limiter threshold nudged `-1 -> -0.5`
+dB so it still only catches the very peaks.
+
+Customer site stays silent — `tests/order-alarm-sound.test.ts` pins both the
+boost path and that nothing under `(site)` imports the sound module or creates
+audio. Volume is still hardware-bound: browser/OS/system volume is the final
+ceiling, and the operator must interact once (autoplay policy) before a
+poll-driven alarm is audible.
+

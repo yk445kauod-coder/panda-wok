@@ -24,11 +24,19 @@
 const STORAGE_KEY = "panda-wok.admin.sound";
 
 let context: AudioContext | null = null;
-// A single master bus every tone runs through. The order siren is pushed hot so
-// it carries across a busy kitchen, and a limiter on the bus stops those peaks
-// from clipping into a crackle. The polite `ting` shares the bus at its own
-// (much lower) gain, so the limiter only ever engages on the alarm.
+// A single master bus every tone runs through. A limiter on the bus stops the
+// alarm's peaks from clipping into a crackle; the polite `ting` shares the bus
+// at its own (much lower) gain, so the limiter only ever engages on the alarm.
 let master: GainNode | null = null;
+// The alarm rides its own bus, boosted well above unity, feeding the master.
+// Keeping the boost on a dedicated node (rather than raising the master) is what
+// lets the siren be *much* louder without also making the confirmation `ting`
+// shout. The limiter downstream keeps the boosted peaks from clipping.
+let alarmBus: GainNode | null = null;
+
+// How hard the order siren is pushed. The kitchen asked for it loud above all
+// else, so this is deliberately hot; the limiter absorbs the peaks.
+const ALARM_GAIN = 3;
 
 function getMaster(ctx: AudioContext): GainNode {
   if (master) return master;
@@ -37,10 +45,10 @@ function getMaster(ctx: AudioContext): GainNode {
 
   const limiter = ctx.createDynamicsCompressor();
   // A safety net, not a compressor: it only bites at the very peaks (where the
-  // fundamental and its octave overlap) so the siren stays as loud as the
+  // fundamental and its octaves overlap) so the siren stays as loud as the
   // browser allows without clipping into a crackle. The quiet confirmation ting
   // is far below this threshold and passes through untouched.
-  limiter.threshold.value = -1;
+  limiter.threshold.value = -0.5;
   limiter.knee.value = 0;
   limiter.ratio.value = 20;
   limiter.attack.value = 0.002;
@@ -50,6 +58,16 @@ function getMaster(ctx: AudioContext): GainNode {
   limiter.connect(ctx.destination);
   master = gain;
   return master;
+}
+
+/** The alarm's boosted path into the shared master/limiter. */
+function getAlarmBus(ctx: AudioContext): GainNode {
+  if (alarmBus) return alarmBus;
+  const gain = ctx.createGain();
+  gain.gain.value = ALARM_GAIN;
+  gain.connect(getMaster(ctx));
+  alarmBus = gain;
+  return gain;
 }
 
 // A tiny subscribable store so React can read the preference through
@@ -159,16 +177,17 @@ export function playBuzz(): void {
 
 /**
  * The order alarm. This is deliberately the loudest thing the console can make:
- * a square-wave siren at full gain, doubled an octave up for extra bite, so it
- * cuts through a busy kitchen instead of blending into it. A two-tone "wee-woo"
- * also reads as "someone must act" rather than as a notification.
+ * a hard square-wave siren run through a bus boosted past unity gain (see
+ * `ALARM_GAIN`), with octave and two-octave layers on top for bite, so it cuts
+ * through a busy kitchen instead of blending into it. A two-tone "wee-woo" also
+ * reads as "someone must act" rather than as a notification.
  *
  * The kitchen asked for it *loud* and for it to keep going until somebody takes
  * an action, so this is intentionally aggressive: the blast holds, and the pair
  * repeats fast enough to be impossible to ignore.
  */
 function sirenStrike(ctx: AudioContext, frequency: number, at: number, gain: number): void {
-  const bus = getMaster(ctx);
+  const bus = getAlarmBus(ctx);
 
   // Fundamental: a hard square wave, the harshest waveform there is.
   const oscillator = ctx.createOscillator();
@@ -193,19 +212,36 @@ function sirenStrike(ctx: AudioContext, frequency: number, at: number, gain: num
   overtone.type = "square";
   overtone.frequency.value = frequency * 2;
   overtoneEnvelope.gain.setValueAtTime(0.0001, at);
-  overtoneEnvelope.gain.exponentialRampToValueAtTime(gain * 0.45, at + 0.012);
-  overtoneEnvelope.gain.setValueAtTime(gain * 0.45, at + 0.2);
+  overtoneEnvelope.gain.exponentialRampToValueAtTime(gain * 0.5, at + 0.012);
+  overtoneEnvelope.gain.setValueAtTime(gain * 0.5, at + 0.2);
   overtoneEnvelope.gain.exponentialRampToValueAtTime(0.0001, at + 0.34);
   overtone.connect(overtoneEnvelope);
   overtoneEnvelope.connect(bus);
   overtone.start(at);
   overtone.stop(at + 0.36);
+
+  // A second partial two octaves up, at a low gain. Square waves are already
+  // harmonic-rich, but this upper layer is what pushes the siren from "loud
+  // beep" to "carries across the whole kitchen" — high frequencies cut through
+  // the mid-range noise of exhausts, extractors and a crowd.
+  const edge = ctx.createOscillator();
+  const edgeEnvelope = ctx.createGain();
+  edge.type = "square";
+  edge.frequency.value = frequency * 4;
+  edgeEnvelope.gain.setValueAtTime(0.0001, at);
+  edgeEnvelope.gain.exponentialRampToValueAtTime(gain * 0.22, at + 0.012);
+  edgeEnvelope.gain.setValueAtTime(gain * 0.22, at + 0.18);
+  edgeEnvelope.gain.exponentialRampToValueAtTime(0.0001, at + 0.3);
+  edge.connect(edgeEnvelope);
+  edgeEnvelope.connect(bus);
+  edge.start(at);
+  edge.stop(at + 0.36);
 }
 
 /** One full "wee-woo" pair, both tones pushed to full gain. */
 function playSirenBurst(ctx: AudioContext, at: number): void {
-  sirenStrike(ctx, 988.0, at, 0.9);
-  sirenStrike(ctx, 1319.0, at + 0.18, 0.9);
+  sirenStrike(ctx, 988.0, at, 1);
+  sirenStrike(ctx, 1319.0, at + 0.18, 1);
 }
 
 // How often a burst repeats while an order is unacknowledged. Every 0.7 s is
