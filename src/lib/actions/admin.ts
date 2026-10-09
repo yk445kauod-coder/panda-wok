@@ -435,7 +435,6 @@ export async function saveModifierGroupAction(
     nameAr: formData.get("nameAr") ?? undefined,
     minSelect: formData.get("minSelect") || 0,
     maxSelect: formData.get("maxSelect") || 1,
-    isRequired: formData.get("isRequired") === "on",
     sortOrder: formData.get("sortOrder") || 0,
   });
   if (!parsed.success) return toFormError(parsed.error);

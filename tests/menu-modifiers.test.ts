@@ -65,6 +65,47 @@ describe("modifierGroupSchema", () => {
     const result = modifierGroupSchema.safeParse({ menuItemId: UUID, nameEn: "" });
     expect(result.success).toBe(false);
   });
+
+  // `is_required` is derived, never submitted: a group that asks a question must
+  // force the answer. The owner's rule is that every choice is mandatory.
+  it("derives required from a minimum", () => {
+    const result = modifierGroupSchema.safeParse({
+      menuItemId: UUID,
+      nameEn: "Choose your protein",
+      minSelect: 1,
+      maxSelect: 1,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.isRequired).toBe(true);
+  });
+
+  it("makes a single-select group mandatory even when submitted with no minimum", () => {
+    // The exact hole that let "Chicken" be ordered with no sauce: a radio group
+    // saved as optional. A choose-one group always asks exactly one answer, so
+    // it is normalised to min 1 and required.
+    const result = modifierGroupSchema.safeParse({
+      menuItemId: UUID,
+      nameEn: "Choose your style",
+      minSelect: 0,
+      maxSelect: 1,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isRequired).toBe(true);
+      expect(result.data.minSelect).toBe(1);
+    }
+  });
+
+  it("leaves a genuinely optional multi-select group optional", () => {
+    const result = modifierGroupSchema.safeParse({
+      menuItemId: UUID,
+      nameEn: "Add an extra",
+      minSelect: 0,
+      maxSelect: 2,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.isRequired).toBe(false);
+  });
 });
 
 describe("modifierOptionSchema", () => {

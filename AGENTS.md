@@ -3645,3 +3645,62 @@ State: `tsc` clean, lint 0 errors (19 pre-existing warnings), **448 passed / 33
 skipped**, `next build` green.
 
 
+## Every choice is mandatory, including a single-select group (2026-10-09)
+
+The owner reported again that a customer can complete an order without choosing
+an option, and named the case precisely: the radio choices (sauce, noodles, rice,
+etc.) must be mandatory on **every** item that offers a choice.
+
+The earlier fix (`84e5dc3`, deployed) closed the client hidden-default and made
+every group with `min_select > 0` required. It missed a third shape: a
+single-select group created with **`min_select = 0`**. Both gates keyed on the
+minimum — the client on `min_select > 0`, the server on `is_required` — so a
+"pick one, or skip it" radio was invisible to both. Three live groups were
+exactly this:
+
+- `Chicken` -> "Choose your style" (4 sauces)
+- `Beef` -> "Choose your style" (3 sauces)
+- `Beef dumplings (4 pieces)` -> "Choose your style" (steamed / fried)
+
+Live proof: order item `Chicken`, 2026-10-04, `modifiers: []` — no sauce at all.
+
+Fix, applied live as `20261009120000_every_choice_is_mandatory.sql` (remote
+`every_choice_is_mandatory`):
+
+1. Every radio (`max_select = 1`) is normalised to `min_select = 1,
+   is_required = true`. The client gate (`unmetRequiredGroups`, keyed on
+   `min_select`) and the server gate (keyed on `is_required`) now agree, and the
+   customer panel shows the "Required" badge with nothing pre-selected.
+2. A CHECK constraint makes the incoherent states unwritable:
+   `is_required = (min_select > 0) and (max_select > 1 or min_select >= 1)`.
+   Verified in rolled-back transactions: a radio with `min=0` and a required
+   group with `min=0` are both rejected (23514); an optional multi-select "add
+   an extra" group is still allowed.
+3. The admin write path derives the flag instead of trusting a form field:
+   `modifierGroupSchema` normalises a single-select group to `minSelect = 1,
+   isRequired = true`, and `saveModifierGroupAction` no longer reads an
+   `isRequired` checkbox (there never was one — creating a group with min 1
+   silently saved `is_required = false`, which is how this class of bug got in).
+   The admin legend and the "Minimum" hint were corrected so they cannot read
+   "optional · required" or promise that `0 = optional` for a radio.
+
+Nothing was renamed, repriced, reordered or deleted; only the required flags and
+the radio minimums changed.
+
+**Verified live (rolled-back `place_order` as a real customer):** `Chicken` with
+no choice -> `22023 VALIDATION:Chicken`; `Chicken` with a sauce -> accepted.
+Dev SSR: `/menu/chicken` and `/menu/beef-dumplings-4-pieces` render the
+`Required` badge, no pre-checked radio, and the "Choose your options first"
+button state. All 31 live groups are now `min 1 / max 1 / required`.
+
+**Cache:** the dish reader is `unstable_cache`-wrapped and the Pages front door
+caches dish HTML, so the storefront must be refreshed after this direct-DB
+change (Admin -> Settings -> "Refresh storefront cache", or the edge worker's
+automatic purge on the next admin POST) — otherwise a customer can hold a stale
+group-less page for up to the TTL.
+
+State: `tsc` clean, lint 0 errors (19 pre-existing warnings), **451 passed / 35
+skipped**, `next build` green; `MODIFIER_LIVE=1` live probe 4/4.
+
+
+

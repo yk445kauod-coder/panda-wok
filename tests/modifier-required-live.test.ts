@@ -44,4 +44,30 @@ describe.skipIf(!live)("every modifier group with a minimum is required", () => 
       expect(group.is_required).toBe(true);
     }
   });
+
+  // The owner's rule: any item that offers a choice must force the choice. A
+  // single-select group (a radio) is exactly such a choice — "Chicken" with a
+  // sauce list, "Beef dumplings" steamed or fried — so it must be required with
+  // a minimum of one, even if it was created without one.
+  it("makes every single-select group mandatory", async () => {
+    const admin = createAdminSupabase();
+    const { data, error } = await admin
+      .from("modifier_groups")
+      .select("id, name_en, min_select, max_select, is_required")
+      .eq("max_select", 1)
+      .or("is_required.eq.false,min_select.lt.1");
+    expect(error).toBeNull();
+    expect(data).toEqual([]);
+  });
+
+  it("has no group that is required without asking a question", async () => {
+    const admin = createAdminSupabase();
+    const { data, error } = await admin
+      .from("modifier_groups")
+      .select("id, name_en, min_select, max_select, is_required")
+      .eq("is_required", true)
+      .eq("min_select", 0);
+    expect(error).toBeNull();
+    expect(data).toEqual([]);
+  });
 });

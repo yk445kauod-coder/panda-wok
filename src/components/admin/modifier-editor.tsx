@@ -67,8 +67,10 @@ export function ModifierEditor({
                     : t("admin.pages.optionsEditor.chooseUpTo", { max: group.max_select })}
                   {group.min_select > 0
                     ? ` · ${t("admin.pages.optionsEditor.atLeast", { min: group.min_select })}`
+                    : ""}
+                  {group.is_required
+                    ? ` · ${t("admin.pages.optionsEditor.required")}`
                     : ` · ${t("admin.pages.optionsEditor.optional")}`}
-                  {group.is_required ? ` · ${t("admin.pages.optionsEditor.required")}` : ""}
                 </p>
               </div>
               <AdminButtonAction

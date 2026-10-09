@@ -262,12 +262,21 @@ export const modifierGroupSchema = z
     nameAr: optionalText(80),
     minSelect: z.coerce.number().int().min(0).max(20).default(0),
     maxSelect: z.coerce.number().int().min(1).max(20).default(1),
-    isRequired: z.coerce.boolean().default(false),
     sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
   })
   .refine((group) => group.maxSelect >= group.minSelect, {
     message: "Maximum must be at least the minimum",
     path: ["maxSelect"],
+  })
+  // `is_required` is not a separate choice: a group requires an answer exactly
+  // when it asks for a minimum. A single-select group (a radio) always asks for
+  // exactly one answer, so it always has a minimum of one — this is the rule
+  // that keeps a "Choose your style" sauce list from being saved as skippable,
+  // which let a customer order "Chicken" with no sauce. The database enforces
+  // the same rule with a CHECK constraint.
+  .transform((group) => {
+    const minSelect = group.maxSelect === 1 ? Math.max(group.minSelect, 1) : group.minSelect;
+    return { ...group, minSelect, isRequired: minSelect > 0 };
   });
 
 export const modifierOptionSchema = z.object({
