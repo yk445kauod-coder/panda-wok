@@ -1,0 +1,3543 @@
+{
+  "manifest_version": "1.0",
+  "purpose": "CMS import manifest for an AI coding agent",
+  "source": {
+    "file": "newwebsitemenu.pmdx",
+    "worksheet": "Sheet1",
+    "source_dimensions": {
+      "rows": 232,
+      "columns": 13
+    },
+    "non_empty_rows": 200
+  },
+  "import_instructions": {
+    "idempotency_key": "external_id",
+    "upsert_strategy": "upsert by external_id; never create duplicates on retry",
+    "transaction": "import all records in one transaction when supported, otherwise use resumable batches",
+    "validation": [
+      "Use EGP (Egyptian Pound / جنيه مصري) for every priced item; do not infer another currency.",
+      "Preserve Arabic UTF-8 text and right-to-left display.",
+      "Treat source_value \"Applications Prices\" as a header, not a price.",
+      "Keep source_row for traceability.",
+      "Do not discard description_or_option records; they contain menu choices and descriptions."
+    ],
+    "recommended_cms_fields": {
+      "section": "external_id, slug, name_en, name_ar, sort_order",
+      "menu_item": "external_id, section_external_id, slug, name_en, name_ar, description_en, description_ar, price, currency, is_available, source_row_key",
+      "raw_record": "external_id, source_row, section_external_id, record_type, name_en, name_ar, price, source_value"
+    }
+  },
+  "summary": {
+    "sections": 10,
+    "priced_items": 89,
+    "all_source_records": 200,
+    "minimum_price": 20,
+    "maximum_price": 1560,
+    "average_price": 263.98
+  },
+  "sections": [
+    {
+      "external_id": "section-1",
+      "slug": "appetizers",
+      "name_en": "Appetizers",
+      "name_ar": "المقبلات",
+      "source_row": 3
+    },
+    {
+      "external_id": "section-2",
+      "slug": "noodles",
+      "name_en": "Noodles",
+      "name_ar": "النودلز",
+      "source_row": 26
+    },
+    {
+      "external_id": "section-3",
+      "slug": "rice",
+      "name_en": "RICE",
+      "name_ar": "الأرز",
+      "source_row": 85
+    },
+    {
+      "external_id": "section-4",
+      "slug": "main-dishes",
+      "name_en": "Main dishes",
+      "name_ar": "أطباق رئيسية",
+      "source_row": 122
+    },
+    {
+      "external_id": "section-5",
+      "slug": "set-menu",
+      "name_en": "Set menu",
+      "name_ar": "وجبات",
+      "source_row": 137
+    },
+    {
+      "external_id": "section-6",
+      "slug": "fasting-meal",
+      "name_en": "Fasting Meal",
+      "name_ar": "وجبات صيامي",
+      "source_row": 164
+    },
+    {
+      "external_id": "section-7",
+      "slug": "special-offers",
+      "name_en": "Special Offers",
+      "name_ar": "عروض خاصة",
+      "source_row": 176
+    },
+    {
+      "external_id": "section-8",
+      "slug": "box",
+      "name_en": "Box",
+      "name_ar": "بوكس",
+      "source_row": 184
+    },
+    {
+      "external_id": "section-9",
+      "slug": "extra-sauces",
+      "name_en": "Extra sauces",
+      "name_ar": "صوصات إضافية",
+      "source_row": 223
+    },
+    {
+      "external_id": "section-10",
+      "slug": "drinks",
+      "name_en": "Drinks",
+      "name_ar": "مشروبات",
+      "source_row": 230
+    }
+  ],
+  "priced_items": [
+    {
+      "external_id": "menu-item-1",
+      "source_row": 4,
+      "section_external_id": "section-1",
+      "slug": "vegetables-spring-rolls-4-pieces-row-4",
+      "name_en": "Vegetables spring rolls (4 pieces)",
+      "name_ar": "اسبرنج رولز بالخضروات (4 قطع)",
+      "price": 95,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:4",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "95 EGP"
+    },
+    {
+      "external_id": "menu-item-2",
+      "source_row": 6,
+      "section_external_id": "section-1",
+      "slug": "beef-dumplings-4-pieces-row-6",
+      "name_en": "Beef dumplings (4 pieces)",
+      "name_ar": "قطائف اللحم البقري (4 قطع)",
+      "price": 149,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:6",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "149 EGP"
+    },
+    {
+      "external_id": "menu-item-3",
+      "source_row": 11,
+      "section_external_id": "section-1",
+      "slug": "fried-potato-vegetables-samosa-4-pieces-row-11",
+      "name_en": "Fried potato & vegetables samosa (4 pieces)",
+      "name_ar": "سمبوسة مقلية بالبطاطس والخضروات (4 قطع)",
+      "price": 95,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:11",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "95 EGP"
+    },
+    {
+      "external_id": "menu-item-4",
+      "source_row": 13,
+      "section_external_id": "section-1",
+      "slug": "appetizer-platter-fried-bites-row-13",
+      "name_en": "Appetizer Platter fried bites",
+      "name_ar": "طبق مقبلات مشكلة",
+      "price": 159,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:13",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "159 EGP"
+    },
+    {
+      "external_id": "menu-item-5",
+      "source_row": 15,
+      "section_external_id": "section-1",
+      "slug": "chicken-spring-rolls-4-pieces-row-15",
+      "name_en": "Chicken spring rolls (4 pieces)",
+      "name_ar": "اسبرنج رولز بالدجاج (4 قطع)",
+      "price": 140,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:15",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "140 EGP"
+    },
+    {
+      "external_id": "menu-item-6",
+      "source_row": 17,
+      "section_external_id": "section-1",
+      "slug": "bbq-chicken-wings-6-pieces-row-17",
+      "name_en": "BBQ chicken wings (6 pieces)",
+      "name_ar": "اجنحة الدجاج بصوص البربيكيو  (6 قطع)",
+      "price": 169,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:17",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "169 EGP"
+    },
+    {
+      "external_id": "menu-item-7",
+      "source_row": 19,
+      "section_external_id": "section-1",
+      "slug": "sweet-chili-chicken-wings-6-pieces-row-19",
+      "name_en": "Sweet chili chicken wings (6 pieces)",
+      "name_ar": "اجنحة الدجاج بصوص السويت شيلي (6 قطع)",
+      "price": 169,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:19",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "169 EGP"
+    },
+    {
+      "external_id": "menu-item-8",
+      "source_row": 21,
+      "section_external_id": "section-1",
+      "slug": "shrimp-spring-rolls-2-pieces-row-21",
+      "name_en": "Shrimp spring rolls (2 pieces)",
+      "name_ar": "اسبرنج رولز بالجمبري (2 قطع)",
+      "price": 155,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:21",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "155 EGP"
+    },
+    {
+      "external_id": "menu-item-9",
+      "source_row": 23,
+      "section_external_id": "section-1",
+      "slug": "chicken-fried-won-ton-6-pieces-row-23",
+      "name_en": "Chicken fried won-ton (6 pieces)",
+      "name_ar": "قطائف الدجاج المقرمشة (6 قطع)",
+      "price": 149,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:23",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "149 EGP"
+    },
+    {
+      "external_id": "menu-item-10",
+      "source_row": 30,
+      "section_external_id": "section-2",
+      "slug": "no-protein-row-30",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 125,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:30",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "125 EGP"
+    },
+    {
+      "external_id": "menu-item-11",
+      "source_row": 31,
+      "section_external_id": "section-2",
+      "slug": "chicken-row-31",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 208,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:31",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "208 EGP"
+    },
+    {
+      "external_id": "menu-item-12",
+      "source_row": 32,
+      "section_external_id": "section-2",
+      "slug": "beef-row-32",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 249,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:32",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "249 EGP"
+    },
+    {
+      "external_id": "menu-item-13",
+      "source_row": 33,
+      "section_external_id": "section-2",
+      "slug": "shrimp-row-33",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 275,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:33",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "275 EGP"
+    },
+    {
+      "external_id": "menu-item-14",
+      "source_row": 37,
+      "section_external_id": "section-2",
+      "slug": "no-protein-row-37",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 145,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:37",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "145 EGP"
+    },
+    {
+      "external_id": "menu-item-15",
+      "source_row": 38,
+      "section_external_id": "section-2",
+      "slug": "chicken-row-38",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 228,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:38",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "228 EGP"
+    },
+    {
+      "external_id": "menu-item-16",
+      "source_row": 39,
+      "section_external_id": "section-2",
+      "slug": "beef-row-39",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 269,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:39",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "269 EGP"
+    },
+    {
+      "external_id": "menu-item-17",
+      "source_row": 40,
+      "section_external_id": "section-2",
+      "slug": "shrimp-row-40",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 295,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:40",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "295 EGP"
+    },
+    {
+      "external_id": "menu-item-18",
+      "source_row": 44,
+      "section_external_id": "section-2",
+      "slug": "no-protein-row-44",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 145,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:44",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "145 EGP"
+    },
+    {
+      "external_id": "menu-item-19",
+      "source_row": 45,
+      "section_external_id": "section-2",
+      "slug": "chicken-row-45",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 228,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:45",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "228 EGP"
+    },
+    {
+      "external_id": "menu-item-20",
+      "source_row": 46,
+      "section_external_id": "section-2",
+      "slug": "beef-row-46",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 269,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:46",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "269 EGP"
+    },
+    {
+      "external_id": "menu-item-21",
+      "source_row": 47,
+      "section_external_id": "section-2",
+      "slug": "shrimp-row-47",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 295,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:47",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "295 EGP"
+    },
+    {
+      "external_id": "menu-item-22",
+      "source_row": 51,
+      "section_external_id": "section-2",
+      "slug": "no-protein-row-51",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 195,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:51",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "195 EGP"
+    },
+    {
+      "external_id": "menu-item-23",
+      "source_row": 52,
+      "section_external_id": "section-2",
+      "slug": "chicken-row-52",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 278,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:52",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "278 EGP"
+    },
+    {
+      "external_id": "menu-item-24",
+      "source_row": 53,
+      "section_external_id": "section-2",
+      "slug": "beef-row-53",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 319,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:53",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "319 EGP"
+    },
+    {
+      "external_id": "menu-item-25",
+      "source_row": 54,
+      "section_external_id": "section-2",
+      "slug": "shrimp-row-54",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 345,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:54",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "345 EGP"
+    },
+    {
+      "external_id": "menu-item-26",
+      "source_row": 58,
+      "section_external_id": "section-2",
+      "slug": "no-protein-row-58",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 149,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:58",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "149 EGP"
+    },
+    {
+      "external_id": "menu-item-27",
+      "source_row": 59,
+      "section_external_id": "section-2",
+      "slug": "chicken-row-59",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 232,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:59",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "232 EGP"
+    },
+    {
+      "external_id": "menu-item-28",
+      "source_row": 60,
+      "section_external_id": "section-2",
+      "slug": "beef-row-60",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 273,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:60",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "273 EGP"
+    },
+    {
+      "external_id": "menu-item-29",
+      "source_row": 61,
+      "section_external_id": "section-2",
+      "slug": "shrimp-row-61",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 299,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:61",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "299 EGP"
+    },
+    {
+      "external_id": "menu-item-30",
+      "source_row": 65,
+      "section_external_id": "section-2",
+      "slug": "no-protein-row-65",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 140,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:65",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "140 EGP"
+    },
+    {
+      "external_id": "menu-item-31",
+      "source_row": 66,
+      "section_external_id": "section-2",
+      "slug": "chicken-row-66",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 223,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:66",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "223 EGP"
+    },
+    {
+      "external_id": "menu-item-32",
+      "source_row": 67,
+      "section_external_id": "section-2",
+      "slug": "beef-row-67",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 264,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:67",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "264 EGP"
+    },
+    {
+      "external_id": "menu-item-33",
+      "source_row": 68,
+      "section_external_id": "section-2",
+      "slug": "shrimp-row-68",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 290,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:68",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "290 EGP"
+    },
+    {
+      "external_id": "menu-item-34",
+      "source_row": 72,
+      "section_external_id": "section-2",
+      "slug": "no-protein-row-72",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 195,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:72",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "195 EGP"
+    },
+    {
+      "external_id": "menu-item-35",
+      "source_row": 73,
+      "section_external_id": "section-2",
+      "slug": "chicken-row-73",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 278,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:73",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "278 EGP"
+    },
+    {
+      "external_id": "menu-item-36",
+      "source_row": 74,
+      "section_external_id": "section-2",
+      "slug": "beef-row-74",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 319,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:74",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "319 EGP"
+    },
+    {
+      "external_id": "menu-item-37",
+      "source_row": 75,
+      "section_external_id": "section-2",
+      "slug": "shrimp-row-75",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 345,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:75",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "345 EGP"
+    },
+    {
+      "external_id": "menu-item-38",
+      "source_row": 76,
+      "section_external_id": "section-2",
+      "slug": "fried-noodles-with-egg-and-sausage-row-76",
+      "name_en": "Fried noodles with egg and sausage",
+      "name_ar": "نودلز مع البيض و السوسيس",
+      "price": 248,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:76",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "248 EGP"
+    },
+    {
+      "external_id": "menu-item-39",
+      "source_row": 78,
+      "section_external_id": "section-2",
+      "slug": "crispy-strips-chicken-noodles-sweet-chili-sauce-row-78",
+      "name_en": "Crispy strips chicken noodles & sweet chili sauce",
+      "name_ar": "نودلز مع دجاج مقرمش وسويت شيلي",
+      "price": 280,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:78",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "280 EGP"
+    },
+    {
+      "external_id": "menu-item-40",
+      "source_row": 80,
+      "section_external_id": "section-2",
+      "slug": "spicy-tomato-ramen-noodles-row-80",
+      "name_en": "Spicy tomato ramen noodles",
+      "name_ar": "رامن نودلز حارة مع الطماطم",
+      "price": 296,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:80",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "296 EGP"
+    },
+    {
+      "external_id": "menu-item-41",
+      "source_row": 82,
+      "section_external_id": "section-2",
+      "slug": "fried-noodles-with-chicken-vegetables-and-cashew-nuts-row-82",
+      "name_en": "Fried noodles with chicken vegetables and cashew nuts",
+      "name_ar": "نودلز مقلية مع الدجاج بالخضروات والكاجو",
+      "price": 352,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:82",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "352 EGP"
+    },
+    {
+      "external_id": "menu-item-42",
+      "source_row": 89,
+      "section_external_id": "section-3",
+      "slug": "no-protein-row-89",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 135,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:89",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "135 EGP"
+    },
+    {
+      "external_id": "menu-item-43",
+      "source_row": 90,
+      "section_external_id": "section-3",
+      "slug": "chicken-row-90",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 218,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:90",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "218 EGP"
+    },
+    {
+      "external_id": "menu-item-44",
+      "source_row": 91,
+      "section_external_id": "section-3",
+      "slug": "beef-row-91",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 259,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:91",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "259 EGP"
+    },
+    {
+      "external_id": "menu-item-45",
+      "source_row": 92,
+      "section_external_id": "section-3",
+      "slug": "shrimp-row-92",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 285,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:92",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "285 EGP"
+    },
+    {
+      "external_id": "menu-item-46",
+      "source_row": 96,
+      "section_external_id": "section-3",
+      "slug": "no-protein-row-96",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 135,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:96",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "135 EGP"
+    },
+    {
+      "external_id": "menu-item-47",
+      "source_row": 97,
+      "section_external_id": "section-3",
+      "slug": "chicken-row-97",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 218,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:97",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "218 EGP"
+    },
+    {
+      "external_id": "menu-item-48",
+      "source_row": 98,
+      "section_external_id": "section-3",
+      "slug": "beef-row-98",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 259,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:98",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "259 EGP"
+    },
+    {
+      "external_id": "menu-item-49",
+      "source_row": 99,
+      "section_external_id": "section-3",
+      "slug": "shrimp-row-99",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 285,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:99",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "285 EGP"
+    },
+    {
+      "external_id": "menu-item-50",
+      "source_row": 103,
+      "section_external_id": "section-3",
+      "slug": "no-protein-row-103",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 145,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:103",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "145 EGP"
+    },
+    {
+      "external_id": "menu-item-51",
+      "source_row": 104,
+      "section_external_id": "section-3",
+      "slug": "chicken-row-104",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 228,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:104",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "228 EGP"
+    },
+    {
+      "external_id": "menu-item-52",
+      "source_row": 105,
+      "section_external_id": "section-3",
+      "slug": "beef-row-105",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 269,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:105",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "269 EGP"
+    },
+    {
+      "external_id": "menu-item-53",
+      "source_row": 106,
+      "section_external_id": "section-3",
+      "slug": "shrimp-row-106",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 295,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:106",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "295 EGP"
+    },
+    {
+      "external_id": "menu-item-54",
+      "source_row": 110,
+      "section_external_id": "section-3",
+      "slug": "no-protein-row-110",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 145,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:110",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "145 EGP"
+    },
+    {
+      "external_id": "menu-item-55",
+      "source_row": 111,
+      "section_external_id": "section-3",
+      "slug": "chicken-row-111",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 228,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:111",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "228 EGP"
+    },
+    {
+      "external_id": "menu-item-56",
+      "source_row": 112,
+      "section_external_id": "section-3",
+      "slug": "beef-row-112",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 269,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:112",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "269 EGP"
+    },
+    {
+      "external_id": "menu-item-57",
+      "source_row": 113,
+      "section_external_id": "section-3",
+      "slug": "shrimp-row-113",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 295,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:113",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "295 EGP"
+    },
+    {
+      "external_id": "menu-item-58",
+      "source_row": 117,
+      "section_external_id": "section-3",
+      "slug": "no-protein-row-117",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 145,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:117",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "145 EGP"
+    },
+    {
+      "external_id": "menu-item-59",
+      "source_row": 118,
+      "section_external_id": "section-3",
+      "slug": "chicken-row-118",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 228,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:118",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "228 EGP"
+    },
+    {
+      "external_id": "menu-item-60",
+      "source_row": 119,
+      "section_external_id": "section-3",
+      "slug": "beef-row-119",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 269,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:119",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "269 EGP"
+    },
+    {
+      "external_id": "menu-item-61",
+      "source_row": 120,
+      "section_external_id": "section-3",
+      "slug": "shrimp-row-120",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 295,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:120",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "295 EGP"
+    },
+    {
+      "external_id": "menu-item-62",
+      "source_row": 123,
+      "section_external_id": "section-4",
+      "slug": "chicken-row-123",
+      "name_en": "Chicken",
+      "name_ar": "دجاج",
+      "price": 333,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:123",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "333 EGP"
+    },
+    {
+      "external_id": "menu-item-63",
+      "source_row": 130,
+      "section_external_id": "section-4",
+      "slug": "beef-row-130",
+      "name_en": "Beef",
+      "name_ar": "لحم بقري",
+      "price": 378,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:130",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "378 EGP"
+    },
+    {
+      "external_id": "menu-item-64",
+      "source_row": 138,
+      "section_external_id": "section-5",
+      "slug": "meal-1-row-138",
+      "name_en": "Meal 1",
+      "name_ar": "وجبة 1",
+      "price": 349,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:138",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "349 EGP"
+    },
+    {
+      "external_id": "menu-item-65",
+      "source_row": 143,
+      "section_external_id": "section-5",
+      "slug": "meal-2-row-143",
+      "name_en": "Meal 2",
+      "name_ar": "وجبة 2",
+      "price": 370,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:143",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "370 EGP"
+    },
+    {
+      "external_id": "menu-item-66",
+      "source_row": 148,
+      "section_external_id": "section-5",
+      "slug": "meal-3-row-148",
+      "name_en": "Meal 3",
+      "name_ar": "وجبة 3",
+      "price": 349,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:148",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "349 EGP"
+    },
+    {
+      "external_id": "menu-item-67",
+      "source_row": 153,
+      "section_external_id": "section-5",
+      "slug": "meal-4-row-153",
+      "name_en": "Meal 4",
+      "name_ar": "وجبة 4",
+      "price": 370,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:153",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "370 EGP"
+    },
+    {
+      "external_id": "menu-item-68",
+      "source_row": 158,
+      "section_external_id": "section-5",
+      "slug": "sweet-and-sour-teriyaki-meal-single-row-158",
+      "name_en": "Sweet and sour & teriyaki meal (single)",
+      "name_ar": "وجبة دجاج سويت اند سور و  ترياكي (سنجل)",
+      "price": 380,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:158",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "380 EGP"
+    },
+    {
+      "external_id": "menu-item-69",
+      "source_row": 161,
+      "section_external_id": "section-5",
+      "slug": "sweet-and-sour-teriyaki-meal-twin-row-161",
+      "name_en": "Sweet and sour & teriyaki meal (twin)",
+      "name_ar": "وجبة دجاج سويت اند سور و  ترياكي (التوأم)",
+      "price": 760,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:161",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "760 EGP"
+    },
+    {
+      "external_id": "menu-item-70",
+      "source_row": 165,
+      "section_external_id": "section-6",
+      "slug": "fasting-meal-1-row-165",
+      "name_en": "Fasting Meal 1",
+      "name_ar": "وجبة صيامي 1",
+      "price": 305,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:165",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "305 EGP"
+    },
+    {
+      "external_id": "menu-item-71",
+      "source_row": 170,
+      "section_external_id": "section-6",
+      "slug": "fasting-meal-2-row-170",
+      "name_en": "Fasting Meal 2",
+      "name_ar": "وجبة صيامي 2",
+      "price": 349,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:170",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "349 EGP"
+    },
+    {
+      "external_id": "menu-item-72",
+      "source_row": 177,
+      "section_external_id": "section-7",
+      "slug": "offer-1-row-177",
+      "name_en": "Offer 1",
+      "name_ar": "عرض 1",
+      "price": 320,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:177",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "320 EGP"
+    },
+    {
+      "external_id": "menu-item-73",
+      "source_row": 179,
+      "section_external_id": "section-7",
+      "slug": "offer-2-row-179",
+      "name_en": "Offer 2",
+      "name_ar": "عرض 2",
+      "price": 320,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:179",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "320 EGP"
+    },
+    {
+      "external_id": "menu-item-74",
+      "source_row": 181,
+      "section_external_id": "section-7",
+      "slug": "family-offer-row-181",
+      "name_en": "Family offer",
+      "name_ar": "عرض عائلي",
+      "price": 1560,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:181",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "1560 EGP"
+    },
+    {
+      "external_id": "menu-item-75",
+      "source_row": 185,
+      "section_external_id": "section-8",
+      "slug": "sweet-sour-chicken-box-row-185",
+      "name_en": "Sweet & Sour Chicken Box",
+      "name_ar": "عرض الدجاج سويت اند سور",
+      "price": 349,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:185",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "349 EGP"
+    },
+    {
+      "external_id": "menu-item-76",
+      "source_row": 190,
+      "section_external_id": "section-8",
+      "slug": "spicy-kung-pao-chicken-box-row-190",
+      "name_en": "Spicy Kung-Pao Chicken Box",
+      "name_ar": "عرض الدجاج الكنباو الحار",
+      "price": 349,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:190",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "349 EGP"
+    },
+    {
+      "external_id": "menu-item-77",
+      "source_row": 195,
+      "section_external_id": "section-8",
+      "slug": "oyster-chicken-box-row-195",
+      "name_en": "Oyster Chicken Box",
+      "name_ar": "عرض الدجاج بصوص المحار",
+      "price": 349,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:195",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "349 EGP"
+    },
+    {
+      "external_id": "menu-item-78",
+      "source_row": 200,
+      "section_external_id": "section-8",
+      "slug": "teriyaki-chicken-box-row-200",
+      "name_en": "Teriyaki Chicken Box",
+      "name_ar": "عرض الدجاج الترياكي",
+      "price": 349,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:200",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "349 EGP"
+    },
+    {
+      "external_id": "menu-item-79",
+      "source_row": 205,
+      "section_external_id": "section-8",
+      "slug": "teriyaki-beef-box-row-205",
+      "name_en": "Teriyaki Beef Box",
+      "name_ar": "عرض اللحم البقري الترياكي",
+      "price": 370,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:205",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "370 EGP"
+    },
+    {
+      "external_id": "menu-item-80",
+      "source_row": 210,
+      "section_external_id": "section-8",
+      "slug": "oyster-beef-box-row-210",
+      "name_en": "Oyster Beef Box",
+      "name_ar": "عرض اللحم البقري بصوص المحار",
+      "price": 370,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:210",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "370 EGP"
+    },
+    {
+      "external_id": "menu-item-81",
+      "source_row": 214,
+      "section_external_id": "section-8",
+      "slug": "bbq-honey-chili-chicken-box-row-214",
+      "name_en": "BBQ honey chili chicken box",
+      "name_ar": "عرض دجاج الباربيكيو الحار",
+      "price": 349,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:214",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "349 EGP"
+    },
+    {
+      "external_id": "menu-item-82",
+      "source_row": 218,
+      "section_external_id": "section-8",
+      "slug": "double-box-row-218",
+      "name_en": "Double Box",
+      "name_ar": "الدبل",
+      "price": 675,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:218",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "675 EGP"
+    },
+    {
+      "external_id": "menu-item-83",
+      "source_row": 224,
+      "section_external_id": "section-9",
+      "slug": "soy-sauce-row-224",
+      "name_en": "Soy sauce",
+      "name_ar": "صويا صوص",
+      "price": 40,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:224",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "40 EGP"
+    },
+    {
+      "external_id": "menu-item-84",
+      "source_row": 225,
+      "section_external_id": "section-9",
+      "slug": "sweet-chili-sauce-row-225",
+      "name_en": "sweet chili sauce ",
+      "name_ar": "سويت شيلي صوص ",
+      "price": 40,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:225",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "40 EGP"
+    },
+    {
+      "external_id": "menu-item-85",
+      "source_row": 226,
+      "section_external_id": "section-9",
+      "slug": "sweet-sour-sauce-row-226",
+      "name_en": "sweet & sour sauce",
+      "name_ar": "سويت اند سور صوص",
+      "price": 40,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:226",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "40 EGP"
+    },
+    {
+      "external_id": "menu-item-86",
+      "source_row": 227,
+      "section_external_id": "section-9",
+      "slug": "chili-paste-sauce-row-227",
+      "name_en": "chili paste sauce ",
+      "name_ar": "معجون الشيلي الحار ",
+      "price": 40,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:227",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "40 EGP"
+    },
+    {
+      "external_id": "menu-item-87",
+      "source_row": 228,
+      "section_external_id": "section-9",
+      "slug": "teriyaki-sauce-row-228",
+      "name_en": "Teriyaki sauce",
+      "name_ar": "صوص الترياكي",
+      "price": 40,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:228",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "40 EGP"
+    },
+    {
+      "external_id": "menu-item-88",
+      "source_row": 231,
+      "section_external_id": "section-10",
+      "slug": "cola-row-231",
+      "name_en": "cola",
+      "name_ar": "كولا",
+      "price": 35,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:231",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "35 EGP"
+    },
+    {
+      "external_id": "menu-item-89",
+      "source_row": 232,
+      "section_external_id": "section-10",
+      "slug": "mineral-water-row-232",
+      "name_en": "mineral water",
+      "name_ar": "مياة معدنية",
+      "price": 20,
+      "currency": "EGP",
+      "is_available": true,
+      "source_row_key": "newwebsitemenu.pmdx:Sheet1:232",
+      "notes": [
+        "Currency: Egyptian Pound (EGP)."
+      ],
+      "price_display": "20 EGP"
+    }
+  ],
+  "all_source_records": [
+    {
+      "external_id": "source-row-1",
+      "source_row": 1,
+      "section_external_id": null,
+      "record_type": "header",
+      "name_en": "Panda Wok",
+      "name_ar": "باندا ووك",
+      "price": null,
+      "source_value": "Applications Prices"
+    },
+    {
+      "external_id": "source-row-3",
+      "source_row": 3,
+      "section_external_id": "section-1",
+      "record_type": "section",
+      "name_en": "Appetizers",
+      "name_ar": "المقبلات",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-4",
+      "source_row": 4,
+      "section_external_id": "section-1",
+      "record_type": "priced_item",
+      "name_en": "Vegetables spring rolls (4 pieces)",
+      "name_ar": "اسبرنج رولز بالخضروات (4 قطع)",
+      "price": 95,
+      "source_value": "95"
+    },
+    {
+      "external_id": "source-row-5",
+      "source_row": 5,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "mixed vegetables and glass noodles served with sweet&sour sauce",
+      "name_ar": "خضروات مشكلة مع شعرية الارز تقدم مع سويت اند سور صوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-6",
+      "source_row": 6,
+      "section_external_id": "section-1",
+      "record_type": "priced_item",
+      "name_en": "Beef dumplings (4 pieces)",
+      "name_ar": "قطائف اللحم البقري (4 قطع)",
+      "price": 149,
+      "source_value": "149"
+    },
+    {
+      "external_id": "source-row-7",
+      "source_row": 7,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "chinese beef dumplings stuffted vegetables served with spicy sour soy sauce",
+      "name_ar": "قطائف اللحم الصينية مع الخضروات يقدم مع صلصة الصويا الحارة",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-8",
+      "source_row": 8,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-9",
+      "source_row": 9,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "steamed",
+      "name_ar": "بخار",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-10",
+      "source_row": 10,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "fried",
+      "name_ar": "مقلي",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-11",
+      "source_row": 11,
+      "section_external_id": "section-1",
+      "record_type": "priced_item",
+      "name_en": "Fried potato & vegetables samosa (4 pieces)",
+      "name_ar": "سمبوسة مقلية بالبطاطس والخضروات (4 قطع)",
+      "price": 95,
+      "source_value": "95"
+    },
+    {
+      "external_id": "source-row-12",
+      "source_row": 12,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "fried crispy samosa stuffed mashed potato and vegetables&curry sauce served with sweet&sour sauce",
+      "name_ar": "سمبوسة مقلية مقرمشة محشوة بطاطس مع الخضروات والكاري تقدم مع السويت اند سور صوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-13",
+      "source_row": 13,
+      "section_external_id": "section-1",
+      "record_type": "priced_item",
+      "name_en": "Appetizer Platter fried bites",
+      "name_ar": "طبق مقبلات مشكلة",
+      "price": 159,
+      "source_value": "159"
+    },
+    {
+      "external_id": "source-row-14",
+      "source_row": 14,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "assorted of 2 pieces spring rolls 2 pieces dumplings 2 samosa and sauce",
+      "name_ar": "تشكيلة مقبلات 2 قطعة اسبرنج رولز  2 قطعة دامبلنج 2 قطعة سمبوسة و الصوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-15",
+      "source_row": 15,
+      "section_external_id": "section-1",
+      "record_type": "priced_item",
+      "name_en": "Chicken spring rolls (4 pieces)",
+      "name_ar": "اسبرنج رولز بالدجاج (4 قطع)",
+      "price": 140,
+      "source_value": "140"
+    },
+    {
+      "external_id": "source-row-16",
+      "source_row": 16,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "chicken cooking with sweet soy sauce and spring onion served with sweet&sour sauce",
+      "name_ar": "دجاج مطهو مع الصويا الحلوة و البصل الاخضر تقدم مع سويت اند سور صوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-17",
+      "source_row": 17,
+      "section_external_id": "section-1",
+      "record_type": "priced_item",
+      "name_en": "BBQ chicken wings (6 pieces)",
+      "name_ar": "اجنحة الدجاج بصوص البربيكيو  (6 قطع)",
+      "price": 169,
+      "source_value": "169"
+    },
+    {
+      "external_id": "source-row-18",
+      "source_row": 18,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "crispy chicken wings cooking with barbecue sauce",
+      "name_ar": "اجنحة الدجاج مقرمش مطهو مع صوص البربيكيو",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-19",
+      "source_row": 19,
+      "section_external_id": "section-1",
+      "record_type": "priced_item",
+      "name_en": "Sweet chili chicken wings (6 pieces)",
+      "name_ar": "اجنحة الدجاج بصوص السويت شيلي (6 قطع)",
+      "price": 169,
+      "source_value": "169"
+    },
+    {
+      "external_id": "source-row-20",
+      "source_row": 20,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "crispy chicken wings cooking with sweet chili sauce",
+      "name_ar": "اجنحة الدجاج مقرمش مطهو مع صوص السويت شيلي",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-21",
+      "source_row": 21,
+      "section_external_id": "section-1",
+      "record_type": "priced_item",
+      "name_en": "Shrimp spring rolls (2 pieces)",
+      "name_ar": "اسبرنج رولز بالجمبري (2 قطع)",
+      "price": 155,
+      "source_value": "155"
+    },
+    {
+      "external_id": "source-row-22",
+      "source_row": 22,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "2 pc shrimp spring rolls with green onion and sweet & sour sauce",
+      "name_ar": "عدد 2 قطعة اسبرنج رولز بالجمبري والبصل الاخضر مع السويت اند سور صوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-23",
+      "source_row": 23,
+      "section_external_id": "section-1",
+      "record_type": "priced_item",
+      "name_en": "Chicken fried won-ton (6 pieces)",
+      "name_ar": "قطائف الدجاج المقرمشة (6 قطع)",
+      "price": 149,
+      "source_value": "149"
+    },
+    {
+      "external_id": "source-row-24",
+      "source_row": 24,
+      "section_external_id": "section-1",
+      "record_type": "description_or_option",
+      "name_en": "stuffted marinated minced chicken in crispy wrapped sheets and sweet & sour sauce",
+      "name_ar": "دجاج مفروم متبل محشو في رقائق مقرمشة ملفوفة يقدم مع السويت اند سور صوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-26",
+      "source_row": 26,
+      "section_external_id": "section-2",
+      "record_type": "section",
+      "name_en": "Noodles",
+      "name_ar": "النودلز",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-27",
+      "source_row": 27,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "Lo-mein chinese fried noodles",
+      "name_ar": "نودلز علي الطريقة الصينية",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-28",
+      "source_row": 28,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "fresh vegetables and soy sauce & chinese spices",
+      "name_ar": "نودلز مطهو مع الخضروات الطازجة والتوابل الصينية",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-29",
+      "source_row": 29,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-30",
+      "source_row": 30,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 125,
+      "source_value": "125"
+    },
+    {
+      "external_id": "source-row-31",
+      "source_row": 31,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 208,
+      "source_value": "208"
+    },
+    {
+      "external_id": "source-row-32",
+      "source_row": 32,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 249,
+      "source_value": "249"
+    },
+    {
+      "external_id": "source-row-33",
+      "source_row": 33,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 275,
+      "source_value": "275"
+    },
+    {
+      "external_id": "source-row-34",
+      "source_row": 34,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "Mie goreng indonesian noodles",
+      "name_ar": "نودلز علي الطريقة الاندونيسية",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-35",
+      "source_row": 35,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "fresh vegetables with kecap manis and fried egg",
+      "name_ar": "نودلز مطهو مع الخضروات الطازجة مع الصويا صوص الحلوة و البيض المقلي",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-36",
+      "source_row": 36,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-37",
+      "source_row": 37,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 145,
+      "source_value": "145"
+    },
+    {
+      "external_id": "source-row-38",
+      "source_row": 38,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 228,
+      "source_value": "228"
+    },
+    {
+      "external_id": "source-row-39",
+      "source_row": 39,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 269,
+      "source_value": "269"
+    },
+    {
+      "external_id": "source-row-40",
+      "source_row": 40,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 295,
+      "source_value": "295"
+    },
+    {
+      "external_id": "source-row-41",
+      "source_row": 41,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "Teriyaki noodles",
+      "name_ar": "ترياكي نودلز",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-42",
+      "source_row": 42,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "noodles cooking with japanese teriyaki sauce and honey with fresh vegetables",
+      "name_ar": "نودلز مطهو  بصوص الترياكي الياباني والعسل مع الخضرات الطازجة",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-43",
+      "source_row": 43,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-44",
+      "source_row": 44,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 145,
+      "source_value": "145"
+    },
+    {
+      "external_id": "source-row-45",
+      "source_row": 45,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 228,
+      "source_value": "228"
+    },
+    {
+      "external_id": "source-row-46",
+      "source_row": 46,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 269,
+      "source_value": "269"
+    },
+    {
+      "external_id": "source-row-47",
+      "source_row": 47,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 295,
+      "source_value": "295"
+    },
+    {
+      "external_id": "source-row-48",
+      "source_row": 48,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "Singapore noodles ",
+      "name_ar": "نودلز علي طريقة سنغافورة ",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-49",
+      "source_row": 49,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "vermicelli rice noodles with spicy curry sauce",
+      "name_ar": "شعرية الارز الحارة مع الخضروات وصوص الكاري",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-50",
+      "source_row": 50,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-51",
+      "source_row": 51,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 195,
+      "source_value": "195"
+    },
+    {
+      "external_id": "source-row-52",
+      "source_row": 52,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 278,
+      "source_value": "278"
+    },
+    {
+      "external_id": "source-row-53",
+      "source_row": 53,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 319,
+      "source_value": "319"
+    },
+    {
+      "external_id": "source-row-54",
+      "source_row": 54,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 345,
+      "source_value": "345"
+    },
+    {
+      "external_id": "source-row-55",
+      "source_row": 55,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "Pancit canton filipino noodles",
+      "name_ar": "نودلز بانسيت كانتون علي الطريقة الفلبينية",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-56",
+      "source_row": 56,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "fried noodles cooking with vegetables & oyster sauce served with boiled eggs & lime",
+      "name_ar": "نودلز مطهو مع الخضروات و صوص المحار يقدم مع البيض المسلوق و الليمون",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-57",
+      "source_row": 57,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-58",
+      "source_row": 58,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 149,
+      "source_value": "149"
+    },
+    {
+      "external_id": "source-row-59",
+      "source_row": 59,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 232,
+      "source_value": "232"
+    },
+    {
+      "external_id": "source-row-60",
+      "source_row": 60,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 273,
+      "source_value": "273"
+    },
+    {
+      "external_id": "source-row-61",
+      "source_row": 61,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 299,
+      "source_value": "299"
+    },
+    {
+      "external_id": "source-row-62",
+      "source_row": 62,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "Plain chinese fried noodles with no vegetables",
+      "name_ar": "نودلز صينية سادة بدون خضروات",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-63",
+      "source_row": 63,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "chinese style fried noodles with soy sauce and served without vegetables",
+      "name_ar": "نودلز علي الصينية مع الصويا صوص والتوابل الاسيوية تقدم بدون خضروات",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-64",
+      "source_row": 64,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-65",
+      "source_row": 65,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 140,
+      "source_value": "140"
+    },
+    {
+      "external_id": "source-row-66",
+      "source_row": 66,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 223,
+      "source_value": "223"
+    },
+    {
+      "external_id": "source-row-67",
+      "source_row": 67,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 264,
+      "source_value": "264"
+    },
+    {
+      "external_id": "source-row-68",
+      "source_row": 68,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 290,
+      "source_value": "290"
+    },
+    {
+      "external_id": "source-row-69",
+      "source_row": 69,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "Spicy vermicelli noodles salad  ",
+      "name_ar": "سلاطة شعرية النودلز الحارة ",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-70",
+      "source_row": 70,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "spicy noodles with vegetables & peanuts",
+      "name_ar": "شعرية النودلز الحارة مع الخضروات و الفول السوداني",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-71",
+      "source_row": 71,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-72",
+      "source_row": 72,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 195,
+      "source_value": "195"
+    },
+    {
+      "external_id": "source-row-73",
+      "source_row": 73,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 278,
+      "source_value": "278"
+    },
+    {
+      "external_id": "source-row-74",
+      "source_row": 74,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 319,
+      "source_value": "319"
+    },
+    {
+      "external_id": "source-row-75",
+      "source_row": 75,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 345,
+      "source_value": "345"
+    },
+    {
+      "external_id": "source-row-76",
+      "source_row": 76,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "Fried noodles with egg and sausage",
+      "name_ar": "نودلز مع البيض و السوسيس",
+      "price": 248,
+      "source_value": "248"
+    },
+    {
+      "external_id": "source-row-77",
+      "source_row": 77,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "tangy noodles mixed with egg and sausage",
+      "name_ar": "نودلز بالخضروات مع البيض و السوسيس",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-78",
+      "source_row": 78,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "Crispy strips chicken noodles & sweet chili sauce",
+      "name_ar": "نودلز مع دجاج مقرمش وسويت شيلي",
+      "price": 280,
+      "source_value": "280"
+    },
+    {
+      "external_id": "source-row-79",
+      "source_row": 79,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "crispy chicken strips served over tender noodles with a tangy sweet chili sauce",
+      "name_ar": "نودلز مع شرائح الدجاج المقرمشه مغطاة بالسويت شيلي صوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-80",
+      "source_row": 80,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "Spicy tomato ramen noodles",
+      "name_ar": "رامن نودلز حارة مع الطماطم",
+      "price": 296,
+      "source_value": "296"
+    },
+    {
+      "external_id": "source-row-81",
+      "source_row": 81,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "gravy ramen noodles cook with spicy fresh tomato and served with boiled egg",
+      "name_ar": "رامن نودلز مطبوخة مع طماطم طازجة حارة وتقدم مع البيض المسلوق",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-82",
+      "source_row": 82,
+      "section_external_id": "section-2",
+      "record_type": "priced_item",
+      "name_en": "Fried noodles with chicken vegetables and cashew nuts",
+      "name_ar": "نودلز مقلية مع الدجاج بالخضروات والكاجو",
+      "price": 352,
+      "source_value": "352"
+    },
+    {
+      "external_id": "source-row-83",
+      "source_row": 83,
+      "section_external_id": "section-2",
+      "record_type": "description_or_option",
+      "name_en": "fry noodles cooked on top with vhicken vegetables and cashew nuts",
+      "name_ar": "نودلز مقلية مطبوخ مع الصويا صوص والخضروات والكاجو",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-85",
+      "source_row": 85,
+      "section_external_id": "section-3",
+      "record_type": "section",
+      "name_en": "RICE",
+      "name_ar": "ألارز",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-86",
+      "source_row": 86,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "Egg fried rice",
+      "name_ar": "أرز مقلي مع البيض",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-87",
+      "source_row": 87,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "stir fry rice with eggs & spring onion",
+      "name_ar": "ارز مقلي مع البيض المخفوق و البصل الاخضر",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-88",
+      "source_row": 88,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-89",
+      "source_row": 89,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 135,
+      "source_value": "135"
+    },
+    {
+      "external_id": "source-row-90",
+      "source_row": 90,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 218,
+      "source_value": "218"
+    },
+    {
+      "external_id": "source-row-91",
+      "source_row": 91,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 259,
+      "source_value": "259"
+    },
+    {
+      "external_id": "source-row-92",
+      "source_row": 92,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 285,
+      "source_value": "285"
+    },
+    {
+      "external_id": "source-row-93",
+      "source_row": 93,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "Vegetables fried rice",
+      "name_ar": "أرز مقلي مع الخضروات",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-94",
+      "source_row": 94,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "stir fry rice with fresh vegetables",
+      "name_ar": "أرز مقلي مع الخضروات الطازجة والصويا صوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-95",
+      "source_row": 95,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-96",
+      "source_row": 96,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 135,
+      "source_value": "135"
+    },
+    {
+      "external_id": "source-row-97",
+      "source_row": 97,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 218,
+      "source_value": "218"
+    },
+    {
+      "external_id": "source-row-98",
+      "source_row": 98,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 259,
+      "source_value": "259"
+    },
+    {
+      "external_id": "source-row-99",
+      "source_row": 99,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 285,
+      "source_value": "285"
+    },
+    {
+      "external_id": "source-row-100",
+      "source_row": 100,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "Japanese teppan fried rice",
+      "name_ar": "أرز تيبانياكي الياباني",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-101",
+      "source_row": 101,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "japanese buttered fried rice with eggs and vegetables",
+      "name_ar": "ارز يقدم مع الزبدة و البيض و الخضروات الطازجة",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-102",
+      "source_row": 102,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-103",
+      "source_row": 103,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 145,
+      "source_value": "145"
+    },
+    {
+      "external_id": "source-row-104",
+      "source_row": 104,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 228,
+      "source_value": "228"
+    },
+    {
+      "external_id": "source-row-105",
+      "source_row": 105,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 269,
+      "source_value": "269"
+    },
+    {
+      "external_id": "source-row-106",
+      "source_row": 106,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 295,
+      "source_value": "295"
+    },
+    {
+      "external_id": "source-row-107",
+      "source_row": 107,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "Korean ramen fried rice",
+      "name_ar": "أرز كوري مقلي مع الريمن نودلز",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-108",
+      "source_row": 108,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "fried rice mixed in ramen with mushroom and eggs",
+      "name_ar": "ارز مقلي مع النودلز والمشروم مع البيض",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-109",
+      "source_row": 109,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-110",
+      "source_row": 110,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 145,
+      "source_value": "145"
+    },
+    {
+      "external_id": "source-row-111",
+      "source_row": 111,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 228,
+      "source_value": "228"
+    },
+    {
+      "external_id": "source-row-112",
+      "source_row": 112,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 269,
+      "source_value": "269"
+    },
+    {
+      "external_id": "source-row-113",
+      "source_row": 113,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 295,
+      "source_value": "295"
+    },
+    {
+      "external_id": "source-row-114",
+      "source_row": 114,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "Sichuan fried rice  ",
+      "name_ar": "أرز سيشوان الحار ",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-115",
+      "source_row": 115,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "hot spicy fried rice with vegetables and chili pepper with peanuts",
+      "name_ar": "ارز مقلي حار مع والخضروات و الفلفل الحار مع فول السوداني",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-116",
+      "source_row": 116,
+      "section_external_id": "section-3",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "اختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-117",
+      "source_row": 117,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "no protein",
+      "name_ar": "بدون بروتين",
+      "price": 145,
+      "source_value": "145"
+    },
+    {
+      "external_id": "source-row-118",
+      "source_row": 118,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "chicken",
+      "name_ar": "دجاج",
+      "price": 228,
+      "source_value": "228"
+    },
+    {
+      "external_id": "source-row-119",
+      "source_row": 119,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "beef",
+      "name_ar": "لحم بقري",
+      "price": 269,
+      "source_value": "269"
+    },
+    {
+      "external_id": "source-row-120",
+      "source_row": 120,
+      "section_external_id": "section-3",
+      "record_type": "priced_item",
+      "name_en": "shrimp",
+      "name_ar": "جمبري",
+      "price": 295,
+      "source_value": "295"
+    },
+    {
+      "external_id": "source-row-122",
+      "source_row": 122,
+      "section_external_id": "section-4",
+      "record_type": "section",
+      "name_en": "Main dishes",
+      "name_ar": "أطباق رئيسية",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-123",
+      "source_row": 123,
+      "section_external_id": "section-4",
+      "record_type": "priced_item",
+      "name_en": "Chicken",
+      "name_ar": "دجاج",
+      "price": 333,
+      "source_value": "333"
+    },
+    {
+      "external_id": "source-row-124",
+      "source_row": 124,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "أختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-125",
+      "source_row": 125,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "sweet & sour sauce",
+      "name_ar": "صوص السويت اند سور",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-126",
+      "source_row": 126,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "sichuan sauce ",
+      "name_ar": " صوص سيشوان صوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-127",
+      "source_row": 127,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "oyster sauce",
+      "name_ar": "صوص المحار",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-128",
+      "source_row": 128,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "kung-pao sauce",
+      "name_ar": "صوص الكنباو الحار ",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-129",
+      "source_row": 129,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "All items include steamed rice",
+      "name_ar": "جميع الاصناف شاملة ارز علي البخار",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-130",
+      "source_row": 130,
+      "section_external_id": "section-4",
+      "record_type": "priced_item",
+      "name_en": "Beef",
+      "name_ar": "لحم بقري",
+      "price": 378,
+      "source_value": "378"
+    },
+    {
+      "external_id": "source-row-131",
+      "source_row": 131,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "your choice :",
+      "name_ar": "أختيارك من :",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-132",
+      "source_row": 132,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "sichuan sauce ",
+      "name_ar": " صوص سيشوان صوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-133",
+      "source_row": 133,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "oyster sauce",
+      "name_ar": "صوص المحار",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-134",
+      "source_row": 134,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "kung-pao sauce",
+      "name_ar": "صوص الكنباو الحار ",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-135",
+      "source_row": 135,
+      "section_external_id": "section-4",
+      "record_type": "description_or_option",
+      "name_en": "All items include steamed rice",
+      "name_ar": "جميع الاصناف شاملة ارز علي البخار",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-137",
+      "source_row": 137,
+      "section_external_id": "section-5",
+      "record_type": "section",
+      "name_en": "Set menu",
+      "name_ar": "وجبات",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-138",
+      "source_row": 138,
+      "section_external_id": "section-5",
+      "record_type": "priced_item",
+      "name_en": "Meal 1",
+      "name_ar": "وجبة 1",
+      "price": 349,
+      "source_value": "349"
+    },
+    {
+      "external_id": "source-row-139",
+      "source_row": 139,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "vegetables spring rolls (1 piece)",
+      "name_ar": "اسبرنج رولز بالخضروات  (1قطعة)",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-140",
+      "source_row": 140,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "Chicken sweet & sour sauce",
+      "name_ar": "دجاج مع صوص السويت اندر سور",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-141",
+      "source_row": 141,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "chinese vegetables fried noodles",
+      "name_ar": "نودلز بالخضروات علي الطريقة الصينية",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-142",
+      "source_row": 142,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "cola",
+      "name_ar": "كولا",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-143",
+      "source_row": 143,
+      "section_external_id": "section-5",
+      "record_type": "priced_item",
+      "name_en": "Meal 2",
+      "name_ar": "وجبة 2",
+      "price": 370,
+      "source_value": "370"
+    },
+    {
+      "external_id": "source-row-144",
+      "source_row": 144,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "vegetables spring rolls (1 piece)",
+      "name_ar": "اسبرنج رولز بالخضروات  (1قطعة)",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-145",
+      "source_row": 145,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "beef oyster sauce",
+      "name_ar": "لحم بقري مع صوص المحار",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-146",
+      "source_row": 146,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "steamed rice",
+      "name_ar": "ارز علي البخار",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-147",
+      "source_row": 147,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "cola",
+      "name_ar": "كولا",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-148",
+      "source_row": 148,
+      "section_external_id": "section-5",
+      "record_type": "priced_item",
+      "name_en": "Meal 3",
+      "name_ar": "وجبة 3",
+      "price": 349,
+      "source_value": "349"
+    },
+    {
+      "external_id": "source-row-149",
+      "source_row": 149,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "vegetables spring rolls (1 piece)",
+      "name_ar": "اسبرنج رولز بالخضروات  (1قطعة)",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-150",
+      "source_row": 150,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "chicken sichuan sauce",
+      "name_ar": "دجاج مع صوص سيشوان",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-151",
+      "source_row": 151,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "Vegetables fried rice",
+      "name_ar": "أرز مقلي مع الخضروات",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-152",
+      "source_row": 152,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "cola",
+      "name_ar": "كولا",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-153",
+      "source_row": 153,
+      "section_external_id": "section-5",
+      "record_type": "priced_item",
+      "name_en": "Meal 4",
+      "name_ar": "وجبة 4",
+      "price": 370,
+      "source_value": "370"
+    },
+    {
+      "external_id": "source-row-154",
+      "source_row": 154,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "vegetables spring rolls (1 piece)",
+      "name_ar": "اسبرنج رولز بالخضروات  (1قطعة)",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-155",
+      "source_row": 155,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "chicken kung-pao sauce",
+      "name_ar": "دجاج مع صوص الكنباو الحار",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-156",
+      "source_row": 156,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "steamed rice",
+      "name_ar": "ارز علي البخار",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-157",
+      "source_row": 157,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "cola",
+      "name_ar": "كولا",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-158",
+      "source_row": 158,
+      "section_external_id": "section-5",
+      "record_type": "priced_item",
+      "name_en": "Sweet and sour & teriyaki meal (single)",
+      "name_ar": "وجبة دجاج سويت اند سور و  ترياكي (سنجل)",
+      "price": 380,
+      "source_value": "380"
+    },
+    {
+      "external_id": "source-row-159",
+      "source_row": 159,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "2 types of chicken sweet and sour & teriyaki sauce 50g for each and full portion vegetables noodles, 1 spring rolls and 1 samosa, sauce and salad",
+      "name_ar": "صنفين من الدجاج سويت اند سور و ترياكي صوص 50جرام من كل صنف مع نودلز بالخضروات و1 اسبرنح رولز و1سمبوسة مع الصوص والسلطه",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-161",
+      "source_row": 161,
+      "section_external_id": "section-5",
+      "record_type": "priced_item",
+      "name_en": "Sweet and sour & teriyaki meal (twin)",
+      "name_ar": "وجبة دجاج سويت اند سور و  ترياكي (التوأم)",
+      "price": 760,
+      "source_value": "760"
+    },
+    {
+      "external_id": "source-row-162",
+      "source_row": 162,
+      "section_external_id": "section-5",
+      "record_type": "description_or_option",
+      "name_en": "2 chicken sweet and sour 50g of each & 2 beef teriyaki 50g for each and 2 full portions vegetables noodles, 2 spring rolls, 2 samosa and 2 sauce & 2 salad",
+      "name_ar": "2دجاج سويت اند سور 50جرام و2 لحم ترياكي 50 جرام و2 نودلز بالخضروات مع 2 اسبرنج رولز و 2 سمبوسة  مع 2 صوص و 2 سلطه",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-164",
+      "source_row": 164,
+      "section_external_id": "section-6",
+      "record_type": "section",
+      "name_en": "Fasting Meal",
+      "name_ar": "وجبات صيامي",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-165",
+      "source_row": 165,
+      "section_external_id": "section-6",
+      "record_type": "priced_item",
+      "name_en": "Fasting Meal 1",
+      "name_ar": "وجبة صيامي 1",
+      "price": 305,
+      "source_value": "305"
+    },
+    {
+      "external_id": "source-row-166",
+      "source_row": 166,
+      "section_external_id": "section-6",
+      "record_type": "description_or_option",
+      "name_en": "vegetables spring rolls (1 piece)",
+      "name_ar": "اسبرنج رولز بالخضروات  (1قطعة)",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-167",
+      "source_row": 167,
+      "section_external_id": "section-6",
+      "record_type": "description_or_option",
+      "name_en": "mixed vegetables cooking with soy sauce & ginger",
+      "name_ar": "خضروات مشكلة مع الصويا صوص و الجنزبيل",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-168",
+      "source_row": 168,
+      "section_external_id": "section-6",
+      "record_type": "description_or_option",
+      "name_en": "Vegetables fried rice",
+      "name_ar": "أرز مقلي مع الخضروات",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-169",
+      "source_row": 169,
+      "section_external_id": "section-6",
+      "record_type": "description_or_option",
+      "name_en": "cola",
+      "name_ar": "كولا",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-170",
+      "source_row": 170,
+      "section_external_id": "section-6",
+      "record_type": "priced_item",
+      "name_en": "Fasting Meal 2",
+      "name_ar": "وجبة صيامي 2",
+      "price": 349,
+      "source_value": "349"
+    },
+    {
+      "external_id": "source-row-171",
+      "source_row": 171,
+      "section_external_id": "section-6",
+      "record_type": "description_or_option",
+      "name_en": "vegetables spring rolls (1 piece)",
+      "name_ar": "اسبرنج رولز بالخضروات  (1قطعة)",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-172",
+      "source_row": 172,
+      "section_external_id": "section-6",
+      "record_type": "description_or_option",
+      "name_en": "mushroom in sweet & sour sauce",
+      "name_ar": "مشروم مع السويت اند سور صوص",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-173",
+      "source_row": 173,
+      "section_external_id": "section-6",
+      "record_type": "description_or_option",
+      "name_en": "chinese vegetables fried noodles",
+      "name_ar": "نودلز بالخضروات علي الطريقة الصينية",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-174",
+      "source_row": 174,
+      "section_external_id": "section-6",
+      "record_type": "description_or_option",
+      "name_en": "cola",
+      "name_ar": "كولا",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-176",
+      "source_row": 176,
+      "section_external_id": "section-7",
+      "record_type": "section",
+      "name_en": "Special Offers",
+      "name_ar": "عروض خاصة",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-177",
+      "source_row": 177,
+      "section_external_id": "section-7",
+      "record_type": "priced_item",
+      "name_en": "Offer 1",
+      "name_ar": "عرض 1",
+      "price": 320,
+      "source_value": "320"
+    },
+    {
+      "external_id": "source-row-178",
+      "source_row": 178,
+      "section_external_id": "section-7",
+      "record_type": "description_or_option",
+      "name_en": "vegetable noodles & 2pc chicken spring rolls & 2pc samosa",
+      "name_ar": "نودلز بالخضروات و 2 قطعة اسبرنج رولز بالدجاج و 2 قطعة سمبوسة",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-179",
+      "source_row": 179,
+      "section_external_id": "section-7",
+      "record_type": "priced_item",
+      "name_en": "Offer 2",
+      "name_ar": "عرض 2",
+      "price": 320,
+      "source_value": "320"
+    },
+    {
+      "external_id": "source-row-180",
+      "source_row": 180,
+      "section_external_id": "section-7",
+      "record_type": "description_or_option",
+      "name_en": "vegetable noodles & 2pc vegetable spring rolls & chicken wings BBQ",
+      "name_ar": "نزدلز بالخضروات و 2 قطعة اسبرنج رولز بالخضروات و 3 قطعة اجنحة بصوص البربيكيو",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-181",
+      "source_row": 181,
+      "section_external_id": "section-7",
+      "record_type": "priced_item",
+      "name_en": "Family offer",
+      "name_ar": "عرض عائلي",
+      "price": 1560,
+      "source_value": "1560"
+    },
+    {
+      "external_id": "source-row-182",
+      "source_row": 182,
+      "section_external_id": "section-7",
+      "record_type": "description_or_option",
+      "name_en": "4 pieces spring rolls 4 pieces samosa 4 pieces sweet chili chicken wings 2 box vegetables noodles 2 box vegetables rice 1 full portion sweet&sour chicken 1 full portion sichuan beef 4 cola 4 salad 4 sauce 4 chopsticks",
+      "name_ar": "4قطع سبرينج رولز 4 قطع سمبوسة 4 قطع أجنحة دجاج بالفلفل الحلو 2 علبة نودلز بالخضروات 2 علبة أرز بالخضروات 1 حصة كاملة دجاج حلو وحامض 1 حصة كاملة لحم بقري سيشوان 4 كولا 4 سلطة 4 صلصة 4 عيدان تناول الطعام",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-184",
+      "source_row": 184,
+      "section_external_id": "section-8",
+      "record_type": "section",
+      "name_en": "Box",
+      "name_ar": "بوكس",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-185",
+      "source_row": 185,
+      "section_external_id": "section-8",
+      "record_type": "priced_item",
+      "name_en": "Sweet & Sour Chicken Box",
+      "name_ar": "عرض الدجاج سويت اند سور",
+      "price": 349,
+      "source_value": "349"
+    },
+    {
+      "external_id": "source-row-186",
+      "source_row": 186,
+      "section_external_id": "section-8",
+      "record_type": "description_or_option",
+      "name_en": "your choice of vegetables noodles or vegetables rice with topping chicken sweet & sour sauce and 1 piece of spring rolls and 1 piece of won-ton and sauce & salad",
+      "name_ar": "اختيارك من نودلز بالخضروات او ارز بالخضروات مع  دجاج بصوص السويت اند سور  مع  1 قطعة اسبرنج رولز و 1 قطعة وان تان والصوص و السلاطه",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-190",
+      "source_row": 190,
+      "section_external_id": "section-8",
+      "record_type": "priced_item",
+      "name_en": "Spicy Kung-Pao Chicken Box",
+      "name_ar": "عرض الدجاج الكنباو الحار",
+      "price": 349,
+      "source_value": "349"
+    },
+    {
+      "external_id": "source-row-191",
+      "source_row": 191,
+      "section_external_id": "section-8",
+      "record_type": "description_or_option",
+      "name_en": "your choice of vegetables noodles or vegetables rice with topping spicy kung-pao chicken and 1 piece of spring rolls and 1 piece of won-ton and sauce & salad",
+      "name_ar": "اختيارك من نودلز بالخضروات او ارز بالخضروات مع  دجاج بصوص الكنباو الحار مع  1 قطعة اسبرنج رولز و 1 قطعة وان تان والصوص و السلاطه",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-195",
+      "source_row": 195,
+      "section_external_id": "section-8",
+      "record_type": "priced_item",
+      "name_en": "Oyster Chicken Box",
+      "name_ar": "عرض الدجاج بصوص المحار",
+      "price": 349,
+      "source_value": "349"
+    },
+    {
+      "external_id": "source-row-196",
+      "source_row": 196,
+      "section_external_id": "section-8",
+      "record_type": "description_or_option",
+      "name_en": "your choice of vegetables noodles or vegetables rice with topping chicken oyster sauce and 1 piece of spring rolls and 1 piece of won-ton and sauce & salad",
+      "name_ar": "اختيارك من نودلز بالخضروات او ارز بالخضروات مع  دجاج بصوص المحار مع  1 قطعة اسبرنج رولز و 1 قطعة وان تان والصوص و السلاطه",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-200",
+      "source_row": 200,
+      "section_external_id": "section-8",
+      "record_type": "priced_item",
+      "name_en": "Teriyaki Chicken Box",
+      "name_ar": "عرض الدجاج الترياكي",
+      "price": 349,
+      "source_value": "349"
+    },
+    {
+      "external_id": "source-row-201",
+      "source_row": 201,
+      "section_external_id": "section-8",
+      "record_type": "description_or_option",
+      "name_en": "your choice of vegetables noodles or vegetables rice with topping chicken teriyaki and 1 piece of spring rolls and 1 piece of won-ton and sauce &  salad",
+      "name_ar": "اختيارك من نودلز بالخضروات او ارز بالخضروات مع  دجاج بصوص الترياكي مع  1 قطعة اسبرنج رولز و 1 قطعة وان تان والصوص و السلاطه",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-205",
+      "source_row": 205,
+      "section_external_id": "section-8",
+      "record_type": "priced_item",
+      "name_en": "Teriyaki Beef Box",
+      "name_ar": "عرض اللحم البقري الترياكي",
+      "price": 370,
+      "source_value": "370"
+    },
+    {
+      "external_id": "source-row-206",
+      "source_row": 206,
+      "section_external_id": "section-8",
+      "record_type": "description_or_option",
+      "name_en": "your choice of vegetables noodles or vegetables rice with beef teriyaki and 1 piece of spring rolls and 1 piece of won-ton and sauce &  salad",
+      "name_ar": "اختيارك من نودلز بالخضروات او ارز بالخضروات مع  اللحم البقري بصوص الترياكي مع  1 قطعة اسبرنج رولز و 1 قطعة وان تان والصوص و السلاطه",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-210",
+      "source_row": 210,
+      "section_external_id": "section-8",
+      "record_type": "priced_item",
+      "name_en": "Oyster Beef Box",
+      "name_ar": "عرض اللحم البقري بصوص المحار",
+      "price": 370,
+      "source_value": "370"
+    },
+    {
+      "external_id": "source-row-211",
+      "source_row": 211,
+      "section_external_id": "section-8",
+      "record_type": "description_or_option",
+      "name_en": "your choice of vegetables noodles or vegetables rice with beef oyster sauce and 1 piece of spring rolls and 1 piece of won-ton and sauce &  salad",
+      "name_ar": "اختيارك من نودلز بالخضروات او ارز بالخضروات مع  اللحم البقري بصوص المحار مع  1 قطعة اسبرنج رولز و 1 قطعة وان تان والصوص و السلاطه",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-214",
+      "source_row": 214,
+      "section_external_id": "section-8",
+      "record_type": "priced_item",
+      "name_en": "BBQ honey chili chicken box",
+      "name_ar": "عرض دجاج الباربيكيو الحار",
+      "price": 349,
+      "source_value": "349"
+    },
+    {
+      "external_id": "source-row-215",
+      "source_row": 215,
+      "section_external_id": "section-8",
+      "record_type": "description_or_option",
+      "name_en": "your choice of vegetables noodles or vegetables rice with chicken honey chili BBQ sauce and 1 piece of spring rolls and 1 piece of dumpling and salad",
+      "name_ar": "اختيارك من نودلز بالخضروات او ارز بالخضروات مع  دجاج بصوص البربيكيو الحار والعسل مع  1 قطعة اسبرنج رولز و 1 قطعة وان تان والصوص و السلاطه",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-218",
+      "source_row": 218,
+      "section_external_id": "section-8",
+      "record_type": "priced_item",
+      "name_en": "Double Box",
+      "name_ar": "الدبل",
+      "price": 675,
+      "source_value": "675"
+    },
+    {
+      "external_id": "source-row-219",
+      "source_row": 219,
+      "section_external_id": "section-8",
+      "record_type": "description_or_option",
+      "name_en": "your choice of 2 vegetables noodles or vegetabless rice with 2 chicken with your choice of sauce (sweet&sour - kungpao -oyster) and 2 pieces spring rolls and 2 pieces won-ton and sauce & salad",
+      "name_ar": "اختيارك من 2 نودلز بالخضروات او ارز بالخضروات مع 2 دجاج مع اختيارك من الصوص (سويت اند سور - كنباو - اويستر) مع 2 قطع اسبرنج رولز و 2 قطع وان تان والصوص و السلاطه",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-223",
+      "source_row": 223,
+      "section_external_id": "section-9",
+      "record_type": "section",
+      "name_en": "Extra sauces",
+      "name_ar": "صوصات اضافية",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-224",
+      "source_row": 224,
+      "section_external_id": "section-9",
+      "record_type": "priced_item",
+      "name_en": "Soy sauce",
+      "name_ar": "صويا صوص",
+      "price": 40,
+      "source_value": "40"
+    },
+    {
+      "external_id": "source-row-225",
+      "source_row": 225,
+      "section_external_id": "section-9",
+      "record_type": "priced_item",
+      "name_en": "sweet chili sauce ",
+      "name_ar": "سويت شيلي صوص ",
+      "price": 40,
+      "source_value": "40"
+    },
+    {
+      "external_id": "source-row-226",
+      "source_row": 226,
+      "section_external_id": "section-9",
+      "record_type": "priced_item",
+      "name_en": "sweet & sour sauce",
+      "name_ar": "سويت اند سور صوص",
+      "price": 40,
+      "source_value": "40"
+    },
+    {
+      "external_id": "source-row-227",
+      "source_row": 227,
+      "section_external_id": "section-9",
+      "record_type": "priced_item",
+      "name_en": "chili paste sauce ",
+      "name_ar": "معجون الشيلي الحار ",
+      "price": 40,
+      "source_value": "40"
+    },
+    {
+      "external_id": "source-row-228",
+      "source_row": 228,
+      "section_external_id": "section-9",
+      "record_type": "priced_item",
+      "name_en": "Teriyaki sauce",
+      "name_ar": "صوص الترياكي",
+      "price": 40,
+      "source_value": "40"
+    },
+    {
+      "external_id": "source-row-230",
+      "source_row": 230,
+      "section_external_id": "section-10",
+      "record_type": "section",
+      "name_en": "Drinks",
+      "name_ar": "مشروبات",
+      "price": null,
+      "source_value": null
+    },
+    {
+      "external_id": "source-row-231",
+      "source_row": 231,
+      "section_external_id": "section-10",
+      "record_type": "priced_item",
+      "name_en": "cola",
+      "name_ar": "كولا",
+      "price": 35,
+      "source_value": "35"
+    },
+    {
+      "external_id": "source-row-232",
+      "source_row": 232,
+      "section_external_id": "section-10",
+      "record_type": "priced_item",
+      "name_en": "mineral water",
+      "name_ar": "مياة معدنية",
+      "price": 20,
+      "source_value": "20"
+    }
+  ],
+  "currency": {
+    "code": "EGP",
+    "name_ar": "جنيه مصري",
+    "name_en": "Egyptian Pound"
+  }
+}

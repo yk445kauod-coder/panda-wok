@@ -1,0 +1,49 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+.pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+npm-debug.log*
+
+# next.js
+/.next/
+/out/
+
+# generated font-subset scratch (scripts/build-kana-font.mjs)
+/.fonts-tmp/
+next-env.d.ts
+
+# cloudflare / opennext
+/.open-next/
+/.pages/
+/.wrangler/
+cloudflare-env.d.ts
+
+# production
+/build
+/dist
+
+# testing
+/coverage
+
+# typescript
+*.tsbuildinfo
+
+# misc
+.DS_Store
+*.pem
+.agent_tmp/
+.agents_tmp/
+
+# vercel
+.vercel
+
+# env: never commit real secrets, but the placeholder template is tracked
+.env*
+!.env.example
+
+# Menu working sheets (owner keeps these; only the example is committed)
+scripts/data/menu-import.csv
+scripts/data/menu-export.csv
