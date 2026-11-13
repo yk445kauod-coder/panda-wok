@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { startVisiblePoll } from "@/lib/live/visibility";
 import { useT } from "@/components/i18n-provider";
 
 /**
@@ -75,12 +76,16 @@ export function OrderStatusRealtime({
     };
   }, [orderId, enabled]);
 
-  // Always poll while the order is active. Realtime usually beats this to it;
-  // the poll is what guarantees the page cannot silently stall.
+  // Always poll while the order is active, but only while the tab is visible.
+  // Realtime usually beats this to it; the poll is what guarantees the page
+  // cannot silently stall. A backgrounded tab cannot be watched, so polling it
+  // is pure cost — each tick is a full Worker render, and a phone left on the
+  // tracking page would otherwise spend the request budget the whole project
+  // shares. `startVisiblePoll` clears the timer while hidden and catches up once
+  // on return.
   useEffect(() => {
     if (!enabled) return;
-    const id = window.setInterval(refresh, POLL_MS);
-    return () => window.clearInterval(id);
+    return startVisiblePoll(refresh, POLL_MS);
   }, [enabled]);
 
   return (
