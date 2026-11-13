@@ -34,6 +34,17 @@ async function main() {
   }
   await cp(path.join(OPEN_NEXT, "worker.js"), path.join(OUT, "opennext-worker.js"));
 
+  // The pages this build prerendered live in `.open-next/cache`. Ship them with
+  // the deployment under the path the static-assets incremental cache reads
+  // (`cdn-cgi/_next_cache`), so a cold KV — a fresh deploy, or a day the KV
+  // write quota is spent — still serves them instead of re-rendering every page
+  // and exceeding the Worker CPU limit. This is a plain copy: it costs no KV
+  // writes, unlike `populateCache`, and it is what makes the site survive a
+  // deploy that cannot populate KV.
+  await cp(path.join(OPEN_NEXT, "cache"), path.join(OUT, "cdn-cgi", "_next_cache"), {
+    recursive: true,
+  });
+
   const wrapper = await readFile(path.join(root, "scripts", "pages", "_worker.js"), "utf8");
   await writeFile(path.join(OUT, "_worker.js"), wrapper, "utf8");
 

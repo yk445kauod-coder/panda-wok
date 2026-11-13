@@ -24,22 +24,33 @@ vi.mock("@opennextjs/cloudflare", () => ({
 
 // `vi.mock` factories are hoisted above the imports, so the spies have to be
 // created with `vi.hoisted` or the factory closes over uninitialised bindings.
-const { kvGet, kvSet, kvDelete } = vi.hoisted(() => ({
+const { kvGet, kvSet, kvDelete, staticGet } = vi.hoisted(() => ({
   kvGet: vi.fn(),
   kvSet: vi.fn(),
   kvDelete: vi.fn(),
+  staticGet: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock(
   "@opennextjs/cloudflare/overrides/incremental-cache/kv-incremental-cache",
   () => ({
     BINDING_NAME: "NEXT_INC_CACHE_KV",
+    // The wrapper adopts the stock name so `populateCache` recognises it.
+    NAME: "cf-kv-incremental-cache",
     default: { get: kvGet, set: kvSet, delete: kvDelete },
+  }),
+);
+
+vi.mock(
+  "@opennextjs/cloudflare/overrides/incremental-cache/static-assets-incremental-cache",
+  () => ({
+    default: { get: staticGet },
   }),
 );
 
 afterEach(() => {
   vi.clearAllMocks();
+  staticGet.mockResolvedValue(null);
 });
 
 describe("resilient incremental cache", () => {
@@ -55,6 +66,8 @@ describe("resilient incremental cache", () => {
     expect(kvGet).not.toHaveBeenCalled();
     expect(kvSet).not.toHaveBeenCalled();
     expect(kvDelete).not.toHaveBeenCalled();
+    // No KV, so the bundled static-assets copy is the only store left to try.
+    expect(staticGet).toHaveBeenCalledWith("menu", undefined);
   });
 
   it("never throws when there is no request context at all", async () => {
@@ -67,6 +80,28 @@ describe("resilient incremental cache", () => {
       resilientIncrementalCache.set("menu", { kind: "PAGE" } as never),
     ).resolves.toBeUndefined();
     await expect(resilientIncrementalCache.delete("menu")).resolves.toBeUndefined();
+  });
+
+  it("falls back to the bundled static-assets cache when KV misses", async () => {
+    getCloudflareContext.mockReturnValue({ env: { NEXT_INC_CACHE_KV: {} } });
+    kvGet.mockResolvedValue(null);
+    staticGet.mockResolvedValue({ value: { kind: "PAGE" }, lastModified: 2 });
+
+    await expect(resilientIncrementalCache.get("menu", "cache")).resolves.toEqual({
+      value: { kind: "PAGE" },
+      lastModified: 2,
+    });
+    expect(kvGet).toHaveBeenCalledWith("menu", "cache");
+    expect(staticGet).toHaveBeenCalledWith("menu", "cache");
+  });
+
+  it("prefers the KV entry when both stores hold one, so edits win", async () => {
+    getCloudflareContext.mockReturnValue({ env: { NEXT_INC_CACHE_KV: {} } });
+    kvGet.mockResolvedValue({ value: { kind: "PAGE", fresh: true }, lastModified: 9 });
+
+    const result = await resilientIncrementalCache.get("menu", "cache");
+    expect(result).toEqual({ value: { kind: "PAGE", fresh: true }, lastModified: 9 });
+    expect(staticGet).not.toHaveBeenCalled();
   });
 
   it("delegates to the KV cache once the namespace is bound", async () => {
