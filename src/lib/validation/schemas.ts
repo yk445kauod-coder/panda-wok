@@ -183,12 +183,6 @@ export const feedbackSchema = z.object({
   imageUrls: z.array(z.string().url()).max(4).default([]),
 });
 
-export const messageSchema = z.object({
-  conversationId: uuidSchema.optional(),
-  body: z.string().trim().min(1, "Write a message").max(2000),
-  isInternalNote: z.coerce.boolean().default(false),
-});
-
 export const orderStatusUpdateSchema = z.object({
   orderId: uuidSchema,
   status: z.enum([
@@ -436,12 +430,6 @@ export const assistantSchema = z.object({
   excludeSlugs: z.array(z.string().trim().min(1).max(120)).max(60).default([]),
 });
 
-export const conversationCreateSchema = z.object({
-  subject: z.string().trim().min(2, "What is this about?").max(120),
-  message: z.string().trim().min(2, "Write your message").max(2000),
-  orderId: optionalUuid,
-});
-
 export const staffSchema = z.object({
   userId: uuidSchema,
   role: z.enum(["owner", "admin", "manager", "kitchen", "support", "marketing"]),
@@ -496,12 +484,6 @@ export const feedbackResponseSchema = z.object({
 export const feedbackPublishSchema = z.object({
   feedbackId: uuidSchema,
   isPublic: z.coerce.boolean(),
-});
-
-export const conversationStatusSchema = z.object({
-  conversationId: uuidSchema,
-  status: z.enum(["open", "pending", "closed"]),
-  assignedTo: optionalUuid,
 });
 
 /* ----------------------------------------------------------------- content */

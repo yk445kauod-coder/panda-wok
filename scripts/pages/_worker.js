@@ -2,7 +2,6 @@ import opennext from "./opennext-worker.js";
 import {
   EDGE_CACHE_CONTROL,
   isCacheableRequest,
-  localeVariant,
   purgePublicCache,
   shouldPurgeAfter,
   toCacheUrl,
@@ -62,7 +61,6 @@ export default {
       method: request.method,
       pathname,
       cookieNames: parseCookieNames(request.headers.get("cookie")),
-      acceptLanguage: request.headers.get("accept-language"),
       accept: request.headers.get("accept"),
       hasRscHeader: request.headers.has("rsc"),
       hasPrefetchHeader:
@@ -85,11 +83,9 @@ export default {
 
     if (cacheUsable && isCacheableRequest(snapshot)) {
       const cache = caches.default;
-      const variant = localeVariant({
-        cookieLocale: cookieValue(request.headers.get("cookie"), "panda-wok.locale"),
-        acceptLanguage: request.headers.get("accept-language"),
-      });
-      const cacheKey = new Request(toCacheUrl(pathname, variant), { method: "GET" });
+      // The locale lives in the path (`/ar/menu`), so the pathname alone keys
+      // the entry; no per-request locale variant is needed.
+      const cacheKey = new Request(toCacheUrl(pathname), { method: "GET" });
 
       const hit = await cache.match(cacheKey);
       if (hit) return withCacheStatus(hit, "HIT");
@@ -118,17 +114,6 @@ function parseCookieNames(header) {
     .split(";")
     .map((part) => part.slice(0, part.indexOf("=")).trim())
     .filter(Boolean);
-}
-
-/** One cookie's value, or undefined. */
-function cookieValue(header, name) {
-  if (!header) return undefined;
-  for (const part of header.split(";")) {
-    const i = part.indexOf("=");
-    if (i === -1) continue;
-    if (part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
-  }
-  return undefined;
 }
 
 function isHtml(response) {

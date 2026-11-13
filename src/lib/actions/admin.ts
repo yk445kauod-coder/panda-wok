@@ -33,7 +33,6 @@ import {
   createStaffSchema,
   feedbackResponseSchema,
   feedbackPublishSchema,
-  conversationStatusSchema,
   uuidSchema,
 } from "@/lib/validation/schemas";
 import { placeholderEmailFor } from "@/lib/auth/phone";
@@ -825,46 +824,6 @@ export async function setFeedbackPublishedAction(
   revalidatePath("/menu");
   revalidatePath("/");
   revalidatePublicData(CACHE_TAGS.menu);
-  return actionOk();
-}
-
-/* -------------------------------------------------------------------- chat */
-
-export async function setConversationStatusAction(
-  formData: FormData,
-): Promise<FormActionResult<undefined>> {
-  const session = await assertCapability("chat.manage");
-
-  const parsed = conversationStatusSchema.safeParse({
-    conversationId: formData.get("conversationId"),
-    status: formData.get("status"),
-    assignedTo: formData.get("assignedTo") ?? undefined,
-  });
-  if (!parsed.success) return toFormError(parsed.error);
-
-  const supabase = await createServerSupabase();
-
-  const { error } = await supabase
-    .from("conversations")
-    .update({
-      status: parsed.data.status,
-      ...(parsed.data.assignedTo ? { assigned_to: parsed.data.assignedTo } : {}),
-    })
-    .eq("id", parsed.data.conversationId);
-
-  if (error) return actionError(error);
-
-  await logAudit(supabase, {
-    actorId: session.actorId,
-    actorRole: session.role,
-    action: "conversation.status",
-    entity: "conversations",
-    entityId: parsed.data.conversationId,
-    after: { status: parsed.data.status },
-  });
-
-  revalidatePath("/admin/chat");
-  revalidatePath(`/admin/chat/${parsed.data.conversationId}`);
   return actionOk();
 }
 

@@ -53,9 +53,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/crm/segments": Gauge,
   "/admin/crm/insights": Brain,
   "/admin/feedback": MessagesSquare,
-  "/admin/chat": Send,
   "/admin/analytics": Clock3,
-  "/admin/team-chat": MessagesSquare,
   "/admin/users": Users,
   "/admin/exports": Download,
   "/admin/backups": Database,
@@ -334,7 +332,6 @@ export function AdminShell({
 
       <AdminBottomNav
         capabilities={capabilities}
-        unreadCount={unreadCount}
         onMore={() => setOpen(true)}
       />
     </div>

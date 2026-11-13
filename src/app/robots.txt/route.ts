@@ -42,7 +42,6 @@ const DISALLOW_PRIVATE = [
   "/checkout",
   "/orders",
   "/orders/",
-  "/chat",
 ];
 
 export async function GET() {

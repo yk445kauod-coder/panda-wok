@@ -2,7 +2,6 @@ import Link from "next/link";
 import { AlertTriangle, Coins, Receipt, Star, Users } from "lucide-react";
 import { requireCapability } from "@/lib/auth/session";
 import { getDashboardMetrics } from "@/lib/crm/insights";
-import { countUnreadForStaff } from "@/lib/services/messaging";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/admin/stat-card";
@@ -28,9 +27,8 @@ export default async function AdminOverviewPage() {
   const session = await requireCapability("orders.view");
   const locale = await getAdminLocale();
   const t = await getT(locale);
-  const [metrics, unread, settings] = await Promise.all([
+  const [metrics, settings] = await Promise.all([
     getDashboardMetrics(30),
-    countUnreadForStaff().catch(() => 0),
     getPublicSettings(),
   ]);
 
@@ -93,15 +91,6 @@ export default async function AdminOverviewPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {unread > 0 ? (
-              <Link href="/admin/chat">
-                <Badge tone="indigo">
-                  {unread === 1
-                    ? t("admin.dash.unreadOne", { count: unread })
-                    : t("admin.dash.unreadMany", { count: unread })}
-                </Badge>
-              </Link>
-            ) : null}
             <Link
               href="/admin/orders?status=new"
               className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-vermilion-600 px-4 text-sm font-medium text-rice-50 transition-colors hover:bg-vermilion-700"

@@ -10,7 +10,6 @@ import {
   MapPin,
   Menu as MenuIcon,
   MessageSquare,
-  MessagesSquare,
   Receipt,
   ShieldCheck,
   Star,
@@ -31,13 +30,12 @@ type MoreEntry = {
 /**
  * Every customer route that the two tab bars do not already expose. The point of
  * this list is coverage: an account route that exists but is linked from nowhere
- * is not shipped (see the chat incident in AGENTS.md), so anything private or
+ * is not shipped, so anything private or
  * deep lives here rather than being assumed reachable from a parent screen.
  */
 const ENTRIES: MoreEntry[] = [
   { href: "/orders", labelKey: "nav.orderTracking", hintKey: "nav.trackOrdersHint", icon: Receipt },
   { href: "/feedback", labelKey: "nav.rateOrder", hintKey: "nav.rateOrderHint", icon: Star },
-  { href: "/chat", labelKey: "nav.messages", hintKey: "nav.messagesHint", icon: MessagesSquare },
   { href: "/account", labelKey: "nav.account", hintKey: "nav.accountHint", icon: User },
   {
     href: "/account/addresses",
@@ -79,7 +77,6 @@ export function MobileNav({
 
   const entries = ENTRIES.filter((e) => {
     if (e.href === "/feedback" && flags.feedback === false) return false;
-    if (e.href === "/chat" && flags.chat === false) return false;
     if (e.href.startsWith("/account") && !signedIn) return false;
     if (e.href === "/orders" && !signedIn) return false;
     return true;

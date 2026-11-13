@@ -33,7 +33,6 @@ const CAPABILITY_LABEL_KEYS: Record<string, string> = {
   "users.manage": "usersManage",
   "loyalty.manage": "loyaltyManage",
   "feedback.manage": "feedbackManage",
-  "chat.manage": "chatManage",
   "broadcast.manage": "broadcastManage",
   "analytics.view": "analyticsView",
   "ai.manage": "aiManage",

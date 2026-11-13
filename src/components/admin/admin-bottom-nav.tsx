@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   Coffee,
   LayoutDashboard,
-  MessagesSquare,
   MoreHorizontal,
   Package,
   ShoppingBag,
@@ -20,7 +19,6 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin": LayoutDashboard,
   "/admin/orders": ShoppingBag,
   "/admin/kitchen": Coffee,
-  "/admin/chat": MessagesSquare,
   "/admin/menu": Package,
   "/admin/crm": Users,
 };
@@ -35,11 +33,9 @@ const ICONS: Record<string, LucideIcon> = {
  */
 export function AdminBottomNav({
   capabilities,
-  unreadCount = 0,
   onMore,
 }: {
   capabilities: readonly Capability[];
-  unreadCount?: number;
   onMore: () => void;
 }) {
   const pathname = usePathname();
@@ -64,7 +60,6 @@ export function AdminBottomNav({
               ? pathname === "/admin"
               : pathname.startsWith(item.href);
           const Icon = ICONS[item.href] ?? LayoutDashboard;
-          const showBadge = item.href === "/admin/chat" && unreadCount > 0;
 
           return (
             <li key={item.href} className="flex-1">
@@ -76,14 +71,7 @@ export function AdminBottomNav({
                   active ? "text-vermilion-300" : "text-rice-100/70 hover:text-rice-50",
                 )}
               >
-                <span className="relative">
-                  <Icon className="size-5" aria-hidden="true" />
-                  {showBadge ? (
-                    <span className="absolute -end-2 -top-1.5 grid min-w-4 place-items-center rounded-full bg-vermilion-600 px-1 text-[10px] font-bold leading-4 text-rice-50">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  ) : null}
-                </span>
+                <Icon className="size-5" aria-hidden="true" />
                 <span className="truncate">{t(`admin.nav.${item.labelKey}`)}</span>
                 {active ? (
                   <span

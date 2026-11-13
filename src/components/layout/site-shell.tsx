@@ -30,7 +30,6 @@ function DesktopNav({
     { href: localePath(locale, "/contact"), label: t("nav.contact"), flag: null },
     { href: localePath(locale, "/feedback"), label: t("nav.feedback"), flag: "feedback" },
     { href: localePath(locale, "/orders"), label: t("nav.orderTracking"), flag: null },
-    { href: localePath(locale, "/chat"), label: t("nav.messages"), flag: "chat" },
   ].filter((l) => l.flag === null || flags[l.flag] !== false);
 
   return (

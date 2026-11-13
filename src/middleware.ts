@@ -59,7 +59,6 @@ const PROTECTED_PREFIXES = [
   "/checkout",
   "/orders",
   "/feedback/new",
-  "/chat",
 ] as const;
 
 /**

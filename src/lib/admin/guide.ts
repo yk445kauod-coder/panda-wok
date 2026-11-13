@@ -78,7 +78,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
           { title: "Admin", body: "Everything except assigning roles and restoring backups." },
           { title: "Manager", body: "Daily operations: orders, menu, customers, exports and backups." },
           { title: "Kitchen staff", body: "See and progress orders. No customer data, no money figures." },
-          { title: "Customer support", body: "Orders, customer records, feedback and chat. Cannot export data." },
+          { title: "Customer support", body: "Orders, customer records and feedback. Cannot export data." },
           { title: "Marketing", body: "Segments and analytics. Cannot change orders." },
         ],
         tips: [

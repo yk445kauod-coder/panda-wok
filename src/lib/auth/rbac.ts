@@ -15,7 +15,6 @@ export type Capability =
   | "crm.export"
   | "users.manage"
   | "feedback.manage"
-  | "chat.manage"
   | "analytics.view"
   | "exports.manage"
   | "backups.view"
@@ -33,21 +32,21 @@ const CAPABILITIES: Record<StaffRole, readonly Capability[]> = {
   owner: [
     "orders.view", "orders.update", "kitchen.view", "menu.manage",
     "crm.view", "crm.export", "users.manage",
-    "feedback.manage", "chat.manage",
+    "feedback.manage",
     "analytics.view", "exports.manage", "backups.view",
     "backups.create", "backups.restore", "settings.manage", "roles.manage",
   ],
   admin: [
     "orders.view", "orders.update", "kitchen.view", "menu.manage",
     "crm.view", "crm.export", "users.manage",
-    "feedback.manage", "chat.manage",
+    "feedback.manage",
     "analytics.view", "exports.manage", "backups.view",
     "backups.create", "settings.manage",
   ],
   manager: [
     "orders.view", "orders.update", "kitchen.view", "menu.manage",
     "crm.view", "crm.export", "users.manage",
-    "feedback.manage", "chat.manage",
+    "feedback.manage",
     "analytics.view", "exports.manage", "backups.view", "backups.create",
   ],
   kitchen: [
@@ -55,7 +54,7 @@ const CAPABILITIES: Record<StaffRole, readonly Capability[]> = {
   ],
   support: [
     "orders.view", "orders.update", "kitchen.view", "crm.view",
-    "feedback.manage", "chat.manage",
+    "feedback.manage",
   ],
   marketing: [
     "crm.view", "crm.export", "analytics.view",
@@ -77,7 +76,7 @@ export const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
   admin: "Everything except role assignment and backup restore.",
   manager: "Daily operations: orders, menu, CRM, exports, backups.",
   kitchen: "View and progress orders.",
-  support: "Orders, customer records, feedback and chat. No exports.",
+  support: "Orders, customer records and feedback. No exports.",
   marketing: "Segments and analytics. Cannot modify orders.",
 };
 
@@ -143,7 +142,6 @@ export const ADMIN_NAV: readonly {
   { href: "/admin/crm/segments", label: "Segments", labelKey: "crm-segments", capability: "crm.view", group: "CRM", groupKey: "crm" },
   { href: "/admin/crm/insights", label: "AI insights", labelKey: "crm-insights", capability: "crm.view", group: "CRM", groupKey: "crm" },
   { href: "/admin/feedback", label: "Feedback", labelKey: "feedback", capability: "feedback.manage", group: "CRM", groupKey: "crm" },
-  { href: "/admin/chat", label: "Chat", labelKey: "chat", capability: "chat.manage", group: "CRM", groupKey: "crm" },
   { href: "/admin/analytics", label: "Analytics", labelKey: "analytics", capability: "analytics.view", group: "Growth", groupKey: "growth" },
   { href: "/admin/users", label: "Team & users", labelKey: "users", capability: "users.manage", group: "Platform", groupKey: "platform" },
   { href: "/admin/exports", label: "Exports", labelKey: "exports", capability: "exports.manage", group: "Platform", groupKey: "platform" },
@@ -169,7 +167,6 @@ export const ADMIN_MOBILE_NAV: readonly {
   { href: "/admin", label: "Home", labelKey: "home", capability: "orders.view" },
   { href: "/admin/orders", label: "Orders", labelKey: "orders", capability: "orders.view" },
   { href: "/admin/kitchen", label: "Kitchen", labelKey: "kitchen", capability: "kitchen.view" },
-  { href: "/admin/chat", label: "Chat", labelKey: "chat", capability: "chat.manage" },
   { href: "/admin/menu", label: "Menu", labelKey: "menu", capability: "menu.manage" },
   { href: "/admin/crm", label: "Customers", labelKey: "crm", capability: "crm.view" },
 ];

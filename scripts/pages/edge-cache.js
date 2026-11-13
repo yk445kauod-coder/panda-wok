@@ -1,12 +1,10 @@
 /**
  * Edge-cache policy for the Pages front door.
  *
- * Cloudflare's CDN never caches this app: Next renders every customer page
- * dynamically and sends `no-store`, so during a rush all traffic reaches the
- * Worker, and the Free plan's per-request CPU/subrequest budget — not the CDN —
- * becomes the ceiling. Caching the public HTML at the edge is what lets a rush
- * be absorbed by the CDN instead of the origin: repeat visitors and crawlers are
- * answered without a Worker invocation at all.
+ * The customer site is prerendered per locale (`/en/...`, `/ar/...`), so a
+ * cached hit is answered by the CDN without running the Worker at all. That is
+ * what keeps a rush — or several admins and a crawler at once — off the Free
+ * plan's per-request CPU/subrequest budget.
  *
  * The policy is deliberately narrow. Only anonymous, un-personalised document
  * navigations to a small allowlist of public pages are cached. Anything carrying
@@ -15,16 +13,21 @@
  * per-navigation payload can ever be stored.
  *
  * Cached and served pages are byte-identical — this only decides *who serves*
- * them and for how long. A catalogue edit is visible once the TTL lapses.
+ * them and for how long. A catalogue edit is visible once the TTL lapses, and an
+ * admin mutation purges the whole set immediately.
  *
  * Kept free of any Cloudflare globals so the decision is unit-tested directly
  * (`tests/edge-cache.test.ts`).
  */
 
+/** The two site locales, mirroring `LOCALES` in `src/lib/i18n/config.ts`. */
+export const CACHE_LOCALES = ["en", "ar"];
+
 /**
- * Public, non-personalised pages. `/menu/*` is a dish detail. Everything else
- * (account, checkout, orders, loyalty, feedback, chat, auth, admin, api) is
- * either session-scoped or a redirect and must never be stored.
+ * Public, non-personalised pages, written without a locale prefix. `/menu/*` is
+ * a dish or category detail. Everything else (account, checkout, orders,
+ * loyalty, feedback, chat, auth, admin, api) is either session-scoped or a
+ * redirect and must never be stored.
  */
 export const PUBLIC_PATHS = [
   "/",
@@ -37,22 +40,35 @@ export const PUBLIC_PATHS = [
   "/cart",
 ];
 
+const LOCALE_PREFIX = /^\/(en|ar)(?=\/|$)/;
+
+/** Removes a leading locale segment: `/ar/menu` → `/menu`, `/en` → `/`. */
+function stripLocale(pathname) {
+  const match = pathname.match(LOCALE_PREFIX);
+  if (!match) return pathname;
+  return pathname.slice(match[0].length) || "/";
+}
+
+/** The locale-prefixed form of a bare public path: `/menu` → `/ar/menu`. */
+function withLocale(locale, barePath) {
+  return `/${locale}${barePath === "/" ? "" : barePath}`;
+}
+
 /**
- * Seconds a cached page is fresh. The origin renders this app on a 10 ms CPU
- * budget (Workers Free), so a *cold* render is what 1102s: a short TTL keeps
- * evicting the only copies that can be served without re-running Next. Ten
- * minutes is short enough that a change made directly in the database shows up
- * promptly, and admin edits do not wait at all — a non-GET under `/admin` purges
- * every key (`shouldPurgeAfter`).
+ * Seconds a cached page is fresh. A *cold* render is what 1102s on the Free
+ * plan, so a short TTL keeps evicting the only copies that can be served
+ * without re-running Next. Ten minutes is short enough that a change made
+ * directly in the database shows up promptly, and admin edits do not wait at all
+ * — a non-GET under `/admin` purges every key (`shouldPurgeAfter`).
  */
 export const EDGE_TTL_SECONDS = 600;
 
 /**
- * Seconds a stale copy may be served while revalidating in the background.
- * This is the property that makes the cache durable: after the fresh window the
- * CDN keeps answering from cache and refreshes in the background, so the origin
- * sees one render per key per TTL instead of one per visitor. Long enough that
- * the cache never goes cold between visits.
+ * Seconds a stale copy may be served while revalidating in the background. This
+ * is the property that makes the cache durable: after the fresh window the CDN
+ * keeps answering from cache and refreshes in the background, so the origin sees
+ * one render per key per TTL instead of one per visitor. Long enough that the
+ * cache never goes cold between visits.
  */
 export const EDGE_SWR_SECONDS = 86400;
 
@@ -66,37 +82,29 @@ export const EDGE_CACHE_CONTROL = `public, max-age=0, s-maxage=${EDGE_TTL_SECOND
 const isSupabaseAuthCookie = (name) =>
   name.startsWith("sb-") && name.includes("-auth-token");
 
+/**
+ * True when a locale-prefixed path is one of the public, cacheable pages. A bare
+ * path (`/menu`) is only ever a 307 redirect to its locale twin, so it is never a
+ * page to store.
+ */
 export function isCacheablePath(pathname) {
+  if (!LOCALE_PREFIX.test(pathname)) return false;
+  const bare = stripLocale(pathname);
   return PUBLIC_PATHS.some(
-    (base) => pathname === base || pathname.startsWith(`${base}/`),
+    (base) => bare === base || bare.startsWith(`${base}/`),
   );
 }
 
 /**
- * The language a response is rendered in, for the cache key. `getLocale()`
- * resolves an explicit cookie first, then Accept-Language, then English — so the
- * key must carry the same distinction or an Arabic reader could be served a
- * cached English page.
- */
-export function localeVariant({ cookieLocale, acceptLanguage } = {}) {
-  const cookie = String(cookieLocale ?? "").trim().toLowerCase();
-  if (cookie === "ar") return "ar";
-  if (cookie === "en") return "en";
-  const accept = String(acceptLanguage ?? "").toLowerCase();
-  return accept.startsWith("ar") || accept.includes(",ar") ? "ar" : "en";
-}
-
-/**
  * True when this request may be served from (and stored in) the edge cache.
- * `request` is a plain snapshot: `{ method, pathname, cookieNames, cookieLocale,
- * acceptLanguage, accept, hasRscHeader, hasPrefetchHeader, hasAuthorization }`.
+ * `request` is a plain snapshot: `{ method, pathname, cookieNames, accept,
+ * hasRscHeader, hasPrefetchHeader, hasAuthorization }`.
  */
 export function isCacheableRequest(request) {
   const {
     method,
     pathname,
     cookieNames = [],
-    acceptLanguage,
     accept,
     hasRscHeader,
     hasPrefetchHeader,
@@ -117,26 +125,20 @@ export function isCacheableRequest(request) {
 }
 
 /**
- * The cache key.
- *
- * `caches.default` keys on the URL alone, so the language variant is appended.
- * The origin is a fixed constant rather than the request host so that a page has
- * one key regardless of which host served it — that lets the admin actions purge
- * it deterministically (`src/lib/cache/edge.ts`, which mirrors this exactly; the
- * two are asserted equal in `tests/edge-cache.test.ts`). The page body does not
- * depend on the host — canonical URLs come from `NEXT_PUBLIC_SITE_URL`.
+ * The cache key. The locale lives in the path now (`/ar/menu`), so the pathname
+ * alone distinguishes the variants — no extra query needed. The origin is a
+ * fixed constant rather than the request host so a page has one key regardless
+ * of which host served it, which lets an admin purge it deterministically.
  */
 export const CACHE_ORIGIN = "https://edge.cache.internal";
 
-export function toCacheUrl(pathname, variant) {
-  return `${CACHE_ORIGIN}${pathname}?__pw_lang=${variant}`;
+export function toCacheUrl(pathname) {
+  return `${CACHE_ORIGIN}${pathname}`;
 }
 
-export const CACHE_LOCALES = ["en", "ar"];
-
-/** Every stored key for one public path, across locales. */
-export function cacheKeysFor(pathname) {
-  return CACHE_LOCALES.map((locale) => toCacheUrl(pathname, locale));
+/** Every stored key for one bare public path, across locales. */
+export function cacheKeysFor(barePath) {
+  return CACHE_LOCALES.map((locale) => toCacheUrl(withLocale(locale, barePath)));
 }
 
 /**

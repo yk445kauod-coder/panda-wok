@@ -5,13 +5,12 @@ import {
   cacheKeysFor,
   isCacheablePath,
   isCacheableRequest,
-  localeVariant,
   purgePublicCache,
   shouldPurgeAfter,
   toCacheUrl,
 } from "../scripts/pages/edge-cache.js";
 
-const anon = { method: "GET", pathname: "/menu", cookieNames: [] };
+const anon = { method: "GET", pathname: "/en/menu", cookieNames: [] };
 
 /**
  * The edge cache exists to absorb rush traffic on the public site. A wrong
@@ -19,29 +18,38 @@ const anon = { method: "GET", pathname: "/menu", cookieNames: [] };
  * pinned; a wrong "not cacheable" merely costs origin capacity.
  */
 describe("isCacheablePath", () => {
-  it("allows the public pages", () => {
-    for (const p of ["/", "/menu", "/menu/ramen", "/about", "/contact", "/faq", "/location", "/privacy-policy", "/cart"]) {
-      expect(isCacheablePath(p)).toBe(true);
+  it("allows the public pages in both locales", () => {
+    for (const bare of ["/", "/menu", "/menu/ramen", "/about", "/contact", "/faq", "/location", "/privacy-policy", "/cart"]) {
+      for (const locale of ["en", "ar"]) {
+        const p = `/${locale}${bare === "/" ? "" : bare}`;
+        expect(isCacheablePath(p), p).toBe(true);
+      }
     }
+  });
+
+  it("rejects a bare public path that was never localised", () => {
+    // A bare path is only ever a redirect, never a page to store.
+    expect(isCacheablePath("/menu")).toBe(false);
+    expect(isCacheablePath("/")).toBe(false);
   });
 
   it("rejects session, auth, admin and api paths", () => {
     for (const p of [
-      "/account",
-      "/account/addresses",
-      "/checkout",
-      "/orders",
-      "/orders/123",
-      "/loyalty",
-      "/feedback",
-      "/feedback/new",
-      "/chat",
+      "/en/account",
+      "/en/account/addresses",
+      "/en/checkout",
+      "/en/orders",
+      "/en/orders/123",
+      "/en/loyalty",
+      "/en/feedback",
+      "/en/feedback/new",
+      "/en/chat",
       "/auth/sign-in",
       "/admin",
       "/admin/orders",
       "/api/analytics",
     ]) {
-      expect(isCacheablePath(p)).toBe(false);
+      expect(isCacheablePath(p), p).toBe(false);
     }
   });
 });
@@ -81,30 +89,15 @@ describe("isCacheableRequest", () => {
   });
 
   it("does not cache private paths even when anonymous", () => {
-    expect(isCacheableRequest({ ...anon, pathname: "/checkout" })).toBe(false);
-    expect(isCacheableRequest({ ...anon, pathname: "/orders" })).toBe(false);
-  });
-});
-
-describe("localeVariant", () => {
-  it("prefers the explicit cookie", () => {
-    expect(localeVariant({ cookieLocale: "ar", acceptLanguage: "en-US,en" })).toBe("ar");
-    expect(localeVariant({ cookieLocale: "en", acceptLanguage: "ar" })).toBe("en");
-  });
-
-  it("falls back to Accept-Language, then English", () => {
-    expect(localeVariant({ acceptLanguage: "ar-EG,ar;q=0.9" })).toBe("ar");
-    expect(localeVariant({ acceptLanguage: "en-US,en;q=0.9" })).toBe("en");
-    expect(localeVariant({})).toBe("en");
+    expect(isCacheableRequest({ ...anon, pathname: "/en/checkout" })).toBe(false);
+    expect(isCacheableRequest({ ...anon, pathname: "/ar/orders" })).toBe(false);
   });
 });
 
 describe("toCacheUrl", () => {
-  it("separates locales into distinct cache keys", () => {
-    const en = toCacheUrl("/menu", "en");
-    const ar = toCacheUrl("/menu", "ar");
-    expect(en).not.toBe(ar);
-    expect(new URL(en).searchParams.get("__pw_lang")).toBe("en");
+  it("keys by the locale-prefixed path, so the two locales never collide", () => {
+    expect(toCacheUrl("/en/menu")).not.toBe(toCacheUrl("/ar/menu"));
+    expect(toCacheUrl("/en/menu")).toBe("https://edge.cache.internal/en/menu");
   });
 });
 
@@ -126,10 +119,6 @@ describe("EDGE_CACHE_CONTROL", () => {
  * the exact bug this closes — so the two are asserted equal.
  */
 describe("cache keys", () => {
-  it("is host-independent, so one page has one key", () => {
-    expect(toCacheUrl("/menu", "en")).toBe("https://edge.cache.internal/menu?__pw_lang=en");
-  });
-
   it("uses the same key to store and to purge", async () => {
     const deleted: string[] = [];
     const cache = {
@@ -143,11 +132,11 @@ describe("cache keys", () => {
 
     // The purge set must contain exactly the keys the worker stores under.
     expect(cacheKeysFor("/menu")).toEqual([
-      toCacheUrl("/menu", "en"),
-      toCacheUrl("/menu", "ar"),
+      toCacheUrl("/en/menu"),
+      toCacheUrl("/ar/menu"),
     ]);
-    expect(deleted).toContain(toCacheUrl("/menu", "ar"));
-    expect(deleted).toContain(toCacheUrl("/menu", "en"));
+    expect(deleted).toContain(toCacheUrl("/ar/menu"));
+    expect(deleted).toContain(toCacheUrl("/en/menu"));
   });
 
   it("purges every public page in both locales", async () => {
@@ -155,8 +144,8 @@ describe("cache keys", () => {
     await purgePublicCache({ delete: async (r: Request) => (deleted.push(r.url), true) });
     expect(new Set(deleted).size).toBe(deleted.length); // no duplicates
     expect(deleted.length).toBeGreaterThan(8);
-    expect(deleted.some((u) => u.includes("/menu?__pw_lang=ar"))).toBe(true);
-    expect(deleted.some((u) => u.includes("/?__pw_lang=en"))).toBe(true);
+    expect(deleted.some((u) => u.endsWith("/ar/menu"))).toBe(true);
+    expect(deleted.some((u) => u.endsWith("/en"))).toBe(true);
   });
 });
 

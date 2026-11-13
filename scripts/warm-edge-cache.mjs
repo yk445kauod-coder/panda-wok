@@ -17,9 +17,12 @@
 const BASE = (process.argv[2] ?? process.env.WARM_BASE_URL ?? "https://panda-wok.pages.dev").replace(/\/$/, "");
 
 // Kept in sync with PUBLIC_PATHS in scripts/pages/edge-cache.js. `/cart` is
-// included because it is a public, un-personalised page there.
+// included because it is a public, un-personalised page there. Paths are bare
+// here and prefixed with the locale below, matching the prerendered URLs.
 const PATHS = ["/", "/menu", "/about", "/contact", "/faq", "/location", "/privacy-policy", "/cart"];
 const LOCALES = ["en", "ar"];
+
+const localised = (path, locale) => `/${locale}${path === "/" ? "" : path}`;
 const ATTEMPTS = 4;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,8 +36,8 @@ async function warm(path, locale) {
     let res;
     let body = "";
     try {
-      res = await fetch(`${BASE}${path}`, {
-        headers: { cookie: `panda-wok.locale=${locale}`, "user-agent": "panda-wok-cache-warm" },
+      res = await fetch(`${BASE}${localised(path, locale)}`, {
+        headers: { "user-agent": "panda-wok-cache-warm" },
         redirect: "manual",
       });
       body = await res.text();
