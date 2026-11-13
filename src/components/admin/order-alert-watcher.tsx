@@ -28,6 +28,7 @@ import {
   type OrderAlert,
 } from "@/lib/sound/alert-state";
 import { listPendingOrderAlertsAction } from "@/lib/actions/order-alerts";
+import { startVisiblePoll } from "@/lib/live/visibility";
 
 /**
  * The console-wide new-order alert.
@@ -158,8 +159,10 @@ export function OrderAlertWatcher({
     };
   }, [unacked.length]);
 
-  // Realtime nudge, plus a light poll and a refresh whenever the tab regains
-  // focus. `visibilitychange` matters because a background tab throttles timers.
+  // Realtime: an instant nudge the moment the `orders` table changes, and the
+  // signal that lets the poll below slow to a safety net. Kept in its own effect
+  // so the `live` transitions the poll reacts to never tear the socket down.
+  const [live, setLive] = useState(false);
   useEffect(() => {
     const supabase = createClient();
     let cancelled = false;
@@ -169,21 +172,30 @@ export function OrderAlertWatcher({
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         if (!cancelled) void refresh();
       })
-      .subscribe();
-
-    const interval = window.setInterval(() => void refresh(), 8000);
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void refresh();
-    };
-    document.addEventListener("visibilitychange", onVisible);
+      .subscribe((status: string) => {
+        if (cancelled) return;
+        if (status === "SUBSCRIBED") setLive(true);
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setLive(false);
+      });
 
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
-      document.removeEventListener("visibilitychange", onVisible);
       void supabase.removeChannel(channel);
     };
   }, [refresh]);
+
+  // Fallback poll, visible-only (see `startVisiblePoll`): a backgrounded console
+  // cannot be watched, and on the Free plan every poll is a full Worker
+  // invocation that re-derives the gate and the orders, so a hidden tab must
+  // cost nothing. This watcher is mounted on *every* admin page, which made it
+  // the single largest source of console traffic before the guard.
+  //
+  // The interval is adaptive: once realtime is confirmed live it is the instant
+  // path and the poll only has to catch a dropped socket, so it slows to a 60 s
+  // safety net; without realtime the poll is the only path and stays at 8 s.
+  useEffect(() => {
+    return startVisiblePoll(() => void refresh(), live ? 60000 : 8000);
+  }, [refresh, live]);
 
   if (unacked.length === 0) return null;
 

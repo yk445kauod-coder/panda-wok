@@ -2,6 +2,10 @@ import "server-only";
 
 import { createAdminSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
 import {
+  ADMIN_AGGREGATE_REVALIDATE,
+  cachedAdminAggregate,
+} from "@/lib/cache/admin-aggregate";
+import {
   buildDbProviderChain,
   loadDbProviders,
   getWorkersAiBinding,
@@ -52,11 +56,24 @@ function dayKey(iso: string) {
 }
 
 /**
+ * Cross-request cache for the folded aggregates. The computation walks the whole
+ * window in JavaScript — the CPU that Error 1102 kills — and is identical for
+ * every viewer, so a few seconds of sharing removes it from all but the first
+ * request. `memo` still dedupes within one request (a run + its report), and the
+ * cached layer dedupes across requests.
+ */
+const cachedDashboardMetrics = cachedAdminAggregate(
+  loadDashboardMetrics,
+  ["admin-dashboard-metrics"],
+  { revalidate: ADMIN_AGGREGATE_REVALIDATE },
+);
+
+/**
  * All dashboard numbers are computed from real rows. Nothing is estimated or
  * seeded, and an empty database yields zeros rather than invented figures.
  */
 export async function getDashboardMetrics(days = 30): Promise<DashboardMetrics> {
-  return memo(`dashboard-metrics:${days}`, () => loadDashboardMetrics(days));
+  return memo(`dashboard-metrics:${days}`, () => cachedDashboardMetrics(days));
 }
 
 async function loadDashboardMetrics(days: number): Promise<DashboardMetrics> {

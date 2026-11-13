@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Bell, BellOff, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { startVisiblePoll } from "@/lib/live/visibility";
 import { useT } from "@/components/i18n-provider";
 import {
   setSoundEnabled,
@@ -119,14 +120,15 @@ export function KitchenLiveBoard({
   // The board always polls; realtime just lets it poll less often. A socket that
   // reports SUBSCRIBED but delivers nothing (an empty `supabase_realtime`
   // publication did exactly that) must not be able to freeze a KDS mid-service.
+  // The poll is paused while the tab is hidden: nobody is watching a backgrounded
+  // board, and on the Free plan each refresh is a full Worker invocation.
   useEffect(() => {
-    const interval = setInterval(
+    return startVisiblePoll(
       () => {
         if (Date.now() - lastSync.current > 9000) refresh();
       },
       live ? 30000 : 12000,
     );
-    return () => clearInterval(interval);
   }, [live, refresh]);
 
   return (

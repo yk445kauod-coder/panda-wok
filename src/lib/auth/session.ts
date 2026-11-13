@@ -206,3 +206,27 @@ export async function assertCapability(capability: Capability): Promise<AdminSes
   if (!can(session.role, capability)) throw new ForbiddenError();
   return session;
 }
+
+/**
+ * The cheap counterpart to `assertCapability`, for high-frequency polls.
+ *
+ * `getAdminSession` resolves the acting identity fully: it reads the customer
+ * session (`auth.getUser` plus a profile and staff query) and, for the shared
+ * passcode, looks up an owner staff row — three to four Supabase round trips
+ * that a poll does not need. It only has to answer "is this browser unlocked
+ * with a role that holds this capability", and the gate cookie already carries
+ * the role. So this reads the gate alone (one staff read for a staff cookie, and
+ * none at all for the owner) and never touches the customer session.
+ *
+ * Used by the order-alert poll, which runs on every console page; the saving is
+ * multiplied by the number of open admin tabs.
+ */
+export async function assertGateCapability(
+  capability: Capability,
+): Promise<StaffRole> {
+  const gate = await gateIdentity();
+  if (!gate) throw new ForbiddenError("Unlock the ops console first.");
+  const role: StaffRole = gate.kind === "owner" ? "owner" : gate.role;
+  if (!can(role, capability)) throw new ForbiddenError();
+  return role;
+}

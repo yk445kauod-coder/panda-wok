@@ -1,6 +1,6 @@
 "use server";
 
-import { assertCapability } from "@/lib/auth/session";
+import { assertGateCapability } from "@/lib/auth/session";
 import { getPendingNewOrders, type OrderAlert } from "@/lib/services/admin-orders";
 import { actionError, actionOk, type ActionResult } from "@/lib/actions/result";
 
@@ -9,10 +9,14 @@ import { actionError, actionOk, type ActionResult } from "@/lib/actions/result";
  * every few seconds; realtime gives an instant nudge on top, but this is the
  * dependable path when the socket is unavailable. Gated on `orders.view`, so a
  * role that cannot see orders never receives one over the wire.
+ *
+ * It authenticates through `assertGateCapability` rather than the full session:
+ * this runs on every console page and on every open tab, so it must stay the
+ * cheapest possible round trip (see the note on that helper).
  */
 export async function listPendingOrderAlertsAction(): Promise<ActionResult<OrderAlert[]>> {
   try {
-    await assertCapability("orders.view");
+    await assertGateCapability("orders.view");
     return actionOk(await getPendingNewOrders());
   } catch (error) {
     return actionError(error);

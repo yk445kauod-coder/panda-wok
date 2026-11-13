@@ -282,6 +282,15 @@ export function AdminShell({
                       <li key={item.href}>
                         <Link
                           href={item.href}
+                          // Every console route is `force-dynamic`, so a
+                          // prefetch is a real Worker invocation that re-derives
+                          // the gate and re-runs the page's queries. The whole
+                          // sidebar is in view at once, so leaving this on meant
+                          // one page load triggered a prefetch of every other
+                          // route — the largest request multiplier in the
+                          // console. Navigating is still instant; the cost is
+                          // paid on the tap, once, instead of for every tab.
+                          prefetch={false}
                           onClick={() => setOpen(false)}
                           aria-current={active ? "page" : undefined}
                           className={cn(

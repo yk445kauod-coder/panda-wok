@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { startVisiblePoll } from "@/lib/live/visibility";
 import { cn } from "@/lib/utils/format";
 import { useT } from "@/components/i18n-provider";
 
@@ -25,7 +26,6 @@ export function LiveOrdersFeed({
   const [live, setLive] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastSync, setLastSync] = useState<number>(() => Date.now());
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshNow = useCallback(() => {
@@ -85,13 +85,10 @@ export function LiveOrdersFeed({
 
   useEffect(() => {
     if (live) return;
-    pollRef.current = setInterval(() => {
+    const stop = startVisiblePoll(() => {
       if (Date.now() - lastSync > (pollSeconds - 5) * 1000) refresh();
     }, pollSeconds * 1000);
-
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+    return stop;
   }, [live, lastSync, pollSeconds, refresh]);
 
   return (
