@@ -51,15 +51,29 @@ export function parseClock(value: string): number | null {
  * Worker has no local clock.
  */
 export function localMinutes(now: Date, timeZone: string = STORE_TIME_ZONE): number {
-  const parts = new Intl.DateTimeFormat("en-GB", {
+  const parts = clockFormatter(timeZone).formatToParts(now);
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+  return (hour % 24) * 60 + minute;
+}
+
+const clockFormatters = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * Cached clock formatter. Building one per call is the single most expensive
+ * step in the availability check, which every public render runs.
+ */
+function clockFormatter(timeZone: string): Intl.DateTimeFormat {
+  const existing = clockFormatters.get(timeZone);
+  if (existing) return existing;
+  const formatter = new Intl.DateTimeFormat("en-GB", {
     timeZone,
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  }).formatToParts(now);
-  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
-  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
-  return (hour % 24) * 60 + minute;
+  });
+  clockFormatters.set(timeZone, formatter);
+  return formatter;
 }
 
 /**

@@ -42,14 +42,42 @@ export function formatPrice(
   return formatter.format(n);
 }
 
-export function formatNumber(value: number | null | undefined) {
+const numberFormatters = new Map<string, Intl.NumberFormat>();
+
+/**
+ * Constructing an `Intl.NumberFormat` is by far the most expensive part of
+ * formatting a number on the Worker runtime (the Free plan caps CPU at 10 ms
+ * per request and a dashboard render formats dozens of figures). The formatter
+ * only depends on the locale, so it is built once and reused.
+ */
+function numberFormatter(locale: string) {
+  const existing = numberFormatters.get(locale);
+  if (existing) return existing;
+  const formatter = new Intl.NumberFormat(locale, { numberingSystem: "latn" });
+  numberFormatters.set(locale, formatter);
+  return formatter;
+}
+
+export function formatNumber(value: number | null | undefined, locale = "en-EG") {
   if (value === null || value === undefined) return "0";
-  return new Intl.NumberFormat("en-EG", { numberingSystem: "latn" }).format(value);
+  return numberFormatter(locale).format(value);
 }
 
 /** Date locale: Egyptian Arabic for `ar`, British English otherwise. */
 function dateLocale(locale: string) {
   return locale === "ar" ? "ar-EG" : "en-GB";
+}
+
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+/** Cached `Intl.DateTimeFormat`, keyed by locale + option variant. */
+function dateFormatter(locale: string, variant: string, options: Intl.DateTimeFormatOptions) {
+  const key = `${locale}:${variant}`;
+  const existing = dateFormatters.get(key);
+  if (existing) return existing;
+  const formatter = new Intl.DateTimeFormat(dateLocale(locale), options);
+  dateFormatters.set(key, formatter);
+  return formatter;
 }
 
 export function formatDate(
@@ -59,12 +87,22 @@ export function formatDate(
   if (!value) return "—";
   const d = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat(dateLocale(locale), {
+  return dateFormatter(locale, "date", {
     timeZone: STORE_TIME_ZONE,
     day: "2-digit",
     month: "short",
     year: "numeric",
     numberingSystem: "latn",
+  }).format(d);
+}
+
+/** Long-form date ("13 November 2026") for headers, cached per locale. */
+export function formatLongDate(value: string | Date, locale = "en") {
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return "—";
+  return dateFormatter(locale, "long", {
+    dateStyle: "long",
+    timeZone: STORE_TIME_ZONE,
   }).format(d);
 }
 
@@ -79,7 +117,7 @@ export function formatDateTime(
   // Worker runs in UTC, so without this every timestamp is three hours early
   // for Egypt — an order placed at 15:40 displayed as 12:40. The clock is
   // 12-hour (the convention the owner reads) in both locales.
-  return new Intl.DateTimeFormat(dateLocale(locale), {
+  return dateFormatter(locale, "datetime", {
     timeZone: STORE_TIME_ZONE,
     day: "2-digit",
     month: "short",
@@ -144,7 +182,7 @@ export function formatTime(value: string | Date | null | undefined) {
   if (!value) return "";
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("en-GB", {
+  return dateFormatter("en", "time", {
     timeZone: STORE_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
