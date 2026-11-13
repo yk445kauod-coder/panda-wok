@@ -9,6 +9,7 @@ import { useCart, type CartLine } from "@/components/customer/cart-provider";
 import { createClient } from "@/lib/supabase/client";
 import { dishImageSrc } from "@/lib/images/responsive";
 import { useT } from "@/components/i18n-provider";
+import { useLocalePath } from "@/components/i18n-hooks";
 import { computeTotals, type CheckoutConfig } from "@/lib/services/checkout-math";
 import { formatPrice } from "@/lib/utils/format";
 import {
@@ -98,6 +99,7 @@ export function CartView({
   locale?: Locale;
 }) {
   const t = useT();
+  const lp = useLocalePath();
   const { lines, hydrated, setQuantity, remove, subtotal, itemCount, priceOf } = useCart();
   const integrity = useLineIntegrity(lines);
   const blockedLines = new Set<string>();
@@ -130,7 +132,7 @@ export function CartView({
           description={t("cart.emptyBody")}
           action={
             <Link
-              href="/menu"
+              href={lp("/menu")}
               className="inline-flex h-11 items-center rounded-xl bg-vermilion-600 px-5 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
             >
               {t("common.browseMenu")}
@@ -353,7 +355,7 @@ export function CartView({
           </Button>
         ) : (
           <Link
-            href="/checkout"
+            href={lp("/checkout")}
             className="mt-4 inline-flex h-13 w-full items-center justify-center rounded-xl bg-vermilion-600 font-medium text-rice-50 shadow-washi transition-colors hover:bg-vermilion-700"
           >
             {t("cart.goToCheckout")}
@@ -366,7 +368,7 @@ export function CartView({
       </section>
 
       <div className="mt-4 flex justify-center">
-        <Link href="/menu" className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700">
+        <Link href={lp("/menu")} className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700">
           {t("cart.addMore")}
         </Link>
       </div>

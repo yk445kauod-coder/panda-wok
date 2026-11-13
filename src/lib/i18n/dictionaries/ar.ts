@@ -457,6 +457,23 @@ export const ar: Dictionary = {
     },
   },
 
+  messages: {
+    metaTitle: "الرسائل",
+    metaDescription: "تواصل مع مطبخ {brand} بخصوص طلب أو استفسار.",
+    title: "الرسائل",
+    subtitle: "اسأل عن طلب أو أخبرنا بشيء — يرد عليك أحد أفراد المطبخ.",
+    new: "جديد",
+    conversations: "محادثاتك",
+    conversationFallback: "محادثة",
+    noSubject: "بدون موضوع",
+    aboutOrder: "بخصوص طلب",
+    offTitle: "الرسائل متوقفة",
+    offBody: "الرسائل المباشرة غير متاحة الآن. من فضلك استخدم صفحة التواصل بدلاً من ذلك.",
+    contactKitchen: "تواصل مع المطبخ",
+    emptyTitle: "لم يتم اختيار محادثة",
+    emptyBody: "اختر محادثة بالأعلى لقراءتها، أو ابدأ محادثة جديدة.",
+    start: "ابدأ محادثة",
+  },
   addresses: {
     metaTitle: "عناوين التوصيل",
     metaDescription: "أدر العناوين التي يوصّل إليها {brand}.",

@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useT } from "@/components/i18n-provider";
+import { useLocalePath } from "@/components/i18n-hooks";
 import { cn } from "@/lib/utils/format";
 
 type MoreEntry = {
@@ -73,6 +74,7 @@ export function MobileNav({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const t = useT();
+  const lp = useLocalePath();
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const entries = ENTRIES.filter((e) => {
@@ -171,7 +173,7 @@ export function MobileNav({
                     return (
                       <li key={entry.href}>
                         <Link
-                          href={entry.href}
+                          href={lp(entry.href)}
                           onClick={() => setOpen(false)}
                           aria-current={active(entry.href) ? "page" : undefined}
                           className={cn(

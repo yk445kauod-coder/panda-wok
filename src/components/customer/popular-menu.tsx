@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useI18n } from "@/components/i18n-provider";
+import { useLocalePath } from "@/components/i18n-hooks";
 import { DishCard } from "@/components/customer/dish-card";
 import { Reveal } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils/format";
@@ -44,6 +45,7 @@ export function PopularMenu({
   onBand?: boolean;
 }) {
   const { t } = useI18n();
+  const lp = useLocalePath();
   const [active, setActive] = useState<string>("all");
 
   const visible = useMemo(
@@ -124,7 +126,7 @@ export function PopularMenu({
 
       <div className="mt-8 flex justify-center">
         <Link
-          href="/menu"
+          href={lp("/menu")}
           className={cn(
             "inline-flex h-12 items-center justify-center gap-2 rounded-xl px-7 font-medium shadow-washi transition-colors",
             onBand

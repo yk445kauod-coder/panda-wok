@@ -4,7 +4,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { DishCard } from "@/components/customer/dish-card";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import type { Category, MenuItem } from "@/lib/services/catalog";
-import type { Locale } from "@/lib/i18n/config";
+import { localePath, type Locale } from "@/lib/i18n/config";
 import { ar } from "@/lib/i18n/dictionaries/ar";
 import { en } from "@/lib/i18n/dictionaries/en";
 import { makeTranslator } from "@/lib/i18n/translate";
@@ -87,7 +87,7 @@ export function CategorySection({
           description={t("menu.emptyBody")}
           action={
             <Link
-              href="/menu"
+              href={localePath(locale, "/menu")}
               className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
             >
               {t("home.fullMenu")}

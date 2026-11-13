@@ -4,15 +4,11 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { FooterSocial } from "@/components/layout/mobile-footer";
-import { NotificationBell } from "@/components/notifications/notification-bell";
+import { HeaderNotifications } from "@/components/notifications/header-notifications";
 import { sortSocialEntries } from "@/components/icons/social";
-import { getSession } from "@/lib/auth/session";
-import {
-  countUnreadNotifications,
-  listMyNotifications,
-} from "@/lib/services/notifications";
-import { getLocale, getT } from "@/lib/i18n/server";
-import type { T } from "@/lib/i18n/server";
+import { localePath, type Locale } from "@/lib/i18n/config";
+import { staticT } from "@/lib/i18n/static";
+import type { Translator } from "@/lib/i18n/translate";
 
 /**
  * Desktop header. On mobile the bottom navigation carries the load, so this
@@ -21,18 +17,20 @@ import type { T } from "@/lib/i18n/server";
 function DesktopNav({
   flags,
   t,
+  locale,
 }: {
   flags: Record<string, boolean>;
-  t: T;
+  t: Translator;
+  locale: Locale;
 }) {
   const links = [
-    { href: "/", label: t("nav.home"), flag: null },
-    { href: "/menu", label: t("nav.menu"), flag: "menu" },
-    { href: "/about", label: t("nav.about"), flag: null },
-    { href: "/contact", label: t("nav.contact"), flag: null },
-    { href: "/feedback", label: t("nav.feedback"), flag: "feedback" },
-    { href: "/orders", label: t("nav.orderTracking"), flag: null },
-    { href: "/chat", label: t("nav.messages"), flag: "chat" },
+    { href: localePath(locale, "/"), label: t("nav.home"), flag: null },
+    { href: localePath(locale, "/menu"), label: t("nav.menu"), flag: "menu" },
+    { href: localePath(locale, "/about"), label: t("nav.about"), flag: null },
+    { href: localePath(locale, "/contact"), label: t("nav.contact"), flag: null },
+    { href: localePath(locale, "/feedback"), label: t("nav.feedback"), flag: "feedback" },
+    { href: localePath(locale, "/orders"), label: t("nav.orderTracking"), flag: null },
+    { href: localePath(locale, "/chat"), label: t("nav.messages"), flag: "chat" },
   ].filter((l) => l.flag === null || flags[l.flag] !== false);
 
   return (
@@ -50,26 +48,16 @@ function DesktopNav({
   );
 }
 
-export async function SiteHeader({
+export function SiteHeader({
   brand,
   flags,
+  locale,
 }: {
   brand: { name: string; logo_url: string | null };
   flags: Record<string, boolean>;
+  locale: Locale;
 }) {
-  const locale = await getLocale();
-  const t = await getT(locale);
-
-  // The bell only makes sense for a signed-in customer: an anonymous visitor
-  // has no rows and the RPCs would return nothing, but we skip the round-trip
-  // entirely and render no bell.
-  const session = await getSession();
-  const [notifications, unread] = session
-    ? await Promise.all([
-        listMyNotifications("customer", 20).catch(() => []),
-        countUnreadNotifications("customer").catch(() => 0),
-      ])
-    : [[], 0];
+  const t = staticT(locale);
 
   return (
     <>
@@ -82,7 +70,7 @@ export async function SiteHeader({
       <header className="sticky top-0 z-30 border-b border-ink-900/8 washi-paper pt-safe">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
           <Link
-            href="/"
+            href={localePath(locale, "/")}
             className="flex items-center gap-2.5 text-ink-900"
             aria-label={t("nav.brandHome", { brand: brand.name })}
           >
@@ -94,38 +82,26 @@ export async function SiteHeader({
             </span>
           </Link>
 
-          <DesktopNav flags={flags} t={t} />
+          <DesktopNav flags={flags} t={t} locale={locale} />
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher current={locale} />
-            {session ? (
-              <NotificationBell
-                audience="customer"
-                initial={notifications}
-                initialUnread={unread}
-                labels={{
-                  title: t("nav.notifications"),
-                  empty: t("nav.notificationsEmpty"),
-                  markAll: t("nav.notificationsClearAll"),
-                  open: t("nav.notificationsOpen"),
-                }}
-              />
-            ) : null}
+            <HeaderNotifications />
             {flags.ordering !== false ? (
               <Link
-                href="/cart"
+                href={localePath(locale, "/cart")}
                 className="hidden rounded-lg bg-vermilion-600 px-3.5 py-2 text-sm font-medium text-rice-50 transition-colors hover:bg-vermilion-700 md:inline-flex"
               >
                 {t("nav.basket")}
               </Link>
             ) : null}
             <Link
-              href="/account"
+              href={localePath(locale, "/account")}
               className="hidden rounded-lg border border-ink-900/12 px-3 py-2 text-sm text-ink-800 transition-colors hover:bg-ink-900/5 md:inline-flex"
             >
               {t("nav.account")}
             </Link>
-            <MobileNav flags={flags} signedIn={Boolean(session)} />
+            <MobileNav flags={flags} signedIn={false} />
           </div>
         </div>
       </header>
@@ -133,9 +109,10 @@ export async function SiteHeader({
   );
 }
 
-export async function SiteFooter({
+export function SiteFooter({
   brand,
   contact,
+  locale,
 }: {
   brand: {
     name: string;
@@ -150,9 +127,9 @@ export async function SiteFooter({
     email: string | null;
     social: Record<string, string>;
   };
+  locale: Locale;
 }) {
-  const locale = await getLocale();
-  const t = await getT(locale);
+  const t = staticT(locale);
   const socialEntries = sortSocialEntries(contact.social);
 
   // Built once and rendered twice: as an accordion on phones, as plain columns
@@ -162,22 +139,22 @@ export async function SiteFooter({
       key: "explore",
       heading: t("footer.explore"),
       links: [
-        { href: "/menu", label: t("nav.menu") },
-        { href: "/about", label: t("nav.about") },
-        { href: "/location", label: t("nav.location") },
-        { href: "/faq", label: t("nav.faq") },
-        { href: "/feedback", label: t("nav.feedback") },
+        { href: localePath(locale, "/menu"), label: t("nav.menu") },
+        { href: localePath(locale, "/about"), label: t("nav.about") },
+        { href: localePath(locale, "/location"), label: t("nav.location") },
+        { href: localePath(locale, "/faq"), label: t("nav.faq") },
+        { href: localePath(locale, "/feedback"), label: t("nav.feedback") },
       ],
     },
     {
       key: "account",
       heading: t("footer.account"),
       links: [
-        { href: "/account", label: t("nav.account") },
-        { href: "/orders", label: t("nav.orderTracking") },
-        { href: "/cart", label: t("nav.basket") },
-        { href: "/contact", label: t("nav.contact") },
-        { href: "/privacy-policy", label: t("nav.privacy") },
+        { href: localePath(locale, "/account"), label: t("nav.account") },
+        { href: localePath(locale, "/orders"), label: t("nav.orderTracking") },
+        { href: localePath(locale, "/cart"), label: t("nav.basket") },
+        { href: localePath(locale, "/contact"), label: t("nav.contact") },
+        { href: localePath(locale, "/privacy-policy"), label: t("nav.privacy") },
       ],
     },
   ];

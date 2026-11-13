@@ -2,6 +2,52 @@ import "server-only";
 
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE,
+  localeFromAcceptLanguage,
+  localeFromPathname,
+  stripLocale,
+  isLocale,
+} from "@/lib/i18n/config";
+
+/**
+ * Paths that are not part of the localised customer site and must never be
+ * rewritten to `/{locale}/…`: the ops console, the auth screens, the API, the
+ * agent text contract and Next's generated metadata routes. Everything else
+ * without a locale segment is served from the `[lang]` tree.
+ */
+const LOCALE_EXEMPT = [
+  "/admin",
+  "/auth",
+  "/api",
+  "/llms-txt",
+  "/opengraph-image",
+  "/twitter-image",
+  "/icon",
+  "/apple-icon",
+  "/manifest.webmanifest",
+] as const;
+
+function needsLocale(pathname: string): boolean {
+  if (localeFromPathname(pathname)) return false;
+  if (/\.[a-z0-9]+$/i.test(pathname)) return false;
+  return !LOCALE_EXEMPT.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+/**
+ * The locale a visitor should get on a bare path: their explicit choice first,
+ * then the browser's Accept-Language, then English. The cookie is written by the
+ * switcher; reading it here (rather than in the page) is what lets the pages
+ * themselves be prerendered per locale.
+ */
+function requestLocale(request: NextRequest): string {
+  const cookie = request.cookies.get(LOCALE_COOKIE)?.value;
+  if (isLocale(cookie)) return cookie;
+  return localeFromAcceptLanguage(request.headers.get("accept-language")) ?? DEFAULT_LOCALE;
+}
 
 /**
  * Protected prefixes are guarded here as a fast gate. Route handlers and
@@ -28,12 +74,18 @@ export async function middleware(request: NextRequest) {
   let response = sessionResponse;
   const { pathname, search } = request.nextUrl;
 
+  // The customer site lives under `/[lang]`, so every check below works on the
+  // bare path — the one without the locale prefix — while the browser keeps the
+  // path it asked for.
+  const localeInPath = localeFromPathname(pathname);
+  const barePath = localeInPath ? stripLocale(pathname) : pathname;
+
   // Markdown for Agents (RFC: Accept: text/markdown). Honest AI agents request
   // a markdown view; browsers never send this exact media type alone. Rewrite
   // to the llms.txt contract so agents get one canonical, data-grounded text
   // representation of the public site.
   if (
-    MARKDOWN_PAGES.has(pathname) &&
+    MARKDOWN_PAGES.has(barePath) &&
     request.headers.get("accept")?.includes("text/markdown")
   ) {
     const url = request.nextUrl.clone();
@@ -46,7 +98,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const needsAuth = PROTECTED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    (prefix) => barePath === prefix || barePath.startsWith(`${prefix}/`),
   );
 
   if (needsAuth && !userId) {
@@ -54,6 +106,23 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/auth/sign-in";
     url.search = `?next=${encodeURIComponent(pathname + search)}`;
     return NextResponse.redirect(url);
+  }
+
+  // A bare public path is redirected to its locale-prefixed twin (`/menu` →
+  // `/en/menu`), so every customer page lives at one canonical, prerenderable
+  // URL. The redirect — not a rewrite — is what makes the locale visible and
+  // indexable; existing bare links keep working because they land here first.
+  if (!localeInPath && needsLocale(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${requestLocale(request)}${pathname === "/" ? "" : pathname}`;
+    const redirect = NextResponse.redirect(url, 307);
+    // Carry across any session cookie refreshed above, or the visitor would be
+    // silently signed out on the very navigation that refreshed the token.
+    for (const cookie of sessionResponse.cookies.getAll()) {
+      redirect.cookies.set(cookie);
+    }
+    applySecurityHeaders(redirect);
+    return redirect;
   }
 
   // Admin routes are dynamic and personal: keep them out of every cache and
@@ -64,7 +133,7 @@ export async function middleware(request: NextRequest) {
   // session, so nobody is blocked at the door. The `x-pw-path` request header
   // lets createServerSupabase() elevate that request to the service role, which
   // the gate — not `auth.uid()` — has already authorised.
-  if (pathname.startsWith("/admin")) {
+  if (barePath.startsWith("/admin")) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-pw-path", pathname);
     response = NextResponse.next({ request: { headers: requestHeaders } });

@@ -47,6 +47,34 @@ export function dirFor(locale: Locale): "ltr" | "rtl" {
 }
 
 /**
+ * The locale a public path already carries, e.g. `/ar/menu` → `ar`, or null
+ * when the path has no locale segment. Used to decide whether a request still
+ * needs rewriting to a locale-specific tree.
+ */
+export function localeFromPathname(pathname: string): Locale | null {
+  const segment = pathname.split("/")[1];
+  return isLocale(segment) ? segment : null;
+}
+
+/**
+ * Prefixes an internal public path with its locale: `localePath("ar", "/menu")`
+ * → `/ar/menu`, `localePath("en", "/")` → `/en`. Every customer-facing link and
+ * redirect goes through this so no bare path is ever produced, which is what
+ * keeps the statically prerendered per-locale pages reachable.
+ */
+export function localePath(locale: Locale, path: string): string {
+  const clean = path === "" || path === "/" ? "" : path.startsWith("/") ? path : `/${path}`;
+  return `/${locale}${clean}`;
+}
+
+/** Removes a leading locale segment: `stripLocale("/ar/menu")` → `/menu`. */
+export function stripLocale(pathname: string): string {
+  const match = pathname.match(/^\/(en|ar)(?=\/|$)/);
+  if (!match) return pathname;
+  return pathname.slice(match[0].length) || "/";
+}
+
+/**
  * Picks the best supported locale from an Accept-Language header, honouring
  * q-values without pulling in a dependency. Used only as the first-visit
  * guess; an explicit cookie or profile preference always wins.

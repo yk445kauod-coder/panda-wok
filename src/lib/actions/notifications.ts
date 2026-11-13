@@ -1,10 +1,13 @@
 "use server";
 
 import { createServerSupabase } from "@/lib/supabase/server";
-import { getAdminSession } from "@/lib/auth/session";
+import { getAdminSession, getSession } from "@/lib/auth/session";
 import {
+  countUnreadNotifications,
+  listMyNotifications,
   markAllStaffNotificationsRead,
   markStaffNotificationRead,
+  type AppNotification,
 } from "@/lib/services/notifications";
 import { actionOk, actionError, type ActionResult } from "@/lib/actions/result";
 
@@ -58,4 +61,27 @@ export async function markAllNotificationsReadAction(
   } catch (error) {
     return actionError(error);
   }
+}
+
+/**
+ * The viewer's own customer feed, for the header bell.
+ *
+ * The public pages are prerendered, so the shell cannot read the session while
+ * rendering. The bell hydrates here instead: an anonymous visitor gets
+ * `signedIn: false` and no bell, a signed-in one gets their first page of
+ * notifications, and no page has to leave the static path to find out which.
+ */
+export async function loadMyNotificationsAction(): Promise<{
+  signedIn: boolean;
+  notifications: AppNotification[];
+  unread: number;
+}> {
+  const session = await getSession().catch(() => null);
+  if (!session) return { signedIn: false, notifications: [], unread: 0 };
+
+  const [notifications, unread] = await Promise.all([
+    listMyNotifications("customer", 20).catch(() => []),
+    countUnreadNotifications("customer").catch(() => 0),
+  ]);
+  return { signedIn: true, notifications, unread };
 }

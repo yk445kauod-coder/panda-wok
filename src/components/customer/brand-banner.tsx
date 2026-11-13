@@ -6,6 +6,7 @@ import { AsanohaPanel, BambooRails } from "@/components/customer/asian-frames";
 import { LeafField2D } from "@/components/customer/leaf-field-2d";
 import { BrandScriptMarks } from "@/components/customer/brand-script-marks";
 import type { T } from "@/lib/i18n/server";
+import { localePath, type Locale } from "@/lib/i18n/config";
 
 /**
  * BrandBanner — the closing brand banner on the home page.
@@ -15,6 +16,7 @@ import type { T } from "@/lib/i18n/server";
  * invented; empty channels are simply omitted.
  */
 export function BrandBanner({
+  locale,
   brand,
   city,
   tagline,
@@ -34,6 +36,7 @@ export function BrandBanner({
     social: Record<string, string>;
   };
   t: T;
+  locale: Locale;
 }) {
   const socialEntries = sortSocialEntries(contact.social);
 
@@ -56,7 +59,7 @@ export function BrandBanner({
 
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Link
-            href="/menu"
+            href={localePath(locale, "/menu")}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-vermilion-600 px-6 font-medium text-rice-50 shadow-washi transition-colors hover:bg-vermilion-700"
           >
             {t("home.viewMenu")}

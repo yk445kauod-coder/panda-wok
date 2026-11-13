@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { DishCard } from "@/components/customer/dish-card";
 import type { MenuItem } from "@/lib/services/catalog";
-import type { Locale } from "@/lib/i18n/config";
+import { localePath, type Locale } from "@/lib/i18n/config";
 import { ar } from "@/lib/i18n/dictionaries/ar";
 import { en } from "@/lib/i18n/dictionaries/en";
 import { makeTranslator } from "@/lib/i18n/translate";
@@ -41,7 +41,7 @@ export function FeaturedDishStrip({
       </ul>
       <div className="mt-3 text-center sm:hidden">
         <Link
-          href="/menu"
+          href={localePath(locale, "/menu")}
           className="text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
         >
           {t("home.seeWholeMenu")}

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Home, UtensilsCrossed, ShoppingBag, Receipt, User } from "lucide-react";
 import { useCart } from "@/components/customer/cart-provider";
 import { useT } from "@/components/i18n-provider";
+import { useLocalePath } from "@/components/i18n-hooks";
 import { cn } from "@/lib/utils/format";
 
 const ITEMS = [
@@ -29,6 +30,7 @@ const ITEMS = [
 export function BottomNav({ flags }: { flags: Record<string, boolean> }) {
   const pathname = usePathname();
   const t = useT();
+  const lp = useLocalePath();
   const { itemCount, hydrated } = useCart();
 
   const visible = ITEMS.filter((item) => item.flag === null || flags[item.flag] !== false);
@@ -53,7 +55,7 @@ export function BottomNav({ flags }: { flags: Record<string, boolean> }) {
           return (
             <li key={item.href} className="flex-1">
               <Link
-                href={item.href}
+                href={lp(item.href)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium transition-colors",

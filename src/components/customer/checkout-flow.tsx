@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Reveal } from "@/components/ui/reveal";
 import { useCart } from "@/components/customer/cart-provider";
 import { useErrorText, useT } from "@/components/i18n-provider";
+import { useLocalePath } from "@/components/i18n-hooks";
 import { trackEvent } from "@/components/customer/analytics-beacon";
 import { trackMeta } from "@/components/customer/meta-pixel";
 import { placeOrderAction } from "@/lib/actions/checkout";
@@ -58,6 +59,7 @@ export function CheckoutFlow({
   locale?: Locale;
 }) {
   const t = useT();
+  const lp = useLocalePath();
   const errorText = useErrorText();
   const router = useRouter();
   const { lines, hydrated, subtotal, itemCount, clear } = useCart();
@@ -207,7 +209,7 @@ export function CheckoutFlow({
           description={t("checkout.nothingBody")}
           action={
             <Link
-              href="/menu"
+              href={lp("/menu")}
               className="inline-flex h-11 items-center rounded-xl bg-vermilion-600 px-5 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
             >
               {t("common.browseMenu")}
@@ -267,7 +269,7 @@ export function CheckoutFlow({
               {t("checkout.addressHeading")}
             </h2>
             <Link
-              href="/account/addresses?next=%2Fcheckout"
+              href={lp("/account/addresses?next=%2Fcheckout")}
               className="text-xs font-medium text-vermilion-600 hover:text-vermilion-700"
             >
               {t("common.manage")}
@@ -281,7 +283,7 @@ export function CheckoutFlow({
                 description={t("checkout.noAddressBody")}
                 action={
                   <Link
-                    href="/account/addresses?next=%2Fcheckout"
+                    href={lp("/account/addresses?next=%2Fcheckout")}
                     className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-vermilion-600 px-4 text-sm font-medium text-rice-50 hover:bg-vermilion-700"
                   >
                     <Plus className="size-4" aria-hidden="true" />
@@ -362,7 +364,7 @@ export function CheckoutFlow({
               {t("checkout.noPhoneWarning", {
                 link: t("checkout.yourAccountLink"),
               })}{" "}
-              <Link href="/account" className="underline">
+              <Link href={lp("/account")} className="underline">
                 {t("checkout.yourAccountLink")}
               </Link>
             </p>
@@ -585,7 +587,7 @@ export function CheckoutFlow({
 
           {error.code === "ITEM_UNAVAILABLE" || error.code === "ITEM_NOT_FOUND" ? (
             <Link
-              href="/cart"
+              href={lp("/cart")}
               className="mt-3 inline-flex h-10 items-center gap-1.5 rounded-lg border border-ink-900/15 bg-rice-50 px-4 text-sm font-medium text-ink-900 hover:bg-rice-200"
             >
               <RefreshCw className="size-4" aria-hidden="true" />
@@ -593,7 +595,7 @@ export function CheckoutFlow({
             </Link>
           ) : error.code === "MIN_ORDER_NOT_MET" ? (
             <Link
-              href="/menu"
+              href={lp("/menu")}
               className="mt-3 inline-flex h-10 items-center gap-1.5 rounded-lg border border-ink-900/15 bg-rice-50 px-4 text-sm font-medium text-ink-900 hover:bg-rice-200"
             >
               {t("checkout.addAnotherDish")}

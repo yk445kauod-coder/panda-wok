@@ -477,6 +477,23 @@ export const en = {
     },
   },
 
+  messages: {
+    metaTitle: "Messages",
+    metaDescription: "Talk to the {brand} kitchen about an order or a question.",
+    title: "Messages",
+    subtitle: "Ask about an order or tell us something — a person from the kitchen replies.",
+    new: "New",
+    conversations: "Your conversations",
+    conversationFallback: "Conversation",
+    noSubject: "no subject",
+    aboutOrder: "About an order",
+    offTitle: "Messaging is switched off",
+    offBody: "Direct messaging is not available right now. Please use the contact page instead.",
+    contactKitchen: "Contact the kitchen",
+    emptyTitle: "No conversation selected",
+    emptyBody: "Pick a conversation above to read it, or start a new one.",
+    start: "Start a conversation",
+  },
   addresses: {
     metaTitle: "Delivery addresses",
     metaDescription: "Manage the addresses {brand} delivers to.",

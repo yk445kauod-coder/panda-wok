@@ -56,7 +56,7 @@ describe("brand script marks", () => {
     // their own copy at some point, so one was fixed and another kept a broken
     // glyph. They now all render <BrandScriptMarks/>.
     for (const file of [
-      "src/app/(site)/page.tsx",
+      "src/app/[lang]/(site)/page.tsx",
       "src/components/customer/brand-banner.tsx",
       "src/components/customer/identity-band.tsx",
     ]) {
@@ -124,8 +124,8 @@ describe("brand script marks", () => {
       "src/components/customer/dish-detail.tsx",
       "src/components/customer/category-section.tsx",
       "src/components/customer/editorial-sections.tsx",
-      "src/app/(site)/menu/page.tsx",
-      "src/app/(site)/page.tsx",
+      "src/app/[lang]/(site)/menu/page.tsx",
+      "src/app/[lang]/(site)/page.tsx",
     ];
     for (const file of files) {
       const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");

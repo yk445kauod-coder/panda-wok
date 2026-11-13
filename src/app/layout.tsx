@@ -6,12 +6,9 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { siteUrl } from "@/lib/seo/metadata";
-import { ToastProvider } from "@/components/ui/toast";
-import { ConfirmProvider } from "@/components/ui/confirm";
-import { I18nProvider } from "@/components/i18n-provider";
-import { getDictionary, getLocale, getT } from "@/lib/i18n/server";
+import { DEFAULT_LOCALE, dirFor } from "@/lib/i18n/config";
+import { staticT } from "@/lib/i18n/static";
 import { getPublicSettings } from "@/lib/services/catalog";
-import { dirFor } from "@/lib/i18n/config";
 
 /**
  * Fonts are the site's heaviest resource. Google's Arabic and CJK faces are
@@ -98,8 +95,10 @@ const arabicDisplayFont = IBM_Plex_Sans_Arabic({
  * with `npm run fonts` if the mark ever changes.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getLocale();
-  const t = await getT(locale);
+  // The document shell is shared by every route, so it stays neutral English;
+  // the `[lang]` tree overrides `lang`, `dir` and the localized title template.
+  const locale = DEFAULT_LOCALE;
+  const t = staticT(locale);
   const settings = await getPublicSettings().catch(() => null);
   const brandName = settings?.brand.name ?? "Panda Wok";
   const brandCity = settings?.brand.city ?? "Alexandria";
@@ -140,13 +139,15 @@ export const viewport = {
   viewportFit: "cover" as const,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const locale = await getLocale();
-  const dict = await getDictionary(locale);
+  // The document shell only declares the neutral (English, LTR) defaults. The
+  // `[lang]` layout owns the localized `<html lang dir>` and the i18n provider,
+  // which is what keeps this shared root free of request-time cookies.
+  const locale = DEFAULT_LOCALE;
 
   return (
     <html
@@ -155,13 +156,7 @@ export default async function RootLayout({
       className={`${bodyFont.variable} ${displayFont.variable} ${arabicFont.variable} ${arabicDisplayFont.variable} h-full antialiased`}
       data-locale={locale}
     >
-      <body className="min-h-full flex flex-col">
-        <I18nProvider locale={locale} dict={dict}>
-          <ToastProvider>
-            <ConfirmProvider>{children}</ConfirmProvider>
-          </ToastProvider>
-        </I18nProvider>
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

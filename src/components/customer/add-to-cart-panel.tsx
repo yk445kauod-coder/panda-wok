@@ -6,6 +6,7 @@ import { Check, Minus, Plus, ShoppingBag } from "lucide-react";
 import { Badge, Button } from "@/components/ui/button";
 import { useCart } from "@/components/customer/cart-provider";
 import { useT } from "@/components/i18n-provider";
+import { useLocalePath } from "@/components/i18n-hooks";
 import { trackEvent } from "@/components/customer/analytics-beacon";
 import { trackMeta } from "@/components/customer/meta-pixel";
 import { formatPrice } from "@/lib/utils/format";
@@ -31,6 +32,7 @@ export function AddToCartPanel({
   locale?: Locale;
 }) {
   const t = useT();
+  const lp = useLocalePath();
   const { add, lines, hydrated } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [overrides, setOverrides] = useState<Record<string, string[]>>({});
@@ -188,7 +190,7 @@ export function AddToCartPanel({
         </p>
         <p className="mt-1 text-xs text-ink-700/80">{t("addToCart.unavailableBody")}</p>
         <Link
-          href="/menu"
+          href={lp("/menu")}
           className="mt-3 inline-block text-sm font-medium text-vermilion-600 hover:text-vermilion-700"
         >
           {t("addToCart.browseRest")}
