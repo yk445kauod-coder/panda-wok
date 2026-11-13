@@ -279,6 +279,10 @@ export const en = {
       "The kitchen is not accepting new orders at the moment. You can still keep your basket and try again shortly.",
     goToCheckout: "Go to checkout",
     addMore: "Add more dishes",
+    needsChoice: "{name} needs a choice before you can order.",
+    needsChoiceAction: "Choose options",
+    choiceChanged:
+      "Some of your saved choices are no longer available. Please update them to continue.",
     paused: "Ordering is paused",
     pausedBody:
       "Online ordering is temporarily switched off. Please contact the kitchen to place an order.",

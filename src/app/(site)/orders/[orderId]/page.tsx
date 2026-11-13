@@ -310,6 +310,15 @@ export default async function OrderTrackingPage({
               name: item.name_snapshot,
               quantity: item.quantity,
               unitPrice: Number(item.unit_price),
+              // Carry the original choices so a required group (size, base) is
+              // not left empty and the rebuilt basket can be submitted.
+              modifiers: (Array.isArray(item.modifiers) ? item.modifiers : []).map(
+                (mod) => ({
+                  id: String((mod as { id?: unknown })?.id ?? ""),
+                  name: String((mod as { name?: unknown })?.name ?? ""),
+                  priceDelta: Number((mod as { price_delta?: unknown })?.price_delta ?? 0),
+                }),
+              ),
             }))}
         />
         <Link

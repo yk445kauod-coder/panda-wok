@@ -1,15 +1,87 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useCart } from "@/components/customer/cart-provider";
+import { useCart, type CartLine } from "@/components/customer/cart-provider";
+import { createClient } from "@/lib/supabase/client";
 import { dishImageSrc } from "@/lib/images/responsive";
 import { useT } from "@/components/i18n-provider";
 import { computeTotals, type CheckoutConfig } from "@/lib/services/checkout-math";
 import { formatPrice } from "@/lib/utils/format";
+import {
+  checkLineIntegrity,
+  type IntegrityGroup,
+} from "@/lib/menu/modifier-integrity";
 import type { Locale } from "@/lib/i18n/config";
+
+/** Stable per-line key, matching the list key so integrity maps 1:1 to a line. */
+function lineKey(line: CartLine) {
+  return `${line.menuItemId}-${line.modifiers.map((m) => m.id).join("-")}`;
+}
+
+/**
+ * Reads the live modifier groups for the dishes in the basket and checks each
+ * line against them. This is a read-only, best-effort check: while it loads (or
+ * if it fails) the basket is left unblocked, because the server re-validates on
+ * submit and a false block would be worse than a late error.
+ */
+function useLineIntegrity(lines: CartLine[]) {
+  const [groups, setGroups] = useState<Map<string, IntegrityGroup[]> | null>(null);
+  const [slugs, setSlugs] = useState<Map<string, string>>(new Map());
+
+  const ids = useMemo(
+    () => [...new Set(lines.map((line) => line.menuItemId))].sort(),
+    [lines],
+  );
+  const idKey = ids.join(",");
+
+  useEffect(() => {
+    if (ids.length === 0) return;
+    let cancelled = false;
+    const supabase = createClient();
+    void supabase
+      .from("menu_items")
+      .select(
+        "id, slug, modifier_groups (id, is_required, min_select, max_select, modifier_options (id, is_available))",
+      )
+      .in("id", ids)
+      .then(({ data, error }) => {
+        if (cancelled || error || !data) return;
+        const nextGroups = new Map<string, IntegrityGroup[]>();
+        const nextSlugs = new Map<string, string>();
+        for (const row of data) {
+          const item = row as unknown as {
+            id: string;
+            slug: string | null;
+            modifier_groups: IntegrityGroup[] | null;
+          };
+          nextGroups.set(item.id, item.modifier_groups ?? []);
+          if (item.slug) nextSlugs.set(item.id, item.slug);
+        }
+        setGroups(nextGroups);
+        setSlugs(nextSlugs);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // `idKey` is the identity of the id set; `ids` is derived from it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idKey]);
+
+  return useMemo(() => {
+    if (!groups) return { ready: false as const, byLine: new Map(), slugs };
+    const byLine = new Map<string, ReturnType<typeof checkLineIntegrity>>();
+    for (const line of lines) {
+      const lineGroups = groups.get(line.menuItemId);
+      if (!lineGroups) continue;
+      byLine.set(lineKey(line), checkLineIntegrity(lineGroups, line.modifiers));
+    }
+    return { ready: true as const, byLine, slugs };
+  }, [groups, lines, slugs]);
+}
 
 /**
  * Basket review. Totals shown here are a preview only: the same arithmetic is
@@ -27,6 +99,12 @@ export function CartView({
 }) {
   const t = useT();
   const { lines, hydrated, setQuantity, remove, subtotal, itemCount, priceOf } = useCart();
+  const integrity = useLineIntegrity(lines);
+  const blockedLines = new Set<string>();
+  for (const [key, check] of integrity.byLine) {
+    if (!check.ok) blockedLines.add(key);
+  }
+  const hasBlockedLine = blockedLines.size > 0;
 
   if (!hydrated) {
     return (
@@ -129,6 +207,28 @@ export function CartView({
                   {line.notes ? (
                     <p className="mt-0.5 text-xs italic text-ink-700/60">
                       “{line.notes}”
+                    </p>
+                  ) : null}
+                  {blockedLines.has(lineKey(line)) ? (
+                    <p
+                      role="status"
+                      className="mt-1.5 flex items-start gap-1.5 text-xs text-chili-600"
+                    >
+                      <AlertTriangle
+                        className="mt-0.5 size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        {integrity.byLine.get(lineKey(line))?.missingRequired
+                          ? t("cart.needsChoice", { name: line.name })
+                          : t("cart.choiceChanged")}{" "}
+                        <Link
+                          href={`/menu/${integrity.slugs.get(line.menuItemId) || line.slug}`}
+                          className="font-medium underline underline-offset-2 hover:text-chili-700"
+                        >
+                          {t("cart.needsChoiceAction")}
+                        </Link>
+                      </span>
                     </p>
                   ) : null}
                 </div>
@@ -247,7 +347,7 @@ export function CartView({
           </p>
         ) : null}
 
-        {belowMinimum || !acceptingOrders ? (
+        {belowMinimum || !acceptingOrders || hasBlockedLine ? (
           <Button className="mt-4 w-full" size="lg" disabled>
             {t("cart.goToCheckout")}
           </Button>
