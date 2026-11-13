@@ -5,7 +5,6 @@ import { buildMetadata } from "@/lib/seo/metadata";
 import { getCheckoutConfig } from "@/lib/services/order-status";
 import { getFeatureFlagMap, getPublicSettings } from "@/lib/services/catalog";
 import { getMyAddresses, getMyStats } from "@/lib/services/orders";
-import { getLoyaltyOverview } from "@/lib/services/loyalty";
 import { getSession } from "@/lib/auth/session";
 import { CheckoutFlow } from "@/components/customer/checkout-flow";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -51,12 +50,11 @@ export default async function CheckoutPage() {
     redirect("/auth/sign-in?next=%2Fcheckout");
   }
 
-  const [config, settings, addresses, stats, loyalty] = await Promise.all([
+  const [config, settings, addresses, stats] = await Promise.all([
     getCheckoutConfig(),
     getPublicSettings(),
     getMyAddresses(session.user.id),
     getMyStats(session.user.id),
-    getLoyaltyOverview(session.user.id),
   ]);
 
   const defaultAddress = addresses.find((a) => a.is_default) ?? addresses[0] ?? null;
@@ -69,9 +67,6 @@ export default async function CheckoutPage() {
       defaultAddressId={defaultAddress?.id ?? null}
       customerPhone={session.profile?.phone ?? null}
       instapayUrl={settings.support.instapayUrl}
-      loyaltyPoints={loyalty.account?.points_balance ?? 0}
-      loyaltyTier={loyalty.account?.tier ?? null}
-      loyaltyEnabled={flags.loyalty !== false}
       previousOrders={stats.orderCount}
       locale={locale}
     />

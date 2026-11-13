@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Award,
   HelpCircle,
   Info,
   MapPin,
@@ -37,7 +36,6 @@ type MoreEntry = {
 const ENTRIES: MoreEntry[] = [
   { href: "/orders", labelKey: "nav.orderTracking", hintKey: "nav.trackOrdersHint", icon: Receipt },
   { href: "/feedback", labelKey: "nav.rateOrder", hintKey: "nav.rateOrderHint", icon: Star },
-  { href: "/loyalty", labelKey: "nav.loyalty", hintKey: "nav.loyaltyHint", icon: Award },
   { href: "/chat", labelKey: "nav.messages", hintKey: "nav.messagesHint", icon: MessagesSquare },
   { href: "/account", labelKey: "nav.account", hintKey: "nav.accountHint", icon: User },
   {
@@ -78,7 +76,6 @@ export function MobileNav({
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const entries = ENTRIES.filter((e) => {
-    if (e.href === "/loyalty" && flags.loyalty === false) return false;
     if (e.href === "/feedback" && flags.feedback === false) return false;
     if (e.href === "/chat" && flags.chat === false) return false;
     if (e.href.startsWith("/account") && !signedIn) return false;

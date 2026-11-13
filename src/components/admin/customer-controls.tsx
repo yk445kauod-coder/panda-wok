@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { Badge, Button } from "@/components/ui/button";
-import { cn, humanise } from "@/lib/utils/format";
-import { setUserBlockedAction, saveStaffAction, createStaffAccountAction, adjustLoyaltyPointsAction, deleteCustomerAction } from "@/lib/actions/admin";
+import { cn } from "@/lib/utils/format";
+import { setUserBlockedAction, saveStaffAction, createStaffAccountAction, deleteCustomerAction } from "@/lib/actions/admin";
 import { AdminForm, Field, Toggle } from "@/components/admin/form-kit";
 import type { StaffRole } from "@/lib/auth/rbac";
 
@@ -334,67 +334,6 @@ export function CreateStaffForm({ canGrantPrivileged }: { canGrantPrivileged: bo
         hint={t("admin.users.emailHint")}
         placeholder="mona@example.com"
       />
-    </AdminForm>
-  );
-}
-
-/** Adjust a customer's loyalty balance with a mandatory reason. */
-export function AdjustPointsForm({
-  options,
-}: {
-  options: { id: string; name: string; points: number }[];
-}) {
-  const [userId, setUserId] = useState(options[0]?.id ?? "");
-  const selected = options.find((option) => option.id === userId);
-
-  if (options.length === 0) {
-    return <p className="text-sm text-ink-700/70">No customers with loyalty accounts yet.</p>;
-  }
-
-  return (
-    <AdminForm
-      action={adjustLoyaltyPointsAction}
-      submitLabel="Apply adjustment"
-      options={{ successMessage: "Loyalty balance updated and recorded." }}
-    >
-      <div>
-        <label htmlFor="loyalty-user" className="block text-sm font-medium text-ink-900">
-          Customer
-        </label>
-        <select
-          id="loyalty-user"
-          name="userId"
-          value={userId}
-          onChange={(event) => setUserId(event.target.value)}
-          className="mt-1.5 h-11 w-full rounded-xl border border-ink-900/12 bg-rice-50 px-3 text-sm outline-none focus:border-miso-500"
-        >
-          {options.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name} — {option.points} points
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <Field
-        name="points"
-        label="Points"
-        hint="Positive to add, negative to deduct."
-        placeholder="50"
-      />
-      <Field
-        name="reason"
-        label="Reason"
-        hint="Recorded in the loyalty ledger and the audit log."
-        placeholder="Goodwill for a late delivery"
-      />
-
-      {selected ? (
-        <p className="flex items-center gap-2 rounded-xl bg-rice-200/70 px-3 py-2 text-xs text-ink-800">
-          <AlertTriangle className="size-3.5 shrink-0 text-miso-600" aria-hidden="true" />
-          Current balance for {selected.name}: {selected.points} points.
-        </p>
-      ) : null}
     </AdminForm>
   );
 }

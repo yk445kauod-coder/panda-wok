@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Award, MapPin, MessageSquare, MessagesSquare, Package, Receipt, Star, Wallet } from "lucide-react";
+import { MapPin, MessageSquare, MessagesSquare, Package, Receipt, Wallet } from "lucide-react";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/auth/session";
 import { getMyStats, getMyOrders, getMyAddresses } from "@/lib/services/orders";
-import { getLoyaltyOverview } from "@/lib/services/loyalty";
 import { getFeatureFlagMap, getPublicSettings } from "@/lib/services/catalog";
 import { Badge } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
@@ -35,11 +34,10 @@ export default async function AccountPage() {
   const locale = await getLocale();
   const t = await getT(locale);
 
-  const [stats, orders, addresses, loyalty, flags] = await Promise.all([
+  const [stats, orders, addresses, flags] = await Promise.all([
     getMyStats(session.user.id),
     getMyOrders(session.user.id, 3),
     getMyAddresses(session.user.id),
-    getLoyaltyOverview(session.user.id),
     getFeatureFlagMap(),
   ]);
 
@@ -91,14 +89,6 @@ export default async function AccountPage() {
             label={t("account.statActiveOrders")}
             value={String(stats.activeOrders)}
           />
-          {flags.loyalty !== false ? (
-            <StatCard
-              icon={Award}
-              label={t("account.statLoyaltyPoints")}
-              value={String(loyalty.account?.points_balance ?? 0)}
-              href="/loyalty"
-            />
-          ) : null}
         </dl>
       </Reveal>
 
@@ -206,9 +196,6 @@ export default async function AccountPage() {
           icon={MapPin}
           label={t("account.addresses")}
         />
-        {flags.loyalty !== false ? (
-          <ShortcutLink href="/loyalty" icon={Star} label={t("common.loyalty")} />
-        ) : null}
         {flags.feedback !== false ? (
           <ShortcutLink href="/feedback" icon={MessageSquare} label={t("common.feedback")} />
         ) : null}

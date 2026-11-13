@@ -133,13 +133,12 @@ describe("ops guide content", () => {
   });
 
   it("searches across titles, summaries and step text", () => {
-    const loyalty = GUIDE_TOPICS.find((topic) => topic.id === "loyalty")!;
-    expect(topicMatches(loyalty, "loyalty")).toBe(true);
-    expect(topicMatches(loyalty, "points")).toBe(true);
-    expect(topicMatches(loyalty, "REFUNDED")).toBe(true);
-    expect(topicMatches(loyalty, "zzzznomatch")).toBe(false);
+    const orderFlow = GUIDE_TOPICS.find((topic) => topic.id === "order-flow")!;
+    expect(topicMatches(orderFlow, "refunded")).toBe(true);
+    expect(topicMatches(orderFlow, "REFUNDED")).toBe(true);
+    expect(topicMatches(orderFlow, "zzzznomatch")).toBe(false);
     // An empty query matches everything, so the guide never renders blank.
-    expect(topicMatches(loyalty, "   ")).toBe(true);
+    expect(topicMatches(orderFlow, "   ")).toBe(true);
   });
 
   it("groups every topic under exactly one section", () => {

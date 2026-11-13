@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Coins, PackageX, Receipt, Star, Users } from "lucide-react";
+import { AlertTriangle, Coins, Receipt, Star, Users } from "lucide-react";
 import { requireCapability } from "@/lib/auth/session";
 import { getDashboardMetrics } from "@/lib/crm/insights";
 import { countUnreadForStaff } from "@/lib/services/messaging";
@@ -335,106 +335,6 @@ export default async function AdminOverviewPage() {
           ) : null}
         </section>
 
-        <section className="washi-panel p-4 sm:p-5" aria-label={t("admin.dash.loyalty")}>
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div>
-              <h2 className="font-display text-base font-semibold text-ink-900">
-                {t("admin.dash.loyalty")}
-              </h2>
-              <p className="text-xs text-ink-700/70">
-                {t("admin.dash.members", { count: formatNumber(metrics.loyalty.members) })}
-              </p>
-            </div>
-            <Link href="/admin/loyalty" className="text-xs font-medium text-vermilion-600">
-              {t("admin.dash.open")}
-            </Link>
-          </div>
-          <dl className="grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl bg-rice-100/70 p-3">
-              <dt className="text-xs text-ink-700/70">{t("admin.dash.pointsOutstanding")}</dt>
-              <dd className="mt-0.5 font-display text-lg font-semibold tabular-nums text-ink-900">
-                {formatNumber(metrics.loyalty.pointsOutstanding)}
-              </dd>
-            </div>
-            <div className="rounded-xl bg-rice-100/70 p-3">
-              <dt className="text-xs text-ink-700/70">{t("admin.dash.cashCollected")}</dt>
-              <dd className="mt-0.5 font-display text-lg font-semibold tabular-nums text-ink-900">
-                {formatPrice(metrics.cashCollected)}
-              </dd>
-            </div>
-          </dl>
-          {metrics.loyalty.activeTiers.length > 0 ? (
-            <div className="mt-3">
-              <DonutChart
-                title={t("admin.dash.loyalty")}
-                height={150}
-                data={metrics.loyalty.activeTiers.map((tier) => ({
-                  label: humanise(tier.tier),
-                  value: tier.count,
-                }))}
-              />
-            </div>
-          ) : null}
-        </section>
-
-        <section className="washi-panel p-4 sm:p-5" aria-label={t("admin.dash.stock")}>
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div>
-              <h2 className="font-display text-base font-semibold text-ink-900">
-                {t("admin.dash.stock")}
-              </h2>
-              <p className="text-xs text-ink-700/70">
-                {metrics.stockWarnings.length > 0
-                  ? t("admin.dash.needAttention", { count: metrics.stockWarnings.length })
-                  : t("admin.dash.allAbove")}
-              </p>
-            </div>
-            <Link href="/admin/stock" className="text-xs font-medium text-vermilion-600">
-              {t("admin.dash.manage")}
-            </Link>
-          </div>
-          {metrics.stockWarnings.length === 0 ? (
-            <p className="flex items-center gap-2 py-5 text-sm text-ink-700/70">
-              <PackageX className="size-4 text-jade-500" aria-hidden="true" />
-              {t("admin.dash.noLowStock")}
-            </p>
-          ) : (
-            <ul className="space-y-2.5">
-              {metrics.stockWarnings.slice(0, 5).map((item) => (
-                <li key={item.id}>
-                  <div className="flex items-baseline justify-between gap-2 text-sm">
-                    <span className="min-w-0 truncate text-ink-900">{item.name}</span>
-                    <span className="shrink-0 tabular-nums text-xs text-ink-700/75">
-                      {formatNumber(item.quantity)} / {formatNumber(item.min_threshold)}{" "}
-                      {item.unit}
-                    </span>
-                  </div>
-                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink-900/8">
-                    <span
-                      className={
-                        item.status === "out"
-                          ? "block h-full rounded-full bg-chili-500"
-                          : "block h-full rounded-full bg-miso-500"
-                      }
-                      style={{
-                        width: `${
-                          item.min_threshold > 0
-                            ? Math.min(
-                                100,
-                                (item.quantity / (item.min_threshold * 2)) * 100,
-                              )
-                            : item.quantity > 0
-                              ? 100
-                              : 0
-                        }%`,
-                      }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
       </div>
 
       <p className="text-xs text-ink-700/55">

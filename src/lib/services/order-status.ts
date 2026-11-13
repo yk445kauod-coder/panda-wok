@@ -64,8 +64,6 @@ export async function getCheckoutConfig(): Promise<CheckoutConfig> {
     // hardcoded non-zero default is exactly how the checkout drifted from the till.
     taxRate: readNumber("tax.rate", 0),
     maxQtyPerItem: readNumber("ordering.max_qty_per_item", 20),
-    loyaltyPointValue: settings.loyalty.pointValue,
-    pointsPerCurrency: settings.loyalty.pointsPerCurrency,
     currency: "EGP",
     offers: await getEnabledOffers(supabase),
   };

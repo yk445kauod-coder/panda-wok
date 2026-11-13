@@ -289,41 +289,8 @@ export const modifierOptionSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
 });
 
-export const stockItemSchema = z.object({
-  id: optionalUuid,
-  nameEn: z.string().trim().min(2, "Name is required").max(80),
-  nameAr: optionalText(80),
-  unit: z.string().trim().min(1).max(20).default("kg"),
-  quantity: z.coerce.number().min(0).max(1_000_000),
-  minThreshold: z.coerce.number().min(0).max(1_000_000),
-  costPerUnit: z.coerce.number().min(0).max(1_000_000).nullable().optional(),
-  supplier: optionalText(120),
-  autoLinkAvailability: z.coerce.boolean().default(true),
-  notes: optionalText(300),
-});
 
-export const stockMovementSchema = z.object({
-  stockItemId: uuidSchema,
-  direction: z.enum(["in", "out", "adjust"]),
-  quantity: z.coerce.number().min(0).max(1_000_000),
-  reason: z.string().trim().max(200).optional(),
-});
 
-export const rewardSchema = z.object({
-  id: optionalUuid,
-  nameEn: z.string().trim().min(2, "Name is required").max(80),
-  nameAr: optionalText(80),
-  descriptionEn: optionalText(400),
-  descriptionAr: optionalText(400),
-  pointsCost: z.coerce.number().int().min(1, "Cost must be at least 1 point").max(1_000_000),
-  kind: z.enum(["discount_amount", "discount_percent", "free_item"]),
-  value: z.coerce.number().min(0).max(1_000_000).default(0),
-  menuItemId: optionalUuid,
-  minOrderTotal: z.coerce.number().min(0).max(1_000_000).default(0),
-  tierRequired: z.enum(["bronze", "silver", "gold", "platinum"]).default("bronze"),
-  isEnabled: z.coerce.boolean().default(true),
-  stockLimit: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
-});
 
 export const settingsUpdateSchema = z.object({
   values: z
@@ -342,37 +309,7 @@ export const featureFlagUpdateSchema = z.object({
   isEnabled: z.coerce.boolean(),
 });
 
-export const broadcastSchema = z.object({
-  title: z.string().trim().min(2, "Give the broadcast a title").max(120),
-  body: z.string().trim().min(5, "Write the message").max(2000),
-  channel: z.enum(["in_app", "email", "sms", "push"]).default("in_app"),
-  segment: z.enum([
-    "all",
-    "opted_in",
-    "new",
-    "loyal",
-    "inactive",
-    "never_ordered",
-    "high_value",
-    "loyalty_members",
-    "winback",
-  ]),
-  segmentValue: z.coerce.number().int().min(0).max(1_000_000).default(30),
-  confirm: z.coerce.boolean().default(false),
-});
 
-export const upsellRuleSchema = z.object({
-  id: optionalUuid,
-  name: z.string().trim().min(2, "Name is required").max(120),
-  triggerKind: z.enum(["item", "category"]),
-  triggerId: uuidSchema,
-  suggestKind: z.enum(["item", "category"]),
-  suggestId: uuidSchema,
-  headlineEn: optionalText(200),
-  headlineAr: optionalText(200),
-  priority: z.coerce.number().int().min(0).max(999).default(0),
-  isEnabled: z.coerce.boolean().default(true),
-});
 
 export const offerSchema = z
   .object({

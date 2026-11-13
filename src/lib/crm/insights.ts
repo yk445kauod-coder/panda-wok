@@ -14,7 +14,6 @@ import {
 } from "@/lib/ai/provider";
 import { recordAiRequest } from "@/lib/ai/usage";
 import { memo } from "@/lib/request-scope";
-import type { Database } from "@/lib/types/database";
 
 export type DashboardMetrics = {
   windowDays: number;
@@ -30,24 +29,11 @@ export type DashboardMetrics = {
   revenueByDay: { day: string; revenue: number; orders: number }[];
   topItems: { name: string; quantity: number; revenue: number }[];
   categoryMix: { category: string; quantity: number; revenue: number }[];
-  stockWarnings: {
-    id: string;
-    name: string;
-    quantity: number;
-    min_threshold: number;
-    unit: string;
-    status: string;
-  }[];
   feedbackSummary: {
     count: number;
     averageRating: number;
     distribution: { rating: number; count: number }[];
     openCount: number;
-  };
-  loyalty: {
-    members: number;
-    pointsOutstanding: number;
-    activeTiers: { tier: string; count: number }[];
   };
 };
 
@@ -92,9 +78,7 @@ async function loadDashboardMetrics(days: number): Promise<DashboardMetrics> {
     revenueByDay: [],
     topItems: [],
     categoryMix: [],
-    stockWarnings: [],
     feedbackSummary: { count: 0, averageRating: 0, distribution: [], openCount: 0 },
-    loyalty: { members: 0, pointsOutstanding: 0, activeTiers: [] },
   };
 
   if (!admin) return empty;
@@ -103,7 +87,7 @@ async function loadDashboardMetrics(days: number): Promise<DashboardMetrics> {
   startOfToday.setHours(0, 0, 0, 0);
   const windowStart = new Date(Date.now() - days * 86400000);
 
-  const [ordersRes, itemsRes, stockRes, feedbackRes, loyaltyRes, profilesRes] =
+  const [ordersRes, itemsRes, feedbackRes, profilesRes] =
     await Promise.all([
       admin
         .from("orders")
@@ -116,19 +100,9 @@ async function loadDashboardMetrics(days: number): Promise<DashboardMetrics> {
         .gte("orders.created_at", windowStart.toISOString())
         .limit(5000),
       admin
-        .from("stock_items")
-        .select("id, name_en, quantity, min_threshold, unit, status")
-        .in("status", ["low", "out"])
-        .order("status", { ascending: true })
-        .limit(200),
-      admin
         .from("feedback")
         .select("rating, status")
         .gte("created_at", windowStart.toISOString())
-        .limit(2000),
-      admin
-        .from("loyalty_accounts")
-        .select("tier, points_balance, lifetime_points")
         .limit(2000),
       admin
         .from("profiles")
@@ -239,12 +213,6 @@ async function loadDashboardMetrics(days: number): Promise<DashboardMetrics> {
         ) / 10
       : 0;
 
-  const loyaltyRows = loyaltyRes.data ?? [];
-  const tierCounts = new Map<string, number>();
-  for (const row of loyaltyRows) {
-    tierCounts.set(row.tier, (tierCounts.get(row.tier) ?? 0) + 1);
-  }
-
   return {
     windowDays: days,
     ordersToday: orders.filter((o) => new Date(o.created_at) >= startOfToday).length,
@@ -268,14 +236,6 @@ async function loadDashboardMetrics(days: number): Promise<DashboardMetrics> {
     revenueByDay,
     topItems,
     categoryMix,
-    stockWarnings: (stockRes.data ?? []).map((s) => ({
-      id: s.id,
-      name: s.name_en,
-      quantity: Number(s.quantity),
-      min_threshold: Number(s.min_threshold),
-      unit: s.unit,
-      status: s.status,
-    })),
     feedbackSummary: {
       count: feedbackRows.length,
       averageRating,
@@ -283,13 +243,6 @@ async function loadDashboardMetrics(days: number): Promise<DashboardMetrics> {
         .map(([rating, count]) => ({ rating, count }))
         .sort((a, b) => b.rating - a.rating),
       openCount: feedbackRows.filter((f) => f.status === "new").length,
-    },
-    loyalty: {
-      members: loyaltyRows.length,
-      pointsOutstanding: loyaltyRows.reduce((s, r) => s + r.points_balance, 0),
-      activeTiers: [...tierCounts.entries()]
-        .map(([tier, count]) => ({ tier, count }))
-        .sort((a, b) => b.count - a.count),
     },
   };
 }
@@ -989,68 +942,3 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
   return out;
 }
 
-export type AiUsageRow = Database["public"]["Tables"]["ai_usage_daily"]["Row"];
-
-export async function getAiUsage(days = 30): Promise<{
-  daily: AiUsageRow[];
-  recent: Database["public"]["Tables"]["ai_requests"]["Row"][];
-  totals: {
-    requests: number;
-    errors: number;
-    promptTokens: number;
-    completionTokens: number;
-    estimatedCost: number;
-    fallbackRate: number;
-  };
-}> {
-  const admin = tryCreateAdminSupabase();
-  if (!admin) {
-    return {
-      daily: [],
-      recent: [],
-      totals: {
-        requests: 0,
-        errors: 0,
-        promptTokens: 0,
-        completionTokens: 0,
-        estimatedCost: 0,
-        fallbackRate: 0,
-      },
-    };
-  }
-
-  const since = new Date(Date.now() - days * 86400000).toISOString();
-
-  const [{ data: daily }, { data: recent }] = await Promise.all([
-    admin
-      .from("ai_usage_daily")
-      .select("*")
-      .gte("day", since.slice(0, 10))
-      .order("day", { ascending: false }),
-    admin
-      .from("ai_requests")
-      .select("*")
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .limit(100),
-  ]);
-
-  const requests = (recent ?? []).length;
-  const fallbacks = (recent ?? []).filter((r) => r.status === "fallback").length;
-
-  return {
-    daily: daily ?? [],
-    recent: recent ?? [],
-    totals: {
-      requests,
-      errors: (recent ?? []).filter((r) => r.status === "error").length,
-      promptTokens: (recent ?? []).reduce((s, r) => s + (r.prompt_tokens ?? 0), 0),
-      completionTokens: (recent ?? []).reduce((s, r) => s + (r.completion_tokens ?? 0), 0),
-      estimatedCost: (recent ?? []).reduce(
-        (s, r) => s + Number(r.estimated_cost ?? 0),
-        0,
-      ),
-      fallbackRate: requests > 0 ? Math.round((fallbacks / requests) * 100) : 0,
-    },
-  };
-}

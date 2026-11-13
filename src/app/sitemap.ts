@@ -35,15 +35,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl()}/privacy-policy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   );
 
-  if (flags.loyalty !== false) {
-    entries.push({
-      url: `${siteUrl()}/loyalty`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    });
-  }
-
   if (flags.feedback !== false) {
     entries.push({
       url: `${siteUrl()}/feedback`,

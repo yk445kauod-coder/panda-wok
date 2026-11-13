@@ -66,7 +66,6 @@ export async function GET() {
   lines.push(`- Location and delivery area: ${siteUrl()}/location`);
   lines.push(`- FAQ: ${siteUrl()}/faq`);
   lines.push(`- Privacy policy: ${siteUrl()}/privacy-policy`);
-  lines.push(`- Loyalty: ${siteUrl()}/loyalty`);
   lines.push(`- Feedback: ${siteUrl()}/feedback`);
   lines.push("");
   lines.push("## FAQ");

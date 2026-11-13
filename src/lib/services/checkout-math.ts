@@ -24,8 +24,6 @@ export type CheckoutConfig = {
   };
   taxRate: number;
   maxQtyPerItem: number;
-  loyaltyPointValue: number;
-  pointsPerCurrency: number;
   currency: string;
   /** Enabled threshold promotions, so the basket can preview the saving. */
   offers: OfferRule[];
@@ -101,10 +99,10 @@ export function bestOffer(
 /**
  * Subtotal, discount, delivery, tax and total for an order.
  *
- * Discount order matches `place_order`: the customer's own loyalty points are
- * spent first, then the single best threshold offer is applied to the basket
- * subtotal, and the combined discount is clamped so it can never exceed the
- * subtotal. Delivery is free once the free-delivery threshold is met.
+ * Discount order matches `place_order`: the single best threshold offer is
+ * applied to the basket subtotal, and the discount is clamped so it can never
+ * exceed the subtotal. Delivery is free once the free-delivery threshold is
+ * met.
  *
  * Every order is delivered — the kitchen is a cloud kitchen with no counter —
  * so there is no pickup branch. The `deliveryFee` field stays in the result
@@ -119,12 +117,9 @@ export function computeTotals(
 ): Totals {
   const { config } = options;
 
-  const redeemValue = Math.min(
-    Math.max(options.pointsToRedeem ?? 0, 0) * config.loyaltyPointValue,
-    roundMoney(subtotal * 0.5),
-    subtotal,
-  );
-  const pointsDiscount = roundMoney(redeemValue);
+  // Points redemption is retired with the loyalty programme; the field stays so
+  // the total shape (and the order row) is unchanged.
+  const pointsDiscount = 0;
 
   const applied = bestOffer(subtotal, config.offers);
   const offerDiscount = applied?.amount ?? 0;
@@ -145,7 +140,7 @@ export function computeTotals(
     deliveryFee,
     tax,
     total,
-    pointsEarned: Math.floor(total * config.pointsPerCurrency),
+    pointsEarned: 0,
     offer: applied,
   };
 }

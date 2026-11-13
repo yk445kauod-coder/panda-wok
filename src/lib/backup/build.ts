@@ -53,11 +53,6 @@ const TABLES: Record<string, TableSpec> = {
       "id, category_id, slug, name_en, name_ar, description_en, price, is_available, is_featured, is_archived, image_url",
     orderBy: "name_en",
   },
-  stock_items: {
-    table: "stock_items",
-    columns: "id, name_en, name_ar, unit, quantity, min_threshold, status, updated_at",
-    orderBy: "name_en",
-  },
   settings: {
     table: "settings",
     columns: "key, value, description, is_public, updated_at",
@@ -80,17 +75,6 @@ const TABLES: Record<string, TableSpec> = {
     columns: "id, key, name, system_instruction, temperature, max_tokens, is_active, updated_at",
     orderBy: "key",
   },
-  loyalty_rewards: {
-    table: "loyalty_rewards",
-    columns: "id, name_en, name_ar, points_cost, kind, value, tier_required, is_enabled",
-    orderBy: "points_cost",
-  },
-  upsell_rules: {
-    table: "upsell_rules",
-    columns:
-      "id, name, trigger_kind, trigger_menu_item_id, trigger_category_id, suggest_kind, suggest_menu_item_id, suggest_category_id, discount_percent, priority, is_enabled",
-    orderBy: "priority",
-  },
 };
 
 /** Which tables each backup kind captures. */
@@ -100,25 +84,20 @@ const KIND_TABLES: Record<BackupKind, string[]> = {
     "feature_flags",
     "ai_providers",
     "ai_prompts",
-    "loyalty_rewards",
-    "upsell_rules",
   ],
-  menu: ["categories", "menu_items", "stock_items"],
+  menu: ["categories", "menu_items"],
   media_refs: ["menu_items"],
-  database: ["profiles", "orders", "order_items", "categories", "menu_items", "stock_items"],
+  database: ["profiles", "orders", "order_items", "categories", "menu_items"],
   snapshot: [
     "profiles",
     "orders",
     "order_items",
     "categories",
     "menu_items",
-    "stock_items",
     "settings",
     "feature_flags",
     "ai_providers",
     "ai_prompts",
-    "loyalty_rewards",
-    "upsell_rules",
   ],
 };
 

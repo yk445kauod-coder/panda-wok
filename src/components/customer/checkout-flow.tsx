@@ -23,7 +23,7 @@ import { trackMeta } from "@/components/customer/meta-pixel";
 import { placeOrderAction } from "@/lib/actions/checkout";
 import { computeTotals, type CheckoutConfig } from "@/lib/services/checkout-math";
 import { formatClock } from "@/lib/services/store-hours";
-import { formatPrice, randomId, humanise } from "@/lib/utils/format";
+import { formatPrice, randomId } from "@/lib/utils/format";
 import { toAppError, type AppError } from "@/lib/utils/errors";
 import type { Address } from "@/lib/services/orders";
 import type { Locale } from "@/lib/i18n/config";
@@ -45,9 +45,6 @@ export function CheckoutFlow({
   defaultAddressId,
   customerPhone,
   instapayUrl,
-  loyaltyPoints,
-  loyaltyTier,
-  loyaltyEnabled,
   previousOrders,
   locale = "en",
 }: {
@@ -57,9 +54,6 @@ export function CheckoutFlow({
   defaultAddressId: string | null;
   customerPhone: string | null;
   instapayUrl: string | null;
-  loyaltyPoints: number;
-  loyaltyTier: string | null;
-  loyaltyEnabled: boolean;
   previousOrders: number;
   locale?: Locale;
 }) {
@@ -71,7 +65,6 @@ export function CheckoutFlow({
   const [addressId, setAddressId] = useState<string | null>(defaultAddressId);
   const [payment, setPayment] = useState<PaymentMethod>("cash_on_delivery");
   const [note, setNote] = useState("");
-  const [usePoints, setUsePoints] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
   // Read the initial connectivity once, then let the browser events own it.
@@ -113,20 +106,9 @@ export function CheckoutFlow({
     }
   }, [hydrated, lines.length, subtotal]);
 
-  // Redeeming is capped at half the subtotal and by the points balance. When the
-  // loyalty program is off, nothing is offered — the server would reject it.
-  const redeemablePoints = useMemo(() => {
-    if (!loyaltyEnabled) return 0;
-    const byBalance = loyaltyPoints;
-    const byValue = Math.floor((subtotal * 0.5) / config.loyaltyPointValue);
-    return Math.max(0, Math.min(byBalance, byValue));
-  }, [loyaltyEnabled, loyaltyPoints, subtotal, config.loyaltyPointValue]);
-
-  const pointsToRedeem = usePoints ? redeemablePoints : 0;
-
   const totals = useMemo(
-    () => computeTotals(subtotal, { config, pointsToRedeem }),
-    [subtotal, config, pointsToRedeem],
+    () => computeTotals(subtotal, { config, pointsToRedeem: 0 }),
+    [subtotal, config],
   );
 
   const selectedAddress = addresses.find((a) => a.id === addressId) ?? null;
@@ -169,7 +151,6 @@ export function CheckoutFlow({
         fulfillment: "delivery",
         paymentMethod: payment,
         customerNote: note.trim() || undefined,
-        pointsToRedeem,
       });
 
       if (!result.ok) {
@@ -454,34 +435,6 @@ export function CheckoutFlow({
         </ul>
       </Reveal>
 
-      {/* Loyalty redemption */}
-      {redeemablePoints > 0 ? (
-        <Reveal as="section" className="washi-panel mt-3 p-4" delay={160}>
-          <h2 className="text-sm font-semibold text-ink-900">
-            {t("checkout.loyaltyHeading")}
-          </h2>
-          <p className="mt-1 text-xs text-ink-700/70">
-            {t("checkout.loyaltyPoints", { points: loyaltyPoints })}
-            {loyaltyTier ? ` · ${humanise(loyaltyTier)}` : ""}
-          </p>
-          <label className="mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-ink-900/12 p-3">
-            <span className="text-sm text-ink-900">
-              {t("checkout.loyaltyRedeem")} —{" "}
-              {t("checkout.loyaltyHint", {
-                points: redeemablePoints,
-                value: formatPrice(redeemablePoints * config.loyaltyPointValue, undefined, locale),
-              })}
-            </span>
-            <input
-              type="checkbox"
-              checked={usePoints}
-              onChange={(event) => setUsePoints(event.target.checked)}
-              className="size-4 accent-vermilion-600"
-            />
-          </label>
-        </Reveal>
-      ) : null}
-
       {/* Note */}
       <Reveal as="section" className="washi-panel mt-3 p-4" delay={180}>
         <label htmlFor="order-note" className="text-sm font-semibold text-ink-900">
@@ -601,14 +554,6 @@ export function CheckoutFlow({
           </div>
         </dl>
 
-        {/* Points are only promised when the programme is on. `place_order`
-            still records points_earned, but advertising a balance the kitchen
-            is not honouring would be worse than saying nothing. */}
-        {loyaltyEnabled ? (
-          <p className="mt-3 text-xs text-jade-600">
-            {t("checkout.pointsEarned", { points: totals.pointsEarned })}
-          </p>
-        ) : null}
         {nextOffer ? (
           <p className="mt-1 text-xs text-vermilion-700">
             {t("checkout.offerHint", {

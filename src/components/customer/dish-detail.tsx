@@ -13,7 +13,6 @@ import { Reveal } from "@/components/ui/reveal";
 import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import { DishCard } from "@/components/customer/dish-card";
 import { AddToCartPanel } from "@/components/customer/add-to-cart-panel";
-import { UpsellSuggestions } from "@/components/customer/upsell-suggestions";
 import { ItemViewTracker } from "@/components/customer/item-view-tracker";
 import { formatPrice, humanise } from "@/lib/utils/format";
 import { dishImageSrc, dishImageSrcSet } from "@/lib/images/responsive";
@@ -221,12 +220,6 @@ export function DishDetail({
 
           <AddToCartPanel dish={dish} currency={currency} locale={locale} />
 
-          <UpsellSuggestions
-            triggerMenuItemId={dish.id}
-            triggerCategoryId={dish.category_id}
-            currency={currency}
-            locale={locale}
-          />
         </div>
         </Reveal>
       </div>

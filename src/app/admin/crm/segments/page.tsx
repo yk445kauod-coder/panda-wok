@@ -95,12 +95,6 @@ export default async function AdminSegmentsPage() {
                 </div>
               ) : null}
 
-              <Link
-                href={`/admin/broadcast?segment=${segment.segment}`}
-                className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-ink-900/15 text-xs font-medium text-ink-800 hover:bg-rice-200"
-              >
-                {t("admin.pages.segments.message")}
-              </Link>
             </li>
           );
         })}

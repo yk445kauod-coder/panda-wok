@@ -98,7 +98,7 @@ export default async function SiteLayout({
             <main id="main" className="flex-1 pb-24 md:pb-0">
               <PageEnter>{children}</PageEnter>
             </main>
-            <SiteFooter brand={brand} contact={settings.support} flags={flags} />
+            <SiteFooter brand={brand} contact={settings.support} />
             {flags["nav.bottom"] !== false ? <BottomNav flags={flags} /> : null}
             {flags.assistant !== false && settings.ai.assistantEnabled ? (
               <>

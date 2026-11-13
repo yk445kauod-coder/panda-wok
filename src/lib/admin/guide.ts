@@ -76,10 +76,10 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
         steps: [
           { title: "Owner", body: "Everything, including creating team accounts and restoring backups." },
           { title: "Admin", body: "Everything except assigning roles and restoring backups." },
-          { title: "Manager", body: "Daily operations: orders, menu, stock, customers, exports and backups." },
-          { title: "Kitchen staff", body: "See and progress orders, and record stock movements. No customer data, no money figures." },
+          { title: "Manager", body: "Daily operations: orders, menu, customers, exports and backups." },
+          { title: "Kitchen staff", body: "See and progress orders. No customer data, no money figures." },
           { title: "Customer support", body: "Orders, customer records, feedback and chat. Cannot export data." },
-          { title: "Marketing", body: "Segments, broadcasts, loyalty and analytics. Cannot change orders." },
+          { title: "Marketing", body: "Segments and analytics. Cannot change orders." },
         ],
         tips: [
           "Two people never share a login id — that is what makes the audit trail meaningful.",
@@ -137,7 +137,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
           { title: "Preparing your food", body: "The order is being cooked." },
           { title: "Prepared and packed", body: "Food is bagged and waiting for the rider." },
           { title: "On the way", body: "The rider has left the kitchen with the order." },
-          { title: "Delivered", body: "The order is closed and the customer has earned loyalty points." },
+          { title: "Delivered", body: "The order is closed and the customer has been served." },
         ],
         tips: [
           "Cancel, reject, fail and refund all close an order permanently — it cannot be reopened.",
@@ -163,8 +163,8 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
   },
   {
     id: "menu",
-    title: "Menu, stock and offers",
-    intro: "What the customer can order, what you have, and what you nudge them toward.",
+    title: "Menu and offers",
+    intro: "What the customer can order and what you nudge them toward.",
     topics: [
       {
         id: "menu-cms",
@@ -182,31 +182,6 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
           "Every price is in Egyptian pounds and always shows two decimals.",
         ],
       },
-      {
-        id: "stock",
-        title: "Tracking stock",
-        summary: "Record what you use and what you buy, and get warned before you run out.",
-        icon: "boxes",
-        capability: "stock.manage",
-        steps: [
-          { title: "Add an item", body: "Name it, set the unit and a minimum threshold." },
-          { title: "Record a movement", body: "Every delivery in and every use out is a movement, so the count is always explainable." },
-          { title: "Act on the warnings", body: "Anything at or below its threshold is flagged, and the overview counts what is low or out." },
-        ],
-        tips: ["Stock never edits silently — a correction is a movement, so you can see who changed what."],
-      },
-      {
-        id: "upsell",
-        title: "Setting up upsells",
-        summary: "Suggest an extra at checkout — a drink with a main, for example.",
-        icon: "sparkles",
-        capability: "menu.manage",
-        steps: [
-          { title: "Choose the trigger", body: "Pick the dish or category that starts the suggestion." },
-          { title: "Choose the suggestion", body: "Pick what to offer and how prominent it should be." },
-          { title: "Watch the result", body: "The overview shows whether the suggestion is converting." },
-        ],
-      },
     ],
   },
   {
@@ -217,12 +192,12 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
       {
         id: "crm",
         title: "Finding a customer",
-        summary: "Search by name or phone, see their orders and loyalty balance.",
+        summary: "Search by name or phone, and see their orders.",
         icon: "users",
         capability: "crm.view",
         steps: [
           { title: "Search", body: "Type a name or a phone number. Egyptian numbers match whichever form they were saved in." },
-          { title: "Read the profile", body: "Order history, total spend, loyalty tier and any feedback they have left." },
+          { title: "Read the profile", body: "Order history, total spend and any feedback they have left." },
           { title: "Block only when you must", body: "Blocking stops a customer ordering; it is logged and reversible." },
         ],
         tips: ["Customer data is personal — export only what you actually need."],
@@ -230,14 +205,13 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
       {
         id: "segments",
         title: "Building a segment",
-        summary: "Group customers by spend, loyalty or recency, then message them.",
+        summary: "Group customers by spend or recency.",
         icon: "gauge",
         capability: "crm.view",
         steps: [
           { title: "Choose the rule", body: "For example: ordered in the last 30 days, or spent over a set amount." },
           { title: "Check the count", body: "The member count updates as you change the rule, so you can see the audience before sending anything." },
         ],
-        tips: ["A segment with no members cannot be broadcast to — the send is refused rather than silently dropped."],
       },
       {
         id: "feedback",
@@ -250,30 +224,6 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
           { title: "Reply", body: "Your reply is stored against the feedback so the next person can see what was said." },
           { title: "Close it", body: "Marking it handled takes it out of the open queue." },
         ],
-      },
-      {
-        id: "broadcast",
-        title: "Sending a broadcast",
-        summary: "Message a segment in-app. It is confirmed before it sends.",
-        icon: "radio",
-        capability: "broadcast.manage",
-        steps: [
-          { title: "Write it", body: "A title and a short body. Keep it useful — it lands in the customer's notifications." },
-          { title: "Pick the audience", body: "Send to a segment rather than everyone, so the message stays relevant." },
-          { title: "Confirm", body: "A broadcast has to be confirmed before it sends, so a stray tap cannot message the whole customer base." },
-        ],
-      },
-      {
-        id: "loyalty",
-        title: "Running loyalty",
-        summary: "Points are earned per pound spent and redeemed at checkout.",
-        icon: "heart",
-        capability: "loyalty.manage",
-        steps: [
-          { title: "Set the rewards", body: "Decide what points are worth and what they can be exchanged for." },
-          { title: "Adjust a balance", body: "A manual adjustment is recorded as a transaction with a reason, so the history always adds up." },
-        ],
-        tips: ["Points are earned when an order is delivered, and taken back if it is refunded."],
       },
     ],
   },

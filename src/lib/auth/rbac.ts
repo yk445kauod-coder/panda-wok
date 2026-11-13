@@ -11,17 +11,12 @@ export type Capability =
   | "orders.update"
   | "kitchen.view"
   | "menu.manage"
-  | "stock.manage"
-  | "stock.move"
   | "crm.view"
   | "crm.export"
   | "users.manage"
-  | "loyalty.manage"
   | "feedback.manage"
   | "chat.manage"
-  | "broadcast.manage"
   | "analytics.view"
-  | "ai.manage"
   | "exports.manage"
   | "backups.view"
   | "backups.create"
@@ -37,34 +32,34 @@ export type Capability =
 const CAPABILITIES: Record<StaffRole, readonly Capability[]> = {
   owner: [
     "orders.view", "orders.update", "kitchen.view", "menu.manage",
-    "stock.manage", "stock.move", "crm.view", "crm.export", "users.manage",
-    "loyalty.manage", "feedback.manage", "chat.manage", "broadcast.manage",
-    "analytics.view", "ai.manage", "exports.manage", "backups.view",
+    "crm.view", "crm.export", "users.manage",
+    "feedback.manage", "chat.manage",
+    "analytics.view", "exports.manage", "backups.view",
     "backups.create", "backups.restore", "settings.manage", "roles.manage",
   ],
   admin: [
     "orders.view", "orders.update", "kitchen.view", "menu.manage",
-    "stock.manage", "stock.move", "crm.view", "crm.export", "users.manage",
-    "loyalty.manage", "feedback.manage", "chat.manage", "broadcast.manage",
-    "analytics.view", "ai.manage", "exports.manage", "backups.view",
+    "crm.view", "crm.export", "users.manage",
+    "feedback.manage", "chat.manage",
+    "analytics.view", "exports.manage", "backups.view",
     "backups.create", "settings.manage",
   ],
   manager: [
     "orders.view", "orders.update", "kitchen.view", "menu.manage",
-    "stock.manage", "stock.move", "crm.view", "crm.export", "users.manage",
-    "loyalty.manage", "feedback.manage", "chat.manage", "broadcast.manage",
+    "crm.view", "crm.export", "users.manage",
+    "feedback.manage", "chat.manage",
     "analytics.view", "exports.manage", "backups.view", "backups.create",
   ],
   kitchen: [
-    "orders.view", "orders.update", "kitchen.view", "stock.move", "stock.manage",
+    "orders.view", "orders.update", "kitchen.view",
   ],
   support: [
     "orders.view", "orders.update", "kitchen.view", "crm.view",
     "feedback.manage", "chat.manage",
   ],
   marketing: [
-    "crm.view", "crm.export", "broadcast.manage", "analytics.view",
-    "loyalty.manage", "menu.manage",
+    "crm.view", "crm.export", "analytics.view",
+    "menu.manage",
   ],
 };
 
@@ -80,10 +75,10 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
 export const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
   owner: "Full access including role assignment and backup restore.",
   admin: "Everything except role assignment and backup restore.",
-  manager: "Daily operations: orders, menu, stock, CRM, exports, backups.",
-  kitchen: "View and progress orders, record stock movements.",
+  manager: "Daily operations: orders, menu, CRM, exports, backups.",
+  kitchen: "View and progress orders.",
   support: "Orders, customer records, feedback and chat. No exports.",
-  marketing: "Segments, broadcasts, loyalty and analytics. Cannot modify orders.",
+  marketing: "Segments and analytics. Cannot modify orders.",
 };
 
 export function can(
@@ -139,27 +134,17 @@ export const ADMIN_NAV: readonly {
   { href: "/admin", label: "Overview", labelKey: "overview", capability: "orders.view", group: "Operations", groupKey: "operations" },
   { href: "/admin/orders", label: "Orders", labelKey: "orders", capability: "orders.view", group: "Operations", groupKey: "operations" },
   { href: "/admin/kitchen", label: "Kitchen", labelKey: "kitchen", capability: "kitchen.view", group: "Operations", groupKey: "operations" },
-  { href: "/admin/stock", label: "Stock", labelKey: "stock", capability: "stock.manage", group: "Operations", groupKey: "operations" },
   { href: "/admin/menu", label: "Menu CMS", labelKey: "menu", capability: "menu.manage", group: "Operations", groupKey: "operations" },
   { href: "/admin/categories", label: "Categories", labelKey: "categories", capability: "menu.manage", group: "Operations", groupKey: "operations" },
-  { href: "/admin/upsell", label: "Upselling", labelKey: "upsell", capability: "menu.manage", group: "Operations", groupKey: "operations" },
   { href: "/admin/offers", label: "Offers", labelKey: "offers", capability: "menu.manage", group: "Operations", groupKey: "operations" },
   { href: "/admin/content", label: "Content", labelKey: "content", capability: "settings.manage", group: "Operations", groupKey: "operations" },
   { href: "/admin/crm", label: "Customers", labelKey: "crm", capability: "crm.view", group: "CRM", groupKey: "crm" },
   { href: "/admin/crm/activity", label: "Activity", labelKey: "crm-activity", capability: "crm.view", group: "CRM", groupKey: "crm" },
   { href: "/admin/crm/segments", label: "Segments", labelKey: "crm-segments", capability: "crm.view", group: "CRM", groupKey: "crm" },
   { href: "/admin/crm/insights", label: "AI insights", labelKey: "crm-insights", capability: "crm.view", group: "CRM", groupKey: "crm" },
-  { href: "/admin/loyalty", label: "Loyalty", labelKey: "loyalty", capability: "loyalty.manage", group: "CRM", groupKey: "crm" },
   { href: "/admin/feedback", label: "Feedback", labelKey: "feedback", capability: "feedback.manage", group: "CRM", groupKey: "crm" },
   { href: "/admin/chat", label: "Chat", labelKey: "chat", capability: "chat.manage", group: "CRM", groupKey: "crm" },
-  { href: "/admin/broadcast", label: "Broadcast", labelKey: "broadcast", capability: "broadcast.manage", group: "Growth", groupKey: "growth" },
   { href: "/admin/analytics", label: "Analytics", labelKey: "analytics", capability: "analytics.view", group: "Growth", groupKey: "growth" },
-  { href: "/admin/ai", label: "AI centre", labelKey: "ai", capability: "ai.manage", group: "Platform", groupKey: "platform" },
-  { href: "/admin/ai/usage", label: "AI usage", labelKey: "ai-usage", capability: "ai.manage", group: "Platform", groupKey: "platform" },
-  { href: "/admin/agent", label: "Ops agent", labelKey: "agent", capability: "ai.manage", group: "Platform", groupKey: "platform" },
-  { href: "/admin/agent/chat", label: "Agent chat", labelKey: "agent-chat", capability: "ai.manage", group: "Platform", groupKey: "platform" },
-  { href: "/admin/agent/mcp", label: "MCP servers", labelKey: "agent-mcp", capability: "ai.manage", group: "Platform", groupKey: "platform" },
-  { href: "/admin/agent/automations", label: "Automations", labelKey: "agent-automations", capability: "ai.manage", group: "Platform", groupKey: "platform" },
   { href: "/admin/users", label: "Team & users", labelKey: "users", capability: "users.manage", group: "Platform", groupKey: "platform" },
   { href: "/admin/exports", label: "Exports", labelKey: "exports", capability: "exports.manage", group: "Platform", groupKey: "platform" },
   { href: "/admin/backups", label: "Backups", labelKey: "backups", capability: "backups.view", group: "Platform", groupKey: "platform" },

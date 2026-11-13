@@ -13,9 +13,7 @@ export type ExportDataset =
   | "orders"
   | "order_items"
   | "feedback"
-  | "loyalty"
   | "menu"
-  | "stock"
   | "activity"
   | "analytics"
   | "ai_usage"
@@ -59,25 +57,12 @@ const DATASETS: Record<ExportDataset, DatasetSpec> = {
     orderBy: "created_at",
     label: "Feedback",
   },
-  loyalty: {
-    table: "loyalty_transactions",
-    columns: "id, user_id, order_id, type, points, reason, expires_at, created_at",
-    orderBy: "created_at",
-    label: "Loyalty ledger",
-  },
   menu: {
     table: "menu_items",
     columns:
       "id, category_id, slug, name_en, name_ar, description_en, price, compare_at_price, is_available, is_featured, is_spicy, is_vegetarian, is_vegan, contains_nuts, prep_minutes, calories, sort_order, is_archived, created_at, updated_at",
     orderBy: "name_en",
     label: "Menu items",
-  },
-  stock: {
-    table: "stock_items",
-    columns:
-      "id, name_en, name_ar, unit, quantity, min_threshold, cost_per_unit, supplier, status, updated_at",
-    orderBy: "name_en",
-    label: "Stock items",
   },
   activity: {
     table: "activity_logs",

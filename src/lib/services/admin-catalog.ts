@@ -119,60 +119,6 @@ async function staffTableClient() {
   return tryCreateAdminSupabase() ?? (await createServerSupabase());
 }
 
-export type AdminStockItem = Database["public"]["Tables"]["stock_items"]["Row"] & {
-  linked_items: number;
-};
-
-export async function listStockItems(): Promise<AdminStockItem[]> {
-  const supabase = await staffTableClient();
-
-  const { data, error } = await supabase
-    .from("stock_items")
-    .select("*, menu_item_stock (menu_item_id)")
-    .order("status", { ascending: true })
-    .order("name_en", { ascending: true });
-
-  if (error) throw new Error(`Failed to load stock: ${error.message}`);
-
-  return (data ?? []).map((row) => {
-    const links =
-      (row as unknown as { menu_item_stock?: { menu_item_id: string }[] })
-        .menu_item_stock ?? [];
-    const { menu_item_stock: _links, ...item } = row as unknown as Record<string, unknown> & {
-      menu_item_stock?: unknown;
-    };
-    return { ...(item as unknown as AdminStockItem), linked_items: links.length };
-  });
-}
-
-export async function listStockMovements(stockItemId?: string, limit = 50) {
-  const supabase = await createServerSupabase();
-  let query = supabase
-    .from("stock_movements")
-    .select("*, stock_items (name_en, unit)")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (stockItemId) query = query.eq("stock_item_id", stockItemId);
-
-  const { data, error } = await query;
-  if (error) throw new Error(`Failed to load stock movements: ${error.message}`);
-  return data ?? [];
-}
-
-export async function listRewards(): Promise<
-  Database["public"]["Tables"]["loyalty_rewards"]["Row"][]
-> {
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("loyalty_rewards")
-    .select("*")
-    .order("points_cost", { ascending: true });
-
-  if (error) throw new Error(`Failed to load rewards: ${error.message}`);
-  return data ?? [];
-}
-
 export async function listFeedbackAdmin(params: {
   status?: Database["public"]["Enums"]["feedback_status"];
   category?: Database["public"]["Enums"]["feedback_category"];
@@ -235,18 +181,6 @@ export async function listFeatureFlags(): Promise<
   return data ?? [];
 }
 
-export async function listBroadcasts(limit = 50) {
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("broadcasts")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw new Error(`Failed to load broadcasts: ${error.message}`);
-  return data ?? [];
-}
-
 export async function listExports(limit = 50) {
   const supabase = await createServerSupabase();
   // `content` holds the file bytes and is deliberately excluded: the list page
@@ -276,55 +210,6 @@ export async function listBackups(limit = 50) {
     .limit(limit);
 
   if (error) throw new Error(`Failed to load backups: ${error.message}`);
-  return data ?? [];
-}
-
-export async function listAiProviders() {
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("ai_providers")
-    .select("*")
-    .order("priority", { ascending: true });
-
-  if (error) throw new Error(`Failed to load AI providers: ${error.message}`);
-  return data ?? [];
-}
-
-/**
- * Stored credential names and a masked hint for each. Values are never read
- * here — the RPC returns only a four-character tail so an operator can tell
- * which key is installed without it leaving Vault.
- */
-export async function listAiSecretHints(): Promise<
-  { name: string; hint: string; updated_at: string }[]
-> {
-  const admin = tryCreateAdminSupabase();
-  if (!admin) return [];
-  const { data, error } = await admin.rpc("list_ai_secret_hints");
-  if (error) return [];
-  return data ?? [];
-}
-
-export async function listAiPrompts() {
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("ai_prompts")
-    .select("*")
-    .order("key", { ascending: true });
-
-  if (error) throw new Error(`Failed to load AI prompts: ${error.message}`);
-  return data ?? [];
-}
-
-export async function listAiRequests(limit = 100) {
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("ai_requests")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw new Error(`Failed to load AI requests: ${error.message}`);
   return data ?? [];
 }
 
@@ -363,17 +248,6 @@ export async function countFeedbackAdmin(params: {
   const { count, error } = await query;
   if (error) throw new Error(`Failed to count feedback: ${error.message}`);
   return count ?? 0;
-}
-
-export async function listUpsellRules() {
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("upsell_rules")
-    .select("*")
-    .order("priority", { ascending: true });
-
-  if (error) throw new Error(`Failed to load upsell rules: ${error.message}`);
-  return data ?? [];
 }
 
 /* ----------------------------------------------------------------- content */

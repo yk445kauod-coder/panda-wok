@@ -60,7 +60,6 @@ export function renderDeterministicAnswer(
   const matchesVeg = /vegetarian|vegan|plant/i.test(lower);
   const matchesCheap = /cheap|affordab|budget|under|less than|price|cost/i.test(lower);
   const matchesDelivery = /deliver|delivery|how long|eta|time|fee|minimum|min order/i.test(lower);
-  const matchesLoyalty = /loyalty|points|reward|tier|discount/i.test(lower);
   const matchesContact = /contact|phone|call|whatsapp|email|reach|address|where/i.test(lower);
   const matchesPay = /instapay|insta ?pay|pay|payment|wallet|transfer/i.test(lower);
   const matchesOffers = /offer|deal|discount|promo|promotion|coupon|save|cheaper/i.test(lower);
@@ -113,21 +112,6 @@ export function renderDeterministicAnswer(
       }
     } else if (matchesOffers) {
       lines.push("There are no offers running at the moment.");
-    }
-  }
-
-  if (matchesLoyalty) {
-    lines.push(
-      `You earn ${snapshot.loyalty.pointsPerCurrency} point per 1 EGP spent, and each point is worth ${snapshot.loyalty.pointValue} EGP when redeemed.`,
-    );
-    if (snapshot.rewards.length > 0) {
-      lines.push(
-        "Current rewards: " +
-          snapshot.rewards
-            .map((r) => `${r.name} (${r.pointsCost} points)`)
-            .join(", ") +
-          ".",
-      );
     }
   }
 
@@ -208,7 +192,7 @@ export function renderDeterministicAnswer(
   if (matchesRecommend || lines.length === 0) {
     if (lines.length === 0) {
       lines.push(
-        `I can help with the ${snapshot.brand.name} menu, prices, allergens, delivery and loyalty points. Here are a few dishes — tap any card for the full detail:`,
+        `I can help with the ${snapshot.brand.name} menu, prices, allergens and delivery. Here are a few dishes — tap any card for the full detail:`,
       );
     } else if (matchesRecommend) {
       const featured = snapshot.items.filter((i) => i.available).slice(0, 2);

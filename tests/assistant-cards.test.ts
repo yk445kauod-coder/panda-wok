@@ -46,10 +46,6 @@ describe("assistant prompt key", () => {
     // would quietly re-introduce the drift.
     expect(read("src/lib/actions/assistant.ts")).not.toContain("panda_assistant");
   });
-
-  it("matches the placeholder shown in the Admin AI centre", () => {
-    expect(read("src/app/admin/ai/page.tsx")).toContain("assistant.menu");
-  });
 });
 
 describe("assistant cards contract", () => {

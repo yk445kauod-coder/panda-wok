@@ -58,13 +58,6 @@ const COLUMNS: Record<ExportDataset, ExportColumn[]> = {
     { key: "admin_response", label: "Reply", kind: "text" },
     { key: "created_at", label: "Submitted", kind: "date" },
   ],
-  loyalty: [
-    { key: "type", label: "Type", kind: "text" },
-    { key: "points", label: "Points", kind: "number" },
-    { key: "reason", label: "Reason", kind: "text" },
-    { key: "expires_at", label: "Expires", kind: "date" },
-    { key: "created_at", label: "When", kind: "date" },
-  ],
   menu: [
     { key: "name_en", label: "Dish (English)", kind: "text" },
     { key: "name_ar", label: "Dish (Arabic)", kind: "text" },
@@ -74,15 +67,6 @@ const COLUMNS: Record<ExportDataset, ExportColumn[]> = {
     { key: "is_available", label: "Available", kind: "text" },
     { key: "is_archived", label: "Archived", kind: "text" },
     { key: "created_at", label: "Created", kind: "date" },
-  ],
-  stock: [
-    { key: "name_en", label: "Item", kind: "text" },
-    { key: "unit", label: "Unit", kind: "text" },
-    { key: "quantity", label: "Quantity", kind: "number" },
-    { key: "min_threshold", label: "Reorder at", kind: "number" },
-    { key: "cost_per_unit", label: "Cost / unit", kind: "money" },
-    { key: "supplier", label: "Supplier", kind: "text" },
-    { key: "status", label: "Status", kind: "text" },
   ],
   activity: [
     { key: "event", label: "Event", kind: "text" },

@@ -36,8 +36,6 @@ export const CACHE_TAGS = {
   settings: "public:settings",
   /** Admin-editable page copy, FAQs, announcements, delivery zones, page SEO. */
   content: "public:content",
-  /** Loyalty reward tiers. */
-  rewards: "public:rewards",
   /** Feature flags (loyalty on/off, assistant on/off, ...). */
   flags: "public:flags",
   /** The restaurant singleton row (name, tagline, cuisine tags). */

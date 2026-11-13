@@ -30,7 +30,6 @@ function DesktopNav({
     { href: "/menu", label: t("nav.menu"), flag: "menu" },
     { href: "/about", label: t("nav.about"), flag: null },
     { href: "/contact", label: t("nav.contact"), flag: null },
-    { href: "/loyalty", label: t("nav.loyalty"), flag: "loyalty" },
     { href: "/feedback", label: t("nav.feedback"), flag: "feedback" },
     { href: "/orders", label: t("nav.orderTracking"), flag: null },
     { href: "/chat", label: t("nav.messages"), flag: "chat" },
@@ -137,7 +136,6 @@ export async function SiteHeader({
 export async function SiteFooter({
   brand,
   contact,
-  flags,
 }: {
   brand: {
     name: string;
@@ -152,7 +150,6 @@ export async function SiteFooter({
     email: string | null;
     social: Record<string, string>;
   };
-  flags: Record<string, boolean>;
 }) {
   const locale = await getLocale();
   const t = await getT(locale);
@@ -169,12 +166,6 @@ export async function SiteFooter({
         { href: "/about", label: t("nav.about") },
         { href: "/location", label: t("nav.location") },
         { href: "/faq", label: t("nav.faq") },
-        // Gated on the same flag as the header, so turning the programme off
-        // removes every entry point rather than leaving a footer link that
-        // lands on the "not available" page.
-        ...(flags.loyalty === false
-          ? []
-          : [{ href: "/loyalty", label: t("nav.loyalty") }]),
         { href: "/feedback", label: t("nav.feedback") },
       ],
     },

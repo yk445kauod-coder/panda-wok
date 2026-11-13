@@ -10,11 +10,9 @@ import type { Database, Json } from "@/lib/types/database";
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type MenuItemRow = Database["public"]["Tables"]["menu_items"]["Row"];
 export type MenuImage = Database["public"]["Tables"]["menu_images"]["Row"];
-export type UpsellRule = Database["public"]["Tables"]["upsell_rules"]["Row"];
 export type FeatureFlag = Database["public"]["Tables"]["feature_flags"]["Row"];
 export type Setting = Database["public"]["Tables"]["settings"]["Row"];
 export type Restaurant = Database["public"]["Tables"]["restaurants"]["Row"];
-export type LoyaltyReward = Database["public"]["Tables"]["loyalty_rewards"]["Row"];
 
 export type ModifierOption = Database["public"]["Tables"]["modifier_options"]["Row"];
 export type ModifierGroup = Database["public"]["Tables"]["modifier_groups"]["Row"];
@@ -271,24 +269,6 @@ export const getMenuSlugs = cachedPublic(
   { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
 );
 
-async function getUpsellRulesRaw(): Promise<UpsellRule[]> {
-  const supabase = createPublicSupabase();
-  const { data, error } = await supabase
-    .from("upsell_rules")
-    .select("*")
-    .eq("is_enabled", true)
-    .order("priority", { ascending: true });
-
-  if (error) throw new Error(`Failed to load upsell rules: ${error.message}`);
-  return data ?? [];
-}
-
-export const getUpsellRules = cachedPublic(
-  getUpsellRulesRaw,
-  ["public-upsell-rules"],
-  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.menu] },
-);
-
 async function getFeatureFlagsRaw(): Promise<FeatureFlag[]> {
   const supabase = createPublicSupabase();
   const { data, error } = await supabase
@@ -351,10 +331,6 @@ export type PublicSettings = {
     etaMinutes: number;
     acceptingOrders: boolean;
     hours: StoreHours;
-  };
-  loyalty: {
-    pointsPerCurrency: number;
-    pointValue: number;
   };
   ai: {
     assistantEnabled: boolean;
@@ -474,10 +450,6 @@ async function loadPublicSettings(): Promise<PublicSettings> {
         timeZone: STORE_TIME_ZONE,
       },
     },
-    loyalty: {
-      pointsPerCurrency: toNumber(map.get("loyalty.points_per_currency"), 1),
-      pointValue: toNumber(map.get("loyalty.point_value"), 1),
-    },
     ai: {
       assistantEnabled: map.get("ai.assistant.enabled") !== false,
       disclosure: toText(
@@ -520,24 +492,6 @@ export const getRestaurant = cachedPublic(
   getRestaurantRaw,
   ["public-restaurant"],
   { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.restaurant] },
-);
-
-async function getEnabledRewardsRaw(): Promise<LoyaltyReward[]> {
-  const supabase = createPublicSupabase();
-  const { data, error } = await supabase
-    .from("loyalty_rewards")
-    .select("*")
-    .eq("is_enabled", true)
-    .order("points_cost", { ascending: true });
-
-  if (error) throw new Error(`Failed to load rewards: ${error.message}`);
-  return data ?? [];
-}
-
-export const getEnabledRewards = cachedPublic(
-  getEnabledRewardsRaw,
-  ["public-enabled-rewards"],
-  { revalidate: PUBLIC_DATA_REVALIDATE, tags: [CACHE_TAGS.rewards] },
 );
 
 /** Featured and cheap-to-prepare picks for the home page. */

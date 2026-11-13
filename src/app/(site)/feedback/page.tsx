@@ -4,7 +4,7 @@ import { Star } from "lucide-react";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getSession } from "@/lib/auth/session";
 import { getMyOrders } from "@/lib/services/orders";
-import { getMyFeedback } from "@/lib/services/loyalty";
+import { getMyFeedback } from "@/lib/services/feedback";
 import { getFeatureFlagMap, getPublicSettings } from "@/lib/services/catalog";
 import { breadcrumbSchema } from "@/lib/seo/schema";
 import { JsonLdScript } from "@/components/seo/json-ld";

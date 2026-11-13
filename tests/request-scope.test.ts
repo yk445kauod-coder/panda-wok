@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { inRequestScope, memo, takeToken, withRequestScope } from "@/lib/request-scope";
-import { MAX_DOCUMENTS_PER_TURN } from "@/lib/agent/registry";
+
+/** Local stand-in for the removed ops-agent per-turn document cap. */
+const MAX_DOCUMENTS_PER_TURN = 4;
 
 /**
  * The subrequest budget is what keeps a document-making turn alive on a Worker.

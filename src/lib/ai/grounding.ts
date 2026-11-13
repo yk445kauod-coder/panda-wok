@@ -1,7 +1,6 @@
 import "server-only";
 
 import { getPublicMenu, getPublicSettings, getRestaurant } from "@/lib/services/catalog";
-import { getEnabledRewards } from "@/lib/services/catalog";
 import { listOffers } from "@/lib/services/admin-catalog";
 import type { MenuItem, Category } from "@/lib/services/catalog";
 
@@ -48,8 +47,6 @@ export type GroundingSnapshot = {
     calories: number | null;
     options: { group: string; name: string; nameAr: string | null; price: number; available: boolean }[];
   }[];
-  rewards: { name: string; pointsCost: number; description: string | null }[];
-  loyalty: { pointsPerCurrency: number; pointValue: number };
   paymentMethods: string[];
   /** Enabled offers from the live DB, so the assistant can quote real promotions. */
   offers: { name: string; kind: string; threshold: number; value: number; maxDiscount: number | null }[];
@@ -61,11 +58,10 @@ export type GroundingSnapshot = {
  * price or claim that is not in the live database.
  */
 export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
-  const [menu, settings, restaurant, rewards, offers] = await Promise.all([
+  const [menu, settings, restaurant, offers] = await Promise.all([
     getPublicMenu(),
     getPublicSettings(),
     getRestaurant(),
-    getEnabledRewards(),
     listOffers(),
   ]);
 
@@ -132,12 +128,6 @@ export async function buildGroundingSnapshot(): Promise<GroundingSnapshot> {
         })),
       ),
     })),
-    rewards: rewards.map((r) => ({
-      name: r.name_en,
-      pointsCost: r.points_cost,
-      description: r.description_en,
-    })),
-    loyalty: settings.loyalty,
     paymentMethods: ["Cash on delivery", "InstaPay"],
     offers: enabledOffers,
   };
@@ -204,17 +194,6 @@ export function renderSnapshot(snapshot: GroundingSnapshot): string {
         }`,
       );
     }
-  }
-
-  lines.push("");
-  lines.push("=== LOYALTY ===");
-  lines.push(
-    `Earn ${snapshot.loyalty.pointsPerCurrency} point(s) per 1 EGP spent. 1 point is worth ${snapshot.loyalty.pointValue} EGP when redeemed.`,
-  );
-  for (const reward of snapshot.rewards) {
-    lines.push(
-      `Reward: ${reward.name} costs ${reward.pointsCost} points${reward.description ? ` — ${reward.description}` : ""}`,
-    );
   }
 
   lines.push("");

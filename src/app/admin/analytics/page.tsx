@@ -185,45 +185,6 @@ export default async function AdminAnalyticsPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-1">
           <Panel
-            title={t("admin.pages.analytics.loyalty")}
-            subtitle={`${formatNumber(metrics.loyalty.members)} members`}
-            action={
-              <Link href="/admin/loyalty" className="text-xs font-medium text-vermilion-600">
-                {t("admin.pages.analytics.manage")}
-              </Link>
-            }
-          >
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <dt className="text-xs text-ink-700/70">{t("admin.pages.analytics.points")}</dt>
-                <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink-900">
-                  {formatNumber(metrics.loyalty.pointsOutstanding)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-ink-700/70">{t("admin.pages.analytics.cash")}</dt>
-                <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ink-900">
-                  {formatPrice(metrics.cashCollected)}
-                </dd>
-              </div>
-            </dl>
-            {metrics.loyalty.activeTiers.length > 0 ? (
-              <div className="mt-3">
-                <DonutChart
-                  title={t("admin.pages.analytics.tierChart")}
-                  height={140}
-                  data={metrics.loyalty.activeTiers.map((tier) => ({
-                    label: humanise(tier.tier),
-                    value: tier.count,
-                  }))}
-                />
-              </div>
-            ) : (
-              <p className="mt-3 text-xs text-ink-700/60">{t("admin.pages.analytics.noLoyaltyMembers")}</p>
-            )}
-          </Panel>
-
-          <Panel
             title={t("admin.pages.analytics.feedback")}
             subtitle={`${metrics.feedbackSummary.count} responses`}
             action={
@@ -283,38 +244,6 @@ export default async function AdminAnalyticsPage() {
             )}
           </Panel>
 
-          <Panel
-            title={t("admin.pages.analytics.stock")}
-            subtitle={`${metrics.stockWarnings.length} need attention`}
-            action={
-              <Link href="/admin/stock" className="text-xs font-medium text-vermilion-600">
-                {t("admin.pages.analytics.manageStock")}
-              </Link>
-            }
-          >
-            {metrics.stockWarnings.length === 0 ? (
-              <p className="flex items-center gap-2 text-sm text-ink-700/70">
-                <PackageX className="size-4 text-jade-500" aria-hidden="true" />
-                Every ingredient is above its threshold.
-              </p>
-            ) : (
-              <ul className="divide-y divide-ink-900/8">
-                {metrics.stockWarnings.slice(0, 5).map((item) => (
-                  <li key={item.id} className="flex items-center justify-between gap-3 py-2">
-                    <span className="min-w-0 truncate text-sm text-ink-900">{item.name}</span>
-                    <span className="flex items-center gap-2 text-xs">
-                      <span className="tabular-nums text-ink-700/75">
-                        {formatNumber(item.quantity)} {item.unit}
-                      </span>
-                      <Badge tone={item.status === "out" ? "danger" : "warning"}>
-                        {item.status}
-                      </Badge>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel>
         </div>
       </div>
     </div>
