@@ -1477,6 +1477,8 @@ export const ar: Dictionary = {
     clear: "مسح",
     openNotifications: "فتح الإشعارات",
     sectionLabel: "أقسام الإدارة",
+    signOut: "تسجيل الخروج",
+    signOutHint: "بينهي جلستك ويقفل اللوحة على الجهاز ده.",
   },
   },
 };

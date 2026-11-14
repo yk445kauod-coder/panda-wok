@@ -30,6 +30,7 @@ import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { AdminBottomNav } from "@/components/admin/admin-bottom-nav";
+import { AdminSignOutButton } from "@/components/admin/admin-sign-out";
 import { OrderAlertWatcher } from "@/components/admin/order-alert-watcher";
 import type { AppNotification } from "@/lib/services/notifications";
 import type { OrderAlert } from "@/lib/services/admin-orders";
@@ -296,7 +297,7 @@ export function AdminShell({
           ))}
         </div>
 
-        <div className="border-t border-rice-100/10 px-3 py-4">
+        <div className="space-y-1 border-t border-rice-100/10 px-3 py-4">
           <Link
             href="/"
             onClick={() => setOpen(false)}
@@ -304,6 +305,7 @@ export function AdminShell({
           >
             {t("admin.shell.viewSite")}
           </Link>
+          <AdminSignOutButton variant="sidebar" onDone={() => setOpen(false)} />
         </div>
       </nav>
 
@@ -316,13 +318,16 @@ export function AdminShell({
             </span>
             <span className="truncate">{staffName}</span>
           </div>
-          <Link
-            href="/"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-ink-700 transition-colors hover:bg-ink-900/6 hover:text-ink-900"
-          >
-            <ExternalLink className="size-3.5" aria-hidden="true" />
-            {t("admin.shell.viewSite")}
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link
+              href="/"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-ink-700 transition-colors hover:bg-ink-900/6 hover:text-ink-900"
+            >
+              <ExternalLink className="size-3.5" aria-hidden="true" />
+              {t("admin.shell.viewSite")}
+            </Link>
+            <AdminSignOutButton variant="topbar" />
+          </div>
         </div>
         <div className="mx-auto max-w-6xl px-3 py-4 pb-24 sm:px-4 sm:py-5 lg:px-8 lg:py-8 lg:pb-8">
           {children}

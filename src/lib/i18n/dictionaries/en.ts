@@ -1519,6 +1519,8 @@ export const en = {
     clear: "Clear",
     openNotifications: "Open notifications",
     sectionLabel: "Admin sections",
+    signOut: "Sign out",
+    signOutHint: "Ends your session and locks the console on this device.",
   },
   },
 };
