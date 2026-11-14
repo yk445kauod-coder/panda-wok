@@ -104,25 +104,20 @@ export async function countCrmCustomers(search?: string): Promise<number> {
  * of rows the dashboard happens to show, which made the figures depend on the
  * page size.
  */
-export async function getCrmStats(): Promise<{
+export type CrmStats = {
   customer_count: number;
   lifetime_value: number;
   repeat_customers: number;
   at_risk_customers: number;
   blocked_customers: number;
   marketing_opt_in: number;
-}> {
+};
+
+export async function getCrmStats(): Promise<CrmStats> {
   return memo("crm-stats", () => loadCrmStats());
 }
 
-async function loadCrmStats(): Promise<{
-  customer_count: number;
-  lifetime_value: number;
-  repeat_customers: number;
-  at_risk_customers: number;
-  blocked_customers: number;
-  marketing_opt_in: number;
-}> {
+async function loadCrmStats(): Promise<CrmStats> {
   const admin = tryCreateAdminSupabase();
   const empty = {
     customer_count: 0,

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Pin, PinOff, Trash2, X } from "lucide-react";
 import { Badge, Button } from "@/components/ui/button";
 import { AdminForm, Field } from "@/components/admin/form-kit";
@@ -13,6 +12,7 @@ import {
 import { formatDateTime } from "@/lib/utils/format";
 import { useI18n, useT } from "@/components/i18n-provider";
 import type { CustomerNote, CustomerTag, CustomerTagLink } from "@/lib/crm/customers";
+import { refreshAdminData } from "@/lib/admin/client";
 
 /**
  * The staff-written half of a customer record: free-text notes and the owner's
@@ -112,7 +112,6 @@ function TagToggle({
   canEdit: boolean;
 }) {
   const { locale } = useI18n();
-  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   // The label is bilingual; the console locale decides which one is read.
@@ -127,7 +126,7 @@ function TagToggle({
     formData.set("assign", String(!assigned));
     const result = await toggleCustomerTagAction(formData);
     setPending(false);
-    if (result.ok) router.refresh();
+    if (result.ok) refreshAdminData();
   }
 
   if (!canEdit) {
@@ -162,7 +161,6 @@ function NoteRow({
   canEdit: boolean;
 }) {
   const t = useT();
-  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   async function run(action: (formData: FormData) => Promise<{ ok: boolean }>, assignPinned?: boolean) {
@@ -176,7 +174,7 @@ function NoteRow({
     }
     const result = await action(formData);
     setPending(false);
-    if (result.ok) router.refresh();
+    if (result.ok) refreshAdminData();
   }
 
   return (

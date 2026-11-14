@@ -1289,6 +1289,8 @@ export const en = {
       "signedInAs": "Signed in as {name} · {role}. Figures refreshed {time}.",
     },
     "common": {
+      "notFound": "Not found", "notFoundBody": "This record does not exist or was removed.", "retry": "Try again",
+      "errorTitle": "Something went wrong", "errorBody": "We could not load this page. Please try again.",
       "save": "Save",
       "saved": "Saved.",
       "cancel": "Cancel",

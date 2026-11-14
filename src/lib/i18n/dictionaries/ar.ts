@@ -1247,6 +1247,8 @@ export const ar: Dictionary = {
       "signedInAs": "مسجّل الدخول بصفتك {name} · {role}. آخر تحديث للأرقام {time}.",
     },
     "common": {
+      "notFound": "مش موجود", "notFoundBody": "السجل ده مش موجود أو اتمسح.", "retry": "جرّب تاني",
+      "errorTitle": "حصلت مشكلة", "errorBody": "مقدرناش نحمّل الصفحة دي. جرّب تاني.",
       "save": "حفظ",
       "saved": "تم الحفظ.",
       "cancel": "إلغاء",

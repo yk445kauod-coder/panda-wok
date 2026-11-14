@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import { AdminForm } from "@/components/admin/form-kit";
 import { toggleFeatureFlagAction, updateSettingsAction } from "@/lib/actions/admin";
@@ -9,6 +8,7 @@ import type { Json } from "@/lib/types/database";
 import { humanise } from "@/lib/utils/format";
 
 import { useErrorText, useI18n } from "@/components/i18n-provider";
+import { refreshAdminData } from "@/lib/admin/client";
 export type FeatureFlagRow = {
   key: string;
   label: string;
@@ -24,7 +24,6 @@ export type FeatureFlagRow = {
  * server expects (`isEnabled` compared against the string "true").
  */
 export function FeatureFlagToggle({ flag }: { flag: FeatureFlagRow }) {
-  const router = useRouter();
   const errorText = useErrorText();
   const [enabled, setEnabled] = useState(flag.is_enabled);
   const [pending, setPending] = useState(false);
@@ -50,7 +49,7 @@ export function FeatureFlagToggle({ flag }: { flag: FeatureFlagRow }) {
         return;
       }
       setPending(false);
-      router.refresh();
+      refreshAdminData();
     } catch {
       setError("The server did not respond. Try again.");
       setEnabled(!next);

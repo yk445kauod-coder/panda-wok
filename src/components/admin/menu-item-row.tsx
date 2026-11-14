@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Copy, Eye, EyeOff, ImageOff, Star } from "lucide-react";
 import {
@@ -15,6 +14,7 @@ import { Badge } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils/format";
 
 import { useErrorText, useT } from "@/components/i18n-provider";
+import { refreshAdminData } from "@/lib/admin/client";
 type Row = {
   id: string;
   name_en: string;
@@ -47,7 +47,6 @@ function visibilityOf(item: Row): MenuItemVisibility {
  * kept it off the menu, which is exactly the confusion this replaces.
  */
 export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: string | null }) {
-  const router = useRouter();
   const t = useT();
   const errorText = useErrorText();
   const [busy, setBusy] = useState<string | null>(null);
@@ -68,7 +67,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
       return;
     }
     setBusy(null);
-    router.refresh();
+    refreshAdminData();
   }
 
   async function setVisibility(next: MenuItemVisibility) {
@@ -81,7 +80,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
       return;
     }
     setBusy(null);
-    router.refresh();
+    refreshAdminData();
   }
 
   const states: { key: MenuItemVisibility; label: string }[] = [

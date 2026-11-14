@@ -26,6 +26,9 @@ export function LanguageSwitcher({
     if (locale === current || pending) return;
     startTransition(async () => {
       await setLocaleAction(locale);
+      // The console is a client SPA whose dictionary is bundled, so it listens
+      // for this event rather than re-rendering from the server.
+      window.dispatchEvent(new Event("panda-wok:locale"));
       // revalidatePath only clears the server cache; the client Router Cache
       // still holds the previous locale's payload, so the tree would keep
       // rendering the old language until a manual reload.

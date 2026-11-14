@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Bell, BellOff, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -14,6 +13,7 @@ import {
   isSoundEnabled,
 } from "@/lib/sound/ting";
 import { cn } from "@/lib/utils/format";
+import { refreshAdminData } from "@/lib/admin/client";
 
 /**
  * The kitchen board's live behaviour, extracted from the server page so the
@@ -39,7 +39,6 @@ export function KitchenLiveBoard({
   signature: string;
   freshCount: number;
 }) {
-  const router = useRouter();
   const t = useT();
   const [live, setLive] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,9 +57,9 @@ export function KitchenLiveBoard({
   const refresh = useCallback(() => {
     setRefreshing(true);
     lastSync.current = Date.now();
-    router.refresh();
+    refreshAdminData();
     window.setTimeout(() => setRefreshing(false), 500);
-  }, [router]);
+  }, []);
 
   // Diff the current signature against what we have seen. A brand new order id
   // is an arrival: pulse the header. The siren, toast and alert bar are the

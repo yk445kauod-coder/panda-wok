@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, Lock, Unlock } from "lucide-react";
 import { setAcceptingOrdersAction } from "@/lib/actions/ordering";
 import { useI18n } from "@/components/i18n-provider";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils/format";
+import { refreshAdminData } from "@/lib/admin/client";
 
 /**
  * The manual close/open lever — one physical-looking switch, front and centre.
@@ -22,7 +22,6 @@ import { cn } from "@/lib/utils/format";
  */
 export function ManualCloseLever({ accepting }: { accepting: boolean }) {
   const { t } = useI18n();
-  const router = useRouter();
   const { success, error: toastError } = useToast();
   const [pending, startTransition] = useTransition();
   // Optimistic: the lever must feel physical, so it follows the tap and the
@@ -43,7 +42,7 @@ export function ManualCloseLever({ accepting }: { accepting: boolean }) {
         return;
       }
       success(next ? t("admin.closeLever.opened") : t("admin.closeLever.closed"));
-      router.refresh();
+      refreshAdminData();
     });
   }
 

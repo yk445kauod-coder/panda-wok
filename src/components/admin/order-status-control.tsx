@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { updateOrderStatusAction } from "@/lib/actions/admin";
 import { useErrorText, useT } from "@/components/i18n-provider";
 import { allowedTransitions, type OrderStatus } from "@/lib/services/order-workflow";
+import { refreshAdminData } from "@/lib/admin/client";
 
 /**
  * Status control for one order. Only transitions the state machine permits are
@@ -20,7 +20,6 @@ export function OrderStatusControl({
   current: OrderStatus;
   compact?: boolean;
 }) {
-  const router = useRouter();
   const errorText = useErrorText();
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -53,7 +52,7 @@ export function OrderStatusControl({
 
       setNote("");
       setOpen(false);
-      router.refresh();
+      refreshAdminData();
     } catch {
       setError(t("admin.pages.orderStatusControl.networkError"));
     } finally {

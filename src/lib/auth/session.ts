@@ -230,3 +230,14 @@ export async function assertGateCapability(
   if (!can(role, capability)) throw new ForbiddenError();
   return role;
 }
+
+/**
+ * The unlocked-only gate check, for JSON reads every member may make — the
+ * guide and the denied screen. Requires the unlock cookie but no capability,
+ * mirroring those pages' server guards without the cost of a full session.
+ */
+export async function assertGateUnlocked(): Promise<StaffRole> {
+  const gate = await gateIdentity();
+  if (!gate) throw new ForbiddenError("Unlock the ops console first.");
+  return gate.kind === "owner" ? "owner" : gate.role;
+}

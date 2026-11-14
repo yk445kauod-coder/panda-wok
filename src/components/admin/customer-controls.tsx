@@ -10,6 +10,7 @@ import { AdminForm, Field, Toggle } from "@/components/admin/form-kit";
 import type { StaffRole } from "@/lib/auth/rbac";
 
 import { useErrorText, useT } from "@/components/i18n-provider";
+import { refreshAdminData } from "@/lib/admin/client";
 const ROLES: StaffRole[] = ["owner", "admin", "manager", "kitchen", "support", "marketing"];
 
 /**
@@ -55,7 +56,7 @@ export function BlockUserControl({
 
     setConfirming(false);
     setPending(false);
-    router.refresh();
+    refreshAdminData();
   }
 
   return (
@@ -132,7 +133,7 @@ export function DeleteCustomerControl({
 
     setPending(false);
     router.push("/admin/crm");
-    router.refresh();
+    refreshAdminData();
   }
 
   if (!open) {
@@ -442,7 +443,7 @@ export function FeedbackPublishControl({
     }
 
     setPending(false);
-    router.refresh();
+    refreshAdminData();
   }
 
   return (

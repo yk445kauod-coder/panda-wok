@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { AlertTriangle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
@@ -9,6 +8,7 @@ import { cn, slugify } from "@/lib/utils/format";
 import type { FormActionResult } from "@/lib/actions/result";
 
 import { useErrorText, useT } from "@/components/i18n-provider";
+import { refreshAdminData } from "@/lib/admin/client";
 
 /**
  * Field-level messages returned by a failed action (e.g. "This slug is taken").
@@ -32,7 +32,6 @@ export function useAdminForm<T>(
     resetOnSuccess?: boolean;
   },
 ) {
-  const router = useRouter();
   const errorText = useErrorText();
   const t = useT();
   const [pending, setPending] = useState(false);
@@ -71,7 +70,7 @@ export function useAdminForm<T>(
     setDone(options?.successMessage ?? t("admin.common.saved"));
     setPending(false);
     options?.onSuccess?.(result.data);
-    router.refresh();
+    refreshAdminData();
   }
 
   return { submit, pending, error, fields, done };
@@ -345,7 +344,6 @@ export function AdminButtonAction({
   size?: "sm" | "md" | "lg";
   payload?: unknown;
 }) {
-  const router = useRouter();
   const errorText = useErrorText();
   const t = useT();
   const { confirm: ask } = useConfirm();
@@ -376,7 +374,7 @@ export function AdminButtonAction({
         return;
       }
       setPending(false);
-      router.refresh();
+      refreshAdminData();
     } catch {
       setError(t("admin.common.serverTryAgain"));
       setPending(false);

@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/button";
 import { humanise } from "@/lib/utils/format";
-import { getAdminLocale, getT } from "@/lib/i18n/server";
+import { useT } from "@/components/i18n-provider";
 
 type Tone = "neutral" | "success" | "warning" | "danger" | "info";
 
@@ -32,11 +32,11 @@ export function isRunInFlight(status: string | null | undefined): boolean {
 }
 
 /**
- * Async because the console resolves its locale per request; every caller is a
- * server component that already awaits.
+ * Client-side now that the console is an SPA: the locale comes from the
+ * `I18nProvider` context rather than a per-request server lookup.
  */
-export async function RunStatusBadge({ status }: { status: string | null | undefined }) {
-  const t = await getT(await getAdminLocale());
+export function RunStatusBadge({ status }: { status: string | null | undefined }) {
+  const t = useT();
   const key = `admin.term.runStatus.${status ?? ""}`;
   const label = t(key);
   return <Badge tone={runStatusTone(status)}>{label === key ? humanise(status) : label}</Badge>;

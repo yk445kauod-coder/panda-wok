@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminButtonAction, AdminForm, Field } from "@/components/admin/form-kit";
@@ -14,6 +13,7 @@ import {
 } from "@/lib/actions/admin";
 import { useErrorText, useT } from "@/components/i18n-provider";
 import type { AdminModifierGroup } from "@/lib/services/admin-catalog";
+import { refreshAdminData } from "@/lib/admin/client";
 
 /**
  * Extras/options editor for one dish. A group is a question ("Choose up to 2
@@ -123,7 +123,6 @@ function OptionRow({
 }: {
   option: AdminModifierGroup["modifier_options"][number];
 }) {
-  const router = useRouter();
   const t = useT();
   const errorText = useErrorText();
   const [busy, setBusy] = useState(false);
@@ -138,7 +137,7 @@ function OptionRow({
       setError(errorText(result.error));
       return;
     }
-    router.refresh();
+    refreshAdminData();
   }
 
   return (
@@ -234,7 +233,6 @@ function GroupForm({
 
 /** Inline "add an option" form for a group. */
 function OptionForm({ groupId }: { groupId: string }) {
-  const router = useRouter();
   const t = useT();
   return (
     <AdminForm
@@ -243,7 +241,7 @@ function OptionForm({ groupId }: { groupId: string }) {
       options={{
         successMessage: t("admin.pages.optionsEditor.optionForm.success"),
         resetOnSuccess: true,
-        onSuccess: () => router.refresh(),
+        onSuccess: () => refreshAdminData(),
       }}
     >
       <input type="hidden" name="groupId" value={groupId} />

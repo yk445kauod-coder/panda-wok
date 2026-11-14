@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { startVisiblePoll } from "@/lib/live/visibility";
 import { cn } from "@/lib/utils/format";
 import { useT } from "@/components/i18n-provider";
+import { refreshAdminData } from "@/lib/admin/client";
 
 /**
  * Keeps an ops board live. Subscribes to every order status change and new
@@ -21,7 +21,6 @@ export function LiveOrdersFeed({
   label?: string;
   pollSeconds?: number;
 }) {
-  const router = useRouter();
   const t = useT();
   const [live, setLive] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,10 +30,10 @@ export function LiveOrdersFeed({
   const refreshNow = useCallback(() => {
     setRefreshing(true);
     setLastSync(Date.now());
-    router.refresh();
+    refreshAdminData();
     // The server component streams in; clear the spinner once the frame settles.
     window.setTimeout(() => setRefreshing(false), 600);
-  }, [router]);
+  }, []);
 
   // A single order action produces a status change *and* a new history row, and
   // the acting client also refreshes — so a burst of events lands within a few
