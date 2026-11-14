@@ -31,7 +31,7 @@ export { createAdminSupabase, tryCreateAdminSupabase };
 export async function createServerSupabase(): Promise<SupabaseServerClient> {
   const headerList = await headers();
   const path = headerList.get("x-pw-path") ?? "";
-  if (path.startsWith("/admin")) {
+  if (path.startsWith("/admin") || path.startsWith("/api/admin")) {
     const identity = await gateIdentity();
     if (identity && serviceRoleAvailable()) {
       return createAdminSupabase() as unknown as SupabaseServerClient;

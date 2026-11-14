@@ -58,12 +58,7 @@ export function CrmHomePage() {
             >
               {t("admin.pages.crm.segments")}
             </Link>
-            <Link
-              href="/admin/crm/insights"
-              className="inline-flex h-11 items-center rounded-xl bg-vermilion-600 px-4 text-sm text-rice-50 hover:bg-vermilion-700"
-            >
-              {t("admin.pages.crm.insights")}
-            </Link>
+
           </>
         }
       />

@@ -7,7 +7,6 @@ import {
   Activity,
   BadgePercent,
   BookOpen,
-  Brain,
   Clock3,
   Coffee,
   Database,
@@ -51,7 +50,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/crm": Users,
   "/admin/crm/activity": Activity,
   "/admin/crm/segments": Gauge,
-  "/admin/crm/insights": Brain,
+
   "/admin/feedback": MessagesSquare,
   "/admin/analytics": Clock3,
   "/admin/users": Users,

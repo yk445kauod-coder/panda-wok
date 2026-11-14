@@ -140,7 +140,6 @@ export const ADMIN_NAV: readonly {
   { href: "/admin/crm", label: "Customers", labelKey: "crm", capability: "crm.view", group: "CRM", groupKey: "crm" },
   { href: "/admin/crm/activity", label: "Activity", labelKey: "crm-activity", capability: "crm.view", group: "CRM", groupKey: "crm" },
   { href: "/admin/crm/segments", label: "Segments", labelKey: "crm-segments", capability: "crm.view", group: "CRM", groupKey: "crm" },
-  { href: "/admin/crm/insights", label: "AI insights", labelKey: "crm-insights", capability: "crm.view", group: "CRM", groupKey: "crm" },
   { href: "/admin/feedback", label: "Feedback", labelKey: "feedback", capability: "feedback.manage", group: "CRM", groupKey: "crm" },
   { href: "/admin/analytics", label: "Analytics", labelKey: "analytics", capability: "analytics.view", group: "Growth", groupKey: "growth" },
   { href: "/admin/users", label: "Team & users", labelKey: "users", capability: "users.manage", group: "Platform", groupKey: "platform" },

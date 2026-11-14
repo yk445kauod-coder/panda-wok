@@ -89,18 +89,21 @@ export function KitchenLiveBoard({
     const channel = supabase
       .channel("kds-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
-        if (!cancelled) refresh();
+        if (cancelled) return;
+        setLive(true);
+        refresh();
       })
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "order_status_history" },
         () => {
-          if (!cancelled) refresh();
+          if (cancelled) return;
+          setLive(true);
+          refresh();
         },
       )
       .subscribe((status: string) => {
         if (cancelled) return;
-        if (status === "SUBSCRIBED") setLive(true);
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setLive(false);
       });
 

@@ -9,7 +9,7 @@ import { tryCreateAdminSupabase } from "@/lib/supabase/server";
  */
 export async function recordAiRequest(params: {
   userId: string | null;
-  surface: "assistant" | "crm_insights";
+  surface: "assistant";
   promptKey: string;
   provider: string;
   model: string;

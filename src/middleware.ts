@@ -2,6 +2,7 @@ import "server-only";
 
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { isAdminSurface } from "@/lib/auth/admin-surface";
 import {
   DEFAULT_LOCALE,
   LOCALE_COOKIE,
@@ -132,7 +133,14 @@ export async function middleware(request: NextRequest) {
   // session, so nobody is blocked at the door. The `x-pw-path` request header
   // lets createServerSupabase() elevate that request to the service role, which
   // the gate — not `auth.uid()` — has already authorised.
-  if (barePath.startsWith("/admin")) {
+  //
+  // The console is a static shell whose data comes from `/api/admin/*`, so the
+  // elevation has to cover both the document route and the JSON API it reads
+  // from. Without the API half every console screen loaded but read zero rows:
+  // the requests ran as an anonymous session and the staff RLS policies (which
+  // resolve through `auth.uid()`) matched nothing. This also silenced the new-
+  // order siren, whose poll reads the same way.
+  if (isAdminSurface(barePath)) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-pw-path", pathname);
     response = NextResponse.next({ request: { headers: requestHeaders } });

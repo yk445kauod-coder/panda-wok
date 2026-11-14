@@ -162,6 +162,13 @@ export function OrderAlertWatcher({
   // Realtime: an instant nudge the moment the `orders` table changes, and the
   // signal that lets the poll below slow to a safety net. Kept in its own effect
   // so the `live` transitions the poll reacts to never tear the socket down.
+  //
+  // `live` is set from the *first delivered event*, not from `SUBSCRIBED`. The
+  // gate is a cookie, not a Supabase session, so the browser client is anonymous
+  // and the `orders` staff RLS policy filters every change out of the stream —
+  // the channel still reports SUBSCRIBED while delivering nothing. Trusting that
+  // status slowed the dependable poll to a 60 s safety net and made arrivals
+  // look frozen. Only a real event proves the socket works.
   const [live, setLive] = useState(false);
   useEffect(() => {
     const supabase = createClient();
@@ -170,11 +177,12 @@ export function OrderAlertWatcher({
     const channel = supabase
       .channel("admin-order-alerts")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
-        if (!cancelled) void refresh();
+        if (cancelled) return;
+        setLive(true);
+        void refresh();
       })
       .subscribe((status: string) => {
         if (cancelled) return;
-        if (status === "SUBSCRIBED") setLive(true);
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setLive(false);
       });
 
