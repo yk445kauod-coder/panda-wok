@@ -117,8 +117,8 @@ export function computeTotals(
 ): Totals {
   const { config } = options;
 
-  // Points redemption is retired with the loyalty programme; the field stays so
-  // the total shape (and the order row) is unchanged.
+  // No points redemption; the field stays so the total shape (and the order
+  // row) is unchanged.
   const pointsDiscount = 0;
 
   const applied = bestOffer(subtotal, config.offers);

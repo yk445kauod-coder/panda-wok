@@ -9,7 +9,7 @@ import "./register";
 export type Slice = { label: string; value: number };
 
 /**
- * Doughnut for "what is this made of" — order status mix, loyalty tiers.
+ * Doughnut for "what is this made of" — order status mix, category mix.
  *
  * `cutout` is high (68%) so the ring reads as a gauge rather than a pie, and
  * the legend is rendered as our own list rather than Chart.js's: it lets each

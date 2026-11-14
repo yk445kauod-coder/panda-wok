@@ -23,7 +23,7 @@ const ITEMS = [
  *
  * This bar is deliberately the five verbs a customer repeats — browse, order,
  * check the basket, track the current order, open the account. Everything else
- * (feedback, loyalty, addresses, location, FAQ, about, contact, privacy)
+ * (feedback, addresses, location, FAQ, about, contact, privacy)
  * lives in the header's `MobileNav` sheet so the tab count stays hittable at
  * five and no page is left without a path to it.
  */

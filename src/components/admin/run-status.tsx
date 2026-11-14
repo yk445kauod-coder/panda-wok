@@ -5,10 +5,10 @@ import { getAdminLocale, getT } from "@/lib/i18n/server";
 type Tone = "neutral" | "success" | "warning" | "danger" | "info";
 
 /**
- * One vocabulary for the long-running job lifecycles (exports, backups,
- * broadcasts). queued → running → ready/sent, with failed/expired as the dead
- * ends and draft/canceled as the states that never ran. Keeping the mapping
- * here means the three pages never drift apart.
+ * One vocabulary for the long-running job lifecycles (exports, backups).
+ * queued → running → ready, with failed/expired as the dead ends and
+ * draft/canceled as the states that never ran. Keeping the mapping here means
+ * the pages never drift apart.
  */
 const RUN_STATUS_TONES: Record<string, Tone> = {
   draft: "neutral",

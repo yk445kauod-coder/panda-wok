@@ -30,13 +30,13 @@ export const PUBLIC_DATA_REVALIDATE = 600;
  * so a menu edit cannot cause a stampede of unrelated reads.
  */
 export const CACHE_TAGS = {
-  /** Categories, dishes, modifier groups/options, slugs, upsell rules, ratings. */
+  /** Categories, dishes, modifier groups/options, slugs, ratings. */
   menu: "public:menu",
   /** Published `settings` rows: brand, contact channels, ordering config. */
   settings: "public:settings",
   /** Admin-editable page copy, FAQs, announcements, delivery zones, page SEO. */
   content: "public:content",
-  /** Feature flags (loyalty on/off, assistant on/off, ...). */
+  /** Feature flags (assistant on/off, and any other module toggles). */
   flags: "public:flags",
   /** The restaurant singleton row (name, tagline, cuisine tags). */
   restaurant: "public:restaurant",

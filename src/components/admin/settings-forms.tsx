@@ -279,8 +279,8 @@ export function SettingsForm({ settings }: { settings: SettingRow[] }) {
                         />
                         <span className="text-sm text-ink-800">
                           {value === "true"
-                            ? t("admin.pages.loyalty.enabled")
-                            : t("admin.pages.loyalty.disabled")}
+                            ? t("admin.pages.settings.enabled")
+                            : t("admin.pages.settings.disabled")}
                         </span>
                       </label>
                     ) : kind === "time" ? (

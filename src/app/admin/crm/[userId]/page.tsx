@@ -113,12 +113,6 @@ export default async function CrmCustomerPage({
             {customer.order_count >= 3 ? (
               <Badge tone="success">{t("admin.pages.customerProfile.loyal")}</Badge>
             ) : null}
-            <Badge tone="indigo">
-              {t(`admin.term.tier.${customer.tier}`)} ·{" "}
-              {t("admin.pages.customerProfile.pointsSuffix", {
-                count: formatNumber(customer.points_balance),
-              })}
-            </Badge>
           </div>
         </div>
 

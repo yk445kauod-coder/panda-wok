@@ -272,8 +272,6 @@ export type InsightKey =
   | "frequent_pairing"
   | "falling_demand"
   | "growing_demand"
-  | "stock_out"
-  | "stock_tight"
   | "lapsed_customers"
   | "rating_below_target"
   | "menu_breadth"
@@ -301,9 +299,7 @@ export type InsightData = {
   weakItems: { name: string; quantity: number; revenue: number }[];
   itemTrend: { name: string; recentQty: number; priorQty: number }[];
   inactiveCustomers: { count: number; avgDaysSinceOrder: number | null };
-  loyalty: { members: number; pointsOutstanding: number; lapsedMembers: number };
   feedback: { count: number; averageRating: number; negativeThemes: string[] };
-  stockDemand: { item: string; quantity: number; stockName: string | null; stockQty: number | null; unit: string | null }[];
   categoryMix: { category: string; quantity: number; revenue: number }[];
   /** Visual aggregates so the page can chart the raw window without extra queries. */
   statusMix?: { status: string; count: number }[];
@@ -448,12 +444,6 @@ async function loadInsightData(days: number): Promise<InsightData> {
         )
       : null;
 
-  const { data: loyaltyRows } = await admin
-    .from("loyalty_accounts")
-    .select("user_id, points_balance, tier");
-
-  const loyaltyMembers = loyaltyRows ?? [];
-
   const { data: feedbackRows } = await admin
     .from("feedback")
     .select("rating, message, category")
@@ -464,33 +454,6 @@ async function loadInsightData(days: number): Promise<InsightData> {
   for (const row of negative) {
     themeCounts.set(row.category, (themeCounts.get(row.category) ?? 0) + 1);
   }
-
-  // Link best-selling dishes to the stock they consume.
-  const { data: stockLinks } = await admin
-    .from("menu_item_stock")
-    .select("quantity_per_unit, menu_items!inner (name_en), stock_items!inner (name_en, quantity, unit)");
-
-  const stockDemand = allItems.slice(0, 10).map((item) => {
-    const link = (stockLinks ?? []).find(
-      (l) =>
-        (l.menu_items as unknown as { name_en: string }).name_en === item.name,
-    );
-    if (!link) {
-      return { item: item.name, quantity: item.quantity, stockName: null, stockQty: null, unit: null };
-    }
-    const stock = link.stock_items as unknown as {
-      name_en: string;
-      quantity: number;
-      unit: string;
-    };
-    return {
-      item: item.name,
-      quantity: item.quantity,
-      stockName: stock.name_en,
-      stockQty: Number(stock.quantity),
-      unit: stock.unit,
-    };
-  });
 
   const categoryMixMap = new Map<string, { quantity: number; revenue: number }>();
   const menuIds = [...new Set(recentItems.map((i) => i.menu_item_id).filter(Boolean))] as string[];
@@ -541,13 +504,6 @@ async function loadInsightData(days: number): Promise<InsightData> {
       count: inactiveCustomerIds.length,
       avgDaysSinceOrder,
     },
-    loyalty: {
-      members: loyaltyMembers.length,
-      pointsOutstanding: loyaltyMembers.reduce((s, r) => s + r.points_balance, 0),
-      lapsedMembers: loyaltyMembers.filter((m) =>
-        inactiveCustomerIds.some(([id]) => id === m.user_id),
-      ).length,
-    },
     feedback: {
       count: (feedbackRows ?? []).length,
       averageRating:
@@ -560,7 +516,6 @@ async function loadInsightData(days: number): Promise<InsightData> {
           : 0,
       negativeThemes: [...themeCounts.entries()].map(([theme, count]) => `${theme}: ${count}`),
     },
-    stockDemand,
     categoryMix: [...categoryMixMap.entries()]
       .map(([category, v]) => ({
         category,
@@ -636,9 +591,6 @@ function renderInsightContext(data: InsightData): string {
   lines.push(
     `Customers whose last order was more than 30 days ago: ${data.inactiveCustomers.count}${data.inactiveCustomers.avgDaysSinceOrder !== null ? `, averaging ${data.inactiveCustomers.avgDaysSinceOrder} days since their last order` : ""}.`,
   );
-  lines.push(
-    `Loyalty members: ${data.loyalty.members}. Points outstanding: ${data.loyalty.pointsOutstanding}. Of those, lapsed members: ${data.loyalty.lapsedMembers}.`,
-  );
   lines.push("Category performance (category | qty | revenue EGP):");
   for (const row of data.categoryMix) {
     lines.push(`  ${row.category} | ${row.quantity} | ${row.revenue}`);
@@ -648,15 +600,6 @@ function renderInsightContext(data: InsightData): string {
   );
   if (data.feedback.negativeThemes.length > 0) {
     lines.push(`Low-rating themes (1–2 stars): ${data.feedback.negativeThemes.join(", ")}`);
-  }
-  lines.push("");
-  lines.push("Best sellers and the stock they consume:");
-  for (const row of data.stockDemand) {
-    if (row.stockName) {
-      lines.push(
-        `  ${row.item}: ${row.quantity} sold; depends on ${row.stockName}, currently ${row.stockQty} ${row.unit} on hand`,
-      );
-    }
   }
   return lines.join("\n");
 }
@@ -822,55 +765,13 @@ export function buildDeterministicInsights(data: InsightData): InsightRecommenda
     });
   }
 
-  const riskyStock = data.stockDemand.filter(
-    (row) => row.stockQty !== null && row.stockQty <= 0,
-  );
-  if (riskyStock.length > 0) {
-    out.push({
-      key: "stock_out",
-      title: "أصناف مطلوبة ومخزونها صفر",
-      observation: `${riskyStock.length} من الأصناف الأكثر مبيعًا معتمدة على خامة مخزونها دلوقتي صفر.`,
-      evidence: riskyStock.map(
-        (row) => `${row.item} (اتباع ${row.quantity}) معتمد على ${row.stockName}: ${row.stockQty} ${row.unit}`,
-      ),
-      suggestedAction:
-        "اتّبّع الخامات دي أو اعلن الأصناف اللي متأثرة كغير متاحة عشان العميل ميطالبش بحاجة المطبخ مش قادر يعملها.",
-      confidence: "high",
-      confidenceReason: "كمية المخزون وربطها بالأصناف مقروءة مباشرة من الصفوف الحالية.",
-      source: "data",
-    });
-  } else {
-    const tight = data.stockDemand.filter(
-      (row) => row.stockQty !== null && row.stockQty > 0 && row.stockQty <= 3,
-    );
-    if (tight.length > 0) {
-      out.push({
-        key: "stock_tight",
-        title: "المخزون قرب يخلص على خطوط مطلوبة",
-        observation: `${tight.length} خامة وراء أصناف مطلوبة باقي فيها 3 وحدات أو أقل.`,
-        evidence: tight.map(
-          (row) => `${row.stockName}: ${row.stockQty} ${row.unit} (بتُستخدم في ${row.item})`,
-        ),
-        suggestedAction: "اطلبها تاني قبل الخدمة الجاية عشان متبيعش أصناف مش هتقدر تسلّمها.",
-        confidence: "high",
-        confidenceReason: "قراءة مباشرة لصفوف المخزون الحالية مقابل كميات البيع.",
-        source: "data",
-      });
-    }
-  }
-
   if (data.inactiveCustomers.count > 0) {
     out.push({
       key: "lapsed_customers",
       title: "عملاء بقالهم فترة مبطلبوش",
       observation: `${data.inactiveCustomers.count} عميل بقالهم أكتر من 30 يوم مبطلبوش${data.inactiveCustomers.avgDaysSinceOrder !== null ? `، بمتوسط ${data.inactiveCustomers.avgDaysSinceOrder} يوم من آخر طلب` : ""}.`,
-      evidence: [
-        `عملاء بقالهم فترة: ${data.inactiveCustomers.count}`,
-        `أعضاء ولاء بقالهم فترة: ${data.loyalty.lapsedMembers}`,
-        `نقاط معلّقة: ${data.loyalty.pointsOutstanding}`,
-      ],
-      suggestedAction:
-        "ابعت رسالة استرجاع للعملاء دول، وفكّر اللي عندهم نقاط مستخدمة إنها هتنتهي.",
+      evidence: [`عملاء بقالهم فترة: ${data.inactiveCustomers.count}`],
+      suggestedAction: "ابعت رسالة استرجاع للعملاء دول بعرض يرجّعهم تاني.",
       confidence: data.inactiveCustomers.count >= 10 ? "medium" : "low",
       confidenceReason: `مبني على ${data.inactiveCustomers.count} عميل؛ أسباب توقفهم مش مسجلة في البيانات.`,
       source: "data",

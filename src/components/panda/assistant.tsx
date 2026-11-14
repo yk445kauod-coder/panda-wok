@@ -26,7 +26,7 @@ const SUGGESTIONS = [
   "Which dishes are spicy?",
   "Do you have vegetarian options?",
   "How much is delivery?",
-  "How do loyalty points work?",
+  "What are your opening hours?",
 ];
 
 /** Sprite animation per conversational state; styling lives in globals.css. */
@@ -203,8 +203,8 @@ export function PandaAssistant({
               {turns.length === 0 ? (
                 <div className="space-y-3">
                   <p className="text-sm text-ink-700/85">
-                    Ask me about our dishes, prices, allergens, delivery or loyalty
-                    points.
+                    Ask me about our dishes, prices, allergens, delivery or opening
+                    hours.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {SUGGESTIONS.map((suggestion) => (

@@ -19,6 +19,18 @@ export type ExportDataset =
   | "ai_usage"
   | "segments";
 
+const EXPORT_DATASETS: readonly string[] = [
+  "users",
+  "orders",
+  "order_items",
+  "feedback",
+  "menu",
+  "activity",
+  "analytics",
+  "ai_usage",
+  "segments",
+];
+
 export type ExportFormat = "csv" | "json" | "xlsx" | "txt";
 
 type DatasetSpec = {
@@ -92,7 +104,7 @@ const DATASETS: Record<ExportDataset, DatasetSpec> = {
 };
 
 export function isExportDataset(value: string): value is ExportDataset {
-  return Object.prototype.hasOwnProperty.call(DATASETS, value);
+  return EXPORT_DATASETS.includes(value);
 }
 
 function csvCell(value: unknown): string {

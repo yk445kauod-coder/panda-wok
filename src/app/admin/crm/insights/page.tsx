@@ -158,7 +158,7 @@ export default async function AdminInsightsPage({
           />
           <KpiCard
             label={t("admin.pages.insights.customersLabel")}
-            value={formatNumber(data.loyalty.members)}
+            value={formatNumber(data.inactiveCustomers.count)}
             sub={t("admin.pages.insights.lapsed", { count: formatNumber(data.inactiveCustomers.count) })}
             spark={[]}
             colorIndex={2}
@@ -252,29 +252,6 @@ export default async function AdminInsightsPage({
           </div>
         </div>
 
-        {data.stockDemand.some((row) => row.stockName) ? (
-          <div className="mt-4">
-            <p className="mb-1 text-xs text-ink-700/70">{t("admin.pages.insights.stock")}</p>
-            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {data.stockDemand
-                .filter((row) => row.stockName)
-                .slice(0, 6)
-                .map((row) => (
-                  <li key={`${row.item}-${row.stockName}`} className="rounded-lg border border-ink-900/10 bg-rice-100/60 px-3 py-2 text-sm">
-                    <span className="font-medium text-ink-900">{row.item}</span>
-                    <span className="mt-0.5 block text-xs text-ink-700/75">
-                      {row.stockName}: {row.stockQty} {row.unit}
-                    </span>
-                    <span className="mt-1 block text-xs text-vermilion-700">
-                      {formatNumber(row.quantity)} × {row.item}
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          </div>
-        ) : (
-          <p className="mt-4 text-xs text-ink-700/60">{t("admin.pages.insights.noStock")}</p>
-        )}
       </section>
 
       {/* Findings — التفكيرات المبنية على نفس الأرقام, كل بطاقة سببها وبياناتها. */}

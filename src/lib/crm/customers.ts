@@ -30,7 +30,6 @@ export type SegmentKey =
   | "inactive"
   | "never_ordered"
   | "high_value"
-  | "loyalty_members"
   | "winback";
 
 export const SEGMENT_LABELS: Record<SegmentKey, string> = {
@@ -41,7 +40,6 @@ export const SEGMENT_LABELS: Record<SegmentKey, string> = {
   inactive: "No order in N days",
   never_ordered: "Never ordered",
   high_value: "High value (spend >= N EGP)",
-  loyalty_members: "Holding loyalty points",
   winback: "Lapsed 30–90 days (win-back)",
 };
 
@@ -205,7 +203,6 @@ async function loadSegmentOverview(): Promise<SegmentBreakdown[]> {
     "inactive",
     "never_ordered",
     "high_value",
-    "loyalty_members",
     "winback",
   ];
 
@@ -217,7 +214,6 @@ async function loadSegmentOverview(): Promise<SegmentBreakdown[]> {
     inactive: 30,
     never_ordered: 0,
     high_value: 1000,
-    loyalty_members: 0,
     winback: 0,
   };
 

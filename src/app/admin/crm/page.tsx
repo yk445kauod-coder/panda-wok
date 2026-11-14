@@ -153,11 +153,6 @@ export default async function AdminCrmPage({
                       {customer.marketing_opt_in ? (
                         <Badge tone="info">{t("admin.pages.crm.optedIn")}</Badge>
                       ) : null}
-                      {customer.points_balance > 0 ? (
-                        <Badge tone="indigo">
-                          {humanise(customer.tier)} · {formatNumber(customer.points_balance)} pts
-                        </Badge>
-                      ) : null}
                     </div>
 
                     <p className="mt-1 text-sm text-ink-800">

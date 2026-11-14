@@ -17,8 +17,6 @@ export type AppErrorCode =
   | "ADDRESS_NOT_FOUND"
   | "QUANTITY_LIMIT_EXCEEDED"
   | "MODIFIER_LIMIT_EXCEEDED"
-  | "NO_LOYALTY_POINTS"
-  | "LOYALTY_DISABLED"
   | "PICKUP_UNAVAILABLE"
   | "STORE_CLOSED"
   | "IDEMPOTENCY_KEY_REQUIRED"
@@ -52,9 +50,6 @@ const MESSAGES: Record<AppErrorCode, string> = {
   QUANTITY_LIMIT_EXCEEDED: "That quantity is above the per-item limit.",
   MODIFIER_LIMIT_EXCEEDED:
     "One or more extras are above the allowed maximum. Please review your choices.",
-  NO_LOYALTY_POINTS: "You do not have enough points to redeem.",
-  LOYALTY_DISABLED:
-    "The loyalty program is currently turned off. Please order without redeeming points.",
   PICKUP_UNAVAILABLE:
     "This is a delivery-only kitchen, so orders cannot be collected. Please enter a delivery address.",
   STORE_CLOSED:
@@ -112,8 +107,6 @@ const CODE_PATTERN = new RegExp(
       "ADDRESS_NOT_FOUND",
       "QUANTITY_LIMIT_EXCEEDED",
       "MODIFIER_LIMIT_EXCEEDED",
-      "NO_LOYALTY_POINTS",
-      "LOYALTY_DISABLED",
       "PICKUP_UNAVAILABLE",
       "STORE_CLOSED",
       "IDEMPOTENCY_KEY_REQUIRED",
@@ -149,8 +142,7 @@ const SQLSTATE_HINTS: Record<string, AppErrorCode> = {
 
 /** Business codes raised with a human sentence instead of a token. */
 const PHRASE_HINTS: Array<[RegExp, AppErrorCode]> = [
-  [/not authorised to (send broadcasts|export|create backups)/i, "FORBIDDEN"],
-  [/a broadcast needs a (title|message)/i, "VALIDATION"],
+  [/not authorised to (export|create backups)/i, "FORBIDDEN"],
   [/unknown dataset/i, "VALIDATION"],
 ];
 

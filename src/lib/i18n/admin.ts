@@ -52,14 +52,6 @@ export function roleLabel(locale: Locale, role: string) {
   return term(locale, "role", role);
 }
 
-export function tierLabel(locale: Locale, tier: string) {
-  return term(locale, "tier", tier);
-}
-
-export function stockStatusLabel(locale: Locale, status: string) {
-  return term(locale, "stockStatus", status);
-}
-
 export function feedbackStatusLabel(locale: Locale, status: string) {
   return term(locale, "feedbackStatus", status);
 }
