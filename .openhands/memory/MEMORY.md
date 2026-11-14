@@ -127,3 +127,6 @@ agent_threads 3, agent_artifacts 77, mcp_servers 1, exports 10, backup_records 1
 - Deploy: `npm run pages:deploy` → Pages prod. Worker: `OPEN_NEXT_DEPLOY=true
   ./node_modules/.bin/wrangler deploy` (plain `wrangler deploy` re-enters
   opennext and its KV populate hits the Free-plan daily write limit).
+
+## User preferences
+- **الردود بالعربي دايماً** — يشرح بالعربي في كل رسالة.
