@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/toast";
 import { useT } from "@/components/i18n-provider";
 import { useOpsOrderSignal } from "@/lib/live/use-ops-signal";
 import {
+  isAudioUnlocked,
   isSoundEnabled,
   setSoundEnabled,
   soundServerSnapshot,
@@ -147,21 +148,38 @@ export function OrderAlertWatcher({
   }, [ringing]);
 
   // Autoplay policy blocks audio until the visitor interacts, so resume the
-  // context on the first gesture. The gesture that unlocks the console (typing
-  // the passcode and submitting the gate) happens *before* this component
-  // mounts, so we also try immediately: Chrome keeps a short activation window,
-  // and on the browsers that refuse, the listeners below catch the next gesture.
-  // Without either, a returning operator who unlocks and only watches the board
-  // never makes a sound.
+  // context on the console's first gestures. The gate submit that unlocks the
+  // console is a gesture and this component mounts right after it (the form no
+  // longer reloads, which used to drop the activation), so the immediate
+  // `unlockAudio()` usually succeeds; the listeners below are the fallback for a
+  // browser that still refuses, and they keep trying — across pointer *and*
+  // touch — until the context is actually running rather than giving up after
+  // one attempt. Without this, a returning operator who unlocks and only watches
+  // the board never makes a sound.
   useEffect(() => {
     unlockAudio();
-    const unlock = () => unlockAudio();
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
-    return () => {
+    const unlock = () => {
+      unlockAudio();
+      if (isAudioUnlocked()) detach();
+    };
+    // Safari interrupts the audio session when the page is backgrounded or the
+    // phone locks, and it does not resume on its own — a console left on a
+    // counter overnight would come back silent. Re-assert on every return to the
+    // foreground.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") unlockAudio();
+    };
+    const detach = () => {
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
+      window.removeEventListener("touchstart", unlock);
+      document.removeEventListener("visibilitychange", onVisible);
     };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    window.addEventListener("touchstart", unlock);
+    document.addEventListener("visibilitychange", onVisible);
+    return detach;
   }, []);
 
   // Flash the tab title while an order is unacknowledged, so a backgrounded
@@ -201,7 +219,7 @@ export function OrderAlertWatcher({
   // path and the poll only has to catch a dropped socket, so it slows to a 2 min
   // safety net; without realtime the poll is the only path and stays at 8 s.
   useEffect(() => {
-    return startVisiblePoll(() => void refresh(), live ? 120000 : 8000);
+    return startVisiblePoll(() => void refresh(), live ? 60000 : 8000);
   }, [refresh, live]);
 
   if (unacked.length === 0) return null;

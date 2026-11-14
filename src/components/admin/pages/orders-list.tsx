@@ -67,7 +67,7 @@ export function OrdersListPage() {
   // and stays at 8 s otherwise. No callback: `LiveOrdersFeed` owns the re-read,
   // so passing one here would fetch twice per event.
   const live = useOpsOrderSignal();
-  useAdminPoll(reload, live ? 120000 : 8000);
+  useAdminPoll(reload, live ? 60000 : 8000);
 
   if (loading && !data) return <PageLoading />;
   if (error && !data) return <PageError message={error} />;

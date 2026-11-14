@@ -42,12 +42,10 @@ function setLive(next: boolean): void {
 function connect(): void {
   if (channel || connecting) return;
   connecting = import("@/lib/supabase/client")
-    .then(async ({ createClient }) => {
+    .then(({ createClient }) => {
       // Everyone unmounted while the chunk was loading: do not open a socket.
       if (listeners.size === 0) return;
       const supabase = createClient();
-      const { data } = await supabase.auth.getSession();
-      if (listeners.size === 0) return;
 
       const notify = () => {
         for (const listener of listeners) listener();
@@ -59,24 +57,24 @@ function connect(): void {
         }
       };
 
-      // With a session the row-level feed delivers the change itself, so a board
-      // reacts to it directly. Without one (a mint failure, or the console
-      // reached before the session cookie lands) the public broadcast still
-      // delivers a content-free nudge and needs no `auth.uid()`.
-      channel = data.session
-        ? supabase
-            .channel(OPS_CHANNEL)
-            .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, notify)
-            .on(
-              "postgres_changes",
-              { event: "INSERT", schema: "public", table: "order_status_history" },
-              notify,
-            )
-            .subscribe(onStatus)
-        : supabase
-            .channel(OPS_CHANNEL)
-            .on("broadcast", { event: OPS_EVENT }, notify)
-            .subscribe(onStatus);
+      // Only the public broadcast. It carries a content-free "orders changed"
+      // ping from a trigger (see the ops_order_signal migration), needs no
+      // `auth.uid()`, and a live probe confirmed it actually arrives on an
+      // anonymous (gate-cookie) socket.
+      //
+      // A `postgres_changes` subscription was tried here instead *whenever a
+      // session was present*, on the theory that the minted staff session would
+      // let RLS authorise rows. It does not reliably: the channel reports
+      // SUBSCRIBED while delivering nothing, which flipped `live` to true and let
+      // every board's fallback poll relax to 120 s — so a new order did not
+      // appear until a manual refresh. Confirmed with a live probe: the same
+      // socket received the broadcast but zero `postgres_changes` events. The
+      // broadcast is the dependable path, so it is the only one used; the poll
+      // then stays at its 8–12 s cadence and boards update on their own.
+      channel = supabase
+        .channel(OPS_CHANNEL)
+        .on("broadcast", { event: OPS_EVENT }, notify)
+        .subscribe(onStatus);
     })
     .catch(() => undefined)
     .finally(() => {

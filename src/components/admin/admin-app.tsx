@@ -84,20 +84,6 @@ export function AdminApp({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("panda-wok:locked", onLocked);
   }, [loadSession]);
 
-  // Once the console is unlocked, upgrade the browser to a real Supabase session
-  // in the background. This used to run inside the unlock action, where its
-  // chain of Supabase round trips shared the request the staff member was
-  // waiting on and could tip it past the Free-plan CPU cap — the "something
-  // went wrong" they saw on the login button. Minting here keeps the unlock
-  // itself to the gate cookie, and the console works either way: the session
-  // only upgrades live boards from the broadcast nudge to a row-level feed.
-  useEffect(() => {
-    if (!payload?.unlocked) return;
-    fetch("/api/admin/session/upgrade", { method: "POST", cache: "no-store" }).catch(
-      () => undefined,
-    );
-  }, [payload?.unlocked]);
-
   return (
     <AdminI18n locale={locale}>
       <ToastProvider>
@@ -125,7 +111,7 @@ export function AdminApp({ children }: { children: React.ReactNode }) {
             </AdminShell>
           </AdminSessionProvider>
         ) : (
-          <AdminGateForm brand={payload.brand} />
+          <AdminGateForm brand={payload.brand} onUnlocked={loadSession} />
         )}
       </ToastProvider>
     </AdminI18n>

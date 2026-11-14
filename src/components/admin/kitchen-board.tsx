@@ -103,7 +103,7 @@ export function KitchenLiveBoard({
       () => {
         if (Date.now() - lastSync.current > 9000) refresh();
       },
-      live ? 120000 : 12000,
+      live ? 60000 : 12000,
     );
   }, [live, refresh]);
 

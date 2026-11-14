@@ -16,8 +16,10 @@ import { toAppError, type AppError } from "@/lib/utils/errors";
  */
 export function AdminGateForm({
   brand,
+  onUnlocked,
 }: {
   brand?: { name: string; logo_url: string | null };
+  onUnlocked?: () => void;
 }) {
   const errorText = useErrorText();
   const { t, dir } = useI18n();
@@ -39,9 +41,15 @@ export function AdminGateForm({
         setPending(false);
         return;
       }
-      // The unlock cookie is set; reload so the server re-renders the console
-      // with the gate now passed.
-      window.location.reload();
+      // The unlock cookie is set; re-resolve the session so the shell swaps to
+      // the console in place. Deliberately no full page reload here: that would
+      // throw away the user activation this submit created, and WebAudio refuses
+      // to start without a gesture — which is why the order siren was silent for
+      // everyone who had just logged in. Staying on the page keeps the
+      // activation, and the watcher unlocks the AudioContext on the very click
+      // that submitted this form.
+      onUnlocked?.();
+      setPending(false);
     } catch (caught) {
       setError(toAppError(caught));
       setPending(false);

@@ -148,4 +148,55 @@ describe("order alarm survives the autoplay policy", () => {
     expect(ting.isOrderAlarmRunning()).toBe(true);
     ting.stopOrderAlarm();
   });
+
+  it("keeps offering a new context until the browser actually grants audio", async () => {
+    const ting = await loadTing();
+
+    // A gesture arrives but the browser still refuses (some mobile browsers
+    // demand a second, closer interaction). The console must not give up: a
+    // later gesture has to be able to unlock audio and re-arm the alarm.
+    ting.startOrderAlarm();
+    ting.unlockAudio();
+    await settle();
+    expect(ting.isOrderAlarmRunning()).toBe(false);
+
+    FakeContext.last!.allow();
+    ting.unlockAudio();
+    await settle();
+    expect(ting.isOrderAlarmRunning()).toBe(true);
+    ting.stopOrderAlarm();
+  });
+
+  it("recovers Safari's `interrupted` state, which is neither running nor suspended", async () => {
+    const ting = await loadTing();
+
+    // Safari puts the context in `interrupted` after a phone call, Siri, the
+    // lock screen or a background/foreground cycle. A `suspended`-only resume
+    // check skipped it and left the siren silent for good.
+    ting.unlockAudio();
+    FakeContext.last!.allow();
+    ting.unlockAudio();
+    await settle();
+    expect(ting.isOrderAlarmRunning()).toBe(false);
+
+    (FakeContext.last as unknown as { state: string }).state = "interrupted";
+    ting.startOrderAlarm();
+    await settle();
+
+    expect(ting.isOrderAlarmRunning()).toBe(true);
+    ting.stopOrderAlarm();
+  });
+
+  it("asks Safari for a playback audio session so the mute switch does not silence it", async () => {
+    Object.defineProperty(globalThis, "navigator", {
+      value: { audioSession: {} },
+      configurable: true,
+      writable: true,
+    });
+    const ting = await loadTing();
+    ting.unlockAudio();
+    expect(
+      (navigator as unknown as { audioSession: { type?: string } }).audioSession.type,
+    ).toBe("playback");
+  });
 });

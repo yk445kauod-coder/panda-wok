@@ -122,8 +122,49 @@ function getContext(): AudioContext | null {
     window.AudioContext ??
     (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!Ctor) return null;
-  if (!context) context = new Ctor();
+  if (!context) {
+    preferPlaybackSession();
+    context = new Ctor();
+  }
   return context;
+}
+
+/**
+ * Resume the context if the browser has paused it, then run `then`.
+ *
+ * The check is deliberately `!== "running"` rather than `=== "suspended"`.
+ * Safari adds a third, non-standard state, `"interrupted"`: the context takes it
+ * when a phone call, Siri, the lock screen or a background/foreground cycle
+ * steals the audio session. It is neither `"running"` nor `"suspended"`, so a
+ * `suspended`-only check skipped the `resume()` and left the siren silent for
+ * good — on exactly the device the kitchen uses. Treating any non-running state
+ * as resumable covers `interrupted` too.
+ */
+function ensureRunning(ctx: AudioContext, then: () => void): void {
+  if (ctx.state === "running") {
+    then();
+    return;
+  }
+  void ctx.resume().then(then).catch(() => undefined);
+}
+
+/**
+ * Ask Safari to treat the console's audio as "playback" content.
+ *
+ * The Audio Session API (Safari 16.4+) is the only way to stop the hardware
+ * mute switch from silencing WebAudio: with the default session an iPhone on
+ * silent plays nothing, so an operator would never hear the order siren. This is
+ * best-effort — an unsupported or read-only session simply leaves the default,
+ * and the siren still works whenever the switch is off.
+ */
+function preferPlaybackSession(): void {
+  if (typeof navigator === "undefined") return;
+  try {
+    const session = (navigator as unknown as { audioSession?: { type?: string } }).audioSession;
+    if (session && session.type !== "playback") session.type = "playback";
+  } catch {
+    // Unsupported or read-only; nothing to do.
+  }
 }
 
 /** One short bell: a triangle partial plus a fast decay envelope. */
@@ -153,11 +194,7 @@ export function playTing(): void {
     strike(ctx, 1318.51, now, 0.16);
     strike(ctx, 1760.0, now + 0.12, 0.13);
   };
-  if (ctx.state === "suspended") {
-    void ctx.resume().then(start).catch(() => undefined);
-  } else {
-    start();
-  }
+  ensureRunning(ctx, start);
 }
 
 /** A single lower tone for a rejection or a failed action. */
@@ -166,11 +203,7 @@ export function playBuzz(): void {
   const ctx = getContext();
   if (!ctx) return;
   const start = () => strike(ctx, 196.0, ctx.currentTime, 0.12);
-  if (ctx.state === "suspended") {
-    void ctx.resume().then(start).catch(() => undefined);
-  } else {
-    start();
-  }
+  ensureRunning(ctx, start);
 }
 
 /* ------------------------------------------------------------------- alarm */
@@ -295,11 +328,10 @@ export function startOrderAlarm(): void {
   if (!ctx) return;
 
   beginAlarm(ctx);
-  if (ctx.state === "suspended") {
-    // The gesture may already have happened and simply not been observed yet;
-    // if it has not, `unlockAudio()` will finish the job.
-    void ctx.resume().then(() => beginAlarm(ctx)).catch(() => undefined);
-  }
+  // The gesture may already have happened and simply not been observed yet; if
+  // it has not, `unlockAudio()` will finish the job. `ensureRunning` also
+  // recovers Safari's `interrupted` state.
+  ensureRunning(ctx, () => beginAlarm(ctx));
 }
 
 /** Stop the order siren. Called the moment an operator takes an action. */
@@ -315,6 +347,11 @@ export function isOrderAlarmRunning(): boolean {
   return alarmTimer !== null;
 }
 
+/** True once the AudioContext exists and is actually running (audio is unlocked). */
+export function isAudioUnlocked(): boolean {
+  return context !== null && context.state === "running";
+}
+
 /**
  * Resume the AudioContext from a real user gesture. Autoplay policy means a
  * page cannot make sound until the visitor has interacted; without this, an
@@ -324,14 +361,13 @@ export function isOrderAlarmRunning(): boolean {
 export function unlockAudio(): void {
   const ctx = getContext();
   if (!ctx) return;
+  // Re-assert on every gesture: Safari can reset the session type when the page
+  // is backgrounded and restored.
+  preferPlaybackSession();
   const finish = () => {
     // A gesture is the browser's permission to make sound. If an order arrived
     // while the context was still locked, this is the moment its siren can run.
     if (alarmWanted && alarmTimer === null) scheduleAlarmTick();
   };
-  if (ctx.state === "suspended") {
-    void ctx.resume().then(finish).catch(() => undefined);
-  } else {
-    finish();
-  }
+  ensureRunning(ctx, finish);
 }
