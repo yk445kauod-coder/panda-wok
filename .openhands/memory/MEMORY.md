@@ -116,3 +116,14 @@ agent_threads 3, agent_artifacts 77, mcp_servers 1, exports 10, backup_records 1
 - Deleted unused admin consoles: agent/*, ai/*, loyalty, stock, broadcast, upsell (~16.7k lines). Routes
   now 404. Retained `src/lib/agent/{arabic,memory,ooxml,skills,xlsx}.ts` (used by backup/export render).
 - Tests 354 passed / 31 skipped; lint 0 errors; tsc clean; OpenNext build OK.
+
+## Admin console = static SPA (2026-11-14, commit da70e33)
+- `/admin/*` prerenders static (`○`); the Worker never SSRs a console page.
+  Data comes from `GET /api/admin/*` via `useAdminData`; chrome from
+  `/api/admin/session`. Mutations call `refreshAdminData()` (window event
+  `panda-wok:refresh`), NOT `router.refresh()`. Live boards use `useAdminPoll`
+  (visible-tab only). New pages go in `src/components/admin/pages/` + a thin
+  `<Suspense>` shell. Role via `useAdminSession()`.
+- Deploy: `npm run pages:deploy` → Pages prod. Worker: `OPEN_NEXT_DEPLOY=true
+  ./node_modules/.bin/wrangler deploy` (plain `wrangler deploy` re-enters
+  opennext and its KV populate hits the Free-plan daily write limit).
