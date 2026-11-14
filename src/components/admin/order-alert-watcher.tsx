@@ -88,6 +88,21 @@ export function OrderAlertWatcher({
     if (result.ok) setPending(result.data);
   }, []);
 
+  // One order action writes the `orders` row *and* a history row, and the signal
+  // trigger is on both — so a single tap pings twice within a few milliseconds.
+  // Coalescing them into one read keeps this shell-wide watcher, which runs on
+  // every console page, from spending two Worker invocations per status change.
+  const pingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshOnPing = useCallback(() => {
+    if (pingTimer.current) clearTimeout(pingTimer.current);
+    pingTimer.current = setTimeout(() => void refresh(), 300);
+  }, [refresh]);
+  useEffect(() => {
+    return () => {
+      if (pingTimer.current) clearTimeout(pingTimer.current);
+    };
+  }, []);
+
   // Announce genuinely new orders once: toast, and a desktop notification if
   // the operator already granted permission (we never prompt on our own).
   useEffect(() => {
@@ -171,8 +186,10 @@ export function OrderAlertWatcher({
   // cookie, not a Supabase session, so a row-level subscription delivers nothing
   // (the staff RLS policy resolves through `auth.uid()`) yet still reports
   // SUBSCRIBED. The broadcast carries no row data and needs no session, so it
-  // actually arrives. See `useOpsOrderSignal`.
-  const live = useOpsOrderSignal(refresh);
+  // actually arrives. See `useOpsOrderSignal`. The callback is the coalesced
+  // read, because one status change pings twice (the `orders` update and the
+  // history insert both fire the trigger).
+  const live = useOpsOrderSignal(refreshOnPing);
 
   // Fallback poll, visible-only (see `startVisiblePoll`): a backgrounded console
   // cannot be watched, and on the Free plan every poll is a full Worker
