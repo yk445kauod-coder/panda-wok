@@ -1083,6 +1083,7 @@ export const ar: Dictionary = {
       "paymentMethod": {
         "cash_on_delivery": "نقداً عند التسليم",
         "card_on_delivery": "بطاقة عند التسليم",
+        "instapay": "إنستاباي",
         "online": "أونلاين",
         "cash": "نقداً",
         "card": "بطاقة",

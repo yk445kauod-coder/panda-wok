@@ -80,4 +80,19 @@ describe("admin enum-token translations", () => {
 
     expect(offenders).toEqual([]);
   });
+
+  /**
+   * `payment_method` is rendered through a template literal
+   * (`t(`admin.term.paymentMethod.${order.payment_method}`)`), so the scan above
+   * cannot see which tokens are needed and a missing member silently prints the
+   * raw key. `instapay` — the method on a third of live orders — was exactly
+   * that. The family is pinned to the schema enum instead.
+   */
+  it("covers every payment method the orders schema allows", () => {
+    const methods = ["cash_on_delivery", "card_on_delivery", "online", "instapay"] as const;
+    for (const method of methods) {
+      expect(en.admin.term.paymentMethod[method]).toBeTruthy();
+      expect(ar.admin.term.paymentMethod[method]).toBeTruthy();
+    }
+  });
 });

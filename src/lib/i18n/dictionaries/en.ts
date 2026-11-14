@@ -1125,6 +1125,7 @@ export const en = {
       "paymentMethod": {
         "cash_on_delivery": "Cash on delivery",
         "card_on_delivery": "Card on delivery",
+        "instapay": "InstaPay",
         "online": "Online",
         "cash": "Cash",
         "card": "Card",
