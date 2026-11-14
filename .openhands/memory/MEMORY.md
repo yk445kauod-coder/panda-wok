@@ -46,3 +46,26 @@
 - `2026-11-13.md` — 1102 investigation, Intl formatter caches.
 - `2026-11-14.md` — console heaviness (640 KB Supabase chunk lazy-loaded, double-ping debounce),
   request-volume measurements, staff-session fix, sign-out control, SPA-already-done proof.
+
+## Pages advanced mode: static assets DO hit the Worker unless _routes.json excludes them (2026-11-14)
+- **Root cause of "admin is heavy / multiple admins blow the request budget":** with a Pages
+  advanced-mode `_worker.js`, *every* request invokes the worker — `/_next/static/*` chunks, fonts,
+  images included. This project shipped no `_routes.json`, so one admin page load = ~35 static
+  requests + HTML + session + page-data ≈ 38 invocations, all re-serving bytes the CDN answers free.
+- **Proof method (reusable):** temporarily wrap `scripts/pages/_worker.js`'s export so every response
+  carries `x-pw-worker: 1`, deploy, then `curl -sI <asset>` — the header on a static chunk means the
+  worker ran. (Revert after.) A plain header diff is inconclusive because both paths return 200.
+- **Fix:** `scripts/build-pages.mjs` writes `.pages/_routes.json` excluding only pure-asset trees:
+  `/_next/static/*`, `/mascots/*`, `/fonts/*`. `_routes.json` DOES work in advanced mode (verified
+  live: those paths return 200 with no worker header, routes still 200). Everything that can be a
+  route (HTML, `/_next/image`, API, `/robots.txt`, `/sitemap.xml`) still reaches the worker.
+  Caveat: `exclude` must not contain a `.`/`*` mid-segment; keep it to directory trees.
+- Never add `/*.js` to `_headers` as immutable — it matches every HTML page and freezes them.
+
+## Console request accounting (verified 2026-11-14)
+- Per admin tab-open: 1 HTML (static) + 1 `/api/admin/session` + 1 page-data JSON + (was ~35 static).
+- One shared poller for the whole tab (`src/lib/live/ops-sync.ts`): `60s` when the `ops-orders`
+  broadcast is live, `8s` fallback. It dispatches `panda-wok:refresh`; pages re-read on that event.
+- Gotcha: a page whose own `useAdminData` listens for `panda-wok:refresh` must NOT also pass a
+  callback to `useOpsOrderSignal` — the store already dispatches the event on every ping, so a
+  callback double-fetches. Kitchen board fixed this way.
