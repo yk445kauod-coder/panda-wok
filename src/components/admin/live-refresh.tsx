@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { useOpsOrderSignal } from "@/lib/live/use-ops-signal";
 import { cn } from "@/lib/utils/format";
@@ -18,31 +18,18 @@ import { refreshAdminData } from "@/lib/admin/client";
 export function LiveOrdersFeed({ label = "Live" }: { label?: string }) {
   const t = useT();
   const [refreshing, setRefreshing] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const refreshNow = useCallback(() => {
+  const refresh = useCallback(() => {
     setRefreshing(true);
     refreshAdminData();
     // The server component streams in; clear the spinner once the frame settles.
     window.setTimeout(() => setRefreshing(false), 600);
   }, []);
 
-  // One order action produces a status change *and* a new history row, and the
-  // acting client also refreshes — so a burst of pings lands within a few
-  // milliseconds. Coalescing them into one render keeps the board from
-  // re-running its server component several times for one tap.
-  const refresh = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(refreshNow, 250);
-  }, [refreshNow]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
-
-  const live = useOpsOrderSignal(refresh);
+  // The shared ops store already re-reads on every realtime ping (it owns the
+  // tab's one poll and dispatches `panda-wok:refresh`), so this indicator takes
+  // the live flag only — a callback here would fire a second fetch per event.
+  const live = useOpsOrderSignal();
 
   return (
     <div className="flex items-center gap-2">

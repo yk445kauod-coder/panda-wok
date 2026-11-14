@@ -96,6 +96,22 @@ function disconnect(): void {
 const liveSnapshot = () => live;
 const liveServerSnapshot = () => false;
 
+/** Current liveness, for non-React callers (the shared ops-sync poller). */
+export function getOpsLive(): boolean {
+  return live;
+}
+
+/**
+ * Subscribe to liveness changes without React. Used by the shared poller so it
+ * can pick its cadence from the live flag at each tick without re-arming a timer.
+ */
+export function subscribeOpsLive(listener: LiveListener): () => void {
+  liveListeners.add(listener);
+  return () => {
+    liveListeners.delete(listener);
+  };
+}
+
 /**
  * Subscribes to the console's order-change signal and reports whether the
  * channel is live.

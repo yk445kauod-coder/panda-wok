@@ -126,4 +126,21 @@ describe("startVisiblePoll", () => {
     h.fireLatest();
     expect(tick).not.toHaveBeenCalled();
   });
+
+  it("re-reads a function interval on every tick, so the cadence can relax", () => {
+    const tick = vi.fn();
+    const h = harness();
+    let ms = 8000;
+    startVisiblePoll(tick, () => ms, h.source, h.host);
+
+    expect(h.intervals[0].ms).toBe(8000);
+    // The signal comes up: the next schedule must use the relaxed cadence without
+    // the caller tearing the poll down.
+    ms = 60000;
+    h.fireLatest();
+    expect(tick).toHaveBeenCalledTimes(1);
+    const live = h.intervals.filter((i) => !i.cleared);
+    expect(live).toHaveLength(1);
+    expect(live[0].ms).toBe(60000);
+  });
 });

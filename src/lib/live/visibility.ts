@@ -66,11 +66,16 @@ export function defaultTimerHost(): TimerHost {
  */
 export function startVisiblePoll(
   tick: () => void,
-  intervalMs: number,
+  intervalMs: number | (() => number),
   source: VisibilitySource = documentVisibility(),
   host: TimerHost = defaultTimerHost(),
 ): () => void {
   let handle: number | null = null;
+
+  // The interval may be a function so the cadence can be re-read on every
+  // reschedule (e.g. relax once a realtime signal is confirmed live) without the
+  // caller tearing down and re-arming the poll.
+  const currentInterval = () => (typeof intervalMs === "function" ? intervalMs() : intervalMs);
 
   const stopTimer = () => {
     if (handle !== null) {
@@ -81,7 +86,12 @@ export function startVisiblePoll(
 
   const startTimer = () => {
     if (handle !== null) return;
-    handle = host.setInterval(tick, intervalMs);
+    handle = host.setInterval(() => {
+      // Re-arm on each tick so a changed interval takes effect immediately.
+      stopTimer();
+      tick();
+      startTimer();
+    }, currentInterval());
   };
 
   const sync = () => {

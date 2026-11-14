@@ -16,8 +16,7 @@ import { LiveOrdersFeed } from "@/components/admin/live-refresh";
 import { formatDateTime, formatPrice } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/format";
 import { PageError, PageLoading } from "@/components/admin/page-states";
-import { useAdminData, useAdminPoll } from "@/lib/admin/client";
-import { useOpsOrderSignal } from "@/lib/live/use-ops-signal";
+import { useAdminData } from "@/lib/admin/client";
 import { useT } from "@/components/i18n-provider";
 
 const TABS: { key: OrderStatus | "active" | "all" }[] = [
@@ -57,17 +56,14 @@ export function OrdersListPage() {
   const pageSize = DEFAULT_PAGE_SIZE;
   const q = params.get("q") ?? undefined;
 
-  const { data, loading, error, reload } = useAdminData<OrdersPayload>(
+  const { data, loading, error } = useAdminData<OrdersPayload>(
     "/api/admin/orders",
     { status, q, page },
   );
-
-  // The live signal is the instant path; the poll only has to catch a dropped
-  // socket, so it relaxes to a 2 min safety net while the channel is subscribed
-  // and stays at 8 s otherwise. No callback: `LiveOrdersFeed` owns the re-read,
-  // so passing one here would fetch twice per event.
-  const live = useOpsOrderSignal();
-  useAdminPoll(reload, live ? 60000 : 8000);
+  // No poll of its own. The shell's shared ops store runs the tab's single
+  // visible-only timer and dispatches `panda-wok:refresh` on each beat (and on
+  // every realtime ping), which `useAdminData` already listens for. A second
+  // timer here was a duplicate request every interval on this very endpoint.
 
   if (loading && !data) return <PageLoading />;
   if (error && !data) return <PageError message={error} />;

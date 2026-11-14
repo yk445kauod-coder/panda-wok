@@ -78,3 +78,53 @@ describe("console live signal", () => {
     expect(migration).toMatch(/on public\.order_status_history/);
   });
 });
+
+/**
+ * The console's polling must be one timer per tab, not one per component.
+ *
+ * Before: the shell's alert watcher polled on every page *and* the orders page
+ * polled the same endpoint on its own timer, so an idle orders tab spent two
+ * Worker invocations every 8 s — ~20k a day, measured at 23,682 on a single day
+ * for one admin, against a 100k/day Free-plan budget shared with the site.
+ *
+ * The fix is a single shared store (`ops-sync`) that owns the one visible-only
+ * timer, does the one alert read, and dispatches `panda-wok:refresh` so pages
+ * that fetch their own JSON re-read on the same beat. The boards and the feed
+ * must therefore not run polls of their own.
+ */
+describe("console polling is single-source", () => {
+  const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
+
+  it("owns exactly one timer, in the shared ops store", () => {
+    const store = read("src/lib/live/ops-sync.ts");
+    expect(store).toMatch(/startVisiblePoll\(/);
+    expect(store).toMatch(/getOpsLive\(\)/);
+    // The store is the one place that reads the pending alerts on a schedule.
+    expect(store).toMatch(/listPendingOrderAlertsAction/);
+  });
+
+  it("does not let the orders board or the kitchen board poll on their own", () => {
+    for (const file of [
+      "src/components/admin/pages/orders-list.tsx",
+      "src/components/admin/kitchen-board.tsx",
+    ]) {
+      const source = read(file);
+      expect(source).not.toMatch(/useAdminPoll\(/);
+      expect(source).not.toMatch(/startVisiblePoll\(/);
+    }
+  });
+
+  it("drives the alert watcher from the shared store, not a local poll", () => {
+    const watcher = read("src/components/admin/order-alert-watcher.tsx");
+    expect(watcher).toMatch(/useOpsPendingOrders\(/);
+    expect(watcher).not.toMatch(/startVisiblePoll\(/);
+    expect(watcher).not.toMatch(/listPendingOrderAlertsAction/);
+  });
+
+  it("keeps the shell watcher off every non-orders page's traffic budget", () => {
+    // The watcher is mounted once in the shell; it must not import a poller that
+    // would fire on pages with no board of their own.
+    const shell = read("src/components/admin/admin-shell.tsx");
+    expect(shell).toMatch(/OrderAlertWatcher/);
+  });
+});

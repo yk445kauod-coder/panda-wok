@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Bell, BellOff, Volume2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
@@ -28,8 +28,7 @@ import {
   unacknowledgedOrders,
   type OrderAlert,
 } from "@/lib/sound/alert-state";
-import { listPendingOrderAlertsAction } from "@/lib/actions/order-alerts";
-import { startVisiblePoll } from "@/lib/live/visibility";
+import { refreshOpsNow, useOpsPendingOrders } from "@/lib/live/ops-sync";
 
 /**
  * The console-wide new-order alert.
@@ -55,16 +54,13 @@ export function OrderAlertWatcher({
   const toast = useToast();
   const t = useT();
 
-  const [pending, setPending] = useState<OrderAlert[]>(initialPending);
-  // The server render is the freshest truth on every navigation; mirror it.
-  // This is React's documented "adjust state when a prop changes" pattern, done
-  // during render rather than in an effect (which would be a lint error and a
-  // cascading render).
-  const [lastInitial, setLastInitial] = useState(initialPending);
-  if (lastInitial !== initialPending) {
-    setLastInitial(initialPending);
-    setPending(initialPending);
-  }
+  // The shared store owns the read and the single tab-wide poll; the server
+  // render is the seed, and `useOpsPendingOrders` takes over from the first tick.
+  // `initialPending` still wins for the very first paint so the shell renders the
+  // alert without waiting a poll.
+  const shared = useOpsPendingOrders();
+  const [seed] = useState(initialPending);
+  const pending = shared ?? seed;
 
   const sound = useSyncExternalStore(subscribeSound, isSoundEnabled, soundServerSnapshot);
   const ackSig = useSyncExternalStore(subscribeAck, ackSnapshot, ackServerSnapshot);
@@ -84,25 +80,6 @@ export function OrderAlertWatcher({
   const announced = useRef<Set<string>>(new Set());
   const seeded = useRef(false);
 
-  const refresh = useCallback(async () => {
-    const result = await listPendingOrderAlertsAction();
-    if (result.ok) setPending(result.data);
-  }, []);
-
-  // One order action writes the `orders` row *and* a history row, and the signal
-  // trigger is on both — so a single tap pings twice within a few milliseconds.
-  // Coalescing them into one read keeps this shell-wide watcher, which runs on
-  // every console page, from spending two Worker invocations per status change.
-  const pingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const refreshOnPing = useCallback(() => {
-    if (pingTimer.current) clearTimeout(pingTimer.current);
-    pingTimer.current = setTimeout(() => void refresh(), 300);
-  }, [refresh]);
-  useEffect(() => {
-    return () => {
-      if (pingTimer.current) clearTimeout(pingTimer.current);
-    };
-  }, []);
 
   // Announce genuinely new orders once: toast, and a desktop notification if
   // the operator already granted permission (we never prompt on our own).
@@ -198,29 +175,14 @@ export function OrderAlertWatcher({
     };
   }, [unacked.length]);
 
-  // Realtime: an instant nudge the moment the `orders` table changes, and the
-  // signal that lets the poll below slow to a safety net. This listens to the
-  // public `ops-orders` broadcast rather than `postgres_changes`: the gate is a
-  // cookie, not a Supabase session, so a row-level subscription delivers nothing
-  // (the staff RLS policy resolves through `auth.uid()`) yet still reports
-  // SUBSCRIBED. The broadcast carries no row data and needs no session, so it
-  // actually arrives. See `useOpsOrderSignal`. The callback is the coalesced
-  // read, because one status change pings twice (the `orders` update and the
-  // history insert both fire the trigger).
-  const live = useOpsOrderSignal(refreshOnPing);
-
-  // Fallback poll, visible-only (see `startVisiblePoll`): a backgrounded console
-  // cannot be watched, and on the Free plan every poll is a full Worker
-  // invocation that re-derives the gate and the orders, so a hidden tab must
-  // cost nothing. This watcher is mounted on *every* admin page, which made it
-  // the single largest source of console traffic before the guard.
-  //
-  // The interval is adaptive: once realtime is confirmed live it is the instant
-  // path and the poll only has to catch a dropped socket, so it slows to a 2 min
-  // safety net; without realtime the poll is the only path and stays at 8 s.
-  useEffect(() => {
-    return startVisiblePoll(() => void refresh(), live ? 60000 : 8000);
-  }, [refresh, live]);
+  // Realtime: an instant nudge the moment the `orders` table changes. This
+  // listens to the public `ops-orders` broadcast rather than `postgres_changes`:
+  // the gate is a cookie, not a Supabase session, so a row-level subscription
+  // delivers nothing (the staff RLS policy resolves through `auth.uid()`) yet
+  // still reports SUBSCRIBED. The broadcast carries no row data and needs no
+  // session, so it actually arrives. The store does the read; the signal only
+  // marks liveness and lets the store relax its poll to a safety net.
+  const live = useOpsOrderSignal(refreshOpsNow);
 
   if (unacked.length === 0) return null;
 

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Bell, BellOff, RefreshCw } from "lucide-react";
-import { startVisiblePoll } from "@/lib/live/visibility";
 import { useOpsOrderSignal } from "@/lib/live/use-ops-signal";
 import { useT } from "@/components/i18n-provider";
 import {
@@ -51,11 +50,9 @@ export function KitchenLiveBoard({
   // trigger a render, and the first mount must seed it without flashing.
   const seen = useRef<Set<string>>(new Set());
   const seeded = useRef(false);
-  const lastSync = useRef(0);
 
   const refresh = useCallback(() => {
     setRefreshing(true);
-    lastSync.current = Date.now();
     refreshAdminData();
     window.setTimeout(() => setRefreshing(false), 500);
   }, []);
@@ -81,31 +78,12 @@ export function KitchenLiveBoard({
     window.setTimeout(() => setFlash(false), 900);
   }, [signature]);
 
-  // The order-change signal drives the board's liveness; see
-  // `useOpsOrderSignal` for how the session-backed row feed works and what it
-  // falls back to.
+  // Liveness and the tab-wide poll are owned by the shell's shared ops store
+  // (see `ops-sync`): it runs the one visible-only timer and dispatches
+  // `panda-wok:refresh`, which the kitchen page's `useAdminData` listens for. The
+  // board's own poll was a duplicate request every interval on `/api/admin/kitchen`.
+  // The signal callback still refreshes immediately on a realtime ping.
   const live = useOpsOrderSignal(refresh);
-
-  // Seed the sync clock on mount (outside render) so the first poll waits its
-  // full interval rather than firing immediately.
-  useEffect(() => {
-    lastSync.current = Date.now();
-  }, []);
-
-  // The board always polls; realtime just lets it poll less often. A socket that
-  // reports SUBSCRIBED but delivers nothing (an empty `supabase_realtime`
-  // publication did exactly that) must not be able to freeze a KDS mid-service.
-  // The poll is paused while the tab is hidden: nobody is watching a backgrounded
-  // board, and on the Free plan each refresh is a full Worker invocation. With a
-  // session the subscription is a real row feed, so the poll is only a net.
-  useEffect(() => {
-    return startVisiblePoll(
-      () => {
-        if (Date.now() - lastSync.current > 9000) refresh();
-      },
-      live ? 60000 : 12000,
-    );
-  }, [live, refresh]);
 
   return (
     <div className="kds-board space-y-4">
