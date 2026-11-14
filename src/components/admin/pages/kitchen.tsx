@@ -11,7 +11,7 @@ import {
 import { ElapsedTimer } from "@/components/admin/elapsed-timer";
 import { humanise } from "@/lib/utils/format";
 import { PageError, PageLoading } from "@/components/admin/page-states";
-import { useAdminData, useAdminPoll } from "@/lib/admin/client";
+import { useAdminData } from "@/lib/admin/client";
 import { useT } from "@/components/i18n-provider";
 
 type KitchenPayload = {
@@ -34,9 +34,11 @@ type KitchenPayload = {
 export function KitchenPage() {
   const t = useT();
 
-  const { data, loading, error, reload } = useAdminData<KitchenPayload>("/api/admin/kitchen");
+  const { data, loading, error } = useAdminData<KitchenPayload>("/api/admin/kitchen");
 
-  useAdminPoll(reload, 8000);
+  // Liveness and polling are owned by `KitchenLiveBoard` below, whose refresh
+  // broadcasts the page-wide `panda-wok:refresh` that re-runs this fetch — a poll
+  // here too would double every request.
 
   if (loading && !data) return <PageLoading />;
   if (error && !data) return <PageError message={error} />;

@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Bell, BellOff, Volume2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
 import { useT } from "@/components/i18n-provider";
+import { useOpsOrderSignal } from "@/lib/live/use-ops-signal";
 import {
   isSoundEnabled,
   setSoundEnabled,
@@ -160,37 +160,13 @@ export function OrderAlertWatcher({
   }, [unacked.length]);
 
   // Realtime: an instant nudge the moment the `orders` table changes, and the
-  // signal that lets the poll below slow to a safety net. Kept in its own effect
-  // so the `live` transitions the poll reacts to never tear the socket down.
-  //
-  // `live` is set from the *first delivered event*, not from `SUBSCRIBED`. The
-  // gate is a cookie, not a Supabase session, so the browser client is anonymous
-  // and the `orders` staff RLS policy filters every change out of the stream —
-  // the channel still reports SUBSCRIBED while delivering nothing. Trusting that
-  // status slowed the dependable poll to a 60 s safety net and made arrivals
-  // look frozen. Only a real event proves the socket works.
-  const [live, setLive] = useState(false);
-  useEffect(() => {
-    const supabase = createClient();
-    let cancelled = false;
-
-    const channel = supabase
-      .channel("admin-order-alerts")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
-        if (cancelled) return;
-        setLive(true);
-        void refresh();
-      })
-      .subscribe((status: string) => {
-        if (cancelled) return;
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setLive(false);
-      });
-
-    return () => {
-      cancelled = true;
-      void supabase.removeChannel(channel);
-    };
-  }, [refresh]);
+  // signal that lets the poll below slow to a safety net. This listens to the
+  // public `ops-orders` broadcast rather than `postgres_changes`: the gate is a
+  // cookie, not a Supabase session, so a row-level subscription delivers nothing
+  // (the staff RLS policy resolves through `auth.uid()`) yet still reports
+  // SUBSCRIBED. The broadcast carries no row data and needs no session, so it
+  // actually arrives. See `useOpsOrderSignal`.
+  const live = useOpsOrderSignal(refresh);
 
   // Fallback poll, visible-only (see `startVisiblePoll`): a backgrounded console
   // cannot be watched, and on the Free plan every poll is a full Worker

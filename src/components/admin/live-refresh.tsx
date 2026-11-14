@@ -2,42 +2,34 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { startVisiblePoll } from "@/lib/live/visibility";
+import { useOpsOrderSignal } from "@/lib/live/use-ops-signal";
 import { cn } from "@/lib/utils/format";
 import { useT } from "@/components/i18n-provider";
 import { refreshAdminData } from "@/lib/admin/client";
 
 /**
- * Keeps an ops board live. Subscribes to every order status change and new
- * order, then refreshes the server component. Realtime is treated as an
- * enhancement: if the socket never connects, or drops, the board falls back to
- * polling so the pass never shows a stale ticket.
+ * The orders board's live indicator and manual refresh.
+ *
+ * Liveness comes from the public `ops-orders` signal (see `useOpsOrderSignal`):
+ * a ping re-reads the page through `refreshAdminData`. The page itself owns the
+ * fallback poll, so this component never polls — the two together used to fire
+ * two requests per interval on the same endpoint.
  */
-export function LiveOrdersFeed({
-  label = "Live",
-  pollSeconds = 30,
-}: {
-  label?: string;
-  pollSeconds?: number;
-}) {
+export function LiveOrdersFeed({ label = "Live" }: { label?: string }) {
   const t = useT();
-  const [live, setLive] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastSync, setLastSync] = useState<number>(() => Date.now());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshNow = useCallback(() => {
     setRefreshing(true);
-    setLastSync(Date.now());
     refreshAdminData();
     // The server component streams in; clear the spinner once the frame settles.
     window.setTimeout(() => setRefreshing(false), 600);
   }, []);
 
-  // A single order action produces a status change *and* a new history row, and
-  // the acting client also refreshes — so a burst of events lands within a few
-  // milliseconds. Coalescing them into one render keeps the ops board from
+  // One order action produces a status change *and* a new history row, and the
+  // acting client also refreshes — so a burst of pings lands within a few
+  // milliseconds. Coalescing them into one render keeps the board from
   // re-running its server component several times for one tap.
   const refresh = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -50,45 +42,7 @@ export function LiveOrdersFeed({
     };
   }, []);
 
-  useEffect(() => {
-    const supabase = createClient();
-    let cancelled = false;
-
-    const channel = supabase
-      .channel("admin-orders-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
-        () => {
-          if (!cancelled) refresh();
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "order_status_history" },
-        () => {
-          if (!cancelled) refresh();
-        },
-      )
-      .subscribe((status: string) => {
-        if (cancelled) return;
-        if (status === "SUBSCRIBED") setLive(true);
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setLive(false);
-      });
-
-    return () => {
-      cancelled = true;
-      void supabase.removeChannel(channel);
-    };
-  }, [refresh]);
-
-  useEffect(() => {
-    if (live) return;
-    const stop = startVisiblePoll(() => {
-      if (Date.now() - lastSync > (pollSeconds - 5) * 1000) refresh();
-    }, pollSeconds * 1000);
-    return stop;
-  }, [live, lastSync, pollSeconds, refresh]);
+  const live = useOpsOrderSignal(refresh);
 
   return (
     <div className="flex items-center gap-2">
@@ -100,7 +54,7 @@ export function LiveOrdersFeed({
             live ? "animate-pulse-soft bg-jade-500" : "bg-miso-500",
           )}
         />
-        {live ? label : `${t("admin.pages.orders.polling")} ${pollSeconds}${t("admin.pages.orders.seconds")}`}
+        {live ? label : t("admin.pages.orders.polling")}
       </p>
       <button
         type="button"

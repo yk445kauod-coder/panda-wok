@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Bell, BellOff, RefreshCw } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { startVisiblePoll } from "@/lib/live/visibility";
+import { useOpsOrderSignal } from "@/lib/live/use-ops-signal";
 import { useT } from "@/components/i18n-provider";
 import {
   setSoundEnabled,
@@ -40,7 +40,6 @@ export function KitchenLiveBoard({
   freshCount: number;
 }) {
   const t = useT();
-  const [live, setLive] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [flash, setFlash] = useState(false);
   // The sound preference lives outside React so it survives a refresh and can be
@@ -82,36 +81,10 @@ export function KitchenLiveBoard({
     window.setTimeout(() => setFlash(false), 900);
   }, [signature]);
 
-  useEffect(() => {
-    const supabase = createClient();
-    let cancelled = false;
-
-    const channel = supabase
-      .channel("kds-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
-        if (cancelled) return;
-        setLive(true);
-        refresh();
-      })
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "order_status_history" },
-        () => {
-          if (cancelled) return;
-          setLive(true);
-          refresh();
-        },
-      )
-      .subscribe((status: string) => {
-        if (cancelled) return;
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setLive(false);
-      });
-
-    return () => {
-      cancelled = true;
-      void supabase.removeChannel(channel);
-    };
-  }, [refresh]);
+  // The public `ops-orders` signal drives the board's liveness; see
+  // `useOpsOrderSignal` for why a row-level subscription cannot work here (the
+  // gate is a cookie, not a session).
+  const live = useOpsOrderSignal(refresh);
 
   // Seed the sync clock on mount (outside render) so the first poll waits its
   // full interval rather than firing immediately.
