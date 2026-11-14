@@ -21,9 +21,16 @@
 - So **the Worker does NOT SSR the console** — the remaining admin CPU cost is the
   `/api/admin/*` JSON endpoints + middleware. Cloudflare shows p50 ~11.8 ms, p99 ~575 ms
   (Nov 14) vs a 10 ms cap.
-- **Error 1102 is architectural, not a code bug.** It cannot be fully removed on Free while
-  dynamic `/api/admin/*` requests run on the Worker. Real fixes: Workers Paid ($5 -> 5 min CPU),
-  or move the data layer off the Worker (e.g. Supabase directly from the browser).
+- **Error 1102 had fixable causes too, not just "architectural"** (corrected 2026-11-14, commit
+  `9691c3f`). The big one: **zod was in the middleware bundle** — `env.ts` exported `publicEnv` and
+  validated everything with zod, so ~450 KB of validator shipped on *every* request. Public values
+  now live in dependency-free `src/lib/config/public-env.ts`. Verify with
+  `grep -c ZodError .pages/middleware/handler.mjs` → must be 0.
+  Remaining 1102 risk is genuinely architectural: dynamic `/api/admin/*` on Free's 10 ms cap.
+  Real escalations: Workers Paid ($5 → 5 min CPU), or move the data layer off the Worker.
+- **Live invocation data (2026-11-14):** `pages-worker--19831446-production` = panda-wok. Requests
+  went 2,272/day (Nov 7) → 19,472/day (Nov 14) with **1,198 `errors` on Nov 13** (the `errors`
+  column IS 1102). Always pull this before theorising about "heavy".
 - Middleware: admin requests skip `updateSession` (commit `1e98108`) — the console never reads
   the customer session (gate cookie auths it; `x-pw-path` elevates API reads to service role).
 - Sign-out: `src/components/admin/admin-sign-out.tsx` -> `lockAdminAction` (clears gate cookie +
@@ -55,17 +62,30 @@
 - **Proof method (reusable):** temporarily wrap `scripts/pages/_worker.js`'s export so every response
   carries `x-pw-worker: 1`, deploy, then `curl -sI <asset>` — the header on a static chunk means the
   worker ran. (Revert after.) A plain header diff is inconclusive because both paths return 200.
-- **Fix:** `scripts/build-pages.mjs` writes `.pages/_routes.json` excluding only pure-asset trees:
-  `/_next/static/*`, `/mascots/*`, `/fonts/*`. `_routes.json` DOES work in advanced mode (verified
-  live: those paths return 200 with no worker header, routes still 200). Everything that can be a
-  route (HTML, `/_next/image`, API, `/robots.txt`, `/sitemap.xml`) still reaches the worker.
+- **Fix:** `scripts/build-pages.mjs` writes `.pages/_routes.json` excluding pure-asset trees:
+  `/_next/static/*`, `/mascots/*`, `/fonts/*`, **plus root-level `/favicon.ico`, `/icon-192.png`,
+  `/icon-512.png`, `/manifest.webmanifest`, `/panda-logo.svg`, `/google*.html`** (added 2026-11-14 —
+  a browser fetches several on every visit and each was a Worker invocation). `_routes.json` DOES
+  work in advanced mode (verified live: those paths return 200 with no `cf-ray`, routes still 200).
+  Everything that can be a route (HTML, `/_next/image`, API, `/robots.txt`, `/sitemap.xml`) still
+  reaches the worker.
   Caveat: `exclude` must not contain a `.`/`*` mid-segment; keep it to directory trees.
 - Never add `/*.js` to `_headers` as immutable — it matches every HTML page and freezes them.
 
 ## Console request accounting (verified 2026-11-14)
-- Per admin tab-open: 1 HTML (static) + 1 `/api/admin/session` + 1 page-data JSON + (was ~35 static).
+- Per admin tab-open: 1 HTML (static) + 1 `/api/admin/session` + 1 page-data JSON (static assets
+  no longer invoke the worker at all).
 - One shared poller for the whole tab (`src/lib/live/ops-sync.ts`): `60s` when the `ops-orders`
-  broadcast is live, `8s` fallback. It dispatches `panda-wok:refresh`; pages re-read on that event.
-- Gotcha: a page whose own `useAdminData` listens for `panda-wok:refresh` must NOT also pass a
+  broadcast is live, `8s` fallback. It dispatches **`panda-wok:live`** (changed from
+  `panda-wok:refresh` in `9691c3f`); only pages that opt in via `useAdminData(p, q, {live:true})`
+  re-read on that beat — orders-list, kitchen, dashboard, order-detail. A settings/exports tab now
+  re-reads only after a mutation (`panda-wok:refresh`, still always fired).
+- **Console first-load budget (verified live):** `/admin` = **237.5 KB gz** (was 331.0 → −28%).
+  Charts go only through `src/components/charts/lazy.tsx`; only one dictionary per session.
+  Measure: fetch `/admin` HTML, regex `/_next/static/chunks/*.js`, gzip each. **`curl` needs
+  `-A "Mozilla/5.0"`** or Pages static assets return 403.
+- Dead weight found but left in place: `src/lib/agent/repo-skills.generated.ts` (262 KB, **zero
+  importers** — safe to delete with its `pre*` hooks), `useAdminPoll` (zero consumers).
+- Gotcha: a page whose own `useAdminData` is subscribed to the live beat must NOT also pass a
   callback to `useOpsOrderSignal` — the store already dispatches the event on every ping, so a
   callback double-fetches. Kitchen board fixed this way.
