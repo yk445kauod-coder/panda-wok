@@ -252,6 +252,11 @@ const ALARM_LOOKAHEAD_MS = 250;
 const ALARM_BURSTS_PER_TICK = 4;
 
 let alarmTimer: ReturnType<typeof setTimeout> | null = null;
+// An order arrived while the context was still locked by the autoplay policy.
+// The alarm stays wanted — not running — until a gesture unlocks the audio, at
+// which point `unlockAudio()` starts it. Without this the siren was lost for
+// good: `resume()` is refused before the first gesture, and nothing re-armed it.
+let alarmWanted = false;
 
 function scheduleAlarmTick(): void {
   const ctx = context;
@@ -266,10 +271,22 @@ function scheduleAlarmTick(): void {
   );
 }
 
+/** Start the siren if the audio is unlocked; otherwise remember that it is due. */
+function beginAlarm(ctx: AudioContext): void {
+  alarmWanted = true;
+  if (ctx.state !== "running") return;
+  if (alarmTimer !== null) return;
+  scheduleAlarmTick();
+}
+
 /**
  * Start the repeating order siren. Safe to call repeatedly (a second call while
  * it is already running is a no-op), and it respects the sound preference — a
  * kitchen that muted the console stays muted.
+ *
+ * If the browser has not yet granted audio (no gesture since load), the alarm is
+ * armed and starts the moment `unlockAudio()` succeeds, rather than being
+ * silently dropped.
  */
 export function startOrderAlarm(): void {
   if (!enabled) return;
@@ -277,20 +294,17 @@ export function startOrderAlarm(): void {
   const ctx = getContext();
   if (!ctx) return;
 
-  const begin = () => {
-    if (alarmTimer !== null) return;
-    scheduleAlarmTick();
-  };
-
+  beginAlarm(ctx);
   if (ctx.state === "suspended") {
-    void ctx.resume().then(begin).catch(() => undefined);
-  } else {
-    begin();
+    // The gesture may already have happened and simply not been observed yet;
+    // if it has not, `unlockAudio()` will finish the job.
+    void ctx.resume().then(() => beginAlarm(ctx)).catch(() => undefined);
   }
 }
 
 /** Stop the order siren. Called the moment an operator takes an action. */
 export function stopOrderAlarm(): void {
+  alarmWanted = false;
   if (alarmTimer !== null) {
     clearTimeout(alarmTimer);
     alarmTimer = null;
@@ -310,7 +324,14 @@ export function isOrderAlarmRunning(): boolean {
 export function unlockAudio(): void {
   const ctx = getContext();
   if (!ctx) return;
+  const finish = () => {
+    // A gesture is the browser's permission to make sound. If an order arrived
+    // while the context was still locked, this is the moment its siren can run.
+    if (alarmWanted && alarmTimer === null) scheduleAlarmTick();
+  };
   if (ctx.state === "suspended") {
-    void ctx.resume().catch(() => undefined);
+    void ctx.resume().then(finish).catch(() => undefined);
+  } else {
+    finish();
   }
 }

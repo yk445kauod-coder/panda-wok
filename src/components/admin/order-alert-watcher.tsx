@@ -132,8 +132,14 @@ export function OrderAlertWatcher({
   }, [ringing]);
 
   // Autoplay policy blocks audio until the visitor interacts, so resume the
-  // context on the first gesture. Without this a poll-driven alarm is silent.
+  // context on the first gesture. The gesture that unlocks the console (typing
+  // the passcode and submitting the gate) happens *before* this component
+  // mounts, so we also try immediately: Chrome keeps a short activation window,
+  // and on the browsers that refuse, the listeners below catch the next gesture.
+  // Without either, a returning operator who unlocks and only watches the board
+  // never makes a sound.
   useEffect(() => {
+    unlockAudio();
     const unlock = () => unlockAudio();
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("keydown", unlock, { once: true });
