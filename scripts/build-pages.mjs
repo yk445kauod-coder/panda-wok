@@ -52,6 +52,24 @@ async function main() {
   const edgeCache = await readFile(path.join(root, "scripts", "pages", "edge-cache.js"), "utf8");
   await writeFile(path.join(OUT, "edge-cache.js"), edgeCache, "utf8");
 
+  // Keep static files off the Worker. In Pages advanced mode (an `_worker.js`),
+  // *every* request invokes the worker — including `/_next/static/*`, fonts and
+  // images — unless `_routes.json` excludes them. Verified live: a static chunk
+  // carried the worker's own diagnostic header, so each asset of a single page
+  // load was one Worker invocation against the Free plan's 100k/day budget,
+  // spent re-serving bytes the CDN could answer itself. Excluding them here
+  // means Pages serves those paths directly, which is both faster (no worker
+  // cold start) and cheaper (no invocation, no CPU against the 10ms cap).
+  // Only pure-asset trees are excluded; everything that may be a route — HTML
+  // pages, `/_next/image`, API routes, `/robots.txt` (a route) — still reaches
+  // the worker.
+  const routes = {
+    version: 1,
+    include: ["/*"],
+    exclude: ["/_next/static/*", "/mascots/*", "/fonts/*"],
+  };
+  await writeFile(path.join(OUT, "_routes.json"), JSON.stringify(routes, null, 2) + "\n", "utf8");
+
   await redactServerEnv(OUT);
 
   console.log("Pages output ready in .pages/");
