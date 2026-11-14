@@ -128,5 +128,29 @@ agent_threads 3, agent_artifacts 77, mcp_servers 1, exports 10, backup_records 1
   ./node_modules/.bin/wrangler deploy` (plain `wrangler deploy` re-enters
   opennext and its KV populate hits the Free-plan daily write limit).
 
+## Console realtime was structurally dead — fixed (2026-11-14, commit 6ec6648, deployed dc875e71)
+- The admin gate is a **cookie, not a Supabase session**, so the console's browser client is
+  anonymous. Every `postgres_changes` sub on `orders` delivered nothing (staff RLS resolves via
+  `auth.uid()`) yet still reported **SUBSCRIBED** — so the boards *looked* live while frozen, and
+  the poll was the only working path. This is why the earlier "8s→60s once SUBSCRIBED" logic never
+  actually relaxed: SUBSCRIBED arrives on a dead channel too.
+- Fix: a **public broadcast**. Migration `20261114000200_ops_order_signal.sql` adds
+  `signal_ops_order_change()` (SECURITY DEFINER, `realtime.send(jsonb, 'order_changed', 'ops-orders', false)`)
+  as an AFTER INSERT/UPDATE/DELETE **statement** trigger on `orders` + AFTER INSERT on
+  `order_status_history`. Consumed by `src/lib/live/use-ops-signal.ts` (module-level singleton, one
+  socket per tab, `useSyncExternalStore`). Poll now relaxes 8s→60s on `SUBSCRIBED` (valid here) and
+  back to 8s on drop. No order data crosses the channel — the console re-reads via `/api/admin/*`.
+- **Double-poll removed**: orders page + `LiveOrdersFeed` both polled `/api/admin/orders`; kitchen
+  page + board both polled `/api/admin/kitchen`. Now exactly one poller each (page owns orders,
+  board owns kitchen via the `panda-wok:refresh` event).
+- Verified live: anonymous `supabase-js` client on `ops-orders` receives a ping after a real
+  `orders` update (0-row statements do NOT fire it; need a matched row).
+
+## Deploy gotcha: branch MUST be the prod branch
+- Pages prod branch = `feature/panda-wok-platform`. Deploying with `--branch=main` lands as a
+  **preview** and canonical `panda-wok.pages.dev` keeps serving the OLD prod bundle (only
+  `main.panda-wok.pages.dev` / the hash URL get the new one). Always
+  `--branch=feature/panda-wok-platform`. CI `deploy-pages.yml` maps this branch → production.
+
 ## User preferences
 - **الردود بالعربي دايماً** — يشرح بالعربي في كل رسالة.
