@@ -63,11 +63,11 @@ export function OrdersListPage() {
   );
 
   // The live signal is the instant path; the poll only has to catch a dropped
-  // socket, so it relaxes to a 60 s safety net while the channel is subscribed
+  // socket, so it relaxes to a 2 min safety net while the channel is subscribed
   // and stays at 8 s otherwise. No callback: `LiveOrdersFeed` owns the re-read,
-  // so passing one here would fetch twice per ping.
+  // so passing one here would fetch twice per event.
   const live = useOpsOrderSignal();
-  useAdminPoll(reload, live ? 60000 : 8000);
+  useAdminPoll(reload, live ? 120000 : 8000);
 
   if (loading && !data) return <PageLoading />;
   if (error && !data) return <PageError message={error} />;

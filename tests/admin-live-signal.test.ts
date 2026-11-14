@@ -14,27 +14,47 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 /**
- * The console opens with a cookie, not a Supabase session, so its browser client
- * is anonymous. A `postgres_changes` subscription on `orders` therefore delivers
- * nothing — the staff RLS policy resolves through `auth.uid()`, and the channel
- * reports SUBSCRIBED regardless. Trusting that made the boards look live while
- * they were frozen. The console must use the public `ops-orders` broadcast
- * instead, so a row-level subscription on `orders` must not come back.
+ * The console's live signal now rides a real Supabase session.
+ *
+ * The unlock action mints one (`mintStaffSession`), so the browser holds a
+ * token and the staff RLS policies — which resolve through `auth.uid()` — let a
+ * row-level `postgres_changes` subscription deliver. That is the fast path. The
+ * public `ops-orders` broadcast stays as the fallback for when no session is
+ * present, and the poll remains the net for a socket that dies.
+ *
+ * What must not come back is the old bug: a *silent* row-level subscription with
+ * no session behind it, which reported SUBSCRIBED while delivering nothing and
+ * left the boards frozen. So the hook must gate the row-level branch on a
+ * session, and the session has to be minted at unlock.
  */
 describe("console live signal", () => {
-  it("never subscribes to postgres_changes on orders from an admin surface", () => {
-    const adminSources = walk(join(ROOT, "src/components/admin")).concat(
-      walk(join(ROOT, "src/lib/live")),
+  it("gates the row-level subscription on a session", () => {
+    const hook = readFileSync(
+      join(ROOT, "src/lib/live/use-ops-signal.ts"),
+      "utf8",
     );
-    const offenders: string[] = [];
+    expect(hook).toMatch(/getSession\(\)/);
+    expect(hook).toMatch(/postgres_changes/);
+    expect(hook).toMatch(/table:\s*"orders"/);
+    // The row-level branch is chosen by the session, never taken unconditionally.
+    expect(hook).toMatch(/data\.session\s*\?/);
+    // And the no-session path still falls back to the content-free broadcast.
+    expect(hook).toMatch(/"broadcast"/);
+  });
 
-    for (const file of adminSources) {
-      const text = readFileSync(file, "utf8");
-      const rowLevel = /postgres_changes/.test(text) && /table:\s*"orders"/.test(text);
-      if (rowLevel) offenders.push(file);
-    }
+  it("mints a staff session when the console is unlocked", () => {
+    const action = readFileSync(
+      join(ROOT, "src/lib/actions/admin-gate.ts"),
+      "utf8",
+    );
+    expect(action).toMatch(/mintStaffSession/);
 
-    expect(offenders).toEqual([]);
+    const mint = readFileSync(
+      join(ROOT, "src/lib/auth/staff-session.ts"),
+      "utf8",
+    );
+    expect(mint).toMatch(/generateLink/);
+    expect(mint).toMatch(/verifyOtp/);
   });
 
   it("ships a public broadcast trigger on orders and its status history", () => {
@@ -42,7 +62,7 @@ describe("console live signal", () => {
       join(ROOT, "supabase/migrations/20261114000200_ops_order_signal.sql"),
       "utf8",
     );
-    // Public (private = false) is the whole point: it needs no session.
+    // Public (private = false) is the point of the fallback: it needs no session.
     expect(migration).toMatch(/realtime\.send\(/);
     expect(migration).toMatch(/false\s*\);/);
     expect(migration).toMatch(/on public\.orders/);

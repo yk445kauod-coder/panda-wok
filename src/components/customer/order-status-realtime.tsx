@@ -10,14 +10,19 @@ import { useT } from "@/components/i18n-provider";
  * Keeps an order page current.
  *
  * Realtime (a `postgres_changes` insert on `order_status_history`) is the fast
- * path, but it is treated strictly as an enhancement: polling runs the whole
- * time the order is active, not only when the socket is down. That matters
- * because a subscription can report `SUBSCRIBED` while delivering nothing — an
+ * path. The tracking page is behind sign-in, so the browser holds a Supabase
+ * session and the row-level subscription actually delivers — the policy scopes
+ * it to this customer's own order, so no other order is visible over the socket.
+ *
+ * Polling still runs while the order is active, as a safety net rather than the
+ * main path: a subscription can report `SUBSCRIBED` while delivering nothing (an
  * empty `supabase_realtime` publication did exactly that, so the old code
- * switched polling off and the page froze until a manual refresh. With polling
+ * switched polling off and the page froze until a manual refresh). With polling
  * always on, the worst case is one poll interval, whatever the socket claims.
+ * The interval is long because the socket is expected to win; it only has to
+ * catch a socket that died.
  */
-const POLL_MS = 15000;
+const POLL_MS = 120000;
 
 export function OrderStatusRealtime({
   orderId,

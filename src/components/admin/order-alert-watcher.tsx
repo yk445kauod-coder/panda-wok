@@ -198,10 +198,10 @@ export function OrderAlertWatcher({
   // the single largest source of console traffic before the guard.
   //
   // The interval is adaptive: once realtime is confirmed live it is the instant
-  // path and the poll only has to catch a dropped socket, so it slows to a 60 s
+  // path and the poll only has to catch a dropped socket, so it slows to a 2 min
   // safety net; without realtime the poll is the only path and stays at 8 s.
   useEffect(() => {
-    return startVisiblePoll(() => void refresh(), live ? 60000 : 8000);
+    return startVisiblePoll(() => void refresh(), live ? 120000 : 8000);
   }, [refresh, live]);
 
   if (unacked.length === 0) return null;

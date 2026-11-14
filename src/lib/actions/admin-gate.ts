@@ -7,6 +7,7 @@ import {
   resolveSecret,
   revokeUnlock,
 } from "@/lib/auth/admin-gate";
+import { mintStaffSession, endMintedSession } from "@/lib/auth/staff-session";
 import { newRequestId, logAuthEvent } from "@/lib/auth/log";
 import { appError, type AppError } from "@/lib/utils/errors";
 
@@ -38,6 +39,17 @@ export async function unlockAdminAction(
   }
 
   await grantUnlock(identity);
+
+  // Upgrade the browser to a real Supabase session so the console's realtime
+  // channel delivers row changes (a `postgres_changes` subscription needs
+  // `auth.uid()`, which the gate cookie does not provide). Best-effort: a
+  // failure here leaves the console on the cookie gate, just polling.
+  try {
+    await mintStaffSession(identity);
+  } catch {
+    // The console still works; the socket will not connect.
+  }
+
   revalidatePath("/", "layout");
 
   logAuthEvent({
@@ -54,6 +66,7 @@ export async function unlockAdminAction(
 /** Locks the console again for this browser. */
 export async function lockAdminAction(): Promise<void> {
   await revokeUnlock();
+  await endMintedSession();
   revalidatePath("/", "layout");
   redirect("/admin");
 }

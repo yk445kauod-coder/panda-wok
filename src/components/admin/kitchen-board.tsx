@@ -81,9 +81,9 @@ export function KitchenLiveBoard({
     window.setTimeout(() => setFlash(false), 900);
   }, [signature]);
 
-  // The public `ops-orders` signal drives the board's liveness; see
-  // `useOpsOrderSignal` for why a row-level subscription cannot work here (the
-  // gate is a cookie, not a session).
+  // The order-change signal drives the board's liveness; see
+  // `useOpsOrderSignal` for how the session-backed row feed works and what it
+  // falls back to.
   const live = useOpsOrderSignal(refresh);
 
   // Seed the sync clock on mount (outside render) so the first poll waits its
@@ -96,13 +96,14 @@ export function KitchenLiveBoard({
   // reports SUBSCRIBED but delivers nothing (an empty `supabase_realtime`
   // publication did exactly that) must not be able to freeze a KDS mid-service.
   // The poll is paused while the tab is hidden: nobody is watching a backgrounded
-  // board, and on the Free plan each refresh is a full Worker invocation.
+  // board, and on the Free plan each refresh is a full Worker invocation. With a
+  // session the subscription is a real row feed, so the poll is only a net.
   useEffect(() => {
     return startVisiblePoll(
       () => {
         if (Date.now() - lastSync.current > 9000) refresh();
       },
-      live ? 30000 : 12000,
+      live ? 120000 : 12000,
     );
   }, [live, refresh]);
 

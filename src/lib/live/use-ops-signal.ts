@@ -42,25 +42,41 @@ function setLive(next: boolean): void {
 function connect(): void {
   if (channel || connecting) return;
   connecting = import("@/lib/supabase/client")
-    .then(({ createClient }) => {
+    .then(async ({ createClient }) => {
       // Everyone unmounted while the chunk was loading: do not open a socket.
       if (listeners.size === 0) return;
-      channel = createClient()
-        .channel(OPS_CHANNEL)
-        .on("broadcast", { event: OPS_EVENT }, () => {
-          for (const listener of listeners) listener();
-        })
-        .subscribe((status: string) => {
-          // Unlike the row-level subscription this replaces, a public broadcast
-          // channel delivers as soon as it is subscribed — so SUBSCRIBED is a
-          // real signal here, and lets an idle console relax its poll to the
-          // safety net. A dropped socket flips it back so the poll resumes at
-          // full rate.
-          if (status === "SUBSCRIBED") setLive(true);
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-            setLive(false);
-          }
-        });
+      const supabase = createClient();
+      const { data } = await supabase.auth.getSession();
+      if (listeners.size === 0) return;
+
+      const notify = () => {
+        for (const listener of listeners) listener();
+      };
+      const onStatus = (status: string) => {
+        if (status === "SUBSCRIBED") setLive(true);
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setLive(false);
+        }
+      };
+
+      // With a session the row-level feed delivers the change itself, so a board
+      // reacts to it directly. Without one (a mint failure, or the console
+      // reached before the session cookie lands) the public broadcast still
+      // delivers a content-free nudge and needs no `auth.uid()`.
+      channel = data.session
+        ? supabase
+            .channel(OPS_CHANNEL)
+            .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, notify)
+            .on(
+              "postgres_changes",
+              { event: "INSERT", schema: "public", table: "order_status_history" },
+              notify,
+            )
+            .subscribe(onStatus)
+        : supabase
+            .channel(OPS_CHANNEL)
+            .on("broadcast", { event: OPS_EVENT }, notify)
+            .subscribe(onStatus);
     })
     .catch(() => undefined)
     .finally(() => {
@@ -86,13 +102,14 @@ const liveServerSnapshot = () => false;
  * Subscribes to the console's order-change signal and reports whether the
  * channel is live.
  *
- * The gate is a cookie, not a Supabase session, so a `postgres_changes`
- * subscription on `orders` delivers nothing — the staff RLS policy resolves
- * through `auth.uid()`, which a cookie does not have, and the channel reports
- * SUBSCRIBED regardless. This listens to a *public broadcast* instead: the
- * trigger sends a content-free ping, an anonymous client can receive it, and the
- * caller re-reads through the gated `/api/admin/*` routes. No order data crosses
- * this channel.
+ * With a session the subscription is a real `postgres_changes` feed on `orders`
+ * and `order_status_history`, so a board updates on push rather than on a timer.
+ * The session is what makes that work: the staff RLS policies resolve through
+ * `auth.uid()`, and the unlock action mints the session that provides it. If no
+ * session is present the hook falls back to the public `ops-orders` broadcast,
+ * which needs no session and carries a content-free ping; the caller then
+ * re-reads through the gated `/api/admin/*` routes. No order data crosses that
+ * broadcast.
  *
  * `onChange`, if given, fires on every ping. Pass it only where nothing else
  * already re-reads on the ping (the alert watcher, whose read is a server

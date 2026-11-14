@@ -64,6 +64,37 @@ export async function createServerSupabase(): Promise<SupabaseServerClient> {
 }
 
 /**
+ * Request-scoped client bound to the caller's cookies, *never* elevated.
+ *
+ * `createServerSupabase` runs the ops surface as the service role, which is
+ * right for reading console data but wrong for anything that touches the
+ * caller's own auth session: a service-role client has no user session to sign
+ * in, and `verifyOtp` on one would write the minted tokens into the wrong
+ * cookie namespace. Session work (minting a staff session, signing out) goes
+ * through this client instead, so the tokens land on the anon-key cookie the
+ * browser client reads.
+ */
+export async function createSessionSupabase(): Promise<SupabaseServerClient> {
+  const cookieStore = await cookies();
+  return createServerClient<Database>(
+    publicEnv.NEXT_PUBLIC_SUPABASE_URL,
+    publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          for (const { name, value, options } of cookiesToSet) {
+            cookieStore.set(name, value, options);
+          }
+        },
+      },
+    },
+  );
+}
+
+/**
  * Cookie-free anon client for public reads: the menu, categories, published
  * settings and other data every visitor sees identically. Not reading cookies
  * keeps these queries out of the per-request dynamic path, so public pages can
