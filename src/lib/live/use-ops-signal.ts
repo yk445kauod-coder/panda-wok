@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
-import { createClient } from "@/lib/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 /** The public channel the `orders` triggers ping; see the ops_order_signal migration. */
 const OPS_CHANNEL = "ops-orders";
@@ -19,7 +19,8 @@ type LiveListener = () => void;
  */
 const listeners = new Set<Listener>();
 const liveListeners = new Set<LiveListener>();
-let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null = null;
+let channel: RealtimeChannel | null = null;
+let connecting: Promise<void> | null = null;
 let live = false;
 
 function setLive(next: boolean): void {
@@ -28,31 +29,54 @@ function setLive(next: boolean): void {
   for (const listener of liveListeners) listener();
 }
 
+/**
+ * Connect lazily, off the critical path.
+ *
+ * `@supabase/supabase-js` is one of the heaviest modules in the app (auth +
+ * PostgREST + Realtime). The console needs only the Realtime half, and only for
+ * a nudge that the poll already covers as its dependable path — but a static
+ * import pulled the whole client into the first-load bundle of *every* admin
+ * page, which is the bulk of the console's weight. A dynamic import keeps it in
+ * its own chunk, so the shell paints and the poll starts before it arrives.
+ */
 function connect(): void {
-  if (channel) return;
-  channel = createClient()
-    .channel(OPS_CHANNEL)
-    .on("broadcast", { event: OPS_EVENT }, () => {
-      for (const listener of listeners) listener();
+  if (channel || connecting) return;
+  connecting = import("@/lib/supabase/client")
+    .then(({ createClient }) => {
+      // Everyone unmounted while the chunk was loading: do not open a socket.
+      if (listeners.size === 0) return;
+      channel = createClient()
+        .channel(OPS_CHANNEL)
+        .on("broadcast", { event: OPS_EVENT }, () => {
+          for (const listener of listeners) listener();
+        })
+        .subscribe((status: string) => {
+          // Unlike the row-level subscription this replaces, a public broadcast
+          // channel delivers as soon as it is subscribed — so SUBSCRIBED is a
+          // real signal here, and lets an idle console relax its poll to the
+          // safety net. A dropped socket flips it back so the poll resumes at
+          // full rate.
+          if (status === "SUBSCRIBED") setLive(true);
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            setLive(false);
+          }
+        });
     })
-    .subscribe((status: string) => {
-      // Unlike the row-level subscription this replaces, a public broadcast
-      // channel delivers as soon as it is subscribed — so SUBSCRIBED is a real
-      // signal here, and lets an idle console relax its poll to the safety net.
-      // A dropped socket flips it back so the poll resumes at full rate.
-      if (status === "SUBSCRIBED") setLive(true);
-      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-        setLive(false);
-      }
+    .catch(() => undefined)
+    .finally(() => {
+      connecting = null;
     });
 }
 
 function disconnect(): void {
-  if (channel) {
-    void createClient().removeChannel(channel);
-    channel = null;
-  }
+  const current = channel;
+  channel = null;
   setLive(false);
+  if (current) {
+    void import("@/lib/supabase/client").then(({ createClient }) => {
+      void createClient().removeChannel(current);
+    });
+  }
 }
 
 const liveSnapshot = () => live;
