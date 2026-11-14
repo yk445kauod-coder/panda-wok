@@ -70,8 +70,6 @@ const PROTECTED_PREFIXES = [
 const MARKDOWN_PAGES = new Set(["/", "/menu", "/about", "/contact", "/faq", "/location", "/privacy-policy"]);
 
 export async function middleware(request: NextRequest) {
-  const { response: sessionResponse, userId } = await updateSession(request);
-  let response = sessionResponse;
   const { pathname, search } = request.nextUrl;
 
   // The customer site lives under `/[lang]`, so every check below works on the
@@ -79,6 +77,22 @@ export async function middleware(request: NextRequest) {
   // path it asked for.
   const localeInPath = localeFromPathname(pathname);
   const barePath = localeInPath ? stripLocale(pathname) : pathname;
+  const admin = isAdminSurface(barePath);
+
+  // Console requests never use the customer session: the gate cookie
+  // authenticates them and `x-pw-path` elevates their API reads to the service
+  // role. Refreshing a Supabase session they will not read is a JWT verify (and
+  // a possible round trip) spent on every console request, on a Free-plan CPU
+  // budget that is already the console's tightest constraint — so it is skipped
+  // for admin, and only for admin.
+  let sessionResponse: NextResponse | null = null;
+  let userId: string | null = null;
+  if (!admin) {
+    const session = await updateSession(request);
+    sessionResponse = session.response;
+    userId = session.userId;
+  }
+  let response = sessionResponse ?? NextResponse.next({ request });
 
   // Markdown for Agents (RFC: Accept: text/markdown). Honest AI agents request
   // a markdown view; browsers never send this exact media type alone. Rewrite
@@ -118,7 +132,7 @@ export async function middleware(request: NextRequest) {
     const redirect = NextResponse.redirect(url, 307);
     // Carry across any session cookie refreshed above, or the visitor would be
     // silently signed out on the very navigation that refreshed the token.
-    for (const cookie of sessionResponse.cookies.getAll()) {
+    for (const cookie of sessionResponse?.cookies.getAll() ?? []) {
       redirect.cookies.set(cookie);
     }
     applySecurityHeaders(redirect);
