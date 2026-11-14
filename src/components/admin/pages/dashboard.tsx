@@ -6,12 +6,14 @@ import type { DashboardMetrics } from "@/lib/crm/insights";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/admin/stat-card";
-import { TrendChart } from "@/components/charts/trend-chart";
-import { DonutChart } from "@/components/charts/donut-chart";
-import { BarList } from "@/components/charts/bar-list";
-import { GaugeChart } from "@/components/charts/gauge-chart";
-import { RadarChart } from "@/components/charts/radar-chart";
-import { Heatmap } from "@/components/charts/heatmap";
+import {
+  BarList,
+  DonutChart,
+  GaugeChart,
+  Heatmap,
+  RadarChart,
+  TrendChart,
+} from "@/components/charts/lazy";
 import { PageError, PageLoading } from "@/components/admin/page-states";
 import { ManualCloseLever } from "@/components/admin/manual-close-lever";
 import { useAdminSession } from "@/components/admin/admin-session";
@@ -31,7 +33,7 @@ export function DashboardPage() {
   const { data, loading, error } = useAdminData<{
     metrics: DashboardMetrics;
     acceptingOrders: boolean;
-  }>("/api/admin/overview");
+  }>("/api/admin/overview", undefined, { live: true });
 
   if (loading && !data) return <PageLoading />;
   if (error && !data) return <PageError message={error} />;

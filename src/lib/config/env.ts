@@ -1,16 +1,10 @@
 import { z } from "zod";
 
 /**
- * Environment is validated once at module load. A missing public Supabase
- * config is a hard failure: every page depends on it, so failing loudly at
- * startup beats rendering a broken shell.
+ * Server-only environment. The three public Supabase values live in
+ * `public-env.ts` instead, so this module — and its zod dependency — never
+ * reaches the middleware or the browser bundle.
  */
-const publicSchema = z.object({
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(20),
-  NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
-});
-
 const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
   AI_PROVIDER_KIND: z.string().optional(),
@@ -48,25 +42,6 @@ const serverSchema = z.object({
   // staff-role check. Optional: unset falls back to the built-in default.
   ADMIN_PASSCODE: z.string().min(4).optional(),
 });
-
-function parsePublic() {
-  const parsed = publicSchema.safeParse({
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-  });
-
-  if (!parsed.success) {
-    const missing = parsed.error.issues.map((i) => i.path.join(".")).join(", ");
-    throw new Error(
-      `Invalid public environment configuration (${missing}). ` +
-        "Run `python3 scripts/setup-env.py` or copy .env.example to .env.local.",
-    );
-  }
-  return parsed.data;
-}
-
-export const publicEnv = parsePublic();
 
 /**
  * Server-only values are read through a computed lookup, not `process.env.NAME`.

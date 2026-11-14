@@ -27,8 +27,8 @@ export function LiveOrdersFeed({ label = "Live" }: { label?: string }) {
   }, []);
 
   // The shared ops store already re-reads on every realtime ping (it owns the
-  // tab's one poll and dispatches `panda-wok:refresh`), so this indicator takes
-  // the live flag only — a callback here would fire a second fetch per event.
+  // tab's one poll and dispatches `panda-wok:live`), so this indicator takes the
+  // live flag only — a callback here would fire a second fetch per event.
   const live = useOpsOrderSignal();
 
   return (

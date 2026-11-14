@@ -4,7 +4,8 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies, headers } from "next/headers";
 import type { Database } from "@/lib/types/database";
-import { publicEnv, serviceRoleAvailable } from "@/lib/config/env";
+import { publicEnv } from "@/lib/config/public-env";
+import { serviceRoleAvailable } from "@/lib/config/env";
 import { gateIdentity } from "@/lib/auth/admin-gate";
 import {
   createAdminSupabase,

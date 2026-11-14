@@ -63,10 +63,26 @@ async function main() {
   // Only pure-asset trees are excluded; everything that may be a route — HTML
   // pages, `/_next/image`, API routes, `/robots.txt` (a route) — still reaches
   // the worker.
+  //
+  // The root-level icons, manifest and logo are listed individually because a
+  // browser fetches several of them on *every* visit (`favicon.ico`,
+  // `manifest.webmanifest`, the PWA icons) and each was a Worker invocation
+  // spent re-serving a byte-identical file the CDN can answer itself. They are
+  // plain files in this directory, so Pages serves them directly.
   const routes = {
     version: 1,
     include: ["/*"],
-    exclude: ["/_next/static/*", "/mascots/*", "/fonts/*"],
+    exclude: [
+      "/_next/static/*",
+      "/mascots/*",
+      "/fonts/*",
+      "/favicon.ico",
+      "/icon-192.png",
+      "/icon-512.png",
+      "/manifest.webmanifest",
+      "/panda-logo.svg",
+      "/google469af7ac01566c8d.html",
+    ],
   };
   await writeFile(path.join(OUT, "_routes.json"), JSON.stringify(routes, null, 2) + "\n", "utf8");
 

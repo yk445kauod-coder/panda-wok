@@ -82,11 +82,11 @@ export function refreshOpsNow(): void {
 
 function tick(): void {
   void readPending();
-  // Pages that own their own JSON read (`/api/admin/orders`, …) re-fetch off this
-  // single event instead of a second interval. `refreshAdminData` is the same
-  // signal a mutation already uses.
+  // The one shared beat: the shell's timer and every realtime ping both land
+  // here. `panda-wok:live` re-reads only the boards that opted in (`useAdminData`
+  // with `live: true`); a settings or exports page in the same tab stays quiet.
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("panda-wok:refresh"));
+    window.dispatchEvent(new Event("panda-wok:live"));
   }
 }
 

@@ -34,11 +34,11 @@ type KitchenPayload = {
 export function KitchenPage() {
   const t = useT();
 
-  const { data, loading, error } = useAdminData<KitchenPayload>("/api/admin/kitchen");
+  const { data, loading, error } = useAdminData<KitchenPayload>("/api/admin/kitchen", undefined, { live: true });
 
-  // Liveness and polling are owned by `KitchenLiveBoard` below, whose refresh
-  // broadcasts the page-wide `panda-wok:refresh` that re-runs this fetch — a poll
-  // here too would double every request.
+  // Liveness and polling are owned by `KitchenLiveBoard` below; `live: true`
+  // above subscribes this fetch to the shell's shared `panda-wok:live` beat. A
+  // poll here too would double every request.
 
   if (loading && !data) return <PageLoading />;
   if (error && !data) return <PageError message={error} />;

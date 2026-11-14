@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Sparkline } from "@/components/charts/sparkline";
+import { Sparkline } from "@/components/charts/lazy";
 import { cn } from "@/lib/utils/format";
 
 export type StatTone = "neutral" | "warning" | "success" | "info";

@@ -79,12 +79,12 @@ export function KitchenLiveBoard({
   }, [signature]);
 
   // Liveness and the tab-wide poll are owned by the shell's shared ops store
-  // (see `ops-sync`): it runs the one visible-only timer, dispatches
-  // `panda-wok:refresh` on each beat *and* on every realtime ping, and the
-  // kitchen page's `useAdminData` listens for that. So this board takes the live
-  // flag only — a callback here would dispatch a second refresh per ping and
-  // re-fetch `/api/admin/kitchen` twice. Its own poll was likewise a duplicate
-  // request every interval.
+  // (see `ops-sync`): it runs the one visible-only timer and dispatches
+  // `panda-wok:live` on each beat *and* on every realtime ping, and the kitchen
+  // page's `useAdminData({ live: true })` is subscribed to it. So this board
+  // takes the live flag only — a callback here would dispatch a second refresh
+  // per ping and re-fetch `/api/admin/kitchen` twice. Its own poll was likewise
+  // a duplicate request every interval.
   const live = useOpsOrderSignal();
 
   return (

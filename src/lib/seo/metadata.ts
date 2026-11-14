@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { publicEnv } from "@/lib/config/env";
+import { publicEnv } from "@/lib/config/public-env";
 
 /**
  * Resolves the public origin at request time.

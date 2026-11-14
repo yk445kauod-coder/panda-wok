@@ -59,11 +59,13 @@ export function OrdersListPage() {
   const { data, loading, error } = useAdminData<OrdersPayload>(
     "/api/admin/orders",
     { status, q, page },
+    { live: true },
   );
   // No poll of its own. The shell's shared ops store runs the tab's single
-  // visible-only timer and dispatches `panda-wok:refresh` on each beat (and on
-  // every realtime ping), which `useAdminData` already listens for. A second
-  // timer here was a duplicate request every interval on this very endpoint.
+  // visible-only timer and dispatches `panda-wok:live` on each beat (and on
+  // every realtime ping); `live: true` above is what subscribes this fetch to
+  // it. A second timer here was a duplicate request every interval on this very
+  // endpoint.
 
   if (loading && !data) return <PageLoading />;
   if (error && !data) return <PageError message={error} />;

@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { publicEnv } from "@/lib/config/env";
+import { publicEnv } from "@/lib/config/public-env";
 
 /**
  * True when the request carries a Supabase auth cookie. Pure so the rush-path

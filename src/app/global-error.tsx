@@ -2,8 +2,6 @@
 
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
-import { en } from "@/lib/i18n/dictionaries/en";
-import { ar } from "@/lib/i18n/dictionaries/ar";
 
 /**
  * Last-resort boundary, used when the root layout itself could not render — most
@@ -13,10 +11,37 @@ import { ar } from "@/lib/i18n/dictionaries/ar";
  * no branding and no way to recover.
  *
  * This boundary cannot use the i18n provider or the design-system Button: it
- * renders outside the root layout, so those providers are gone. It reads the
- * locale cookie directly and hard-reloads, which re-fetches the chunk list
- * rather than re-rendering against the stale one.
+ * renders outside the root layout, so those providers are gone. The four lines
+ * of copy are therefore inlined here (en + ar) rather than imported: a static
+ * import of a dictionary would pull the whole dictionary chunk into the
+ * first-load bundle of *every* route, since this boundary is an entry point of
+ * the root layout.
+ *
+ * It reads the locale off `<html lang>` and hard-reloads, which re-fetches the
+ * chunk list rather than re-rendering against the stale one.
  */
+const COPY = {
+  en: {
+    offlineTitle: "You appear to be offline",
+    offlineBody:
+      "Your basket is saved on this device. Reconnect and try again — nothing is lost.",
+    serverTitle: "Something went wrong on our side",
+    serverBody:
+      "This is not your fault. Retrying usually fixes it. If it keeps happening, please contact the kitchen.",
+    reference: "Reference: {digest}",
+    tryAgain: "Try again",
+  },
+  ar: {
+    offlineTitle: "يبدو أنك غير متصل بالإنترنت",
+    offlineBody: "سلتك محفوظة على هذا الجهاز. أعد الاتصال وحاول مرة أخرى — لم يُفقد شيء.",
+    serverTitle: "حدث خطأ من جانبنا",
+    serverBody:
+      "هذا ليس خطأك. إعادة المحاولة تحل المشكلة عادةً. إذا تكرر الأمر، تواصل مع المطبخ.",
+    reference: "المرجع: {digest}",
+    tryAgain: "حاول مرة أخرى",
+  },
+} as const;
+
 export default function GlobalError({
   error,
   reset,
@@ -26,7 +51,7 @@ export default function GlobalError({
 }) {
   const arabic =
     typeof document !== "undefined" && document.documentElement.lang === "ar";
-  const t = arabic ? ar.errors : en.errors;
+  const t = arabic ? COPY.ar : COPY.en;
   const offline = typeof navigator !== "undefined" && !navigator.onLine;
 
   useEffect(() => {
@@ -82,7 +107,7 @@ export default function GlobalError({
               cursor: "pointer",
             }}
           >
-            {en.common.tryAgain}
+            {t.tryAgain}
           </button>
           {error.digest ? (
             <p style={{ marginTop: "1rem", fontSize: "0.6875rem", opacity: 0.55 }}>

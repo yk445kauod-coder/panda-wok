@@ -2,7 +2,8 @@ import "server-only";
 
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
-import { publicEnv, serverEnv, serviceRoleAvailable } from "@/lib/config/env";
+import { publicEnv } from "@/lib/config/public-env";
+import { serverEnv, serviceRoleAvailable } from "@/lib/config/env";
 
 let adminClient: ReturnType<typeof createSupabaseClient<Database>> | undefined;
 

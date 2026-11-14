@@ -13,9 +13,11 @@ import type { DashboardMetrics } from "@/lib/crm/insights";
 import type { FunnelCounts } from "@/lib/crm/customers";
 import { Badge } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { TrendChart } from "@/components/charts/trend-chart";
-import { BarList } from "@/components/charts/bar-list";
-import { GaugeChart } from "@/components/charts/gauge-chart";
+import {
+  BarList,
+  GaugeChart,
+  TrendChart,
+} from "@/components/charts/lazy";
 import { formatNumber, formatPrice } from "@/lib/utils/format";
 import { PageError, PageLoading } from "@/components/admin/page-states";
 import { useAdminData } from "@/lib/admin/client";

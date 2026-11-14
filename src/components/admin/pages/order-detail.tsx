@@ -46,6 +46,8 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
 
   const { data, loading, error } = useAdminData<AdminOrderDetail | null>(
     `/api/admin/orders/${orderId}`,
+    undefined,
+    { live: true },
   );
 
   if (loading && !data) return <PageLoading />;

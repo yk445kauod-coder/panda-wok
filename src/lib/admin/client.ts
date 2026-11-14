@@ -22,10 +22,24 @@ export type AdminDataState<T> = {
   reload: () => void;
 };
 
+/**
+ * `live: true` opts a page into the console's shared live beat.
+ *
+ * The shell's one timer (and every realtime ping) fires `panda-wok:live`; only
+ * the boards whose content actually changes with an order — the orders list,
+ * the kitchen board, an open order — re-fetch on it. Without the flag a page
+ * still re-reads after a mutation (`panda-wok:refresh`), but a settings or
+ * exports screen no longer spends a Worker invocation on every beat just
+ * because it happens to be open in the same tab.
+ */
+export type AdminDataOptions = { live?: boolean };
+
 export function useAdminData<T>(
   path: string,
   query?: Record<string, string | number | undefined>,
+  options?: AdminDataOptions,
 ): AdminDataState<T> {
+  const live = options?.live ?? false;
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,11 +62,20 @@ export function useAdminData<T>(
 
   // A mutation anywhere on the page (a status change, a saved form) broadcasts
   // this event instead of the old `router.refresh()`, which no longer re-runs
-  // anything now that the page is static.
+  // anything now that the page is static. It is deliberately not the live beat:
+  // a saved form must always re-read, whatever the page's `live` flag.
   useEffect(() => {
     window.addEventListener("panda-wok:refresh", reload);
     return () => window.removeEventListener("panda-wok:refresh", reload);
   }, [reload]);
+
+  // The shared live beat, opt-in per page. Fired by the shell's single timer and
+  // by every realtime order ping.
+  useEffect(() => {
+    if (!live) return;
+    window.addEventListener("panda-wok:live", reload);
+    return () => window.removeEventListener("panda-wok:live", reload);
+  }, [live, reload]);
 
   useEffect(() => {
     const controller = new AbortController();
