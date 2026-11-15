@@ -124,3 +124,20 @@
   `dishImageUrl()` (routes through the `panda-wok-media` worker).
 - `pages deploy --branch=feature/panda-wok-platform` deploys to **Production**
   for this project. Verify by re-fetching after the edge HTML TTL (~600 s).
+
+## Console live signal — the ops hub (2026-11-13, commit `848c637`)
+- The console's request blowout was **not** the poll: Supabase Realtime returns **402** on the
+  restricted project, so `use-ops-signal` reported `live:false` forever and the shared poll never
+  relaxed 8s → 60s. Fix = a signal that can arrive.
+- Worker **`panda-wok-ops-hub`** (DO class `OpsHub`, instance `ops`)
+  `https://panda-wok-ops-hub.yk445kauod.workers.dev`; WS `/?audience=console`, `/broadcast`, `/status`.
+  Deploy: `cd workers/ops-hub && ../../node_modules/.bin/wrangler deploy`.
+- **`/broadcast` is fail-closed** (`OPS_TOKEN` secret on the hub). It used to 200 an unauthenticated
+  POST when the secret was unset — verified live; anyone could fake a kitchen alarm.
+- **`OPS_TOKEN` must be set on BOTH hub and Pages, same value**, with `printf '%s'` (`echo` adds a
+  newline → header never matches → 403). Console events carry **no ids** (the socket is public).
+- **Pages project vars cannot be set from `wrangler.toml`/`wrangler.jsonc`** — ignored for Pages.
+  Use `PATCH /accounts/<acc>/pages/projects/<proj>` → `deployment_configs.<env>.env_vars`.
+  `OPS_HUB_URL` sat in wrangler.toml and was silently absent until set this way.
+- **`DATA_BACKEND` stays `supabase`**: `D1Client` has no `auth`, and 11 sites use `supabase.auth.*`,
+  so `d1` would break login. `publishOrderChange` is deliberately *not* backend-gated.
