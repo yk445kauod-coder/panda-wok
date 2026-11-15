@@ -127,4 +127,27 @@ describe("console polling is single-source", () => {
     const shell = read("src/components/admin/admin-shell.tsx");
     expect(shell).toMatch(/OrderAlertWatcher/);
   });
+
+  it("keeps the fallback cadence long enough to stay inside the budget", () => {
+    // The socket is the real path; this poll only runs when it is down, and the
+    // 8 s it started at was the measured cause of ~23k invocations a day for one
+    // admin. A regression to a short cadence is what re-exhausts the Free plan,
+    // so the floor is pinned rather than left to a comment.
+    const store = read("src/lib/live/ops-sync.ts");
+    const fallback = store.match(/OPS_POLL_FALLBACK_MS = (\d+)/)?.[1];
+    const live = store.match(/OPS_POLL_LIVE_MS = (\d+)/)?.[1];
+    expect(Number(fallback)).toBeGreaterThanOrEqual(30000);
+    expect(Number(live)).toBeGreaterThanOrEqual(Number(fallback));
+  });
+
+  it("closes a half-open socket rather than trusting it", () => {
+    // The long live cadence is only safe if a socket that stopped delivering is
+    // detected: `onclose` never fires for a half-open connection, so without a
+    // staleness guard the tab would hold `live` true and sit on the two-minute
+    // poll. The heartbeat must compare against the last frame received.
+    const sock = read("src/lib/live/ops-socket.ts");
+    expect(sock).toMatch(/STALE_MS/);
+    expect(sock).toMatch(/lastFrame/);
+    expect(sock).toMatch(/Date\.now\(\) - lastFrame > STALE_MS/);
+  });
 });

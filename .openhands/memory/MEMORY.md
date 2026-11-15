@@ -139,5 +139,13 @@
 - **Pages project vars cannot be set from `wrangler.toml`/`wrangler.jsonc`** — ignored for Pages.
   Use `PATCH /accounts/<acc>/pages/projects/<proj>` → `deployment_configs.<env>.env_vars`.
   `OPS_HUB_URL` sat in wrangler.toml and was silently absent until set this way.
-- **`DATA_BACKEND` stays `supabase`**: `D1Client` has no `auth`, and 11 sites use `supabase.auth.*`,
-  so `d1` would break login. `publishOrderChange` is deliberately *not* backend-gated.
+- **`DATA_BACKEND=d1`** is now set in `wrangler.jsonc` (the D1 shim owns `.from()`/`.rpc()` AND
+  `auth.*`, so login works). The old "stays supabase / no `auth`" note is obsolete as of `a6939a7`.
+- **Console invocation budget (measured 2026-11-13, commit `2f45747`)**: polling, not bundle size, is
+  the cost (admin JS ≈ menu JS; only 4 pages poll). `OPS_POLL_FALLBACK_MS`=30s; a tick wakes boards
+  only via `shouldWakeBoards` = `changed||forceBoards||!live` (idle live tick = 1 read, not 2).
+  `/api/admin/crm` was a 500 — the four `crm_*` RPCs were Postgres-only; ported to `src/lib/d1/rpc.ts`
+  (D1 `rpc()` is a plain promise — **no `.maybeSingle()`**). `pagesFunctionsInvocationsAdaptiveGroups`
+  via GraphQL needs `--data @file` (inline nested filter → `unexpected EOF`).
+- Most D1 feature tables are empty (58 tables; only `menu_items`=87, `announcements`=2 non-empty).
+  `remove_unused_features` migration is Postgres-only and NOT applied to D1.

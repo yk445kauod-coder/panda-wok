@@ -36,18 +36,30 @@ import { startVisiblePoll } from "@/lib/live/visibility";
  * Cadence when the socket is down — the poll is the only live path.
  *
  * This was 8 s, which assumed the socket rarely connects. It connects, so the
- * 8 s path is only ever reached when it drops, and 8 s was expensive: every tick
- * is one `listPendingOrderAlertsAction` invocation plus one re-fetch of any
- * `live: true` board, so two open admin tabs on a dropped socket cost ~43k
- * invocations a day — enough that a few admins sharing one tab each would exceed
- * the Free plan's 100k/day budget and the whole project (customer site included)
- * starts returning Error 1027. 30 s still recovers a dropped socket promptly
- * (the reconnect backoff is 1–30 s, so the socket is normally back long before
- * the first tick) while cutting the worst case to a quarter.
+ * 8 s path is only ever reached when it drops. A tick is one
+ * `listPendingOrderAlertsAction` invocation plus, if the queue moved, one
+ * re-fetch of any `live: true` board; on a dropped socket that is the only way a
+ * board learns anything, so the cadence is the worst-case new-order latency for
+ * as long as the outage lasts.
+ *
+ * 45 s is the balance: the socket reconnects on a 1–30 s backoff, so it is
+ * normally back before the first tick, and 45 s keeps the outage window short
+ * enough to still read as "live" in a kitchen while cutting a dropped socket's
+ * worst case to a little over a third of the old 8 s.
  */
-export const OPS_POLL_FALLBACK_MS = 30000;
-/** Safety-net cadence once the broadcast is confirmed live. */
-export const OPS_POLL_LIVE_MS = 60000;
+export const OPS_POLL_FALLBACK_MS = 45000;
+/**
+ * Safety-net cadence once the broadcast is confirmed live.
+ *
+ * When the socket is up it is the real path and this poll exists for one case
+ * only: a socket that reports open but has silently stopped delivering. A dead
+ * socket is caught by `onclose` (the 25 s heartbeat surfaces it within a tick or
+ * two) and drops to the fallback cadence, so this net is rarely the thing that
+ * matters — which is why it can be long. Two minutes keeps a zombie socket's
+ * worst case bounded without paying a Worker invocation a minute for a page that
+ * is already being pushed to.
+ */
+export const OPS_POLL_LIVE_MS = 120000;
 
 type Store = {
   pending: OrderAlert[];

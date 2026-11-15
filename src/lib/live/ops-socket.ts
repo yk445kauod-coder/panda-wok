@@ -10,7 +10,7 @@
  * always up. It keeps the same shape as the module it replaces: a shared socket
  * per tab, a `live` flag the poll reads, and a `refreshOpsNow()` the realtime
  * path called. The poll stays as the net, but now `live` can actually be true,
- * so it relaxes to a minute.
+ * so it relaxes to a long safety-net cadence.
  *
  * If the socket cannot be opened at all (a browser behind a proxy that strips
  * WebSockets, a deploy without the hub bound) the module degrades to exactly the
@@ -29,6 +29,22 @@ let reconnectDelay = 1000;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let heartbeat: ReturnType<typeof setInterval> | null = null;
 let closedByUs = false;
+/** Timestamp of the last frame from the hub, for the half-open-socket guard. */
+let lastFrame = 0;
+
+const HEARTBEAT_MS = 25_000;
+/**
+ * How long a socket may go without a frame before it is treated as dead.
+ *
+ * The hub answers every ping with a pong, so silence across more than two
+ * heartbeats means the socket is half-open: open as far as the browser knows,
+ * but delivering nothing. That matters now that the live poll is two minutes —
+ * without this guard a zombie socket would hold `live` true and freeze the
+ * console for the whole interval, because `onclose` never fires for a half-open
+ * connection. Closing it drops the tab to the fallback cadence and the
+ * reconnect backoff.
+ */
+const STALE_MS = 60_000;
 
 /**
  * The hub's WebSocket origin.
@@ -98,21 +114,32 @@ function connect(userId: string | null): void {
 
     ws.onopen = () => {
       reconnectDelay = 1000;
+      lastFrame = Date.now();
       setLive(true);
       // A heartbeat keeps an idle socket alive through intermediaries that drop
-      // silent connections, and doubles as a liveness check.
+      // silent connections, and doubles as a liveness check: the hub answers
+      // every ping, so a socket that has gone quiet is half-open and closed.
       if (heartbeat) clearInterval(heartbeat);
       heartbeat = setInterval(() => {
+        if (Date.now() - lastFrame > STALE_MS) {
+          try {
+            ws.close();
+          } catch {
+            // Already closed; onclose owns the reconnect.
+          }
+          return;
+        }
         try {
           ws.send(JSON.stringify({ kind: "ping" }));
         } catch {
           // The close handler will reconnect.
         }
-      }, 25_000);
+      }, HEARTBEAT_MS);
     };
 
     ws.onmessage = (event) => {
       if (typeof event.data !== "string") return;
+      lastFrame = Date.now();
       try {
         const payload = JSON.parse(event.data) as { kind?: string };
         if (payload.kind === "pong") return;
