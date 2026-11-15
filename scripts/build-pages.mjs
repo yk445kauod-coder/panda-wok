@@ -46,7 +46,20 @@ async function main() {
   });
 
   const wrapper = await readFile(path.join(root, "scripts", "pages", "_worker.js"), "utf8");
-  await writeFile(path.join(OUT, "_worker.js"), wrapper, "utf8");
+  // Bake the build id in so the console-shell cache key changes on every deploy
+  // (see `adminShellCacheUrl`). Without this the worker would key on a constant
+  // and could serve a previous build's shell. The id ships in the assets tree
+  // (already copied above), so read it from there.
+  const buildId = await readFile(path.join(OUT, "BUILD_ID"), "utf8").catch(() => null);
+  if (!buildId) {
+    // A constant key would defeat the deploy-invalidation the key exists for.
+    throw new Error("No BUILD_ID in the Pages output — cannot key the console shell.");
+  }
+  await writeFile(
+    path.join(OUT, "_worker.js"),
+    wrapper.replace("__BUILD_ID__", buildId.trim()),
+    "utf8",
+  );
 
   // The wrapper imports the edge-cache policy, which Pages does not copy for us.
   const edgeCache = await readFile(path.join(root, "scripts", "pages", "edge-cache.js"), "utf8");

@@ -1,6 +1,9 @@
 import opennext from "./opennext-worker.js";
 import {
+  ADMIN_SHELL_CACHE_CONTROL,
   EDGE_CACHE_CONTROL,
+  adminShellCacheUrl,
+  isAdminShellRequest,
   isCacheableRequest,
   purgePublicCache,
   shouldPurgeAfter,
@@ -36,6 +39,13 @@ const ASSET_PREFIXES = ["/_next/static/", "/mascots/"];
 // the handler continues, so this never masks a real route.
 const ASSET_FILE =
   /\.(?:svg|png|jpg|jpeg|webp|avif|ico|gif|css|js|mjs|woff2?|ttf|txt|xml|webmanifest|json|map|html)$/i;
+
+/**
+ * The Pages build id, inlined by `scripts/build-pages.mjs` at assembly time. It
+ * is part of the console-shell cache key so a deploy invalidates the shell
+ * instead of serving a document that references the previous build's chunks.
+ */
+const BUILD_ID = "__BUILD_ID__";
 
 export default {
   async fetch(request, env, ctx) {
@@ -74,6 +84,32 @@ export default {
     // them: only a miss or a stale hit reaches Next, and a stale page is served
     // immediately while it revalidates in the background.
     const cacheUsable = typeof caches !== "undefined" && Boolean(caches.default);
+
+    // The console's document shell is static and identical for every role, so a
+    // console navigation can be answered from the CDN instead of running the
+    // Worker to re-emit the same bytes. Only the *document* is stored — the
+    // `/api/admin/*` reads are never cacheable — and a per-navigation variant
+    // (RSC/prefetch) is passed through, so nothing private can land under the key.
+    if (cacheUsable && isAdminShellRequest(snapshot)) {
+      const cache = caches.default;
+      // Keyed by build so a deploy is a cold cache, not a stale shell pointing
+      // at chunk hashes the new build may no longer ship. `env.NEXT_BUILD_ID` is
+      // the Pages build id; fall back to the constant in the bundle.
+      const buildId = env?.NEXT_BUILD_ID ?? BUILD_ID;
+      const cacheKey = new Request(adminShellCacheUrl(pathname, buildId), { method: "GET" });
+
+      const hit = await cache.match(cacheKey);
+      if (hit) return withCacheStatus(hit, "HIT");
+
+      const response = await handler(request, env, ctx);
+      if (response.status === 200 && isHtml(response)) {
+        const cacheable = new Response(response.body, response);
+        cacheable.headers.set("Cache-Control", ADMIN_SHELL_CACHE_CONTROL);
+        ctx.waitUntil(cache.put(cacheKey, cacheable.clone()));
+        return withCacheStatus(cacheable, "MISS");
+      }
+      return response;
+    }
 
     // An admin edit can change any cached public page (menu, settings, branding),
     // and Next's `revalidatePath` only clears Next's own cache. Purge ours on the

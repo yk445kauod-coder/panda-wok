@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ADMIN_SHELL_CACHE_CONTROL,
   EDGE_CACHE_CONTROL,
+  adminShellCacheUrl,
   cacheKeysFor,
+  isAdminShellPath,
+  isAdminShellRequest,
   isCacheablePath,
   isCacheableRequest,
   purgePublicCache,
@@ -159,5 +163,64 @@ describe("shouldPurgeAfter", () => {
     expect(shouldPurgeAfter({ method: "GET", pathname: "/admin/menu" })).toBe(false);
     expect(shouldPurgeAfter({ method: "POST", pathname: "/checkout" })).toBe(false);
     expect(shouldPurgeAfter({ method: "GET", pathname: "/menu" })).toBe(false);
+  });
+});
+
+/**
+ * The console document shell is a static, data-free SPA shell, so it is cached
+ * separately from the (never-cached) admin *data* surface. These pin the
+ * boundary: only a console document GET is a shell, and only it is stored.
+ */
+describe("isAdminShellPath", () => {
+  it("matches the console document routes", () => {
+    expect(isAdminShellPath("/admin")).toBe(true);
+    expect(isAdminShellPath("/admin/orders")).toBe(true);
+    expect(isAdminShellPath("/admin/orders/123")).toBe(true);
+  });
+
+  it("does not match the admin JSON API or other surfaces", () => {
+    expect(isAdminShellPath("/api/admin/session")).toBe(false);
+    expect(isAdminShellPath("/adminn")).toBe(false);
+    expect(isAdminShellPath("/en/menu")).toBe(false);
+    expect(isAdminShellPath("/")).toBe(false);
+  });
+});
+
+describe("isAdminShellRequest", () => {
+  const shell = { method: "GET", pathname: "/admin/orders", cookieNames: [] };
+
+  it("caches a console document GET, even with the gate cookie", () => {
+    expect(isAdminShellRequest(shell)).toBe(true);
+    expect(isAdminShellRequest({ ...shell, cookieNames: ["panda-wok.admin"] })).toBe(true);
+  });
+
+  it("does not cache the admin data API", () => {
+    expect(isAdminShellRequest({ ...shell, pathname: "/api/admin/session" })).toBe(false);
+    expect(isAdminShellRequest({ ...shell, pathname: "/api/admin/orders" })).toBe(false);
+  });
+
+  it("does not cache a non-document or per-navigation variant", () => {
+    expect(isAdminShellRequest({ ...shell, method: "POST" })).toBe(false);
+    expect(isAdminShellRequest({ ...shell, method: "HEAD" })).toBe(false);
+    expect(isAdminShellRequest({ ...shell, hasRscHeader: true })).toBe(false);
+    expect(isAdminShellRequest({ ...shell, hasPrefetchHeader: true })).toBe(false);
+    expect(isAdminShellRequest({ ...shell, hasAuthorization: true })).toBe(false);
+  });
+});
+
+describe("adminShellCacheUrl", () => {
+  it("keys by build id so a deploy invalidates the shell", () => {
+    expect(adminShellCacheUrl("/admin", "buildA")).not.toBe(adminShellCacheUrl("/admin", "buildB"));
+  });
+
+  it("keeps a distinct key per route", () => {
+    expect(adminShellCacheUrl("/admin", "b")).not.toBe(adminShellCacheUrl("/admin/orders", "b"));
+  });
+});
+
+describe("ADMIN_SHELL_CACHE_CONTROL", () => {
+  it("is edge-cached with a bounded fresh window and no browser caching", () => {
+    expect(ADMIN_SHELL_CACHE_CONTROL).toContain("s-maxage=300");
+    expect(ADMIN_SHELL_CACHE_CONTROL).toContain("max-age=0");
   });
 });

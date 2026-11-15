@@ -125,6 +125,56 @@ export function isCacheableRequest(request) {
 }
 
 /**
+ * The console's document shell is cacheable at the edge — unlike its data.
+ *
+ * Every `/admin/*` page is now a static SPA shell: the layout reads no cookies,
+ * no headers and no database, so the Worker serves byte-identical HTML for every
+ * console route and every role. Verified live: the body is identical with no
+ * cookie and with a bogus gate cookie, and the response carries no `Set-Cookie`.
+ * The gate, the role and every row arrive from `/api/admin/*` in the browser,
+ * and those API responses are never stored here.
+ *
+ * So caching the shell removes one Worker invocation per console navigation and
+ * refresh — the cost that multiplies when several staff keep the console open —
+ * without ever storing anything private. It is deliberately a *separate*
+ * predicate from `isCacheableRequest`, whose admin exclusion guards the data
+ * surface and stays as it is.
+ *
+ * The key carries the build id (see `adminShellCacheUrl`). A rebuild changes the
+ * shell's asset hashes, so keying by build means a deploy is a cold cache rather
+ * than a stale shell pointing at chunks that may no longer be reachable.
+ */
+export const ADMIN_SHELL_TTL_SECONDS = 300;
+export const ADMIN_SHELL_CACHE_CONTROL = `public, max-age=0, s-maxage=${ADMIN_SHELL_TTL_SECONDS}`;
+
+/** A console document path (`/admin`, `/admin/orders`), never the `/api/admin` data. */
+export function isAdminShellPath(pathname) {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
+}
+
+/**
+ * True when this request is a console *document* fetch whose response is the
+ * shared, data-free shell. A per-navigation variant (RSC, prefetch, an explicit
+ * Authorization) is passed through so it is never stored under the shell's key.
+ */
+export function isAdminShellRequest(request) {
+  const { method, pathname, hasRscHeader, hasPrefetchHeader, hasAuthorization } =
+    request;
+  if (method !== "GET") return false;
+  if (hasRscHeader || hasPrefetchHeader || hasAuthorization) return false;
+  return isAdminShellPath(pathname);
+}
+
+/**
+ * The shell's cache key. The build id is part of it so a deploy never serves the
+ * previous build's document — which would reference chunk hashes that may be
+ * gone — and a route keeps its own key (`/admin` and `/admin/orders` differ).
+ */
+export function adminShellCacheUrl(pathname, buildId) {
+  return `${CACHE_ORIGIN}/__shell/${buildId}${pathname}`;
+}
+
+/**
  * The cache key. The locale lives in the path now (`/ar/menu`), so the pathname
  * alone distinguishes the variants — no extra query needed. The origin is a
  * fixed constant rather than the request host so a page has one key regardless
