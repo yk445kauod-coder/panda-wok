@@ -135,7 +135,9 @@ async function getPublicMenuRaw(): Promise<{
 }> {
   const supabase = createPublicSupabase();
   const [categories, items] = await Promise.all([
-    getPublicCategoriesRaw(),
+    // Through the wrapper: the categories read has its own KV backup, so a
+    // restricted Supabase still yields a menu rather than throwing here.
+    getPublicCategories(),
     supabase
       .from("menu_items")
       .select(PUBLIC_ITEM_WITH_MODIFIERS_COLUMNS)
@@ -293,7 +295,10 @@ export function getFeatureFlags(): Promise<FeatureFlag[]> {
 /** Flag lookup as a plain map; defaults to enabled when a flag is absent. */
 const getFeatureFlagMapCached = cachedPublic(
   async () => {
-    const flags = await getFeatureFlagsRaw();
+    // Composed through the wrapper, not `getFeatureFlagsRaw`: the map is built
+    // from the flag list, and calling the raw reader would bypass the KV backup
+    // exactly when it is needed, so a restricted Supabase would still throw here.
+    const flags = await getFeatureFlagsCached();
     return Object.fromEntries(flags.map((f) => [f.key, f.is_enabled]));
   },
   ["public-feature-flag-map"],
