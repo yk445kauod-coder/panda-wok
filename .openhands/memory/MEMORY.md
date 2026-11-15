@@ -142,7 +142,7 @@
 - **`DATA_BACKEND=d1`** is now set in `wrangler.jsonc` (the D1 shim owns `.from()`/`.rpc()` AND
   `auth.*`, so login works). The old "stays supabase / no `auth`" note is obsolete as of `a6939a7`.
 - **Console invocation budget (measured 2026-11-13, commit `2f45747`)**: polling, not bundle size, is
-  the cost (admin JS ≈ menu JS; only 4 pages poll). `OPS_POLL_FALLBACK_MS`=30s; a tick wakes boards
+  the cost (admin JS ≈ menu JS; only 4 pages poll). `OPS_POLL_FALLBACK_MS`=45s, live net 120s (+ a half-open-socket watchdog: heartbeat closes a socket silent > 60s, since `onclose` never fires for one); a tick wakes boards
   only via `shouldWakeBoards` = `changed||forceBoards||!live` (idle live tick = 1 read, not 2).
   `/api/admin/crm` was a 500 — the four `crm_*` RPCs were Postgres-only; ported to `src/lib/d1/rpc.ts`
   (D1 `rpc()` is a plain promise — **no `.maybeSingle()`**). `pagesFunctionsInvocationsAdaptiveGroups`
