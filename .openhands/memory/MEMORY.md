@@ -28,9 +28,22 @@
   `grep -c ZodError .pages/middleware/handler.mjs` → must be 0.
   Remaining 1102 risk is genuinely architectural: dynamic `/api/admin/*` on Free's 10 ms cap.
   Real escalations: Workers Paid ($5 → 5 min CPU), or move the data layer off the Worker.
-- **Live invocation data (2026-11-14):** `pages-worker--19831446-production` = panda-wok. Requests
-  went 2,272/day (Nov 7) → 19,472/day (Nov 14) with **1,198 `errors` on Nov 13** (the `errors`
-  column IS 1102). Always pull this before theorising about "heavy".
+- **Live invocation data:** `pagesFunctionsInvocationsAdaptiveGroups` on account 708d1cc2… is the
+  authoritative metric. Requests 2,272/day (Nov 7) → **peak 23,682/day (Nov 13, 1,198 errors = 1102)**
+  → 5,265/day (Nov 15) after the poll + shell fixes. Always pull this before theorising about "heavy".
+- **The console *document* is now edge-cached (commit `a61edd7`, 2026-11-15).** `/admin/*` is a
+  static, cookie-independent shell (`layout.tsx` reads no cookies/headers/DB; body identical with no
+  cookie vs a bogus gate cookie; no `Set-Cookie`) but middleware pinned it `no-store`, so **every
+  console navigation ran the Worker** to re-emit 14 KB. Fixed in `scripts/pages/{edge-cache,_worker}.js`:
+  a *separate* `isAdminShellRequest` path caches only the document GET, keyed by build id
+  (`adminShellCacheUrl`, build id inlined from `.pages/BUILD_ID` by `build-pages.mjs`; `s-maxage=300`,
+  no SWR). The `/api/admin/*` **data** stays uncacheable — `isCacheableRequest`'s admin exclusion is
+  untouched. Live: `/admin` → `cf-cache-status: HIT` (CDN answers, no Worker).
+- **Empty/vestigial feature tables on D1 (0 rows):** `offers`, `faqs`, `page_content`,
+  `backup_records`, `exports`, `feedback`, `delivery_zones`. Their admin pages render but their
+  *create* paths need `SUPABASE_SERVICE_ROLE_KEY` (unset) → Backups/Exports are non-functional on
+  D1. `src/lib/backup/download.ts` `.from("backups")` is a Supabase **storage bucket**, not a table
+  (not a table-name bug). Pruning these is a product call, left in place.
 - Middleware: admin requests skip `updateSession` (commit `1e98108`) — the console never reads
   the customer session (gate cookie auths it; `x-pw-path` elevates API reads to service role).
 - Sign-out: `src/components/admin/admin-sign-out.tsx` -> `lockAdminAction` (clears gate cookie +
