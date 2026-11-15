@@ -69,11 +69,33 @@ export function setD1Database(database: D1Database | null): void {
 /** The bindings this app reads off the Cloudflare context. */
 export type CloudflareBindings = {
   D1_DB?: D1Database;
+  /**
+   * R2 bucket for uploaded dish photography (`panda-wok-media` in
+   * `wrangler.jsonc`). Present only once R2 is enabled and the binding is
+   * attached to the deployment; absent, uploads fall back to Supabase Storage.
+   */
+  MEDIA_BUCKET?: R2BucketLike;
   /** Present only in a Worker-hosted deploy; the Pages build reaches the hub by URL. */
   OPS_HUB?: unknown;
   OPS_HUB_URL?: string;
   OPS_TOKEN?: string;
 };
+
+/**
+ * The slice of the R2 API the app uses, declared structurally so this module
+ * keeps no dependency on `@cloudflare/workers-types` (mirrors `D1Database`).
+ */
+export interface R2BucketLike {
+  put(
+    key: string,
+    value: ArrayBuffer | ReadableStream | string,
+    options?: { httpMetadata?: { contentType?: string; cacheControl?: string } },
+  ): Promise<unknown>;
+  get(key: string): Promise<{
+    body: ReadableStream | null;
+    httpMetadata?: { contentType?: string; cacheControl?: string };
+  } | null>;
+}
 
 let cachedBindings: CloudflareBindings | null = null;
 

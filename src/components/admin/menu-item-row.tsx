@@ -15,6 +15,7 @@ import { formatPrice } from "@/lib/utils/format";
 
 import { useErrorText, useT } from "@/components/i18n-provider";
 import { refreshAdminData } from "@/lib/admin/client";
+import { dishImageUrl } from "@/lib/images/responsive";
 type Row = {
   id: string;
   name_en: string;
@@ -101,7 +102,7 @@ export function MenuItemRow({ item, categoryName }: { item: Row; categoryName: s
             // a layout shift for a thumbnail this small.
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={item.image_url}
+              src={dishImageUrl(item.image_url)}
               alt=""
               className="size-full object-cover"
               loading="lazy"

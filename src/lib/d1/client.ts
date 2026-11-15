@@ -22,6 +22,7 @@ import { fromSqlRow, newUuid } from "@/lib/d1/coerce";
 import { D1AuthClient } from "@/lib/d1/auth";
 import {
   buildDelete,
+  buildEmbedWhere,
   buildInsert,
   buildSelect,
   buildUpdate,
@@ -69,6 +70,22 @@ const NO_ID_TABLE = new Set([
   "settings", "feature_flags", "ai_usage_daily", "menu_item_ratings",
   "customer_tag_links", "team_thread_members", "staff", "ops_agent_settings",
   "auth_identities", "auth_users",
+]);
+
+/**
+ * Tables whose `id` is an INTEGER PRIMARY KEY, so SQLite assigns it.
+ *
+ * These are the Postgres `bigserial`/`serial` tables — the append-only logs and
+ * queues. The builder's default is to inject a UUID, which SQLite rejects on an
+ * INTEGER column with "datatype mismatch": the insert fails and the row is
+ * silently lost. That broke analytics ingestion (`/api/analytics` answered
+ * `{"ok":false}` and `analytics_events` stayed empty), the activity timeline,
+ * the audit trail, notifications and team messages. Left unset here, the column
+ * auto-increments exactly as it did in Postgres.
+ */
+const AUTO_ID_TABLE = new Set([
+  "order_status_history", "notifications", "team_messages",
+  "activity_logs", "analytics_events", "audit_logs",
 ]);
 
 /** The natural key to upsert on, for tables that have no `id`. */
@@ -254,10 +271,19 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
 
   private async runSelect(): Promise<QueryResult<T>> {
     const db = getD1Database();
+    const embedTables = this.selectClause.embeds.map((e) => e.table);
+    // A filter whose dotted column names an embed (`orders.created_at`) lives on
+    // the child table and cannot appear in the parent WHERE. The embed path runs
+    // its own child query and applies it there; any other dotted filter is a
+    // column this table does not have, so dropping it beats a "no such column"
+    // that would fail the whole read.
+    const parentFilters = this.selectClause.embeds.length > 0
+      ? this.filters.filter((f) => f.column.indexOf(".") === -1)
+      : this.filters;
     const { sql, params, countSql, countParams } = buildSelect({
       table: this.table,
       clause: this.selectClause,
-      filters: this.filters,
+      filters: parentFilters,
       orders: this.orders,
       limit: this.limitCount,
       offset: this.offsetCount,
@@ -307,7 +333,9 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
     const { sql } = buildSelect({
       table: this.table,
       clause: { columns: [], embeds: [] },
-      filters: this.filters,
+      // Dotted filters name an embed's column, not one on this table; the child
+      // query applies them, so they must not reach this parent SELECT.
+      filters: this.filters.filter((f) => f.column.indexOf(".") === -1),
       orders: this.orders,
       limit: this.limitCount,
       offset: this.offsetCount,
@@ -339,10 +367,14 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
         : `"${childTable}".*`;
 
       // Child direction: the child holds the FK back to the parent.
-      const childSql = `SELECT ${childColumns}, "${childTable}"."${childFk}" AS __fk FROM "${childTable}" WHERE "${childTable}"."${childFk}" IN (${parentIds.map(() => "?").join(", ")})`;
+      const childWhere = buildEmbedWhere(this.filters, childTable);
+      const childSql = `SELECT ${childColumns}, "${childTable}"."${childFk}" AS __fk FROM "${childTable}" WHERE "${childTable}"."${childFk}" IN (${parentIds.map(() => "?").join(", ")})${childWhere.sql}`;
       let childResult;
       try {
-        childResult = await db.prepare(childSql).bind(...parentIds).all<Record<string, unknown>>();
+        childResult = await db
+          .prepare(childSql)
+          .bind(...([...parentIds, ...childWhere.params] as D1Value[]))
+          .all<Record<string, unknown>>();
       } catch {
         childResult = null;
       }
@@ -356,7 +388,16 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
           if (!grouped.has(fk)) grouped.set(fk, []);
           grouped.get(fk)!.push(row);
         }
-        current = current.map((r) => ({ ...r, [childTable]: grouped.get(String(r.id)) ?? [] }));
+        let attached = current.map((r) => ({ ...r, [childTable]: grouped.get(String(r.id)) ?? [] }));
+        // An `!inner` embed with a filter keeps only parents that have a matching
+        // child, mirroring PostgREST: `orders!inner (created_at)` filtered to the
+        // window must not return orders with no line in it.
+        if (embed.inner && childWhere.sql !== "") {
+          attached = attached.filter(
+            (r) => (r[childTable] as Array<unknown>).length > 0,
+          );
+        }
+        current = attached;
         continue;
       }
 
@@ -364,18 +405,29 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
       const parentValues = Array.from(
         new Set(current.map((r) => r[parentFk]).filter(Boolean) as string[]),
       );
+      const parentWhere = buildEmbedWhere(this.filters, childTable);
       if (parentValues.length === 0) {
-        current = current.map((r) => ({ ...r, [childTable]: null }));
+        // No parent row names a child: an `!inner` embed yields nothing, an
+        // outer embed yields null.
+        current = embed.inner
+          ? []
+          : current.map((r) => ({ ...r, [childTable]: null }));
         continue;
       }
-      const parentSql = `SELECT ${childColumns} FROM "${childTable}" WHERE "${childTable}"."id" IN (${parentValues.map(() => "?").join(", ")})`;
-      const parentResult = await db.prepare(parentSql).bind(...parentValues).all<Record<string, unknown>>();
+      const parentSql = `SELECT ${childColumns} FROM "${childTable}" WHERE "${childTable}"."id" IN (${parentValues.map(() => "?").join(", ")})${parentWhere.sql}`;
+      const parentResult = await db
+        .prepare(parentSql)
+        .bind(...([...parentValues, ...parentWhere.params] as D1Value[]))
+        .all<Record<string, unknown>>();
       const byId = new Map<string, Record<string, unknown>>();
       for (const raw of parentResult.results ?? []) {
         const row = fromSqlRow(childTable, raw);
         byId.set(String(row.id), row);
       }
       current = current.map((r) => ({ ...r, [childTable]: byId.get(String(r[parentFk])) ?? null }));
+      if (embed.inner) {
+        current = current.filter((r) => r[childTable] !== null);
+      }
     }
 
     return current;
@@ -404,7 +456,9 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
     const input = Array.isArray(this.payload) ? this.payload : [this.payload ?? {}];
     const rows = input.map((row) => {
       const stamped = stampTimestamps(this.table, row, { insert: true });
-      if (stamped.id === undefined && !NO_ID_TABLE.has(this.table)) stamped.id = newUuid();
+      if (stamped.id === undefined && !NO_ID_TABLE.has(this.table) && !AUTO_ID_TABLE.has(this.table)) {
+        stamped.id = newUuid();
+      }
       return stamped;
     });
     const { sql, params } = buildInsert(this.table, rows, context.restaurantId, this.conflictTarget);

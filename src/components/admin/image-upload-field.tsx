@@ -5,6 +5,7 @@ import { ImagePlus, LinkIcon, RotateCcw } from "lucide-react";
 import { uploadMenuImageAction } from "@/lib/actions/storage";
 import { Spinner } from "@/components/ui/button";
 import { cn } from "@/lib/utils/format";
+import { dishImageUrl } from "@/lib/images/responsive";
 
 const ACCEPTED = "image/png,image/jpeg,image/webp,image/avif";
 
@@ -106,7 +107,7 @@ export function ImageUploadField({
             // Local blob or a remote host the admin pasted; plain img keeps the
             // small thumbnail simple (next/image needs a fixed host allow-list).
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={preview} alt="" className="h-full w-full object-cover" />
+            <img src={dishImageUrl(preview)} alt="" className="h-full w-full object-cover" />
           ) : (
             <span className="grid h-full w-full place-items-center gap-1 text-ink-700/70">
               <ImagePlus className="size-5" />

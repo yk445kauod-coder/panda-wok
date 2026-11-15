@@ -6,11 +6,21 @@
   "observability": {
     "enabled": true
   },
+  // NOTE: to serve from R2 (the deployment's own bucket, no Supabase egress) add
+  // the binding below — but only *after* R2 is enabled on the account and the
+  // bucket exists, or `wrangler deploy` fails on an unknown bucket. The worker
+  // already prefers R2 when the binding is present and falls back to Supabase
+  // Storage when it is not, so the code needs no further change:
+  //
+  //   "r2_buckets": [
+  //     { "binding": "MEDIA", "bucket_name": "panda-wok-media",
+  //       "preview_bucket_name": "panda-wok-media" }
+  //   ],
   "vars": {
     // The public Storage origin. Not a secret — it ships in the browser bundle.
     "SUPABASE_ORIGIN": "https://xjbtsryidznsxqlynmfa.supabase.co",
-    // The one bucket this worker is allowed to proxy.
-    "MEDIA_BUCKET": "menu-images",
+    // The one Supabase bucket this worker is allowed to fall back to.
+    "SUPABASE_BUCKET": "menu-images",
     // The site's own origin, so only the site (and the browser) may use the proxy.
     "SITE_ORIGIN": "https://panda-wok.pages.dev"
   }

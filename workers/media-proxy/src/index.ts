@@ -1,32 +1,45 @@
 /**
- * Panda Wok media proxy worker.
+ * Panda Wok media worker.
  *
- * Serves dish photography from Supabase Storage through Cloudflare's cache, so
- * the project's scarce resource — Storage egress — is spent once per object
- * instead of once per visitor.
+ * Serves dish photography from the deployment's own R2 bucket, and — until R2 is
+ * enabled and the objects are migrated — from Supabase Storage through
+ * Cloudflare's cache. Either way the project's scarce resource (Storage egress)
+ * is spent at most once per object instead of once per visitor.
  *
  * Why this is a separate Worker and not a route on the site's Pages worker:
  * the site worker is the OpenNext/Next.js server. On the Free plan it has a 10 ms
  * CPU budget per request, and every image request that reached it would run that
  * whole bundle (env resolution, middleware matching, the Next request pipeline)
  * just to hand back a byte stream — while competing for the same per-account
- * request budget that Error 1102s come from. This worker is a few kilobytes: a
- * cache lookup, and on a miss a single `fetch` piped straight through. A menu
+ * request budget that Error 1102s come from. This worker is a few kilobytes: an
+ * R2 read, or a cache lookup and a single `fetch` piped straight through. A menu
  * page with 48 photos therefore costs the site worker *nothing* for the images.
  *
  * Measured motivation: 1.17 GB of Storage egress in 24 hours from ~1,500 requests
  * (average 775 KB an image) — 99.99% of the project's total, and what exhausted
  * the Free plan's cached-egress quota until every API call answered 402.
  *
- * Public GET only. `SUPABASE_ORIGIN` and `MEDIA_BUCKET` are the only things it
- * will fetch from, and the object name is checked against the exact pattern the
- * uploader mints, so it cannot be used as an open proxy or to reach another path.
+ * Public GET only. `SUPABASE_ORIGIN`/`SUPABASE_BUCKET` and the R2 bucket are the
+ * only things it will read from, and the object name is checked against the exact
+ * pattern the uploader mints, so it cannot be used as an open proxy or to reach
+ * another path.
  */
 
 export interface Env {
   SUPABASE_ORIGIN: string;
-  MEDIA_BUCKET: string;
+  SUPABASE_BUCKET: string;
   SITE_ORIGIN?: string;
+  /**
+   * The deployment's own R2 bucket. Optional: R2 must be enabled on the account
+   * and the bucket created before the binding resolves, so when it is absent the
+   * worker still serves the same objects from Supabase Storage.
+   */
+  MEDIA?: {
+    get(key: string): Promise<{
+      body: ReadableStream | null;
+      httpMetadata?: { contentType?: string; cacheControl?: string };
+    } | null>;
+  };
 }
 
 /** The exact shape `uploadMenuImageAction` writes: `dish-<8 hex>-<uuid>.<ext>`. */
@@ -78,7 +91,34 @@ export default {
       return new Response("Not found", { status: 404 });
     }
 
-    const origin = `${env.SUPABASE_ORIGIN}/storage/v1/object/public/${env.MEDIA_BUCKET}/${name}`;
+    const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
+    const mime = MIME[ext] ?? "application/octet-stream";
+
+    // Serve from the deployment's own R2 bucket first. This is the store uploads
+    // write to once R2 is enabled, and reading it costs no Supabase egress — the
+    // quota whose exhaustion 402'd the whole project.
+    if (env.MEDIA) {
+      try {
+        const object = await env.MEDIA.get(name);
+        if (object) {
+          return new Response(object.body, {
+            status: 200,
+            headers: {
+              "content-type": object.httpMetadata?.contentType ?? mime,
+              "cache-control": object.httpMetadata?.cacheControl ?? "public, max-age=31536000, immutable",
+              "x-content-type-options": "nosniff",
+              "access-control-allow-origin": env.SITE_ORIGIN ?? "*",
+              "x-media-source": "r2",
+            },
+          });
+        }
+      } catch {
+        // A bucket that is not there yet must not take the site down; fall
+        // through to the Storage origin, which may still hold the object.
+      }
+    }
+
+    const origin = `${env.SUPABASE_ORIGIN}/storage/v1/object/public/${env.SUPABASE_BUCKET}/${name}`;
     // The origin URL is the cache key, so query-string variants (`?v=2`) resolve
     // to the same stored object.
     const cacheKey = new Request(origin, { method: "GET" });
@@ -92,9 +132,8 @@ export default {
       if (hit) return withStatus(hit, "HIT");
     }
 
-    const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
     const upstream = await fetch(origin, {
-      headers: { accept: MIME[ext] ?? "image/*" },
+      headers: { accept: mime },
       // `cf` is a Cloudflare fetch extension, absent from the DOM `RequestInit`.
       cf: { cacheTtl: MEDIA_TTL_SECONDS, cacheEverything: true },
     } as RequestInit);

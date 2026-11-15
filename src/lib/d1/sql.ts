@@ -155,6 +155,45 @@ export function buildWhere(filters: Filter[], table: string): { sql: string; par
   return { sql: ` WHERE ${parts.join(" AND ")}`, params };
 }
 
+/**
+ * The embed table a filter's dotted column points at, if it names one of the
+ * query's embeds. PostgREST lets a caller filter an embedded relation's column
+ * (`order_items.select("…, orders!inner (created_at)").gte("orders.created_at", …)`);
+ * the column lives on the child table, which is fetched separately, so the main
+ * SELECT cannot carry it. Recognising the target lets the builder route it to
+ * the child query instead of emitting a column the parent table does not have.
+ */
+export function embedFilterTarget(filter: Filter, embedTables: string[]): string | null {
+  const dot = filter.column.indexOf(".");
+  if (dot === -1) return null;
+  const prefix = filter.column.slice(0, dot);
+  return embedTables.includes(prefix) ? prefix : null;
+}
+
+/** True when any filter targets an embedded relation rather than the base table. */
+export function hasEmbedFilters(filters: Filter[], embedTables: string[]): boolean {
+  return filters.some((f) => embedFilterTarget(f, embedTables) !== null);
+}
+
+/**
+ * The filter clause for one embedded relation's child query, with the parent
+ * prefix stripped so `orders.created_at` becomes `"orders"."created_at"` against
+ * the child table. Returns an `AND`-prefixed fragment (or empty) so it appends to
+ * the query's existing `WHERE … IN (…)` rather than starting a second `WHERE`.
+ */
+export function buildEmbedWhere(
+  filters: Filter[],
+  embedTable: string,
+): { sql: string; params: unknown[] } {
+  const scoped = filters
+    .filter((f) => embedFilterTarget(f, [embedTable]) !== null)
+    .map((f) => ({ ...f, column: f.column.slice(embedTable.length + 1) }));
+  if (scoped.length === 0) return { sql: "", params: [] };
+  const params: unknown[] = [];
+  const parts = scoped.map((f) => filterSql(f, embedTable, params));
+  return { sql: ` AND ${parts.join(" AND ")}`, params };
+}
+
 export function buildOrder(terms: OrderTerm[], table: string): string {
   if (terms.length === 0) return "";
   const parts = terms.map(
