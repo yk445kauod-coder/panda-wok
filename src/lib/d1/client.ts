@@ -29,10 +29,12 @@ import {
   parseSelect,
   stampActor,
   stampTimestamps,
+  type Embed,
   type Filter,
   type OrderTerm,
   type WriteRow,
 } from "@/lib/d1/sql";
+import { resolveEmbedLink, type EmbedLink } from "@/lib/d1/relations";
 import { runRpc } from "@/lib/d1/rpc";
 
 export type QueryResult<T> = {
@@ -41,24 +43,6 @@ export type QueryResult<T> = {
   count?: number | null;
   status?: number;
 };
-
-const SINGULAR_IRREGULAR: Record<string, string> = {
-  categories: "category",
-  addresses: "address",
-  profiles: "profile",
-  orders: "order",
-  messages: "message",
-  faqs: "faq",
-  identities: "identity",
-};
-
-function singular(table: string): string {
-  if (SINGULAR_IRREGULAR[table]) return SINGULAR_IRREGULAR[table];
-  if (table.endsWith("ies")) return table.slice(0, -3) + "y";
-  if (table.endsWith("ses")) return table.slice(0, -2);
-  if (table.endsWith("s")) return table.slice(0, -1);
-  return table;
-}
 
 /**
  * Tables that have no `id` column. The builder must not invent one for them —
@@ -101,6 +85,13 @@ const NATURAL_KEY: Record<string, string> = {
   auth_users: "id",
   auth_identities: "id",
 };
+
+/**
+ * Whether a `table.column` exists, for the embed path's inferred links. Cached
+ * per isolate: the schema does not change at runtime, and the probe would
+ * otherwise run on every query that carries an unlisted embed.
+ */
+const COLUMN_CACHE = new Map<string, boolean>();
 
 function toError(error: unknown): { message: string; code?: string } {
   if (error instanceof Error) return { message: error.message };
@@ -271,7 +262,6 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
 
   private async runSelect(): Promise<QueryResult<T>> {
     const db = getD1Database();
-    const embedTables = this.selectClause.embeds.map((e) => e.table);
     // A filter whose dotted column names an embed (`orders.created_at`) lives on
     // the child table and cannot appear in the parent WHERE. The embed path runs
     // its own child query and applies it there; any other dotted filter is a
@@ -348,17 +338,58 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
   private async attachEmbeds(
     rows: Array<Record<string, unknown>>,
   ): Promise<Array<Record<string, unknown>>> {
+    return this.attachEmbedsInto(this.table, this.selectClause.embeds, rows, this.filters);
+  }
+
+  /**
+   * Attach `embeds` to `rows` (all rows of `parentTable`).
+   *
+   * The join column comes from `resolveEmbedLink`, which encodes the foreign keys
+   * the Postgres schema declared; the old name-based guess missed every relation
+   * that links through a differently-named column (a profile hangs off
+   * `user_id`), so the screen rendered empty. Nested embeds recurse with the
+   * child rows, which is how `modifier_groups (modifier_options (...))` fills in.
+   *
+   * An *inferred* link (a pair not in the map) is checked against the schema
+   * first: if the guessed child column does not exist, the relation is dropped
+   * instead of emitting a query that fails on `no such column`.
+   */
+  private async attachEmbedsInto(
+    parentTable: string,
+    embeds: Embed[],
+    rows: Array<Record<string, unknown>>,
+    filters: Filter[],
+  ): Promise<Array<Record<string, unknown>>> {
     const db = getD1Database();
     let current = rows;
 
-    for (const embed of this.selectClause.embeds) {
-      const parentTable = this.table;
+    for (const embed of embeds) {
       const childTable = embed.table;
-      const childFk = `${singular(parentTable)}_id`;
-      const parentFk = `${singular(childTable)}_id`;
-      const parentIds = current.map((r) => r.id).filter(Boolean) as string[];
-      if (parentIds.length === 0) {
-        current = current.map((r) => ({ ...r, [childTable]: [] }));
+      const link = resolveEmbedLink(parentTable, childTable);
+      const toOne = link.childKey === "id";
+      const emptyRelation = () => (embed.inner ? [] : toOne ? null : []);
+
+      if (!link.exact && !(await this.columnExists(childTable, link.childKey))) {
+        const empty = emptyRelation();
+        current = embed.inner
+          ? []
+          : current.map((r) => ({ ...r, [childTable]: empty }));
+        continue;
+      }
+
+      if (link.join) {
+        current = await this.attachManyToMany(parentTable, embed, link, current, filters);
+        continue;
+      }
+
+      // The join values on the parent side; the child rows match these.
+      const parentValues = Array.from(
+        new Set(current.map((r) => r[link.parentKey]).filter((v) => v != null) as string[]),
+      );
+      const childWhere = buildEmbedWhere(filters, childTable);
+      if (parentValues.length === 0) {
+        const empty = emptyRelation();
+        current = embed.inner ? [] : current.map((r) => ({ ...r, [childTable]: empty }));
         continue;
       }
 
@@ -366,71 +397,148 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
         ? `"${childTable}".id, ${embed.columns.map((c) => `"${childTable}"."${c}"`).join(", ")}`
         : `"${childTable}".*`;
 
-      // Child direction: the child holds the FK back to the parent.
-      const childWhere = buildEmbedWhere(this.filters, childTable);
-      const childSql = `SELECT ${childColumns}, "${childTable}"."${childFk}" AS __fk FROM "${childTable}" WHERE "${childTable}"."${childFk}" IN (${parentIds.map(() => "?").join(", ")})${childWhere.sql}`;
+      const childSql = `SELECT ${childColumns}, "${childTable}"."${link.childKey}" AS __fk FROM "${childTable}" WHERE "${childTable}"."${link.childKey}" IN (${parentValues.map(() => "?").join(", ")})${childWhere.sql}`;
       let childResult;
       try {
         childResult = await db
           .prepare(childSql)
-          .bind(...([...parentIds, ...childWhere.params] as D1Value[]))
+          .bind(...([...parentValues, ...childWhere.params] as D1Value[]))
           .all<Record<string, unknown>>();
       } catch {
         childResult = null;
       }
 
-      if (childResult && childResult.success) {
-        const grouped = new Map<string, Array<Record<string, unknown>>>();
-        for (const raw of childResult.results ?? []) {
-          const row = fromSqlRow(childTable, raw);
-          const fk = String(row.__fk);
-          delete row.__fk;
-          if (!grouped.has(fk)) grouped.set(fk, []);
-          grouped.get(fk)!.push(row);
-        }
-        let attached = current.map((r) => ({ ...r, [childTable]: grouped.get(String(r.id)) ?? [] }));
-        // An `!inner` embed with a filter keeps only parents that have a matching
-        // child, mirroring PostgREST: `orders!inner (created_at)` filtered to the
-        // window must not return orders with no line in it.
-        if (embed.inner && childWhere.sql !== "") {
-          attached = attached.filter(
-            (r) => (r[childTable] as Array<unknown>).length > 0,
-          );
-        }
-        current = attached;
+      if (!childResult || !childResult.success) {
+        const empty = emptyRelation();
+        current = embed.inner ? [] : current.map((r) => ({ ...r, [childTable]: empty }));
         continue;
       }
 
-      // Parent direction: the parent holds the FK to the child (belongs-to).
-      const parentValues = Array.from(
-        new Set(current.map((r) => r[parentFk]).filter(Boolean) as string[]),
-      );
-      const parentWhere = buildEmbedWhere(this.filters, childTable);
-      if (parentValues.length === 0) {
-        // No parent row names a child: an `!inner` embed yields nothing, an
-        // outer embed yields null.
-        current = embed.inner
-          ? []
-          : current.map((r) => ({ ...r, [childTable]: null }));
-        continue;
-      }
-      const parentSql = `SELECT ${childColumns} FROM "${childTable}" WHERE "${childTable}"."id" IN (${parentValues.map(() => "?").join(", ")})${parentWhere.sql}`;
-      const parentResult = await db
-        .prepare(parentSql)
-        .bind(...([...parentValues, ...parentWhere.params] as D1Value[]))
-        .all<Record<string, unknown>>();
-      const byId = new Map<string, Record<string, unknown>>();
-      for (const raw of parentResult.results ?? []) {
+      const grouped = new Map<string, Array<Record<string, unknown>>>();
+      for (const raw of childResult.results ?? []) {
         const row = fromSqlRow(childTable, raw);
-        byId.set(String(row.id), row);
+        const fk = String(row.__fk);
+        delete row.__fk;
+        if (!grouped.has(fk)) grouped.set(fk, []);
+        grouped.get(fk)!.push(row);
       }
-      current = current.map((r) => ({ ...r, [childTable]: byId.get(String(r[parentFk])) ?? null }));
-      if (embed.inner) {
-        current = current.filter((r) => r[childTable] !== null);
+
+      // Fill nested relations on the child rows before they are attached. The
+      // recursion returns new row objects, so the grouping is rebuilt by id;
+      // mutating the objects in place would be the only alternative and the
+      // builder is immutable by design.
+      const childRows = [...grouped.values()].flat();
+      if (embed.embeds.length > 0 && childRows.length > 0) {
+        const filled = await this.attachEmbedsInto(childTable, embed.embeds, childRows, filters);
+        const filledById = new Map(filled.map((r) => [String(r.id), r]));
+        for (const [key, group] of grouped) {
+          grouped.set(
+            key,
+            group.map((r) => filledById.get(String(r.id)) ?? r),
+          );
+        }
       }
+
+      // Matching the child's primary key (`childKey === "id"`) means the parent
+      // holds the FK, so this is a to-one relation and PostgREST returns an
+      // object (or null). Matching a non-key column means the child holds the FK
+      // and the result is a list.
+      let attached = toOne
+        ? current.map((r) => ({
+            ...r,
+            [childTable]: grouped.get(String(r[link.parentKey]))?.[0] ?? null,
+          }))
+        : current.map((r) => ({
+            ...r,
+            [childTable]: grouped.get(String(r[link.parentKey])) ?? [],
+          }));
+      // An `!inner` embed with a filter keeps only parents that have a matching
+      // child, mirroring PostgREST: `orders!inner (created_at)` filtered to the
+      // window must not return orders with no line in it.
+      if (embed.inner && childWhere.sql !== "") {
+        attached = attached.filter((r) =>
+          toOne ? r[childTable] !== null : (r[childTable] as Array<unknown>).length > 0,
+        );
+      }
+      current = attached;
     }
 
     return current;
+  }
+
+  /**
+   * A many-to-many embed, e.g. a customer note's tags: neither side carries the
+   * other's id, so the pair is matched through `link.join.table`.
+   */
+  private async attachManyToMany(
+    parentTable: string,
+    embed: Embed,
+    link: EmbedLink & { exact: boolean },
+    rows: Array<Record<string, unknown>>,
+    filters: Filter[],
+  ): Promise<Array<Record<string, unknown>>> {
+    const db = getD1Database();
+    const childTable = embed.table;
+    const join = link.join!;
+    const parentValues = Array.from(
+      new Set(rows.map((r) => r[link.parentKey]).filter((v) => v != null) as string[]),
+    );
+    if (parentValues.length === 0) {
+      return rows.map((r) => ({ ...r, [childTable]: [] }));
+    }
+
+    const childColumns = embed.columns.length > 0
+      ? `"${childTable}".id, ${embed.columns.map((c) => `"${childTable}"."${c}"`).join(", ")}`
+      : `"${childTable}".*`;
+    const childWhere = buildEmbedWhere(filters, childTable);
+    const sql = `SELECT ${childColumns}, "j"."${join.parentColumn}" AS __parent FROM "${childTable}"
+      JOIN "${join.table}" AS "j" ON "j"."${join.childColumn}" = "${childTable}"."id"
+      WHERE "j"."${join.parentColumn}" IN (${parentValues.map(() => "?").join(", ")})${childWhere.sql}`;
+
+    let result;
+    try {
+      result = await db
+        .prepare(sql)
+        .bind(...([...parentValues, ...childWhere.params] as D1Value[]))
+        .all<Record<string, unknown>>();
+    } catch {
+      result = null;
+    }
+    if (!result || !result.success) {
+      return rows.map((r) => ({ ...r, [childTable]: [] }));
+    }
+
+    const grouped = new Map<string, Array<Record<string, unknown>>>();
+    for (const raw of result.results ?? []) {
+      const row = fromSqlRow(childTable, raw);
+      const parentId = String(row.__parent);
+      delete row.__parent;
+      if (!grouped.has(parentId)) grouped.set(parentId, []);
+      grouped.get(parentId)!.push(row);
+    }
+    void parentTable;
+    return rows.map((r) => ({
+      ...r,
+      [childTable]: grouped.get(String(r[link.parentKey])) ?? [],
+    }));
+  }
+
+  /** Whether `table` has `column`, cached per isolate. */
+  private async columnExists(table: string, column: string): Promise<boolean> {
+    const key = `${table}.${column}`;
+    const cached = COLUMN_CACHE.get(key);
+    if (cached !== undefined) return cached;
+    try {
+      const result = await getD1Database()
+        .prepare(`SELECT 1 FROM pragma_table_info(?) WHERE name = ? LIMIT 1`)
+        .bind(table, column)
+        .first();
+      const exists = Boolean(result);
+      COLUMN_CACHE.set(key, exists);
+      return exists;
+    } catch {
+      return false;
+    }
   }
 
   private shape(rows: Array<Record<string, unknown>>, count: number | null): QueryResult<T> {

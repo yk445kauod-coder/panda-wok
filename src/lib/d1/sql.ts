@@ -18,12 +18,27 @@ export type Filter = {
 
 export type OrderTerm = { column: string; ascending: boolean };
 
+/**
+ * One embedded relation in a select, e.g. `order_items (quantity)`.
+ *
+ * `embeds` holds the relations nested *inside* this one, so
+ * `menu_items (modifier_groups (modifier_options (id)))` keeps its full tree
+ * rather than collapsing the inner relation into a bogus column name.
+ */
+export type Embed = {
+  table: string;
+  /** Scalar columns of the embedded table; `*`/empty means all. */
+  columns: string[];
+  inner: boolean;
+  embeds: Embed[];
+};
+
 /** A parsed `select("a, b, child (x, y)")` clause. */
 export type SelectClause = {
   /** Columns requested at this level; `*` or empty means all. */
   columns: string[];
   /** Embedded relations, e.g. `order_items (quantity)`. */
-  embeds: Array<{ table: string; columns: string[]; inner: boolean }>;
+  embeds: Embed[];
 };
 
 const COLUMN = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -45,16 +60,25 @@ function quote(identifier: string): string {
 export function parseSelect(input: string | undefined): SelectClause {
   const source = (input ?? "*").trim();
   if (source === "" || source === "*") return { columns: [], embeds: [] };
+  return parseClause(source);
+}
 
+/**
+ * Split one level of a select body into columns and embeds.
+ *
+ * A `(` opens an embed whose body is parsed by this same function, so nesting is
+ * preserved (`menu_items (modifier_groups (modifier_options (id)))`). Top-level
+ * commas separate tokens; a comma inside parentheses belongs to the embed.
+ */
+function parseClause(source: string): SelectClause {
   const columns: string[] = [];
-  const embeds: SelectClause["embeds"] = [];
+  const embeds: Embed[] = [];
   let depth = 0;
   let buffer = "";
 
   const flush = (token: string) => {
     const text = token.trim();
-    if (!text) return;
-    if (text === "*") return;
+    if (!text || text === "*") return;
     const open = text.indexOf("(");
     if (open === -1) {
       // `alias:column` is a rename; the app does not use one, but keep the column.
@@ -63,14 +87,11 @@ export function parseSelect(input: string | undefined): SelectClause {
     }
     const close = text.lastIndexOf(")");
     let head = text.slice(0, open).trim();
-    const inner = text.slice(open + 1, close).trim();
-    const isInner = head.endsWith("!inner");
-    if (isInner) head = head.slice(0, -"!inner".length).trim();
-    embeds.push({
-      table: head,
-      columns: inner === "*" || inner === "" ? [] : inner.split(",").map((c) => c.trim()),
-      inner: isInner,
-    });
+    const body = text.slice(open + 1, close).trim();
+    const inner = head.endsWith("!inner");
+    if (inner) head = head.slice(0, -"!inner".length).trim();
+    const nested = body === "*" || body === "" ? { columns: [], embeds: [] } : parseClause(body);
+    embeds.push({ table: head, columns: nested.columns, inner, embeds: nested.embeds });
   };
 
   for (const char of source) {
