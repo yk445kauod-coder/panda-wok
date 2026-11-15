@@ -39,11 +39,14 @@
   (`adminShellCacheUrl`, build id inlined from `.pages/BUILD_ID` by `build-pages.mjs`; `s-maxage=300`,
   no SWR). The `/api/admin/*` **data** stays uncacheable — `isCacheableRequest`'s admin exclusion is
   untouched. Live: `/admin` → `cf-cache-status: HIT` (CDN answers, no Worker).
-- **Empty/vestigial feature tables on D1 (0 rows):** `offers`, `faqs`, `page_content`,
-  `backup_records`, `exports`, `feedback`, `delivery_zones`. Their admin pages render but their
-  *create* paths need `SUPABASE_SERVICE_ROLE_KEY` (unset) → Backups/Exports are non-functional on
-  D1. `src/lib/backup/download.ts` `.from("backups")` is a Supabase **storage bucket**, not a table
-  (not a table-name bug). Pruning these is a product call, left in place.
+- **Dead features removed (2026-11-15):** Exports and Backups — 0 rows, and their create paths
+  needed `SUPABASE_SERVICE_ROLE_KEY` (unset on D1) so every action failed. Deleted pages, routes,
+  forms, `lib/export/*`+`lib/backup/*`+`lib/files/download.ts`, service fns, rbac caps/nav, guide
+  topic, and i18n (`ar.ts`+`en.ts` both — this repo has NO generated locale files, unlike lava-agent).
+- **Still empty on D1 (0 rows), left in place as product calls:** `offers`, `faqs`, `page_content`,
+  `feedback`, `delivery_zones`. (Do NOT delete `delivery_zones` or the CRM — owner constraint.)
+- `/dish-placeholder.svg` is excluded in `_routes.json` (build-pages.mjs) — the media-proxy 302s
+  missing dish images there, so each was a Worker invocation serving one static file.
 - Middleware: admin requests skip `updateSession` (commit `1e98108`) — the console never reads
   the customer session (gate cookie auths it; `x-pw-path` elevates API reads to service role).
 - Sign-out: `src/components/admin/admin-sign-out.tsx` -> `lockAdminAction` (clears gate cookie +
@@ -53,7 +56,7 @@
 - Two credentials, one field: shared **passcode** = owner; a staff **login_id** = that member's role.
 - `mintStaffSession` gives the browser a real Supabase session for Realtime; `verifyOtp` type MUST
   be `magiclink` (matching `generateLink({type:"magiclink"})`) — `email` fails silently.
-- Capability matrix in `src/lib/auth/rbac.ts` (`ADMIN_NAV` = 24 entries). `public.staff` is the
+- Capability matrix in `src/lib/auth/rbac.ts` (`ADMIN_NAV` = 22 entries (was 24 before Exports/Backups removal)). `public.staff` is the
   team source (`/admin/users`).
 
 ## Analytics recipe (no wrangler needed)
