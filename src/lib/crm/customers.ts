@@ -129,16 +129,22 @@ async function loadCrmStats(): Promise<CrmStats> {
   };
   if (!admin) return empty;
 
-  const { data, error } = await admin.rpc("crm_stats").maybeSingle();
-  if (error || !data) return empty;
+  // `crm_stats` returns a single row (the Postgres function returns a table, and
+  // the D1 port returns a one-element array), so read it as an array rather than
+  // calling `.maybeSingle()` — the D1 shim's `rpc()` resolves to a plain result,
+  // not a thenable builder, so `.maybeSingle()` is a TypeError on that backend.
+  const { data, error } = await admin.rpc("crm_stats");
+  const rows = data as unknown as CrmStats[] | CrmStats | null;
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  if (error || !row) return empty;
 
   return {
-    customer_count: Number(data.customer_count),
-    lifetime_value: Number(data.lifetime_value),
-    repeat_customers: Number(data.repeat_customers),
-    at_risk_customers: Number(data.at_risk_customers),
-    blocked_customers: Number(data.blocked_customers),
-    marketing_opt_in: Number(data.marketing_opt_in),
+    customer_count: Number(row.customer_count),
+    lifetime_value: Number(row.lifetime_value),
+    repeat_customers: Number(row.repeat_customers),
+    at_risk_customers: Number(row.at_risk_customers),
+    blocked_customers: Number(row.blocked_customers),
+    marketing_opt_in: Number(row.marketing_opt_in),
   };
 }
 

@@ -28,11 +28,24 @@
 import { useEffect, useState } from "react";
 import { listPendingOrderAlertsAction } from "@/lib/actions/order-alerts";
 import type { OrderAlert } from "@/lib/services/admin-orders";
+import { pendingSignature } from "@/lib/sound/alert-state";
 import { getOpsLive, subscribeOpsSignal } from "@/lib/live/ops-socket";
 import { startVisiblePoll } from "@/lib/live/visibility";
 
-/** Fast cadence when the signal is down — the poll is the only live path. */
-export const OPS_POLL_FALLBACK_MS = 8000;
+/**
+ * Cadence when the socket is down — the poll is the only live path.
+ *
+ * This was 8 s, which assumed the socket rarely connects. It connects, so the
+ * 8 s path is only ever reached when it drops, and 8 s was expensive: every tick
+ * is one `listPendingOrderAlertsAction` invocation plus one re-fetch of any
+ * `live: true` board, so two open admin tabs on a dropped socket cost ~43k
+ * invocations a day — enough that a few admins sharing one tab each would exceed
+ * the Free plan's 100k/day budget and the whole project (customer site included)
+ * starts returning Error 1027. 30 s still recovers a dropped socket promptly
+ * (the reconnect backoff is 1–30 s, so the socket is normally back long before
+ * the first tick) while cutting the worst case to a quarter.
+ */
+export const OPS_POLL_FALLBACK_MS = 30000;
 /** Safety-net cadence once the broadcast is confirmed live. */
 export const OPS_POLL_LIVE_MS = 60000;
 
@@ -52,18 +65,60 @@ function ensureStore(): Store {
   return store;
 }
 
-async function readPending(): Promise<void> {
+/**
+ * Whether a read of the pending queue should also wake the opted-in boards
+ * (`useAdminData` with `live: true`) on the shared `panda-wok:live` event.
+ *
+ * - `changed` — the pending set actually moved, so every board is stale.
+ * - `forceBoards` — a realtime push, where something demonstrably changed.
+ * - `!live` — the socket is down, so the poll is the *only* signal a board has;
+ *   it must re-read on every tick or it would go stale between pushes that will
+ *   never arrive.
+ *
+ * The one case this deliberately does not wake is an idle tick while live: the
+ * push path covers real changes, and re-reading every board on a timer that
+ * found nothing is the doubled invocation the budget cannot afford.
+ */
+export function shouldWakeBoards(state: {
+  changed: boolean;
+  forceBoards: boolean;
+  live: boolean;
+}): boolean {
+  return state.changed || state.forceBoards || !state.live;
+}
+
+/**
+ * One read of the pending-order list, shared by the poll and the push path.
+ *
+ * `forceBoards` is true on a realtime push, where something demonstrably
+ * changed. On a poll tick it is false and the opted-in boards re-read only when
+ * the pending queue actually moved — or whenever the socket is down, since then
+ * the poll is the only signal and a board has no push to lean on. Without that
+ * gate an idle dashboard on the live cadence paid a second Worker invocation
+ * every minute — the tick's own read plus a board re-fetch — for a page that had
+ * not changed. The alert watcher is unaffected: the store notifies it on every
+ * tick.
+ */
+async function readPending(forceBoards = false): Promise<void> {
   if (inflight) return;
   inflight = true;
   try {
     const result = await listPendingOrderAlertsAction();
     if (result.ok && store) {
+      const changed = pendingSignature(store.pending) !== pendingSignature(result.data);
       store.pending = result.data;
       store.loaded = true;
       for (const notify of store.subscribers) notify();
+      if (shouldWakeBoards({ changed, forceBoards, live: getOpsLive() })) dispatchLive();
     }
   } finally {
     inflight = false;
+  }
+}
+
+function dispatchLive(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("panda-wok:live"));
   }
 }
 
@@ -76,18 +131,13 @@ export function refreshOpsNow(): void {
   // coalesce the burst into one read instead of two Worker invocations.
   pingTimer = setTimeout(() => {
     pingTimer = null;
-    tick();
+    void readPending(true);
   }, 300);
 }
 
 function tick(): void {
-  void readPending();
-  // The one shared beat: the shell's timer and every realtime ping both land
-  // here. `panda-wok:live` re-reads only the boards that opted in (`useAdminData`
-  // with `live: true`); a settings or exports page in the same tab stays quiet.
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("panda-wok:live"));
-  }
+  // A tick is a poll, not a push: the boards re-read only if the queue moved.
+  void readPending(false);
 }
 
 function startPolling(): void {

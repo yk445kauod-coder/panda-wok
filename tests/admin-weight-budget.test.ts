@@ -139,3 +139,35 @@ describe("console live beat is opt-in", () => {
     }
   });
 });
+
+/**
+ * The shared read must not double the console's invocations.
+ *
+ * Each tick of the console's one timer is a `listPendingOrderAlertsAction` call,
+ * and waking the boards adds a second call to whatever endpoint the open page
+ * reads. On the live cadence that doubling is the difference between staying
+ * inside the Free plan's 100k/day budget and blowing it, so the decision to wake
+ * the boards is pinned: only a real change, a realtime push, or a dropped socket
+ * (where the poll is the only signal) may wake them.
+ */
+describe("shared read does not double the beat", () => {
+  it("keeps an idle live tick to the one read", async () => {
+    const { shouldWakeBoards } = await import("@/lib/live/ops-sync");
+    expect(shouldWakeBoards({ changed: false, forceBoards: false, live: true })).toBe(false);
+  });
+
+  it("wakes the boards on a change, a push, or a dropped socket", async () => {
+    const { shouldWakeBoards } = await import("@/lib/live/ops-sync");
+    expect(shouldWakeBoards({ changed: true, forceBoards: false, live: true })).toBe(true);
+    expect(shouldWakeBoards({ changed: false, forceBoards: true, live: true })).toBe(true);
+    // Socket down: the poll is the only signal, so every tick must refresh them.
+    expect(shouldWakeBoards({ changed: false, forceBoards: false, live: false })).toBe(true);
+  });
+
+  it("reads the pending set as an order-independent signature", async () => {
+    const { pendingSignature } = await import("@/lib/sound/alert-state");
+    expect(pendingSignature([{ id: "b" }, { id: "a" }] as never)).toBe(
+      pendingSignature([{ id: "a" }, { id: "b" }] as never),
+    );
+  });
+});

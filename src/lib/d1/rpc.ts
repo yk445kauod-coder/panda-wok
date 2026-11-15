@@ -498,10 +498,271 @@ const cancelOrder: Handler = async (params, context) => {
   return null;
 };
 
+/**
+ * `order_is_terminal(status)`: statuses that end an order's life. Mirrors the
+ * Postgres helper the CRM functions filter on, so a canceled order never counts
+ * toward a customer's order history or lifetime value.
+ */
+const TERMINAL_STATUSES = ["canceled", "rejected", "failed", "refunded"];
+const TERMINAL_LIST = TERMINAL_STATUSES.map((s) => `'${s}'`).join(", ");
+
+/** SQL fragment: `now() - <days>` as an ISO string, since SQLite has no interval. */
+function daysAgoIso(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString();
+}
+
+/**
+ * The per-customer aggregate `crm_customers` and `crm_stats` both need.
+ *
+ * One row per profile with its order count, lifetime value (finished orders
+ * only), and last order time — computed in SQL, exactly as the Postgres
+ * functions do, rather than by paging rows and summing in the caller.
+ *
+ * The favourite dishes are fetched separately and folded in: a single query
+ * cannot both rank items per customer and aggregate them into one JSON array
+ * without a nested window, and the customer book is small enough that two reads
+ * are cheaper than one clever one.
+ */
+async function crmRows(): Promise<Record<string, unknown>[]> {
+  const db = getD1Database();
+  const rows = await db
+    .prepare(
+      `SELECT
+         p."id" AS user_id, p."full_name", p."phone", p."email",
+         p."created_at", p."last_seen_at", p."is_blocked", p."marketing_opt_in",
+         agg."last_order_at",
+         agg."active_last_order_at",
+         COALESCE(agg."order_count", 0) AS order_count,
+         COALESCE(agg."lifetime_value", 0) AS lifetime_value,
+         COALESCE(agg."spend", 0) AS spend
+       FROM "profiles" p
+       LEFT JOIN (
+         SELECT
+           o."user_id",
+           MAX(o."created_at") AS last_order_at,
+           MAX(o."created_at") FILTER (WHERE o."status" NOT IN (${TERMINAL_LIST})) AS active_last_order_at,
+           COUNT(*) FILTER (WHERE o."status" NOT IN (${TERMINAL_LIST})) AS order_count,
+           SUM(o."total") FILTER (WHERE o."status" = 'finished') AS lifetime_value,
+           SUM(o."total") FILTER (WHERE o."status" NOT IN (${TERMINAL_LIST})) AS spend
+         FROM "orders" o
+         GROUP BY o."user_id"
+       ) agg ON agg."user_id" = p."id"`,
+    )
+    .all<Record<string, unknown>>();
+
+  const favourites = await topItemsByUser();
+  return (rows.results ?? []).map((row) => ({
+    ...row,
+    recent_items: favourites.get(String(row.user_id)) ?? [],
+  }));
+}
+
+/** The three most-ordered dishes per customer, as an array of names. */
+async function topItemsByUser(): Promise<Map<string, string[]>> {
+  const db = getD1Database();
+  const rows = await db
+    .prepare(
+      `SELECT o."user_id" AS user_id, oi."name_snapshot" AS name, SUM(oi."quantity") AS qty
+         FROM "order_items" oi
+         JOIN "orders" o ON o."id" = oi."order_id"
+        GROUP BY o."user_id", oi."name_snapshot"
+        ORDER BY qty DESC`,
+    )
+    .all<{ user_id: string; name: string; qty: number }>();
+
+  const map = new Map<string, string[]>();
+  for (const row of rows.results ?? []) {
+    const list = map.get(row.user_id) ?? [];
+    if (list.length < 3) list.push(row.name);
+    map.set(row.user_id, list);
+  }
+  return map;
+}
+
+/**
+ * `crm_customers(p_search, p_limit, p_offset)`: the CRM customer book.
+ *
+ * `points_balance`/`tier` are constants now that the loyalty programme is gone,
+ * matching the Postgres function rewritten in `remove_unused_features`.
+ * `favorite_items` is the three most-ordered dishes, newest order first, as
+ * JSON — the same shape the caller reads.
+ */
+const crmCustomers: Handler = async (params) => {
+  const search = String(params.p_search ?? "").trim().toLowerCase();
+  const limit = Math.max(1, Math.min(Number(params.p_limit ?? 50) || 50, 1000));
+  const offset = Math.max(0, Number(params.p_offset ?? 0) || 0);
+
+  const all = await crmRows();
+  const filtered = search
+    ? all.filter((row) =>
+        [row.full_name, row.phone, row.email]
+          .map((v) => String(v ?? "").toLowerCase())
+          .some((v) => v.includes(search)),
+      )
+    : all;
+
+  // `order by o.last_order_at desc nulls last, p.created_at desc`.
+  filtered.sort((a, b) => {
+    const at = String(a.last_order_at ?? "");
+    const bt = String(b.last_order_at ?? "");
+    if (at !== bt) return bt.localeCompare(at);
+    return String(b.created_at ?? "").localeCompare(String(a.created_at ?? ""));
+  });
+
+  return filtered.slice(offset, offset + limit).map((row) => {
+    const orderCount = Number(row.order_count ?? 0);
+    const lifetime = Number(row.lifetime_value ?? 0);
+    const lastOrderAt = (row.last_order_at as string | null) ?? null;
+    const daysSince =
+      lastOrderAt === null
+        ? null
+        : Math.floor((Date.now() - new Date(lastOrderAt).getTime()) / 86_400_000);
+    return {
+      user_id: row.user_id,
+      full_name: row.full_name ?? null,
+      phone: row.phone ?? null,
+      email: row.email ?? null,
+      created_at: row.created_at ?? null,
+      last_seen_at: row.last_seen_at ?? null,
+      last_order_at: lastOrderAt,
+      order_count: orderCount,
+      lifetime_value: money(lifetime),
+      avg_order_value: orderCount > 0 ? money(lifetime / orderCount) : 0,
+      days_since_last_order: daysSince,
+      points_balance: 0,
+      tier: "bronze",
+      favorite_items: parseItems(row.recent_items),
+      is_blocked: Number(row.is_blocked ?? 0) === 1,
+      marketing_opt_in: Number(row.marketing_opt_in ?? 0) === 1,
+    };
+  });
+};
+
+/** The `recent_items` aggregate arrives as JSON text; never let it break a row. */
+function parseItems(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map(String);
+  if (typeof raw !== "string" || raw === "") return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** `crm_customer_count(p_search)`: head-count under the same filter as the list. */
+const crmCustomerCount: Handler = async (params) => {
+  const search = String(params.p_search ?? "").trim().toLowerCase();
+  const all = await crmRows();
+  if (!search) return all.length;
+  return all.filter((row) =>
+    [row.full_name, row.phone, row.email]
+      .map((v) => String(v ?? "").toLowerCase())
+      .some((v) => v.includes(search)),
+  ).length;
+};
+
+/**
+ * `crm_stats()`: whole-book aggregates, one row.
+ *
+ * `repeat` is three or more orders; `at_risk` is a customer with at least one
+ * order whose last one is more than 30 days old. Both count order histories the
+ * way `crm_customers` does (terminal orders excluded).
+ */
+const crmStats: Handler = async () => {
+  const rows = await crmRows();
+  const thirtyDaysAgo = daysAgoIso(30);
+  let lifetimeValue = 0;
+  let repeat = 0;
+  let atRisk = 0;
+  let blocked = 0;
+  let optedIn = 0;
+  for (const row of rows) {
+    const orderCount = Number(row.order_count ?? 0);
+    lifetimeValue += Number(row.lifetime_value ?? 0);
+    if (orderCount >= 3) repeat += 1;
+    const last = (row.active_last_order_at as string | null) ?? null;
+    if (orderCount > 0 && last !== null && last < thirtyDaysAgo) atRisk += 1;
+    if (Number(row.is_blocked ?? 0) === 1) blocked += 1;
+    if (Number(row.marketing_opt_in ?? 0) === 1) optedIn += 1;
+  }
+  return [
+    {
+      customer_count: rows.length,
+      lifetime_value: money(lifetimeValue),
+      repeat_customers: repeat,
+      at_risk_customers: atRisk,
+      blocked_customers: blocked,
+      marketing_opt_in: optedIn,
+    },
+  ];
+};
+
+/**
+ * `crm_estimate_segment(p_segment, p_value)`: how many customers a segment holds.
+ *
+ * The segment rules mirror the Postgres `crm_segment` after the loyalty branch
+ * was removed; an unknown segment matches nobody, as the `else false` did.
+ */
+const crmEstimateSegment: Handler = async (params) => {
+  const segment = String(params.p_segment ?? "");
+  const value = Math.max(1, Number(params.p_value ?? 30) || 30);
+  const rows = await crmRows();
+  const cutoff = daysAgoIso(value);
+  const ninetyDaysAgo = daysAgoIso(90);
+  const thirtyDaysAgo = daysAgoIso(30);
+
+  let count = 0;
+  for (const row of rows) {
+    const orderCount = Number(row.order_count ?? 0);
+    const spend = Number(row.spend ?? 0);
+    const last = (row.active_last_order_at as string | null) ?? null;
+    const created = String(row.created_at ?? "");
+    const blocked = Number(row.is_blocked ?? 0) === 1;
+    const optedIn = Number(row.marketing_opt_in ?? 0) === 1;
+
+    let match = false;
+    switch (segment) {
+      case "all":
+        match = true;
+        break;
+      case "opted_in":
+        match = optedIn;
+        break;
+      case "new":
+        match = created > daysAgoIso(30);
+        break;
+      case "loyal":
+        match = orderCount >= 3;
+        break;
+      case "inactive":
+        match = last !== null && last < cutoff;
+        break;
+      case "never_ordered":
+        match = orderCount === 0;
+        break;
+      case "high_value":
+        match = spend >= value;
+        break;
+      case "winback":
+        match = last !== null && last >= ninetyDaysAgo && last <= thirtyDaysAgo;
+        break;
+      default:
+        match = false;
+    }
+    if (match && !(segment !== "all" && blocked)) count += 1;
+  }
+  return count;
+};
+
 const HANDLERS: Record<string, Handler> = {
   place_order: placeOrder,
   place_order_internal: placeOrderInternal,
   cancel_order: cancelOrder,
+  crm_customers: crmCustomers,
+  crm_customer_count: crmCustomerCount,
+  crm_stats: crmStats,
+  crm_estimate_segment: crmEstimateSegment,
 };
 
 export async function runRpc<T = unknown>(

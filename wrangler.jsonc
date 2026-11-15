@@ -17,7 +17,8 @@
   "vars": {
     "AI_CLOUDFLARE_BASE_URL": "https://panda-wok-ai-api.yk445kauod.workers.dev",
     "AI_CLOUDFLARE_MODEL": "@cf/meta/llama-4-scout-17b-16e-instruct",
-    "OPS_HUB_URL": "https://panda-wok-ops-hub.yk445kauod.workers.dev"
+    "OPS_HUB_URL": "https://panda-wok-ops-hub.yk445kauod.workers.dev",
+    "DATA_BACKEND": "d1"
   },
   "observability": {
     "enabled": true
