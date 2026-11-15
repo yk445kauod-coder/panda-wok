@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 /**
  * Client-side reader for the console's JSON API.
@@ -112,41 +112,6 @@ export function useAdminData<T>(
   }, [url, nonce]);
 
   return { data, loading, error, reload };
-}
-
-/**
- * Re-fetches `path` on a visible-only interval, for boards that must stay live
- * (kitchen, orders). A hidden tab polls nothing, so a backgrounded console
- * costs no Worker invocations — the same guard the old server pages used.
- */
-export function useAdminPoll(reload: () => void, intervalMs: number, enabled = true) {
-  const reloadRef = useRef(reload);
-  reloadRef.current = reload;
-
-  useEffect(() => {
-    if (!enabled) return;
-    let handle: ReturnType<typeof setInterval> | null = null;
-
-    const start = () => {
-      if (handle !== null) return;
-      handle = setInterval(() => reloadRef.current(), intervalMs);
-    };
-    const stop = () => {
-      if (handle !== null) clearInterval(handle);
-      handle = null;
-    };
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") start();
-      else stop();
-    };
-
-    if (document.visibilityState === "visible") start();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      stop();
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [intervalMs, enabled]);
 }
 
 /**

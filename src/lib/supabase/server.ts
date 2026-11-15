@@ -7,6 +7,7 @@ import type { Database } from "@/lib/types/database";
 import { publicEnv } from "@/lib/config/public-env";
 import { serviceRoleAvailable } from "@/lib/config/env";
 import { gateIdentity } from "@/lib/auth/admin-gate";
+import { isD1Backend } from "@/lib/d1/backend";
 import {
   createAdminSupabase,
   tryCreateAdminSupabase,
@@ -30,6 +31,13 @@ export { createAdminSupabase, tryCreateAdminSupabase };
  * owner browsing the customer site still reads through their own session.
  */
 export async function createServerSupabase(): Promise<SupabaseServerClient> {
+  // The D1 backend speaks the same client API, so the switch lives here rather
+  // than at 371 call sites. See `src/lib/d1/backend.ts`.
+  if (isD1Backend()) {
+    const { createD1ServerClient } = await import("@/lib/d1/server-client");
+    return (await createD1ServerClient()) as unknown as SupabaseServerClient;
+  }
+
   const headerList = await headers();
   const path = headerList.get("x-pw-path") ?? "";
   if (path.startsWith("/admin") || path.startsWith("/api/admin")) {

@@ -7,6 +7,10 @@ import { z } from "zod";
  */
 const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
+  /** `d1` switches the app off Supabase; anything else keeps it. See src/lib/d1/backend.ts. */
+  DATA_BACKEND: z.string().optional(),
+  /** The live hub (Durable Object) origin the console opens its socket to. */
+  OPS_HUB_URL: z.string().optional(),
   AI_PROVIDER_KIND: z.string().optional(),
   AI_MODEL: z.string().optional(),
   AI_BASE_URL: z.string().optional(),
@@ -63,6 +67,8 @@ function runtimeEnv(name: string): string | undefined {
 
 const SERVER_ONLY_KEYS = [
   "SUPABASE_SERVICE_ROLE_KEY",
+  "DATA_BACKEND",
+  "OPS_HUB_URL",
   "AI_PROVIDER_KIND",
   "AI_MODEL",
   "AI_BASE_URL",

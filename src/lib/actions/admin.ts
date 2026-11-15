@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { revalidateAllPublicData, revalidatePublicData } from "@/lib/cache/revalidate";
 import { CACHE_TAGS } from "@/lib/cache/tags";
 import { createServerSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
+import { publishOrderChange } from "@/lib/live/ops-notify";
 import { assertCapability } from "@/lib/auth/session";
 import { logAudit } from "@/lib/activity/log";
 import {
@@ -119,6 +120,9 @@ export async function updateOrderStatusAction(
     .eq("id", parsed.data.orderId);
 
   if (error) return actionError(error);
+
+  // The console pushes this to every open tab; the poll is only the fallback.
+  publishOrderChange("order.updated", parsed.data.orderId);
 
   // order_status_history is written by the log_order_status trigger; the note
   // is attached via a follow-up update so it lands on that same row.

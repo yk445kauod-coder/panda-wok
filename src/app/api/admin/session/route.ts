@@ -4,6 +4,7 @@ import { capabilitiesFor, can, ROLE_LABELS } from "@/lib/auth/rbac";
 import { getPublicSettings } from "@/lib/services/catalog";
 import { listStaffNotifications, countStaffUnread } from "@/lib/services/notifications";
 import { getPendingNewOrders } from "@/lib/services/admin-orders";
+import { serverEnv } from "@/lib/config/env";
 
 /**
  * Everything the console chrome needs to render itself, as JSON.
@@ -40,6 +41,10 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     unlocked: true,
+    // The console opens its live socket to this origin. Carried on the session
+    // response so the browser needs no extra request to learn it, and absent when
+    // the deployment has no hub — the socket then simply does not open.
+    opsHubUrl: serverEnv.OPS_HUB_URL ?? null,
     role: session.role,
     capabilities: capabilitiesFor(session.role),
     staffName: session.profile?.full_name ?? ROLE_LABELS[session.role],

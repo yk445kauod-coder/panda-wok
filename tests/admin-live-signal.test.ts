@@ -29,17 +29,29 @@ function walk(dir: string, out: string[] = []): string[] {
  * never mints a session for the console to enable one.
  */
 describe("console live signal", () => {
-  it("subscribes to the public broadcast, never a row-level feed", () => {
+  it("subscribes to the hub, never a row-level feed", () => {
     const hook = readFileSync(
       join(ROOT, "src/lib/live/use-ops-signal.ts"),
       "utf8",
     );
-    expect(hook).toMatch(/"broadcast"/);
-    expect(hook).toMatch(/table:\s*"orders"|OPS_CHANNEL/);
+    // The transport is the Durable Object socket; `subscribeOpsSignal` is the
+    // single entry point the hook and the shared poller both go through.
+    expect(hook).toMatch(/subscribeOpsSignal/);
+    expect(hook).toMatch(/ops-socket/);
     // The silent row-level branch is exactly what must not return: no
     // `postgres_changes` subscription and no session lookup to gate it.
     expect(hook).not.toMatch(/\.on\(\s*"postgres_changes"/);
     expect(hook).not.toMatch(/getSession\(\)/);
+    // No transport import: the file may *mention* Supabase in prose, but it must
+    // not reach for the client.
+    expect(hook).not.toMatch(/from\s+"@\/lib\/supabase/);
+  });
+
+  it("carries the live signal on a socket, not a Supabase channel", () => {
+    const socket = readFileSync(join(ROOT, "src/lib/live/ops-socket.ts"), "utf8");
+    expect(socket).toMatch(/new WebSocket\(/);
+    expect(socket).not.toMatch(/from\s+"@\/lib\/supabase/);
+    expect(socket).not.toMatch(/postgres_changes/);
   });
 
   it("mints no Supabase session for the console", () => {
@@ -66,16 +78,13 @@ describe("console live signal", () => {
     expect(form).not.toMatch(/window\.location\.reload\(/);
   });
 
-  it("ships a public broadcast trigger on orders and its status history", () => {
-    const migration = readFileSync(
-      join(ROOT, "supabase/migrations/20261114000200_ops_order_signal.sql"),
-      "utf8",
-    );
-    // Public (private = false) is the point of the fallback: it needs no session.
-    expect(migration).toMatch(/realtime\.send\(/);
-    expect(migration).toMatch(/false\s*\);/);
-    expect(migration).toMatch(/on public\.orders/);
-    expect(migration).toMatch(/on public\.order_status_history/);
+  it("publishes to the hub from both order write paths", () => {
+    // The Supabase Realtime trigger is gone; the push now comes from the two
+    // actions that write an order, so a console hears about it in the same tick.
+    for (const file of ["src/lib/actions/checkout.ts", "src/lib/actions/admin.ts"]) {
+      const source = readFileSync(join(ROOT, file), "utf8");
+      expect(source).toMatch(/publishOrderChange\(/);
+    }
   });
 });
 

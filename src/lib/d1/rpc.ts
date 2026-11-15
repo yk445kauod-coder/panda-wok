@@ -1,223 +1,473 @@
 /**
- * The RPC surface, ported from Postgres to TypeScript.
+ * Postgres functions, ported to TypeScript.
  *
- * Supabase's 48 functions are called as `supabase.rpc("name", args)` and the
- * caller reads `{ data, error }` back. This module keeps that contract: each
- * name maps to a handler with the same arguments and the same return shape, so
- * no call site changes. Only the functions the app actually calls are here;
- * anything missing fails loudly instead of silently returning nothing.
+ * The bodies are transcribed from the live database (`pg_get_functiondef`), not
+ * reconstructed from how the call sites look. `place_order` is the reason: the
+ * Postgres version re-reads every price from `menu_items` and never trusts the
+ * client, and it returns `{ order_id, order_number, total, reused }` rather than
+ * a row. An earlier draft of this file took prices from the request body and
+ * returned an `orders` row — a security hole (a client could name its own price)
+ * and a shape the caller does not read. Both are fixed here.
  *
- * `place_order` is the important one: it has to stay atomic. Everything it
- * touches runs inside a single D1 `batch`, which D1 executes as one implicit
- * transaction, so a half-written order is impossible.
+ * Atomicity: everything runs inside one D1 `batch`, which is one transaction, so
+ * a half-written order is impossible.
  */
 
 import { getD1Database, type D1Value } from "@/lib/d1/database";
-import { fromSqlRow, newUuid, nowIso, toSqlValue } from "@/lib/d1/coerce";
+import { newUuid, nowIso, toSqlValue } from "@/lib/d1/coerce";
 import type { QueryResult } from "@/lib/d1/client";
 
-export type RpcContext = { elevated: boolean; userId: string | null };
+/**
+ * Who is calling and on behalf of which restaurant.
+ *
+ * `restaurantId` is here because the Postgres schema defaulted `orders.restaurant_id`
+ * to `current_restaurant_id()`, a value the RPC never had to pass. SQLite cannot
+ * express that default, so the port fills the column from the context instead.
+ */
+export type RpcContext = { elevated: boolean; userId: string | null; restaurantId?: string };
+
+const DEFAULT_RESTAURANT_ID = "b54b2620-90c5-4295-b617-bc1389db3ee9";
 
 type Handler = (params: Record<string, unknown>, context: RpcContext) => Promise<unknown>;
 
-/** Money is rounded to 2dp the way the Postgres `numeric(10,2)` columns did. */
 function money(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-/** `PW-` + a zero-padded sequence, unique per day, as the original produced. */
-async function nextOrderNumber(): Promise<string> {
-  const db = getD1Database();
-  const row = await db
-    .prepare("SELECT count(*) AS n FROM orders WHERE created_at >= date('now')")
-    .first<{ n: number }>();
-  const sequence = (row?.n ?? 0) + 1;
-  return `PW-${String(sequence).padStart(4, "0")}`;
+/** `setting_numeric(key, default)`: a setting read as a number, defaulting on a miss. */
+async function settingNumeric(key: string, fallback: number): Promise<number> {
+  const row = await getD1Database()
+    .prepare('SELECT "value" FROM "settings" WHERE "key" = ?')
+    .bind(key)
+    .first<{ value: string | number | null }>();
+  if (row?.value === null || row?.value === undefined) return fallback;
+  let raw: unknown = row.value;
+  if (typeof raw === "string") {
+    // Stored as JSON text: a number is `30`, a string is `"30"`.
+    try {
+      raw = JSON.parse(raw) as unknown;
+    } catch {
+      raw = Number(raw);
+    }
+  }
+  const parsed = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-type OrderLine = {
+/** `setting_bool(key, default)`: `true` only for a JSON boolean or the string "true". */
+async function settingBool(key: string, fallback: boolean): Promise<boolean> {
+  const row = await getD1Database()
+    .prepare('SELECT "value" FROM "settings" WHERE "key" = ?')
+    .bind(key)
+    .first<{ value: string | number | null }>();
+  if (row?.value === null || row?.value === undefined) return fallback;
+  if (typeof row.value === "number") return row.value !== 0;
+  try {
+    const parsed = JSON.parse(row.value) as unknown;
+    if (typeof parsed === "boolean") return parsed;
+    if (typeof parsed === "string") return parsed.toLowerCase() === "true";
+    return Boolean(parsed);
+  } catch {
+    return String(row.value).replace(/^"|"$/g, "").toLowerCase() === "true";
+  }
+}
+
+/** `setting_text(key)`: a setting read as a plain string. */
+async function settingText(key: string): Promise<string | null> {
+  const row = await getD1Database()
+    .prepare('SELECT "value" FROM "settings" WHERE "key" = ?')
+    .bind(key)
+    .first<{ value: string | null }>();
+  if (row?.value === null || row?.value === undefined) return null;
+  try {
+    const parsed = JSON.parse(row.value) as unknown;
+    return typeof parsed === "string" ? parsed : String(parsed);
+  } catch {
+    return String(row.value);
+  }
+}
+
+/**
+ * `store_is_open()`: the manual lever first, then the daily window in Cairo time.
+ *
+ * The timezone is not optional. The kitchen's "closes at 01:00" means 01:00 in
+ * Cairo; computing it in UTC would close the store three hours early in summer.
+ */
+export async function storeIsOpen(at: Date = new Date()): Promise<boolean> {
+  const accepting = await settingBool("ordering.accepting_orders", true);
+  if (!accepting) return false;
+
+  const hoursEnabled = await settingBool("ordering.hours_enabled", false);
+  if (!hoursEnabled) return true;
+
+  const open = (await settingText("ordering.open_time"))?.trim() ?? "";
+  const close = (await settingText("ordering.close_time"))?.trim() ?? "";
+  const clock = /^([01]\d|2[0-3]):[0-5]\d$/;
+  if (!clock.test(open) || !clock.test(close)) return true;
+
+  // `Africa/Cairo` without a tz library: Intl gives the local wall clock.
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Cairo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(at);
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+  const nowMinutes = hour * 60 + minute;
+
+  const toMinutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
+  const openMinutes = toMinutes(open);
+  const closeMinutes = toMinutes(close);
+
+  if (openMinutes === closeMinutes) return true;
+  if (openMinutes < closeMinutes) return nowMinutes >= openMinutes && nowMinutes < closeMinutes;
+  // Overnight window, e.g. 14:00 -> 01:00.
+  return nowMinutes >= openMinutes || nowMinutes < closeMinutes;
+}
+
+/** `next_order_number()`: `PW-YYMM-0001`, the sequence counted per month. */
+async function nextOrderNumber(at: Date = new Date()): Promise<string> {
+  const db = getD1Database();
+  const year = String(at.getUTCFullYear()).slice(2);
+  const month = String(at.getUTCMonth() + 1).padStart(2, "0");
+  const prefix = `PW-${year}${month}-`;
+  const row = await db
+    .prepare('SELECT count(*) AS n FROM "orders" WHERE "order_number" LIKE ?')
+    .bind(`${prefix}%`)
+    .first<{ n: number }>();
+  return `${prefix}${String((row?.n ?? 0) + 1).padStart(4, "0")}`;
+}
+
+/** `best_offer(subtotal)`: the largest discount the customer qualifies for. */
+async function bestOffer(
+  subtotal: number,
+  userId: string,
+): Promise<{ id: string | null; nameEn: string | null; amount: number }> {
+  const db = getD1Database();
+  const rows = await db
+    .prepare(
+      `SELECT "id", "name_en", "kind", "value", "max_discount", "sort_order", "created_at"
+         FROM "offers"
+        WHERE "is_enabled" = 1 AND "threshold" <= ? AND ("customer_id" IS NULL OR "customer_id" = ?)`,
+    )
+    .bind(subtotal, userId)
+    .all<Record<string, unknown>>();
+
+  let best: { id: string; nameEn: string | null; amount: number; sort: number; created: string } | null = null;
+  for (const row of rows.results ?? []) {
+    const raw = row.kind === "percent" ? (subtotal * Number(row.value)) / 100 : Number(row.value);
+    const capped = row.max_discount === null ? raw : Math.min(raw, Number(row.max_discount));
+    const amount = money(Math.min(capped, subtotal));
+    if (amount <= 0) continue;
+    const candidate = {
+      id: String(row.id),
+      nameEn: (row.name_en as string | null) ?? null,
+      amount,
+      sort: Number(row.sort_order ?? 0),
+      created: String(row.created_at ?? ""),
+    };
+    if (
+      !best ||
+      candidate.amount > best.amount ||
+      (candidate.amount === best.amount && candidate.sort < best.sort) ||
+      (candidate.amount === best.amount && candidate.sort === best.sort && candidate.created < best.created)
+    ) {
+      best = candidate;
+    }
+  }
+  return best ? { id: best.id, nameEn: best.nameEn, amount: best.amount } : { id: null, nameEn: null, amount: 0 };
+}
+
+/** An error the caller surfaces by code, matching the Postgres `raise exception`. */
+class RpcError extends Error {
+  constructor(public readonly code: string, message?: string) {
+    super(message ?? code);
+  }
+}
+
+type CartLine = {
   menu_item_id?: string | null;
-  name_snapshot?: string;
-  name_ar_snapshot?: string | null;
-  unit_price: number;
-  quantity: number;
-  modifiers?: unknown;
+  quantity?: number | null;
+  modifiers?: string[] | null;
   notes?: string | null;
 };
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
- * `place_order(p_items, p_address, p_fulfillment, p_payment_method, ...)`.
+ * `place_order_internal(p_idempotency_key, p_items, p_address_id, p_fulfillment,
+ * p_payment_method, p_customer_note, p_points_redeem)`.
  *
- * Steps, all in one batch: resolve the delivery fee, price the lines, apply the
- * offer, earn points, insert the order and its lines, then write the opening
- * `order_status_history` row. The order is the return value.
+ * Every price comes from `menu_items`; the request only names items, quantities,
+ * modifiers and a note. Returns the same four columns the Postgres function did,
+ * which is what `checkout.ts` destructures.
  */
-const placeOrder: Handler = async (params, context) => {
+const placeOrderInternal: Handler = async (params, context) => {
   const db = getD1Database();
   const userId = String(params.p_user_id ?? context.userId ?? "");
-  if (!userId) throw new Error("place_order: no user");
+  if (!userId) throw new RpcError("AUTH_REQUIRED", "You must be signed in to place an order.");
 
-  const lines = (params.p_items ?? []) as OrderLine[];
-  if (!Array.isArray(lines) || lines.length === 0) throw new Error("place_order: no items");
+  const idempotencyKey = String(params.p_idempotency_key ?? "");
+  if (idempotencyKey.trim().length < 8) {
+    throw new RpcError("IDEMPOTENCY_KEY_REQUIRED", "A submit key is required.");
+  }
 
-  const fulfillment = String(params.p_fulfillment ?? "delivery");
-  const paymentMethod = String(params.p_payment_method ?? "cash_on_delivery");
-  const addressSnapshot = params.p_address ?? null;
-  const customerNote = (params.p_customer_note as string | null) ?? null;
-  const idempotencyKey = String(params.p_idempotency_key ?? newUuid());
-  const pointsToRedeem = Number(params.p_points_redeemed ?? 0) || 0;
-  const restaurantId = String(
-    params.p_restaurant_id ?? "b54b2620-90c5-4295-b617-bc1389db3ee9",
-  );
+  const items = params.p_items as CartLine[] | undefined;
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new RpcError("EMPTY_CART", "Your cart is empty.");
+  }
+  if (items.length > 60) throw new RpcError("CART_TOO_LARGE", "Too many items.");
 
-  // Idempotency: a retried submit returns the order already written.
+  // A retried submit returns the order already written.
   const existing = await db
-    .prepare('SELECT * FROM "orders" WHERE "user_id" = ? AND "idempotency_key" = ?')
+    .prepare('SELECT * FROM "orders" WHERE "user_id" = ? AND "idempotency_key" = ? LIMIT 1')
     .bind(userId, idempotencyKey)
     .first<Record<string, unknown>>();
-  if (existing) return fromSqlRow("orders", existing);
-
-  const subtotal = money(
-    lines.reduce((sum, line) => sum + Number(line.unit_price) * Number(line.quantity), 0),
-  );
-
-  // The delivery fee comes from the zone whose `areas` contains the address.
-  let deliveryFee = 0;
-  let etaMinutes: number | null = null;
-  if (fulfillment === "delivery") {
-    const area = addressSnapshot && typeof addressSnapshot === "object"
-      ? String((addressSnapshot as Record<string, unknown>).area ?? "")
-      : "";
-    const zone = await db
-      .prepare(
-        'SELECT * FROM "delivery_zones" WHERE "is_active" = 1 AND EXISTS (SELECT 1 FROM json_each("areas") WHERE value = ?) LIMIT 1',
-      )
-      .bind(area)
-      .first<Record<string, unknown>>();
-    if (zone) {
-      deliveryFee = Number(zone.fee ?? 0);
-      etaMinutes = zone.eta_minutes === null ? null : Number(zone.eta_minutes);
-      if (zone.free_over !== null && subtotal >= Number(zone.free_over)) deliveryFee = 0;
-    }
+  if (existing) {
+    return {
+      order_id: existing.id,
+      order_number: existing.order_number,
+      total: existing.total,
+      reused: true,
+    };
   }
 
-  // The best enabled offer at or under the subtotal.
-  const offer = await db
-    .prepare(
-      'SELECT * FROM "offers" WHERE "is_enabled" = 1 AND "threshold" <= ? ORDER BY "threshold" DESC LIMIT 1',
-    )
-    .bind(subtotal)
+  const profile = await db
+    .prepare('SELECT "is_blocked" FROM "profiles" WHERE "id" = ?')
+    .bind(userId)
+    .first<{ is_blocked: number | null }>();
+  if (profile?.is_blocked) throw new RpcError("ACCOUNT_BLOCKED", "This account is blocked.");
+
+  const fulfillment = String(params.p_fulfillment ?? "delivery");
+  if (fulfillment !== "delivery") {
+    throw new RpcError("PICKUP_UNAVAILABLE", "Pickup is not available right now.");
+  }
+
+  const addressId = params.p_address_id ? String(params.p_address_id) : "";
+  if (!addressId) throw new RpcError("ADDRESS_REQUIRED", "Choose a delivery address.");
+
+  const address = await db
+    .prepare('SELECT * FROM "addresses" WHERE "id" = ? AND "user_id" = ?')
+    .bind(addressId, userId)
     .first<Record<string, unknown>>();
-  let discount = 0;
-  let offerId: string | null = null;
-  let offerName: string | null = null;
-  if (offer) {
-    offerId = String(offer.id);
-    offerName = String(offer.name_en ?? "");
-    const raw = offer.kind === "percent"
-      ? (subtotal * Number(offer.value)) / 100
-      : Number(offer.value);
-    discount = money(offer.max_discount === null ? raw : Math.min(raw, Number(offer.max_discount)));
+  if (!address) throw new RpcError("ADDRESS_NOT_FOUND", "That address is not on your account.");
+  if (!String(address.address_line ?? "").trim()) {
+    throw new RpcError("ADDRESS_INVALID", "That address is incomplete.");
   }
 
-  const total = money(Math.max(0, subtotal - discount + deliveryFee));
-  const pointsEarned = Math.floor(total);
+  const snapshot: Record<string, unknown> = {};
+  for (const field of [
+    "label", "contact_name", "contact_phone", "address_line", "building", "floor",
+    "apartment", "landmark", "area", "city", "notes", "latitude", "longitude",
+  ]) {
+    snapshot[field] = address[field] ?? null;
+  }
+
+  // The live settings, read the way `setting_numeric` did.
+  const [deliveryFee, freeOver, taxRate, minOrder, maxQty, pointsPerCurrency, eta] = await Promise.all([
+    settingNumeric("delivery.fee", 30),
+    settingNumeric("delivery.free_over", 250),
+    settingNumeric("tax.rate", 0.14),
+    settingNumeric("ordering.min_order_total", 80),
+    settingNumeric("ordering.max_qty_per_item", 20),
+    settingNumeric("loyalty.points_per_currency", 1),
+    settingNumeric("delivery.eta_minutes", 35),
+  ]);
+
   const orderId = newUuid();
   const orderNumber = await nextOrderNumber();
   const now = nowIso();
 
-  const order: Record<string, unknown> = {
+  const orderColumns = [
+    "id", "order_number", "idempotency_key", "user_id", "status", "fulfillment",
+    "payment_method", "payment_status", "address_snapshot", "customer_note",
+    "eta_minutes", "restaurant_id", "created_at", "updated_at",
+  ];
+  const orderRow: Record<string, unknown> = {
     id: orderId,
+    restaurant_id: context.restaurantId ?? DEFAULT_RESTAURANT_ID,
     order_number: orderNumber,
     idempotency_key: idempotencyKey,
     user_id: userId,
     status: "new",
     fulfillment,
-    payment_method: paymentMethod,
+    payment_method: String(params.p_payment_method ?? "cash_on_delivery"),
     payment_status: "unpaid",
-    currency: "EGP",
-    subtotal,
-    discount_total: discount,
-    delivery_fee: deliveryFee,
-    tax_total: 0,
-    total,
-    points_redeemed: pointsToRedeem,
-    points_earned: pointsEarned,
-    address_snapshot: addressSnapshot,
-    customer_note: customerNote,
-    eta_minutes: etaMinutes,
-    restaurant_id: restaurantId,
-    offer_id: offerId,
-    offer_name: offerName,
+    address_snapshot: snapshot,
+    customer_note: String(params.p_customer_note ?? "").trim() || null,
+    eta_minutes: 0,
     created_at: now,
     updated_at: now,
   };
 
-  const columns = Object.keys(order);
   const statements = [
     db
       .prepare(
-        `INSERT INTO "orders" (${columns.map((c) => `"${c}"`).join(", ")}) VALUES (${columns.map(() => "?").join(", ")})`,
+        `INSERT INTO "orders" (${orderColumns.map((c) => `"${c}"`).join(", ")}) VALUES (${orderColumns.map(() => "?").join(", ")})`,
       )
-      .bind(...columns.map((c) => toSqlValue("orders", c, order[c]) as D1Value)),
+      .bind(...orderColumns.map((c) => toSqlValue("orders", c, orderRow[c]) as D1Value)),
   ];
 
-  for (const line of lines) {
-    const lineTotal = money(Number(line.unit_price) * Number(line.quantity));
-    const item: Record<string, unknown> = {
+  let subtotal = 0;
+  let lineCount = 0;
+
+  for (const line of items) {
+    lineCount += 1;
+    const quantity = Math.max(1, Math.floor(Number(line.quantity ?? 1)));
+    if (quantity > maxQty) {
+      throw new RpcError("QUANTITY_LIMIT_EXCEEDED", `You can order at most ${maxQty} of one item.`);
+    }
+
+    const itemId = String(line.menu_item_id ?? "");
+    if (!UUID.test(itemId)) throw new RpcError("ITEM_NOT_FOUND", "That dish is not on the menu.");
+
+    const item = await db
+      .prepare('SELECT * FROM "menu_items" WHERE "id" = ?')
+      .bind(itemId)
+      .first<Record<string, unknown>>();
+    if (!item) throw new RpcError("ITEM_NOT_FOUND", "That dish is not on the menu.");
+    if (!item.is_available || item.is_archived) {
+      throw new RpcError("ITEM_UNAVAILABLE", `${item.name_en} is unavailable right now.`);
+    }
+    const category = await db
+      .prepare('SELECT "is_enabled" FROM "categories" WHERE "id" = ?')
+      .bind(String(item.category_id))
+      .first<{ is_enabled: number | null }>();
+    if (!category?.is_enabled) {
+      throw new RpcError("ITEM_UNAVAILABLE", `${item.name_en} is unavailable right now.`);
+    }
+
+    // Only well-formed ids, de-duplicated, as the Postgres regex filter did.
+    const wanted = Array.from(
+      new Set((line.modifiers ?? []).filter((m) => typeof m === "string" && UUID.test(m))),
+    );
+
+    const groups = await db
+      .prepare('SELECT "id", "min_select", "max_select", "is_required" FROM "modifier_groups" WHERE "menu_item_id" = ?')
+      .bind(itemId)
+      .all<{ id: string; min_select: number; max_select: number; is_required: number }>();
+
+    const options = wanted.length
+      ? await db
+          .prepare(
+            `SELECT mo."id", mo."name_en", mo."price_delta", mo."group_id"
+               FROM "modifier_options" mo
+               JOIN "modifier_groups" mg ON mg."id" = mo."group_id"
+              WHERE mg."menu_item_id" = ? AND mo."is_available" = 1
+                AND mo."id" IN (${wanted.map(() => "?").join(", ")})`,
+          )
+          .bind(itemId, ...wanted)
+          .all<{ id: string; name_en: string; price_delta: number; group_id: string }>()
+      : { results: [] as Array<{ id: string; name_en: string; price_delta: number; group_id: string }> };
+
+    const chosenByGroup = new Map<string, number>();
+    for (const option of options.results ?? []) {
+      chosenByGroup.set(option.group_id, (chosenByGroup.get(option.group_id) ?? 0) + 1);
+    }
+    for (const group of groups.results ?? []) {
+      const chosen = chosenByGroup.get(group.id) ?? 0;
+      if (chosen > group.max_select) {
+        throw new RpcError("MODIFIER_LIMIT_EXCEEDED", `Too many choices for ${item.name_en}.`);
+      }
+      if (group.is_required && chosen < group.min_select) {
+        throw new RpcError("VALIDATION", `Choose the required options for ${item.name_en}.`);
+      }
+    }
+
+    let modifierDelta = 0;
+    const chosenOptions: Array<Record<string, unknown>> = [];
+    for (const option of options.results ?? []) {
+      modifierDelta += Number(option.price_delta);
+      chosenOptions.push({ id: option.id, name: option.name_en, price_delta: Number(option.price_delta) });
+    }
+
+    const unitPrice = Number(item.price) + modifierDelta;
+    const lineTotal = money(unitPrice * quantity);
+    subtotal += lineTotal;
+
+    const itemColumns = [
+      "id", "order_id", "menu_item_id", "name_snapshot", "name_ar_snapshot",
+      "unit_price", "quantity", "line_total", "modifiers", "notes", "created_at",
+    ];
+    const itemRow: Record<string, unknown> = {
       id: newUuid(),
       order_id: orderId,
-      menu_item_id: line.menu_item_id ?? null,
-      name_snapshot: line.name_snapshot ?? "",
-      name_ar_snapshot: line.name_ar_snapshot ?? null,
-      unit_price: Number(line.unit_price),
-      quantity: Number(line.quantity),
+      menu_item_id: item.id,
+      name_snapshot: item.name_en,
+      name_ar_snapshot: item.name_ar ?? null,
+      unit_price: unitPrice,
+      quantity,
       line_total: lineTotal,
-      modifiers: line.modifiers ?? [],
-      notes: line.notes ?? null,
+      modifiers: chosenOptions,
+      notes: String(line.notes ?? "").trim() || null,
       created_at: now,
     };
-    const itemColumns = Object.keys(item);
     statements.push(
       db
         .prepare(
           `INSERT INTO "order_items" (${itemColumns.map((c) => `"${c}"`).join(", ")}) VALUES (${itemColumns.map(() => "?").join(", ")})`,
         )
-        .bind(...itemColumns.map((c) => toSqlValue("order_items", c, item[c]) as D1Value)),
+        .bind(...itemColumns.map((c) => toSqlValue("order_items", c, itemRow[c]) as D1Value)),
     );
   }
 
-  // Every status change is recorded; the customer timeline reads this table.
+  if (lineCount === 0) throw new RpcError("EMPTY_CART", "Your cart is empty.");
+  if (subtotal < minOrder) {
+    throw new RpcError("MIN_ORDER_NOT_MET", `The minimum order is ${minOrder}.`);
+  }
+
+  const offer = await bestOffer(subtotal, userId);
+  const discount = Math.min(offer.amount, subtotal);
+  const delivery = subtotal >= freeOver ? 0 : deliveryFee;
+  const tax = money((subtotal - discount + delivery) * taxRate);
+  const total = money(subtotal - discount + delivery + tax);
+  if (total <= 0) throw new RpcError("INVALID_TOTAL", "The total came out invalid.");
+
+  const pointsEarned = Math.floor(total * pointsPerCurrency);
+
   statements.push(
     db
       .prepare(
-        'INSERT INTO "order_status_history" ("order_id", "from_status", "to_status", "changed_by", "note", "created_at") VALUES (?, NULL, ?, ?, ?, ?)',
+        `UPDATE "orders" SET
+           "subtotal" = ?, "discount_total" = ?, "delivery_fee" = ?, "tax_total" = ?,
+           "total" = ?, "points_redeemed" = ?, "points_earned" = ?,
+           "offer_id" = ?, "offer_name" = ?, "eta_minutes" = ?
+         WHERE "id" = ?`,
       )
-      .bind(orderId, "new", userId, "Order placed", now),
+      .bind(
+        money(subtotal), discount, delivery, tax, total,
+        Math.round(Number(params.p_points_redeem ?? 0)) || 0,
+        pointsEarned, offer.id, offer.nameEn, Math.trunc(eta), orderId,
+      ),
   );
 
   statements.push(
     db
       .prepare(
-        'INSERT INTO "notifications" ("user_id", "kind", "title", "body", "link", "created_at", "audience", "category") VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        `INSERT INTO "activity_logs" ("user_id", "event", "entity", "entity_id", "metadata")
+         VALUES (?, 'ORDER_CREATED', 'orders', ?, ?)`,
       )
       .bind(
         userId,
-        "order_placed",
-        `Order ${orderNumber} received`,
-        "We have your order and will start on it shortly.",
-        `/orders/${orderId}`,
-        now,
-        "customer",
-        "order",
+        orderId,
+        JSON.stringify({ total, items: lineCount, offer: offer.nameEn, offer_discount: offer.amount }),
       ),
   );
 
   const results = await db.batch(statements);
   const failed = results.find((r) => !r.success);
-  if (failed) throw new Error(failed.error ?? "place_order failed");
+  if (failed) throw new RpcError("ORDER_FAILED", failed.error ?? "Could not place the order.");
 
-  return fromSqlRow("orders", order);
+  return { order_id: orderId, order_number: orderNumber, total, reused: false };
+};
+
+/** `place_order(...)`: refuses while the store is shut, then delegates. */
+const placeOrder: Handler = async (params, context) => {
+  if (!(await storeIsOpen())) {
+    throw new RpcError("STORE_CLOSED", "We are closed right now.");
+  }
+  return placeOrderInternal(params, context);
 };
 
 const cancelOrder: Handler = async (params, context) => {
@@ -225,38 +475,34 @@ const cancelOrder: Handler = async (params, context) => {
   const orderId = String(params.p_order_id ?? "");
   const userId = String(params.p_user_id ?? context.userId ?? "");
   const reason = (params.p_reason as string | null) ?? null;
-  const now = nowIso();
 
   const order = await db
     .prepare('SELECT * FROM "orders" WHERE "id" = ?')
     .bind(orderId)
     .first<Record<string, unknown>>();
-  if (!order) throw new Error("cancel_order: not found");
+  if (!order) throw new RpcError("ITEM_NOT_FOUND", "Order not found.");
   if (!context.elevated && String(order.user_id) !== userId) {
-    throw new Error("cancel_order: not your order");
+    throw new RpcError("FORBIDDEN", "That is not your order.");
+  }
+  const terminal = ["canceled", "rejected", "failed", "refunded"];
+  if (terminal.includes(String(order.status))) {
+    throw new RpcError("ALREADY_CANCELED", "That order is already closed.");
   }
 
-  await db.batch([
-    db
-      .prepare('UPDATE "orders" SET "status" = ?, "cancel_reason" = ?, "canceled_at" = ?, "updated_at" = ? WHERE "id" = ?')
-      .bind("canceled", reason, now, now, orderId),
-    db
-      .prepare(
-        'INSERT INTO "order_status_history" ("order_id", "from_status", "to_status", "changed_by", "note", "created_at") VALUES (?, ?, ?, ?, ?, ?)',
-      )
-      .bind(orderId, String(order.status), "canceled", userId, reason, now),
-  ]);
-
+  // The status trigger writes the history row and the `canceled_at` stamp.
+  const result = await db
+    .prepare('UPDATE "orders" SET "status" = ?, "cancel_reason" = ?, "updated_by" = ? WHERE "id" = ?')
+    .bind("canceled", reason, context.userId, orderId)
+    .run();
+  if (!result.success) throw new RpcError("CANCEL_FAILED", result.error ?? "Could not cancel.");
   return null;
 };
 
 const HANDLERS: Record<string, Handler> = {
   place_order: placeOrder,
+  place_order_internal: placeOrderInternal,
   cancel_order: cancelOrder,
 };
-
-/** Names the app calls that are not ported yet, so a miss is obvious. */
-export const KNOWN_UNPORTED = new Set<string>();
 
 export async function runRpc<T = unknown>(
   name: string,
@@ -280,6 +526,9 @@ export async function runRpc<T = unknown>(
     const data = (await handler(params, context)) as T;
     return { data, error: null };
   } catch (error) {
+    if (error instanceof RpcError) {
+      return { data: null as unknown as T, error: { message: error.message, code: error.code }, status: 400 };
+    }
     return {
       data: null as unknown as T,
       error: { message: error instanceof Error ? error.message : String(error) },
@@ -287,3 +536,5 @@ export async function runRpc<T = unknown>(
     };
   }
 }
+
+export { RpcError };

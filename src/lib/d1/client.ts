@@ -16,7 +16,6 @@
 import {
   getD1Context,
   getD1Database,
-  type D1PreparedStatement,
   type D1Value,
 } from "@/lib/d1/database";
 import { fromSqlRow, newUuid } from "@/lib/d1/coerce";
@@ -26,6 +25,7 @@ import {
   buildSelect,
   buildUpdate,
   parseSelect,
+  stampActor,
   stampTimestamps,
   type Filter,
   type OrderTerm,
@@ -419,7 +419,12 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
   private async runUpdate(): Promise<QueryResult<T>> {
     const db = getD1Database();
     const context = getD1Context();
-    const patch = stampTimestamps(this.table, (this.payload as WriteRow) ?? {}, { insert: false });
+    const patch = stampActor(
+      this.table,
+      stampTimestamps(this.table, (this.payload as WriteRow) ?? {}, { insert: false }),
+      context.userId,
+      { insert: false },
+    );
     const { sql, params } = buildUpdate(this.table, patch, this.filters, context.restaurantId);
     const result = await db.prepare(sql).bind(...(params as D1Value[])).run();
     if (!result.success) return { data: null as unknown as T, error: { message: result.error ?? "update failed" } };
@@ -461,7 +466,11 @@ export class D1Client {
   }
 
   rpc<T = unknown>(name: string, params?: Record<string, unknown>): Promise<QueryResult<T>> {
-    return runRpc<T>(name, params ?? {}, { elevated: this.options.elevated, userId: this.options.userId });
+    return runRpc<T>(name, params ?? {}, {
+      elevated: this.options.elevated,
+      userId: this.options.userId,
+      restaurantId: getD1Context().restaurantId,
+    });
   }
 
   /** The ops console elevates through its gate; the shim honours the same flag. */

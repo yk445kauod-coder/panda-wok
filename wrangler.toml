@@ -25,4 +25,13 @@ id = "9275068b465c4518b64ad36e24b876b5"
 binding = "NEXT_TAG_CACHE_KV"
 id = "41e3b5120d8d48c08c04cedca8082e33"
 
+# The live hub (Durable Object) that pushes order updates to the console.
+#
+# Pages cannot own a Durable Object namespace — the migrations belong to a
+# Workers deploy — so the object lives in its own worker
+# (`workers/ops-hub`) and the console talks to it directly over WebSocket.
+# The address is a plain var so a preview can point at a preview hub.
+[vars]
+OPS_HUB_URL = "https://panda-wok-ops-hub.yk445kauod.workers.dev"
+
 

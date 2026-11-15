@@ -288,6 +288,27 @@ export const STAMPED_TABLES = new Set([
   "page_content", "page_seo", "restaurants", "agent_threads",
 ]);
 
+/**
+ * Tables carrying `updated_by`, stamped from the request context.
+ *
+ * Postgres filled this from `auth.uid()` inside its triggers; SQLite has no such
+ * function, so the acting user rides along on the row. Only `orders` needs it
+ * today — the status trigger writes `changed_by` from it — but the set is here so
+ * the rule is stated once.
+ */
+export const ACTOR_TABLES = new Set(["orders"]);
+
+export function stampActor(
+  table: string,
+  row: WriteRow,
+  actorId: string | null,
+  { insert }: { insert: boolean },
+): WriteRow {
+  if (insert || !actorId || !ACTOR_TABLES.has(table)) return row;
+  if (row.updated_by !== undefined) return row;
+  return { ...row, updated_by: actorId };
+}
+
 export function stampTimestamps(table: string, row: WriteRow, { insert }: { insert: boolean }): WriteRow {
   if (!STAMPED_TABLES.has(table)) return row;
   const out = { ...row };

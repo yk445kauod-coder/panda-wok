@@ -6,6 +6,8 @@
  * a fake handle, and the same code runs in a Worker, in a test, and under
  * `node:sqlite` in a script.
  */
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+
 export type D1Value = string | number | null;
 
 export type D1Result<T = Record<string, unknown>> = {
@@ -58,18 +60,61 @@ let context: D1Context = {
 };
 
 /**
- * Bind the D1 database. The Worker calls this once per request from
- * `getCloudflareContext()`; a test or script calls it with `node:sqlite`.
+ * Bind the D1 database. A test or script calls this with `node:sqlite`.
  */
 export function setD1Database(database: D1Database | null): void {
   handle = database;
 }
 
+/** The bindings this app reads off the Cloudflare context. */
+export type CloudflareBindings = {
+  D1_DB?: D1Database;
+  /** Present only in a Worker-hosted deploy; the Pages build reaches the hub by URL. */
+  OPS_HUB?: unknown;
+  OPS_HUB_URL?: string;
+  OPS_TOKEN?: string;
+};
+
+let cachedBindings: CloudflareBindings | null = null;
+
+/**
+ * The Worker bindings, resolved lazily.
+ *
+ * The app is a single Worker, so the bindings are the same for every request in
+ * an isolate; reading them once and caching is safe and avoids a
+ * `getCloudflareContext()` call on every query. Outside Cloudflare (a unit test,
+ * a plain `next dev`) there is no context to read and this returns `{}`, which
+ * every caller treats as "binding absent".
+ */
+export function getCloudflareBindings(): CloudflareBindings {
+  if (cachedBindings) return cachedBindings;
+  let resolved: CloudflareBindings = {};
+  try {
+    // The package types `env` as its own `CloudflareEnv`; the shape we care about
+    // is a subset, so narrow through `unknown` rather than widen their type.
+    resolved = (getCloudflareContext().env ?? {}) as unknown as CloudflareBindings;
+  } catch {
+    resolved = {};
+  }
+  cachedBindings = resolved;
+  return resolved;
+}
+
+/** Bind the D1 handle from the Cloudflare context, once per isolate. */
+export function bindD1FromCloudflare(): boolean {
+  if (handle) return true;
+  const binding = getCloudflareBindings().D1_DB;
+  if (!binding) return false;
+  handle = binding;
+  return true;
+}
+
 export function getD1Database(): D1Database {
+  if (!handle) bindD1FromCloudflare();
   if (!handle) {
     throw new Error(
-      "D1 is not bound. Call setD1Database() with the request's D1 binding " +
-        "(or a node:sqlite adapter in a script) before using the d1 client.",
+      "D1 is not bound. The Worker must expose a D1_DB binding, or a test must " +
+        "call setD1Database() with a node:sqlite adapter.",
     );
   }
   return handle;

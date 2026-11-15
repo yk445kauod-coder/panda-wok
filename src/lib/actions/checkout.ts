@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { publishOrderChange } from "@/lib/live/ops-notify";
 import { requireUser } from "@/lib/auth/session";
 import { placeOrderSchema } from "@/lib/validation/schemas";
 import {
@@ -69,6 +70,12 @@ export async function placeOrderAction(
       ok: false,
       error: { code: "UNKNOWN", message: "The order could not be created." },
     };
+  }
+
+  // Every open console hears about the new order on the next tick instead of
+  // waiting for its own poll. Fire-and-forget; never fails the order.
+  if (!row.reused) {
+    publishOrderChange("order.created", row.order_id);
   }
 
   if (!row.reused) {

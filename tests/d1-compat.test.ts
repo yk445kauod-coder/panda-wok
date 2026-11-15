@@ -15,12 +15,20 @@ import { setD1Context, setD1Database } from "@/lib/d1/database";
 import { createTestDatabase, type SqliteD1 } from "./helpers/sqlite-d1";
 
 const schemaPath = fileURLToPath(new URL("../migrations/0001_init.sql", import.meta.url));
+const triggersPath = fileURLToPath(new URL("../migrations/0002_triggers.sql", import.meta.url));
+const actorPath = fileURLToPath(new URL("../migrations/0003_updated_by.sql", import.meta.url));
 const seedPath = fileURLToPath(new URL("../scripts/seed/catalog-backup.json", import.meta.url));
 
 let db: SqliteD1;
 
 beforeAll(async () => {
-  db = createTestDatabase(readFileSync(schemaPath, "utf8"));
+  db = createTestDatabase(
+    [
+      readFileSync(schemaPath, "utf8"),
+      readFileSync(actorPath, "utf8"),
+      readFileSync(triggersPath, "utf8"),
+    ].join("\n"),
+  );
   setD1Database(db);
   setD1Context({ userId: null, restaurantId: "b54b2620-90c5-4295-b617-bc1389db3ee9", elevated: false });
 
@@ -202,60 +210,126 @@ describe("d1-compat: writes", () => {
   });
 });
 
+/**
+ * Place a real order through the ported RPC. Every price is read from
+ * `menu_items`, so the test uses real dish ids from the catalogue.
+ */
+async function placeOrder(
+  client: D1Client,
+  userId: string,
+  key: string,
+  overrides: Record<string, unknown> = {},
+) {
+  await client.from("profiles").upsert({ id: userId, is_blocked: false });
+  const address = await client
+    .from("addresses")
+    .insert({
+      user_id: userId,
+      label: "Home",
+      contact_name: "Test",
+      contact_phone: "01000000000",
+      address_line: "1 Test St",
+      area: "Smouha",
+      city: "Alexandria",
+    })
+    .select()
+    .single();
+  const addressId = (address.data as { id: string }).id;
+
+  const menu = await client.from("menu_items").select("id, price").eq("is_available", true).limit(2);
+  const dishes = menu.data as Array<{ id: string; price: number }>;
+
+  return client.rpc("place_order", {
+    p_user_id: userId,
+    p_items: dishes.map((d) => ({ menu_item_id: d.id, quantity: 2, modifiers: [] })),
+    p_address_id: addressId,
+    p_fulfillment: "delivery",
+    p_payment_method: "cash_on_delivery",
+    p_idempotency_key: key,
+    ...overrides,
+  });
+}
+
 describe("d1-compat: rpc", () => {
-  it("place_order writes the order, its lines, the history row and a notification", async () => {
+  it("place_order prices from the database, not from the request", async () => {
     setD1Context({ elevated: false, userId: "customer-1" });
     const client = new D1Client({ elevated: false, userId: "customer-1" });
 
-    const { data, error } = await client.rpc("place_order", {
-      p_user_id: "customer-1",
-      p_items: [
-        { menu_item_id: null, name_snapshot: "Combo", unit_price: 100, quantity: 2, modifiers: [] },
-        { menu_item_id: null, name_snapshot: "Cola", unit_price: 25, quantity: 1, modifiers: [] },
-      ],
-      p_address: { area: "Smouha", address_line: "1 Test St" },
-      p_fulfillment: "delivery",
-      p_payment_method: "cash_on_delivery",
-      p_idempotency_key: "idem-test-1",
-    });
-
+    const { data, error } = await placeOrder(client, "customer-1", "idem-test-0001");
     expect(error).toBeNull();
-    const order = data as { id: string; subtotal: number; total: number; status: string; order_number: string };
-    expect(order.status).toBe("new");
-    expect(order.subtotal).toBe(225);
-    expect(order.total).toBeGreaterThan(0);
-    expect(order.order_number).toMatch(/^PW-\d+$/);
+    const placed = data as { order_id: string; order_number: string; total: number; reused: boolean };
+    expect(placed.reused).toBe(false);
+    expect(placed.order_number).toMatch(/^PW-\d{4}-\d{4}$/);
 
-    const lines = await client.from("order_items").select("id").eq("order_id", order.id);
-    expect((lines.data as unknown[]).length).toBe(2);
+    // The total has to be built from the stored prices, so recompute it and
+    // check the order agrees.
+    const lines = await client
+      .from("order_items")
+      .select("unit_price, quantity, line_total")
+      .eq("order_id", placed.order_id);
+    const rows = lines.data as Array<{ unit_price: number; quantity: number; line_total: number }>;
+    expect(rows.length).toBe(2);
+    for (const row of rows) {
+      expect(row.line_total).toBeCloseTo(row.unit_price * row.quantity, 2);
+    }
+    const subtotal = rows.reduce((sum, r) => sum + r.line_total, 0);
+    const order = await client
+      .from("orders")
+      .select("subtotal, tax_total, delivery_fee, discount_total, total")
+      .eq("id", placed.order_id)
+      .single();
+    const stored = order.data as Record<string, number>;
+    expect(stored.subtotal).toBeCloseTo(subtotal, 2);
+    // total = subtotal - discount + delivery + tax
+    expect(stored.total).toBeCloseTo(
+      stored.subtotal - stored.discount_total + stored.delivery_fee + stored.tax_total,
+      2,
+    );
+  });
 
-    const history = await client
-      .from("order_status_history")
-      .select("to_status, from_status")
-      .eq("order_id", order.id);
-    const historyRows = history.data as Array<{ to_status: string; from_status: string | null }>;
-    expect(historyRows.length).toBe(1);
-    expect(historyRows[0].to_status).toBe("new");
-    expect(historyRows[0].from_status).toBeNull();
+  it("place_order refuses a line the menu does not have", async () => {
+    setD1Context({ elevated: false, userId: "customer-bad" });
+    const client = new D1Client({ elevated: false, userId: "customer-bad" });
+    await client.from("profiles").upsert({ id: "customer-bad", is_blocked: false });
+    const address = await client
+      .from("addresses")
+      .insert({ user_id: "customer-bad", address_line: "1 Test St" })
+      .select()
+      .single();
 
-    const notes = await client.from("notifications").select("id").eq("user_id", "customer-1");
-    expect((notes.data as unknown[]).length).toBeGreaterThan(0);
+    const { error } = await client.rpc("place_order", {
+      p_user_id: "customer-bad",
+      p_items: [{ menu_item_id: "00000000-0000-4000-8000-000000000000", quantity: 1 }],
+      p_address_id: (address.data as { id: string }).id,
+      p_idempotency_key: "idem-test-0002",
+    });
+    expect(error?.code).toBe("ITEM_NOT_FOUND");
+  });
+
+  it("place_order refuses a blocked account", async () => {
+    setD1Context({ elevated: false, userId: "customer-blocked" });
+    const client = new D1Client({ elevated: false, userId: "customer-blocked" });
+    await client.from("profiles").upsert({ id: "customer-blocked", is_blocked: true });
+    const { error } = await client.rpc("place_order", {
+      p_user_id: "customer-blocked",
+      p_items: [{ menu_item_id: "00000000-0000-4000-8000-000000000000", quantity: 1 }],
+      p_address_id: "00000000-0000-4000-8000-000000000001",
+      p_idempotency_key: "idem-test-0003",
+    });
+    expect(error?.code).toBe("ACCOUNT_BLOCKED");
   });
 
   it("place_order is idempotent for the same key", async () => {
     setD1Context({ elevated: false, userId: "customer-2" });
     const client = new D1Client({ elevated: false, userId: "customer-2" });
-    const args = {
-      p_user_id: "customer-2",
-      p_items: [{ name_snapshot: "X", unit_price: 10, quantity: 1 }],
-      p_fulfillment: "pickup",
-      p_idempotency_key: "idem-test-2",
-    };
-    const first = await client.rpc("place_order", args);
-    const second = await client.rpc("place_order", args);
+    const first = await placeOrder(client, "customer-2", "idem-test-0004");
+    const second = await placeOrder(client, "customer-2", "idem-test-0004");
     expect(first.error).toBeNull();
     expect(second.error).toBeNull();
-    expect((first.data as { id: string }).id).toBe((second.data as { id: string }).id);
+    expect((first.data as { order_id: string }).order_id).toBe(
+      (second.data as { order_id: string }).order_id,
+    );
+    expect((second.data as { reused: boolean }).reused).toBe(true);
   });
 
   it("an unported rpc fails loudly rather than returning empty data", async () => {
@@ -263,5 +337,71 @@ describe("d1-compat: rpc", () => {
     const { data, error } = await client.rpc("definitely_not_ported");
     expect(data).toBeNull();
     expect(error?.message).toContain("not ported");
+  });
+});
+
+describe("d1-compat: triggers", () => {
+  it("a status change writes the history row and stamps the time", async () => {
+    setD1Context({ elevated: true, userId: "staff-1" });
+    const client = new D1Client({ elevated: true, userId: "staff-1" });
+
+    const placed = await placeOrder(client, "customer-3", "idem-trigger-0001");
+    const orderId = (placed.data as { order_id: string }).order_id;
+
+    const updated = await client.from("orders").update({ status: "accepted" }).eq("id", orderId);
+    // Assert the write applied: a swallowed trigger error would otherwise make
+    // this test pass while the timeline silently stopped updating.
+    expect(updated.error).toBeNull();
+
+    const history = await client
+      .from("order_status_history")
+      .select("from_status, to_status")
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: true });
+    const rows = history.data as Array<{ from_status: string | null; to_status: string }>;
+    expect(rows.map((r) => r.to_status)).toEqual(["new", "accepted"]);
+    expect(rows[1].from_status).toBe("new");
+
+    const order = await client.from("orders").select("accepted_at").eq("id", orderId).single();
+    expect((order.data as { accepted_at: string | null }).accepted_at).toBeTruthy();
+  });
+
+  it("a new order writes an activity log entry", async () => {
+    setD1Context({ elevated: true, userId: null });
+    const client = new D1Client({ elevated: true, userId: null });
+    const placed = await placeOrder(client, "customer-5", "idem-trigger-0002");
+    const logs = await client
+      .from("activity_logs")
+      .select("event")
+      .eq("entity_id", (placed.data as { order_id: string }).order_id);
+    expect((logs.data as Array<{ event: string }>)[0]?.event).toBe("ORDER_CREATED");
+  });
+
+  it("a customer message bumps the conversation counters", async () => {
+    setD1Context({ elevated: true, userId: null });
+    const client = new D1Client({ elevated: true, userId: null });
+    const conversation = await client
+      .from("conversations")
+      .insert({ user_id: "customer-6", status: "closed", staff_unread: 0, customer_unread: 0 })
+      .select()
+      .single();
+    const conversationId = (conversation.data as { id: string }).id;
+
+    await client.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: "customer-6",
+      sender_kind: "customer",
+      body: "Hello?",
+    });
+
+    const after = await client
+      .from("conversations")
+      .select("status, staff_unread")
+      .eq("id", conversationId)
+      .single();
+    const row = after.data as { status: string; staff_unread: number };
+    // A customer replying to a closed thread reopens it and bumps the unread.
+    expect(row.status).toBe("open");
+    expect(row.staff_unread).toBe(1);
   });
 });

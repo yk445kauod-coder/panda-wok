@@ -25,6 +25,8 @@ type SessionPayload =
       capabilities: Capability[];
       staffName: string;
       brand: Brand;
+      /** The live hub's origin, or null when the deployment has none. */
+      opsHubUrl: string | null;
       notifications: AppNotification[];
       unreadCount: number;
       pendingOrders: OrderAlert[];
@@ -68,7 +70,13 @@ export function AdminApp({ children }: { children: React.ReactNode }) {
     fetch("/api/admin/session", { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: SessionPayload | null) => {
-        if (data?.ok) setPayload(data);
+        if (!data?.ok) return;
+        // The socket reads this global rather than the React tree, because it is
+        // opened from a module-scope store, not a component.
+        if (data.unlocked && data.opsHubUrl) {
+          (window as unknown as { __PW_OPS_HUB__?: string }).__PW_OPS_HUB__ = data.opsHubUrl;
+        }
+        setPayload(data);
       })
       .catch(() => {
         setPayload({ ok: true, unlocked: false, brand: { name: "Panda Wok", logo_url: null } });

@@ -28,7 +28,7 @@
 import { useEffect, useState } from "react";
 import { listPendingOrderAlertsAction } from "@/lib/actions/order-alerts";
 import type { OrderAlert } from "@/lib/services/admin-orders";
-import { getOpsLive } from "@/lib/live/use-ops-signal";
+import { getOpsLive, subscribeOpsSignal } from "@/lib/live/ops-socket";
 import { startVisiblePoll } from "@/lib/live/visibility";
 
 /** Fast cadence when the signal is down — the poll is the only live path. */
@@ -111,18 +111,23 @@ function stopPollingIfIdle(): void {
  * "not loaded yet" and "loaded, nothing pending" would look the same, and the
  * caller could not tell an empty queue from a stale seed.
  */
-export function useOpsPendingOrders(): OrderAlert[] | null {
+export function useOpsPendingOrders(userId: string | null = null): OrderAlert[] | null {
   const [, force] = useState(0);
   useEffect(() => {
     const current = ensureStore();
     const notify = () => force((n) => n + 1);
     current.subscribers.add(notify);
     startPolling();
+    // The push path: the hub tells us the moment an order changes. The poll
+    // above is the net for a dropped socket, and it relaxes to a minute once
+    // this reports `live`.
+    const unsubscribe = subscribeOpsSignal(() => refreshOpsNow(), userId);
     return () => {
+      unsubscribe();
       current.subscribers.delete(notify);
       stopPollingIfIdle();
     };
-  }, []);
+  }, [userId]);
   if (!store || !store.loaded) return null;
   return store.pending;
 }

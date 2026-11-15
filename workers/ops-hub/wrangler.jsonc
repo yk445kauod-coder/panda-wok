@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "panda-wok-ops-hub",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "observability": {
+    "enabled": true
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "OPS_HUB", "class_name": "OpsHub" }]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["OpsHub"]
+    }
+  ]
+}
