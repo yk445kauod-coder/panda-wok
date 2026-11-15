@@ -224,3 +224,31 @@
   and the CF media worker edge cache is UNAVAILABLE. Metadata catalogued; bytes are a hard gap.
 - Archive hygiene: password hashes / tokens / vault secrets are redacted in the tree and the raw
   copies live in `supabase-recovery/sensitive/` (mode 700, excluded from the ZIP).
+
+## Supabase -> D1 import (done 2026-11-15)
+- **9385 rows / 41 tables merged into live D1** (`panda-wok`, id `b093a40f-…`), the DB the deployed
+  Pages/Worker reads via its `D1_DB` binding. Merge = `INSERT OR IGNORE` on the PK: existing/D1-only
+  rows survive, only missing rows added. Tools: `supabase-recovery/tools/import_to_d1.py` ->
+  `d1-import/*.sql`, applied with `npx wrangler d1 execute panda-wok --remote --file=…`.
+- Column-level conversion MUST mirror `src/lib/d1/coerce.ts`: bool->1/0, jsonb/array->JSON **text**,
+  timestamptz->`…T…Z`. The JSON-column list is `JSON_COLUMNS` in `src/lib/d1/schema-meta.ts` — read it
+  from the app so the two never drift. Writing a jsonb column (e.g. `settings.value`) as a bare string
+  breaks reads: the shim `JSON.parse`s it.
+- **Live D1 `settings` held 5 grouped blobs** (`brand`,`support`,`ordering`,`ai`,`marketing`) but the app
+  reads **flat dotted keys** (`brand.name`,`ordering.accepting_orders`,…) via `.eq("is_public",true)`.
+  So every setting was silently falling back to its default until the 35 flat rows were imported.
+  Admin settings save path = `apply_settings_batch` RPC (updates existing keys only; never inserts).
+- **Schema defect fixed:** `ai_usage_daily` is one row per **provider** per day but D1 declared
+  `PRIMARY KEY (day)` -> 20 Supabase rows collapsed to 14. `migrations/0004_ai_usage_daily_pk.sql`
+  rebuilds it as `(day, provider)`; `NATURAL_KEY.ai_usage_daily` in `src/lib/d1/client.ts` -> `"day,provider"`.
+- D1 remote migration tracking (`d1_migrations`) was **empty** — the DB was provisioned out-of-band.
+  `migrations apply --remote` then failed on `0003` (`duplicate column name: updated_by`). Fix: insert
+  the already-effective `0003` row into `d1_migrations`, then apply. Keep this in mind before any
+  future `wrangler d1 migrations apply --remote`.
+- **Local `next dev` cannot test D1**: wrangler.jsonc vars don't reach `next dev`, so `DATA_BACKEND`
+  is unset and it falls back to Supabase (402). To test the D1 path use the vitest harness
+  (`tests/helpers/sqlite-d1.ts`, `node:sqlite`) or the deployed site.
+- Verification: 41/41 tables >= export count, 0 orphans, 19/19 admin features, live pages 200,
+  513 tests pass, tsc clean.
+- **Pre-existing bug (NOT from the import):** `/en/menu/<unknown-slug>` -> **500** instead of 404
+  (other routes 404 fine; the D1 shim returns null for unknown slugs). Data-independent.
