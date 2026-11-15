@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import { dishImageSrc, dishImageSrcSet } from "@/lib/images/responsive";
+import { dishImageSrc, dishImageSrcSet, dishImageUrl } from "@/lib/images/responsive";
 
 const ROOT = resolve(__dirname, "..");
 const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
@@ -32,7 +32,18 @@ describe("dish photos are served by the media worker, not Supabase", () => {
     expect(dishImageSrcSet("https://images.unsplash.com/photo-123")).toContain(" 1200w");
     expect(dishImageSrc("https://ik.imagekit.io/panda/hero.png", 1600)).toContain("w-1600");
   });
+
+  it("routes og:image / JSON-LD through the worker too", () => {
+    expect(dishImageUrl(STORAGE)).toBe(
+      "https://panda-wok-media.yk445kauod.workers.dev/media/dish-0d0d5089-3f4512b5-02d0-4932-85f7-ef26edaaff44.png",
+    );
+    expect(dishImageUrl("https://images.unsplash.com/photo-123")).toBe(
+      "https://images.unsplash.com/photo-123",
+    );
+    expect(dishImageUrl(null)).toBe("");
+  });
 });
+
 
 describe("the media worker is its own deployment, off the site worker", () => {
   it("has its own wrangler config, pinned to the public bucket", () => {
@@ -52,6 +63,12 @@ describe("the media worker is its own deployment, off the site worker", () => {
     const src = read("workers/media-proxy/src/index.ts");
     expect(src).toMatch(/if \(!upstream\.ok/);
     expect(src).toMatch(/"cache-control": "no-store"/);
+  });
+
+  it("shows the site placeholder while Storage is restricted, uncached", () => {
+    const src = read("workers/media-proxy/src/index.ts");
+    expect(src).toMatch(/upstream\.status === 402/);
+    expect(src).toMatch(/dish-placeholder\.svg/);
   });
 
   it("is not imported by the site's Pages worker", () => {

@@ -1,4 +1,5 @@
 import { absoluteUrl, siteUrl } from "@/lib/seo/metadata";
+import { dishImageUrl } from "@/lib/images/responsive";
 import { BRAND_LOGO_URL } from "@/lib/brand";
 
 export type JsonLd = Record<string, unknown>;
@@ -219,7 +220,7 @@ function menuItemSchema(
     name: item.name,
     description: item.description ?? undefined,
     url: absoluteUrl(`${basePath}/${item.slug}`),
-    image: item.image ?? undefined,
+    image: item.image ? dishImageUrl(item.image) : undefined,
     offers: {
       "@type": "Offer",
       price: item.price.toFixed(2),
@@ -253,7 +254,7 @@ export function productSchema(item: {
     "@type": "Product",
     name: item.name,
     description: item.description ?? undefined,
-    image: item.image ?? undefined,
+    image: item.image ? dishImageUrl(item.image) : undefined,
     category: item.category,
     url: absoluteUrl(`/menu/${item.slug}`),
     brand: { "@type": "Brand", name: item.brand ?? "Panda Wok" },

@@ -101,7 +101,24 @@ export default {
 
     if (!upstream.ok || !upstream.body) {
       // Never cache a failure: a transient Storage error must not become the
-      // stored copy for a year. 402/429 surface as-is so the quota is visible.
+      // stored copy for a year.
+      //
+      // A 402 is Supabase restricting the whole project (the cached-egress quota
+      // is spent). That is temporary — it lifts at the billing reset — but while
+      // it lasts every dish photo would render as the browser's broken-image
+      // glyph. Hand back the site's own placeholder instead so a customer sees a
+      // tidy page rather than a broken one, and keep the redirect out of caches
+      // so the real photo reappears on its own the moment Storage answers again.
+      if (upstream.status === 402 || upstream.status === 429) {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            location: `${env.SITE_ORIGIN ?? ""}/dish-placeholder.svg`,
+            "cache-control": "no-store",
+            "x-media-cache": "UNAVAILABLE",
+          },
+        });
+      }
       return new Response("Image unavailable", {
         status: upstream.status === 404 ? 404 : upstream.status >= 500 ? 502 : upstream.status,
         headers: { "cache-control": "no-store" },

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { publicEnv } from "@/lib/config/public-env";
+import { dishImageUrl } from "@/lib/images/responsive";
 
 /**
  * Resolves the public origin at request time.
@@ -53,7 +54,10 @@ export function buildMetadata(input: SeoInput): Metadata {
   // flat string even when the document title opts out of the root template.
   const titleText =
     typeof input.title === "string" ? input.title : input.title.absolute;
-  const image = input.image ?? absoluteUrl("/opengraph-image");
+  // `input.image` is the dish's raw Storage URL; route it through the media
+  // worker so a social crawler (the owner runs Facebook ads) does not spend the
+  // project's Storage egress on every share. Non-Storage URLs pass through.
+  const image = input.image ? dishImageUrl(input.image) : absoluteUrl("/opengraph-image");
 
   return {
     title: input.title,

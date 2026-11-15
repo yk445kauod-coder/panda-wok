@@ -59,6 +59,21 @@ function proxiedMediaUrl(url: string): string | null {
   return `${MEDIA_ORIGIN}/media/${name}`;
 }
 
+/**
+ * The URL for a dish image in a place that renders one image at one size — an
+ * `og:image`, a JSON-LD `image`, a preload hint. Same rewriting as
+ * `dishImageSrc`, minus the width transform: a social crawler wants the
+ * full-size object and does its own scaling.
+ *
+ * It exists so no call site has to remember the `/media/*` rule: a Supabase
+ * Storage URL leaks to `*.supabase.co` (and spends the project's egress quota)
+ * the moment one is written by hand.
+ */
+export function dishImageUrl(url: string | null | undefined): string {
+  if (!url) return url ?? "";
+  return proxiedMediaUrl(url) ?? url;
+}
+
 /** Unsplash URL at a given pixel width, serving WebP and quality 70. */
 export function dishImageSrc(url: string, width: number): string {
   const media = proxiedMediaUrl(url);
