@@ -1,0 +1,17 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "panda-wok-media",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    // The public Storage origin. Not a secret — it ships in the browser bundle.
+    "SUPABASE_ORIGIN": "https://xjbtsryidznsxqlynmfa.supabase.co",
+    // The one bucket this worker is allowed to proxy.
+    "MEDIA_BUCKET": "menu-images",
+    // The site's own origin, so only the site (and the browser) may use the proxy.
+    "SITE_ORIGIN": "https://panda-wok.pages.dev"
+  }
+}
