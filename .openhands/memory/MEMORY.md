@@ -273,3 +273,33 @@
 ## Grep trap
 - `src/lib/agent/repo-skills.generated.ts` is a huge generated file (embeds AGENTS.md). A repo-wide
   `grep -rn` that matches it floods the output. Exclude it: `grep -rn ... --include=*.ts | grep -v generated`.
+
+## ⚠️ CORRECTION: Storage files were NOT rescued (2026-11-15)
+- Previous session notes implied "everything imported". That is **false for Storage**.
+  DB rows did move to D1 (verified: D1 `analytics_events` grows live, site shows imported phones).
+  **Storage objects did NOT**: 0 of 180 downloaded. `supabase-recovery/reports/failed_downloads.txt`
+  lists them; `manifests/storage_manifest.json` has metadata only.
+- **100 dish images, 86.9 MB, are trapped** in Supabase Storage (`menu-images` bucket). Every access
+  path returns 402 (`exceed_cached_egress_quota`): public, authenticated, signed-URL, S3, and the
+  Management API storage endpoints. The **only** Supabase channel still open is the Management API
+  **SQL** channel (`POST /v1/projects/<ref>/database/query` → 201) — but it can only read Postgres
+  metadata, not object bytes. **No technical workaround exists.** The owner must unblock the project
+  (remove spend cap / upgrade for one cycle), then re-run the pull.
+- **R2 is NOT enabled** on the account (`GET /r2/buckets` → 10042 "Please enable R2 through the
+  Cloudflare Dashboard"). So `workers/media-proxy` has **no MEDIA binding** and can only proxy
+  Supabase → 402 → `302 /dish-placeholder.svg`. Verified: all 100 images probe as 302 placeholder.
+  Every dish photo on the live site is broken right now. The old commit "store dish photos in R2"
+  (30a3baa) never actually stored anything — R2 was never enabled.
+
+## Worker-request crisis (measured, 2026-11-13)
+- Account `708d1cc2…` hit **97,814 req on 2026-11-13** (free limit 100k/day); it was 34k on 11-08 —
+  it tripled in 3 days. ~29 Workers + 10 Pages share the one budget.
+- `panda-wok.pages.dev` is the **largest single source: 18,514 req/day**. Not 58 — that 58 is only
+  `workersInvocationsAdaptive` for Worker *scripts*, which does **not** count Pages Functions.
+- Culprits (11-13): `/admin/orders` 1,445 req with **cacheStatus=none** (admin pages effectively
+  uncached; `/admin/orders` header is `public, max-age=0, s-maxage=300` yet 1,445/1,445 were `none`);
+  2,224 of 3,286 `/_next/static` requests `cacheStatus=none`; **925 failed 5xx** — `/icon.svg` 377×504
+  + `/apple-icon.png` 154×504 (Next-generated routes that are NOT static files, so `_routes.json`
+  exclude can't help) and 258×503 `/admin/orders` (Free 10 ms CPU cold starts).
+- The funnel fix (82ee831) removes only ~35k rows/load on the analytics page — a minor part of the
+  request count. It was NOT the main cause of the quota crisis.
