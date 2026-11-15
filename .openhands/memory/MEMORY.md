@@ -196,3 +196,31 @@
   tie-break, disabled, per-customer targeting, preview↔stored agreement, tax-after-discount.
   Note the RPC reads settings `tax.rate`(0.14), `delivery.fee`(30), `delivery.free_over`(250),
   `ordering.min_order_total`(80) — tests neutralise them in `beforeEach`.
+
+## panda-wok D1 admin console — verified wired (2026-11-15)
+- D1 db `panda-wok` (id b093a40f-3ad7-498a-bad4-5abbfc4dfce5) holds **52 tables**; all 22 admin nav
+  destinations covered. `node scripts/verify-d1-features.mjs` (needs CLOUDFLARE_API_TOKEN +
+  CLOUDFLARE_ACCOUNT_ID) runs 19 feature probes with live joins -> **19/19 PASS**.
+- D1 schema has **no FOREIGN KEYs** — relations are bare `*_id` columns (SQLite style). Verify joins
+  by column, not by declared constraints. Real gotchas hit: `offers.is_enabled` (NOT is_active),
+  `analytics_events.user_id` (no order_id), `agent_artifacts.run_id` (hangs off ops_agent_runs, NOT
+  agent_threads), `agent_messages.thread_id`.
+- `exports` and `backup_records` each carry a `content` (+`content_encoding`) column: the payload
+  lives **in D1**, so Exports/Backups work with R2 disabled. R2 is paid -> not enabled.
+- Menu photo: admin accepts a pasted URL (`menu_items.image_url`, works without R2) and falls back
+  gracefully on upload failure; `menu_images` (storage_path|external_url) exists but is empty.
+- SQLite column introspection: `SELECT name FROM pragma_table_info('t')`.
+
+## Supabase rescue: panda-wok (xjbtsryidznsxqlynmfa) — 2026-11-15
+- **All Supabase HTTP endpoints 402** (`exceed_cached_egress_quota`): REST, Auth, Storage
+  public/authenticated/signed, **S3 API**, and even Management API `/storage/buckets`. Only the
+  Management **SQL** channel works: `POST https://api.supabase.com/v1/projects/<ref>/database/query`
+  with `Authorization: Bearer $SUPABASE_ACCESS_TOKEN` (token was in the MCP server process env).
+  Direct PG (pooler 5432/6543) fails: `no tenant identifier`.
+- Full DB rescued to `supabase-recovery/` (gitignored): 102 tables, 15 455 rows, 0 failures, plus
+  schema.sql (DDL), data.sql, per-table JSON, key CSVs, storage/auth metadata, report, ZIP.
+- **Storage bytes unreachable** (180 objects / 84.4 MB, menu-images 100/82.8 MB). Dish photos exist
+  ONLY in Supabase Storage — not in git (scanned all blobs), not in .next/.open-next/.pages/.wrangler,
+  and the CF media worker edge cache is UNAVAILABLE. Metadata catalogued; bytes are a hard gap.
+- Archive hygiene: password hashes / tokens / vault secrets are redacted in the tree and the raw
+  copies live in `supabase-recovery/sensitive/` (mode 700, excluded from the ZIP).

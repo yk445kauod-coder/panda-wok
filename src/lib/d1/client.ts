@@ -76,7 +76,8 @@ const AUTO_ID_TABLE = new Set([
 const NATURAL_KEY: Record<string, string> = {
   settings: "key",
   feature_flags: "key",
-  ai_usage_daily: "day",
+  // One row per provider per day, so the conflict target is the pair.
+  ai_usage_daily: "day,provider",
   menu_item_ratings: "menu_item_id",
   customer_tag_links: "customer_id",
   team_thread_members: "thread_id",
