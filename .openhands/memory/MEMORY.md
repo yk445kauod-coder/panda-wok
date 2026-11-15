@@ -89,3 +89,24 @@
 - Gotcha: a page whose own `useAdminData` is subscribed to the live beat must NOT also pass a
   callback to `useOpsOrderSignal` — the store already dispatches the event on every ping, so a
   callback double-fetches. Kitchen board fixed this way.
+
+## Supabase 402 outage + image egress (2026-11-13)
+- **Symptom**: whole API 402 "exceed_cached_egress_quota" for *everyone*;
+  `/en/menu` + `/en/cart` 500. Cause = Supabase-side org restriction (`free`
+  plan, Cached Egress Exceeded), NOT code and NOT any edge function (there are
+  none). Lifts at billing reset or on upgrade/spend-cap-off. `execute_sql` still
+  works while REST/Storage 402 — use it to read state.
+- **The number**: 24h edge egress = **1.17 GB from Storage (1,506 reqs)** vs
+  47 KB from 40,094 REST reqs. Images were 99.99% of egress. Menu photos: 100
+  objects / 83 MB, avg 848 KB. They were rendered **unoptimized** so every
+  visitor hit `*.supabase.co` directly (Supabase counts it as egress even with
+  CF cache 1341 HIT / 12 MISS).
+- **Fix**: standalone Worker `panda-wok-media` (`workers/media-proxy/`, deploy
+  with `wrangler deploy` from that dir) caches `menu-images` objects for a year.
+  `src/lib/images/responsive.ts` rewrites Storage URLs to
+  `https://panda-wok-media.yk445kauod.workers.dev/media/<name>`
+  (`NEXT_PUBLIC_MEDIA_ORIGIN` override). Kept OFF the site Pages worker so image
+  requests cost it no CPU. Commit 2704b13.
+- Diagnostic recipe: `supabase_query_logs` with
+  `sum(toInt64OrZero(log_attributes['response.headers.content_length']))` grouped
+  by path/service — that is what exposed the images.
