@@ -47,3 +47,9 @@ cloudflare-env.d.ts
 # Menu working sheets (owner keeps these; only the example is committed)
 scripts/data/menu-import.csv
 scripts/data/menu-export.csv
+.recovery/
+.secrets/
+supabase-recovery/
+
+# Supabase recovery archive: contains DB rows and user records — never publish
+supabase-complete-backup.zip
