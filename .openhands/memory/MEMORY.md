@@ -252,3 +252,20 @@
   513 tests pass, tsc clean.
 - **Pre-existing bug (NOT from the import):** `/en/menu/<unknown-slug>` -> **500** instead of 404
   (other routes 404 fine; the D1 shim returns null for unknown slugs). Data-independent.
+
+## Console request-volume (already fixed by earlier sessions; verify before re-doing)
+- The "admin heavy / worker requests exceed free plan" complaint was solved in `src/lib/live/ops-sync.ts`
+  (+`visibility.ts`, `use-ops-signal.ts`, `ops-socket.ts`): **one** poll per tab, paused while hidden,
+  adaptive cadence — `OPS_POLL_FALLBACK_MS=45000` (socket down) / `OPS_POLL_LIVE_MS=120000` (socket live).
+  Confirmed present in the deployed bundle. Original measured pain: 23,682 invocations/day for one admin.
+- **Account shares one free tier**: ~29 Workers + 10 Pages projects on account `708d1cc2…`. panda-wok
+  itself is tiny (~58 req/day); the volume is other projects (lava-agent ~10k/week). Don't attribute
+  account-wide limits to panda-wok.
+- **Real regression the import created:** `getFunnel` (`src/lib/crm/customers.ts`) ran **5 unbounded
+  `analytics_events` scans** deduped in the Worker. Fine at 55 rows, heavy at 7,133 (post-import).
+  Fixed: `funnel_counts(p_days)` RPC in `src/lib/d1/rpc.ts` does it in one grouped query (D1 branch
+  only; Supabase path unchanged). `analytics_events` is the only large table; activity/audit logs are
+  bounded reads.
+- `analytics_events.id` is an auto-assigned **INTEGER** (in `AUTO_ID_TABLE`); `orders` NOT NULL needs
+  `idempotency_key`, `user_id`, `restaurant_id`, and `status` ∈ the CHECK list (use `finished`, not
+  `completed`) when inserting test fixtures.
