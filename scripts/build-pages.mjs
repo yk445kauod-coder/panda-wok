@@ -45,6 +45,20 @@ async function main() {
     recursive: true,
   });
 
+  // Next serves `src/app/icon.svg`, `apple-icon.png` and `favicon.ico` as
+  // *routes* (generated from the file convention), not as static assets, so
+  // `_routes.json` cannot exclude them — every browser fetches the tab icon on
+  // every visit, and each one ran the Worker to re-emit a byte-identical file.
+  // That was a measurable slice of the free-plan CPU budget: on 2026-11-13
+  // `/icon.svg` 504'd 377 times and `/apple-icon.png` 154 times, because a 77 KB
+  // SVG built at request time exceeded the 10 ms cap. Copy them into the assets
+  // root so Pages serves them straight from the CDN (and the exclude below keeps
+  // them off the Worker). `favicon.ico` is already a `public/` file.
+  for (const icon of ["icon.svg", "apple-icon.png", "favicon.ico"]) {
+    const from = path.join(root, "src", "app", icon);
+    if (existsSync(from)) await cp(from, path.join(OUT, icon));
+  }
+
   const wrapper = await readFile(path.join(root, "scripts", "pages", "_worker.js"), "utf8");
   // Bake the build id in so the console-shell cache key changes on every deploy
   // (see `adminShellCacheUrl`). Without this the worker would key on a constant
@@ -90,6 +104,11 @@ async function main() {
       "/mascots/*",
       "/fonts/*",
       "/favicon.ico",
+      // Next metadata routes, copied into the assets root above so the CDN
+      // answers the tab icon directly instead of running the Worker for a
+      // byte-identical SVG/PNG on every visit.
+      "/icon.svg",
+      "/apple-icon.png",
       "/icon-192.png",
       "/icon-512.png",
       "/manifest.webmanifest",

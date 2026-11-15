@@ -639,6 +639,33 @@ export class D1Client {
     return this.authClient;
   }
 
+  /**
+   * The `supabase.storage` subset, stubbed.
+   *
+   * D1 has no object storage, so a signed URL can never be minted here. The two
+   * call sites that reach for it (`getExportDownloadUrls`, `getBackupDownloadUrls`)
+   * treat an empty result as "no legacy download" and the exports/backups screens
+   * fall back to the status badge — so returning an empty list keeps those tabs
+   * working instead of throwing on an absent method. New exports and backups
+   * store their bytes in the row (`content`), not here; dish photos upload to R2
+   * (`actions/storage.ts`) and never reach this.
+   */
+  get storage() {
+    const unavailable = {
+      data: null,
+      error: { message: "Object storage is not available on the D1 backend." },
+    };
+    return {
+      from: (_bucket: string) => ({
+        createSignedUrls: async (_paths: string[], _expiresIn: number) => ({ data: [], error: null }),
+        createSignedUrl: async (_path: string, _expiresIn: number) => ({ data: null, error: null }),
+        getPublicUrl: (_path: string) => ({ data: { publicUrl: "" } }),
+        upload: async (_path: string, _file: unknown) => unavailable,
+        remove: async (_paths: string[]) => ({ data: null, error: null }),
+      }),
+    };
+  }
+
   from<T = unknown>(table: string): D1QueryBuilder<T> {
     return new D1QueryBuilder<T>(table);
   }

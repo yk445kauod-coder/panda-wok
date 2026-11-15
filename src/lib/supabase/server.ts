@@ -8,6 +8,7 @@ import { publicEnv } from "@/lib/config/public-env";
 import { serviceRoleAvailable } from "@/lib/config/env";
 import { gateIdentity } from "@/lib/auth/admin-gate";
 import { isD1Backend } from "@/lib/d1/backend";
+import { createD1PublicClient } from "@/lib/d1/public-client";
 import {
   createAdminSupabase,
   tryCreateAdminSupabase,
@@ -119,6 +120,11 @@ export async function createSessionSupabase(): Promise<SupabaseServerClient> {
  * build time. RLS still decides what an anonymous visitor may select.
  */
 export function createPublicSupabase() {
+  // On D1 the storefront reads from D1 too. It must not read cookies (the reads
+  // run at build time), so this is a dedicated context, not `createServerSupabase`.
+  if (isD1Backend()) {
+    return createD1PublicClient() as unknown as ReturnType<typeof createSupabaseClient<Database>>;
+  }
   return createSupabaseClient<Database>(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,

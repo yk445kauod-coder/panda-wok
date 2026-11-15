@@ -34,14 +34,17 @@ const ISO_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 /** JS value -> the value SQLite should hold. */
 export function toSqlValue(table: string, column: string, value: unknown): D1Value {
   if (value === undefined || value === null) return null;
+  // A JSON column stores every value as JSON text — including a boolean, which
+  // must be `"true"`, not `1`. Checking this before the boolean branch is what
+  // keeps `settings.value` honest: writing `false` used to land as the number
+  // `0` (rendered `0.0`), which one reader saw as "on" and another as "off".
+  if (jsonColumns(table).includes(column)) return JSON.stringify(value);
   if (typeof value === "boolean") return value ? 1 : 0;
   if (typeof value === "number") return value;
   if (typeof value === "string") return value;
-  // Objects and arrays are JSON text; Date is an ISO string.
+  // Date is an ISO string; anything else (an array on a column the generator did
+  // not flag, a nested object) is still safest as JSON than as `[object Object]`.
   if (value instanceof Date) return value.toISOString();
-  if (jsonColumns(table).includes(column)) return JSON.stringify(value);
-  // Anything else (an array on a column the generator did not flag, a nested
-  // object) is still safest as JSON than as `[object Object]`.
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }

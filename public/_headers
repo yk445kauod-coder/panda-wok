@@ -23,6 +23,8 @@
   Cache-Control: public, max-age=86400
 /*.png
   Cache-Control: public, max-age=86400
+/*.svg
+  Cache-Control: public, max-age=86400
 /*.avif
   Cache-Control: public, max-age=86400
 /*.ico

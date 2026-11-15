@@ -13,8 +13,9 @@
  * a half-written order is impossible.
  */
 
-import { getD1Database, type D1Value } from "@/lib/d1/database";
+import { getD1Database, type D1PreparedStatement, type D1Value } from "@/lib/d1/database";
 import { newUuid, nowIso, toSqlValue } from "@/lib/d1/coerce";
+import { settingBoolean } from "@/lib/utils/settings-value";
 import type { QueryResult } from "@/lib/d1/client";
 
 /**
@@ -54,7 +55,7 @@ async function settingNumeric(key: string, fallback: number): Promise<number> {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-/** `setting_bool(key, default)`: `true` only for a JSON boolean or the string "true". */
+/** `setting_bool(key, default)`: read through the one shared parser. */
 async function settingBool(key: string, fallback: boolean): Promise<boolean> {
   const row = await getD1Database()
     .prepare('SELECT "value" FROM "settings" WHERE "key" = ?')
@@ -63,12 +64,9 @@ async function settingBool(key: string, fallback: boolean): Promise<boolean> {
   if (row?.value === null || row?.value === undefined) return fallback;
   if (typeof row.value === "number") return row.value !== 0;
   try {
-    const parsed = JSON.parse(row.value) as unknown;
-    if (typeof parsed === "boolean") return parsed;
-    if (typeof parsed === "string") return parsed.toLowerCase() === "true";
-    return Boolean(parsed);
+    return settingBoolean(JSON.parse(row.value) as unknown, fallback);
   } catch {
-    return String(row.value).replace(/^"|"$/g, "").toLowerCase() === "true";
+    return settingBoolean(row.value, fallback);
   }
 }
 
@@ -807,6 +805,300 @@ const funnelCounts: Handler = async (params) => {
   ];
 };
 
+/* ------------------------------------------------- notifications, memory, skills, secrets */
+
+/**
+ * Notification readers key off a user id. Postgres read `auth.uid()`; the D1
+ * shim has no session, so the caller passes `p_user_id` — which the app already
+ * does on the staff path (the console runs without a Supabase session). A
+ * customer's own id comes from the request context and is never trusted from the
+ * browser.
+ */
+function notificationUser(params: Record<string, unknown>, context: RpcContext): string {
+  const explicit = params.p_user_id;
+  const userId = explicit !== undefined && explicit !== null ? String(explicit) : context.userId;
+  if (!userId) throw new RpcError("UNAUTHORISED", "No signed-in user for this notification read.");
+  // A non-elevated caller may only read their own feed.
+  if (!context.elevated && String(explicit ?? context.userId) !== context.userId) {
+    throw new RpcError("FORBIDDEN", "That is not your notification feed.");
+  }
+  return userId;
+}
+
+const listMyNotifications: Handler = async (params, context) => {
+  const db = getD1Database();
+  const userId = notificationUser(params, context);
+  const audience = String(params.p_audience ?? "customer");
+  const unreadOnly = params.p_unread_only === true;
+  const limit = Math.min(Math.max(Number(params.p_limit ?? 20), 1), 100);
+  const sql =
+    'SELECT "id", "category", "kind", "title", "body", "link", "read_at", "created_at" ' +
+    'FROM "notifications" WHERE "user_id" = ? AND "audience" = ?' +
+    (unreadOnly ? ' AND "read_at" IS NULL' : "") +
+    ' ORDER BY "created_at" DESC LIMIT ?';
+  const result = await db.prepare(sql).bind(userId, audience, limit).all<Record<string, unknown>>();
+  return result.results ?? [];
+};
+
+const countUnreadNotifications: Handler = async (params, context) => {
+  const db = getD1Database();
+  const userId = notificationUser(params, context);
+  const audience = String(params.p_audience ?? "customer");
+  const row = await db
+    .prepare('SELECT COUNT(*) AS c FROM "notifications" WHERE "user_id" = ? AND "audience" = ? AND "read_at" IS NULL')
+    .bind(userId, audience)
+    .first<{ c: number }>();
+  return Number(row?.c ?? 0);
+};
+
+const markNotificationRead: Handler = async (params, context) => {
+  const db = getD1Database();
+  const userId = notificationUser(params, context);
+  const id = Number(params.p_id ?? 0);
+  const result = await db
+    .prepare('UPDATE "notifications" SET "read_at" = ? WHERE "id" = ? AND "user_id" = ? AND "read_at" IS NULL')
+    .bind(nowIso(), id, userId)
+    .run();
+  if (!result.success) throw new RpcError("MARK_FAILED", result.error ?? "Could not mark the notification.");
+  return null;
+};
+
+const markAllNotificationsRead: Handler = async (params, context) => {
+  const db = getD1Database();
+  const userId = notificationUser(params, context);
+  const audience = String(params.p_audience ?? "customer");
+  const result = await db
+    .prepare('UPDATE "notifications" SET "read_at" = ? WHERE "user_id" = ? AND "audience" = ? AND "read_at" IS NULL')
+    .bind(nowIso(), userId, audience)
+    .run();
+  if (!result.success) throw new RpcError("MARK_FAILED", result.error ?? "Could not mark the notifications.");
+  return Number(result.meta?.changes ?? 0);
+};
+
+/**
+ * The settings form, applied in one statement batch.
+ *
+ * The Postgres function ran the whole array in one transaction so a bad value
+ * could not half-write the form; a D1 `batch` is likewise one transaction. An
+ * unknown key is an error, not a silent skip, matching `SETTINGS_KEY_UNKNOWN`.
+ */
+const applySettingsBatch: Handler = async (params, context) => {
+  const db = getD1Database();
+  const values = params.p_values;
+  if (!Array.isArray(values)) {
+    throw new RpcError("SETTINGS_PAYLOAD_INVALID", "The settings payload must be an array.");
+  }
+  const actor = (params.p_actor as string | null) ?? context.userId ?? null;
+
+  const existing = await db.prepare('SELECT "key" FROM "settings"').all<{ key: string }>();
+  const known = new Set((existing.results ?? []).map((r) => r.key));
+
+  const statements = values.map((entry) => {
+    const row = entry as { key?: unknown; value?: unknown };
+    if (row.key === undefined || !("value" in row)) {
+      throw new RpcError("SETTINGS_ENTRY_INVALID", "A settings entry needs a key and a value.");
+    }
+    const key = String(row.key);
+    if (!known.has(key)) throw new RpcError("SETTINGS_KEY_UNKNOWN", `Unknown setting: ${key}`);
+    // `value` is a JSON column, so the JSON text is what the row must hold.
+    return db
+      .prepare('UPDATE "settings" SET "value" = ?, "updated_by" = ? WHERE "key" = ?')
+      .bind(JSON.stringify(row.value), actor, key);
+  });
+
+  if (statements.length > 0) {
+    const results = await db.batch(statements);
+    const failed = results.find((r) => !r.success);
+    if (failed) throw new RpcError("SETTINGS_WRITE_FAILED", failed.error ?? "Could not save the settings.");
+  }
+  return statements.length;
+};
+
+/** A pgvector literal (`[0.1,0.2]`) as a plain number array; null on anything else. */
+function parseVector(value: unknown): number[] | null {
+  if (typeof value !== "string" || value.length === 0) return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    const numbers = parsed.map(Number);
+    return numbers.every((n) => Number.isFinite(n)) ? numbers : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Cosine similarity, matching pgvector's `1 - (a <=> b)` for unit-length text embeddings. */
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length === 0 || a.length !== b.length) return 0;
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+/**
+ * `add_agent_memory`: append one memory row and return its id.
+ *
+ * Postgres authorised an owner/system write through `can_agent()` and a customer
+ * write only for their own id. D1 has no roles, so elevation is the stand-in for
+ * "staff" — a non-elevated caller may only write a memory about themselves.
+ */
+const addAgentMemory: Handler = async (params, context) => {
+  const db = getD1Database();
+  const scope = String(params.p_scope ?? "owner");
+  const subjectId = (params.p_subject_id as string | null) ?? null;
+  if (!context.elevated && !(scope === "customer" && subjectId !== null && subjectId === context.userId)) {
+    throw new RpcError("FORBIDDEN", "Not authorised to write memory.");
+  }
+  const content = String(params.p_content ?? "").trim();
+  if (!content) throw new RpcError("MEMORY_EMPTY", "A memory needs content.");
+
+  const id = newUuid();
+  const result = await db
+    .prepare(
+      'INSERT INTO "agent_memory" ("id", "scope", "subject_id", "kind", "content", "metadata", "embedding") ' +
+        'VALUES (?, ?, ?, ?, ?, ?, ?)',
+    )
+    .bind(
+      id,
+      scope,
+      subjectId,
+      String(params.p_kind ?? "fact"),
+      content,
+      JSON.stringify(params.p_metadata ?? {}),
+      typeof params.p_embedding === "string" ? params.p_embedding : null,
+    )
+    .run();
+  if (!result.success) throw new RpcError("MEMORY_WRITE_FAILED", result.error ?? "Could not store the memory.");
+  return id;
+};
+
+/** `match_agent_memory`: nearest owner/customer memories by cosine similarity. */
+const matchAgentMemory: Handler = async (params, context) => {
+  const db = getD1Database();
+  const query = parseVector(params.p_query_embedding);
+  if (!query) return [];
+  const scope = String(params.p_scope ?? "owner");
+  const subjectId = (params.p_subject_id as string | null) ?? null;
+  const matchCount = Math.max(Number(params.p_match_count ?? 5), 1);
+  const minSimilarity = Number(params.p_min_similarity ?? 0.15);
+
+  // Postgres enforced the customer scope with `m.subject_id is null or = caller`.
+  // The port keeps the same rule; an elevated caller may pass a subject to read.
+  const result = await db
+    .prepare(
+      'SELECT "id", "scope", "kind", "content", "embedding", "created_at" FROM "agent_memory" ' +
+        'WHERE "scope" = ? AND ("subject_id" IS NULL OR "subject_id" = ? OR ? IS NULL) AND "embedding" IS NOT NULL',
+    )
+    .bind(scope, subjectId, subjectId)
+    .all<Record<string, unknown>>();
+
+  return (result.results ?? [])
+    .map((row) => {
+      const vector = parseVector(row.embedding);
+      const similarity = vector ? cosineSimilarity(query, vector) : 0;
+      return {
+        id: row.id,
+        scope: row.scope,
+        kind: row.kind,
+        content: row.content,
+        created_at: row.created_at,
+        similarity,
+      };
+    })
+    .filter((row) => row.similarity >= minSimilarity)
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, matchCount);
+};
+
+/** `match_agent_skills`: nearest skill chunks. Small library, so a scan is fine. */
+const matchAgentSkills: Handler = async (params) => {
+  const db = getD1Database();
+  const query = parseVector(params.p_query_embedding);
+  if (!query) return [];
+  const matchCount = Math.max(Number(params.p_match_count ?? 4), 1);
+  const minSimilarity = Number(params.p_min_similarity ?? 0.1);
+
+  const result = await db
+    .prepare('SELECT "name", "heading", "content", "embedding" FROM "agent_skills" WHERE "embedding" IS NOT NULL')
+    .all<Record<string, unknown>>();
+
+  return (result.results ?? [])
+    .map((row) => {
+      const vector = parseVector(row.embedding);
+      return {
+        name: row.name,
+        heading: row.heading,
+        content: row.content,
+        similarity: vector ? cosineSimilarity(query, vector) : 0,
+      };
+    })
+    .filter((row) => row.similarity >= minSimilarity)
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, matchCount);
+};
+
+/**
+ * `replace_agent_skill`: drop a document's chunks and insert the new set.
+ *
+ * One `batch` keeps the delete and the inserts in one transaction, so a document
+ * is never left half-indexed.
+ */
+const replaceAgentSkill: Handler = async (params, context) => {
+  if (!context.elevated) throw new RpcError("FORBIDDEN", "Not authorised to index skills.");
+  const db = getD1Database();
+  const name = String(params.p_name ?? "").trim();
+  if (!name) throw new RpcError("SKILL_NAME_REQUIRED", "A skill needs a name.");
+  const source = String(params.p_source ?? "repo");
+  const sourceUrl = (params.p_source_url as string | null) ?? null;
+  const chunks = Array.isArray(params.p_chunks) ? (params.p_chunks as Array<Record<string, unknown>>) : [];
+
+  const statements: D1PreparedStatement[] = [
+    db.prepare('DELETE FROM "agent_skills" WHERE "name" = ?').bind(name),
+  ];
+  chunks.forEach((chunk, index) => {
+    statements.push(
+      db
+        .prepare(
+          'INSERT INTO "agent_skills" ("id", "name", "source", "source_url", "heading", "content", "chunk_index", "embedding") ' +
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        )
+        .bind(
+          newUuid(),
+          name,
+          source,
+          sourceUrl,
+          (chunk.heading as string | null) ?? null,
+          String(chunk.content ?? ""),
+          Number(chunk.chunk_index ?? index),
+          typeof chunk.embedding === "string" ? chunk.embedding : null,
+        ),
+    );
+  });
+
+  const results = await db.batch(statements);
+  const failed = results.find((r) => !r.success);
+  if (failed) throw new RpcError("SKILL_WRITE_FAILED", failed.error ?? "Could not index the skill.");
+  return chunks.length;
+};
+
+/**
+ * `get_ai_secret`: resolve an AI provider secret.
+ *
+ * Postgres read Supabase Vault. There is no Vault in D1 and no secrets table was
+ * migrated — provider secrets live in Worker environment bindings — so the honest
+ * answer is "not found here". `resolveSecretValueWithEnv` already consults the
+ * environment first and treats a miss as "no secret", so returning null keeps the
+ * fallback chain working instead of throwing.
+ */
+const getAiSecret: Handler = async () => null;
+
 const HANDLERS: Record<string, Handler> = {
   place_order: placeOrder,
   place_order_internal: placeOrderInternal,
@@ -816,6 +1108,16 @@ const HANDLERS: Record<string, Handler> = {
   crm_stats: crmStats,
   crm_estimate_segment: crmEstimateSegment,
   funnel_counts: funnelCounts,
+  apply_settings_batch: applySettingsBatch,
+  list_my_notifications: listMyNotifications,
+  count_unread_notifications: countUnreadNotifications,
+  mark_notification_read: markNotificationRead,
+  mark_all_notifications_read: markAllNotificationsRead,
+  add_agent_memory: addAgentMemory,
+  match_agent_memory: matchAgentMemory,
+  match_agent_skills: matchAgentSkills,
+  replace_agent_skill: replaceAgentSkill,
+  get_ai_secret: getAiSecret,
 };
 
 export async function runRpc<T = unknown>(
