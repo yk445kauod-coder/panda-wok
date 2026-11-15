@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/config/public-env";
+import { isD1Backend } from "@/lib/d1/backend";
+import { SESSION_COOKIE, readSessionToken } from "@/lib/auth/d1-session";
 
 /**
  * True when the request carries a Supabase auth cookie. Pure so the rush-path
@@ -29,6 +31,17 @@ export function hasAuthCookie(cookieNames: readonly string[]) {
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+
+  // The D1 backend's session is a stateless signed cookie, so there is nothing
+  // to refresh: verifying it is a local HMAC check with no network call. A
+  // Supabase refresh would be pointless here and the cookie names differ, so the
+  // two paths cannot be confused.
+  if (isD1Backend()) {
+    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    const claims = await readSessionToken(token);
+    return { response, userId: claims?.sub ?? null };
+  }
+
   if (!hasAuthCookie(request.cookies.getAll().map((c) => c.name))) {
     return { response, userId: null };
   }

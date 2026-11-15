@@ -113,11 +113,14 @@ function filterSql(filter: Filter, table: string, params: unknown[]): string {
     case "lte":
       return `${col} <= ${push(filter.value)}`;
     case "like":
-      return `${col} LIKE ${push(filter.value)}`;
+      // SQLite's LIKE has no default escape character, so `escapeLike`'s
+      // backslashes are literal unless the clause names one. Without `ESCAPE`,
+      // a search for a value containing `_` would match any character there.
+      return `${col} LIKE ${push(filter.value)} ESCAPE '\\'`;
     case "ilike":
       // SQLite's LIKE is already case-insensitive for ASCII; `lower()` on both
       // sides also folds the Latin text the app searches on.
-      return `lower(${col}) LIKE lower(${push(filter.value)})`;
+      return `lower(${col}) LIKE lower(${push(filter.value)}) ESCAPE '\\'`;
     case "is":
       return filter.value === null ? `${col} IS NULL` : `${col} IS ${push(filter.value)}`;
     case "contains": {

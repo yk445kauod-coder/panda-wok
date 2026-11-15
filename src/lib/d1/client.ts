@@ -19,6 +19,7 @@ import {
   type D1Value,
 } from "@/lib/d1/database";
 import { fromSqlRow, newUuid } from "@/lib/d1/coerce";
+import { D1AuthClient } from "@/lib/d1/auth";
 import {
   buildDelete,
   buildInsert,
@@ -459,7 +460,21 @@ export class D1QueryBuilder<T = unknown> implements PromiseLike<QueryResult<T>> 
 }
 
 export class D1Client {
+  /**
+   * The `supabase.auth` subset, over D1.
+   *
+   * Lazy so importing the client does not pull the auth module (and its cookie
+   * and WebCrypto imports) into every read-only call site, and a client created
+   * for a plain data read never touches it.
+   */
+  private authClient: D1AuthClient | null = null;
+
   constructor(private readonly options: { elevated: boolean; userId: string | null } = { elevated: false, userId: null }) {}
+
+  get auth(): D1AuthClient {
+    if (!this.authClient) this.authClient = new D1AuthClient();
+    return this.authClient;
+  }
 
   from<T = unknown>(table: string): D1QueryBuilder<T> {
     return new D1QueryBuilder<T>(table);

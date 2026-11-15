@@ -84,6 +84,14 @@ export async function createServerSupabase(): Promise<SupabaseServerClient> {
  * browser client reads.
  */
 export async function createSessionSupabase(): Promise<SupabaseServerClient> {
+  // Session work (minting, sign-out) must run against the active backend. On D1
+  // this returns the same shim as `createServerSupabase`, whose `auth` surface
+  // owns the signed cookie.
+  if (isD1Backend()) {
+    const { createD1ServerClient } = await import("@/lib/d1/server-client");
+    return (await createD1ServerClient()) as unknown as SupabaseServerClient;
+  }
+
   const cookieStore = await cookies();
   return createServerClient<Database>(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,

@@ -12,20 +12,25 @@
  * is reused across requests and the value can differ between a preview and
  * production deployment.
  */
-import { serverEnv } from "@/lib/config/env";
-
 export type DataBackend = "supabase" | "d1";
 
+/**
+ * Reads `DATA_BACKEND` straight off the environment.
+ *
+ * This module is reachable from the middleware (which branches on the backend
+ * when it verifies a session), and `config/env.ts` validates through zod.
+ * Importing it here would ship the validator in the middleware bundle on every
+ * request — the regression behind Error 1102 on the Free plan. The computed
+ * lookup also keeps the value a runtime binding instead of a build-time
+ * constant.
+ */
+function readBackend(): string {
+  const value = process.env["DATA_BACKEND"];
+  return (value ?? "").trim().toLowerCase();
+}
+
 export function activeDataBackend(): DataBackend {
-  // Read through the computed lookup the rest of the server config uses, so the
-  // value stays a runtime binding rather than a build-time constant.
-  let raw = "";
-  try {
-    raw = (serverEnv.DATA_BACKEND ?? "").trim().toLowerCase();
-  } catch {
-    raw = "";
-  }
-  return raw === "d1" ? "d1" : "supabase";
+  return readBackend() === "d1" ? "d1" : "supabase";
 }
 
 export function isD1Backend(): boolean {

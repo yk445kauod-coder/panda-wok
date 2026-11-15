@@ -22,6 +22,7 @@ import "server-only";
 
 import { headers } from "next/headers";
 import { gateIdentity } from "@/lib/auth/admin-gate";
+import { SESSION_COOKIE, readSessionToken } from "@/lib/auth/d1-session";
 import { D1Client } from "@/lib/d1/client";
 import { bindD1FromCloudflare, setD1Context } from "@/lib/d1/database";
 
@@ -56,17 +57,29 @@ export async function createD1ServerClient(): Promise<D1Client> {
  * as a customer with no rows rather than as an error.
  */
 async function resolveUserId(elevated: boolean): Promise<string | null> {
+  void elevated;
   const headerList = await headers();
   const cookie = headerList.get("cookie") ?? "";
-  const match = cookie.match(/(?:^|;\s*)sb-[^=]*-auth-token=([^;]+)/);
-  if (!match) return null;
+
+  // The D1 session cookie is the source of truth: it is the signed token this
+  // deployment mints, so the id in it is trustworthy without a second read.
+  const match = cookie.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`));
+  if (match) {
+    const claims = await readSessionToken(decodeURIComponent(match[1]));
+    if (claims) return claims.sub;
+  }
+
+  // Fall back to a Supabase session cookie so a browser that signed in before the
+  // backend was switched keeps its identity until that token expires, rather than
+  // being silently logged out by the deploy.
+  const legacy = cookie.match(/(?:^|;\s*)sb-[^=]*-auth-token=([^;]+)/);
+  if (!legacy) return null;
   try {
-    const raw = JSON.parse(decodeURIComponent(match[1])) as { user?: { id?: string } };
+    const raw = JSON.parse(decodeURIComponent(legacy[1])) as { user?: { id?: string } };
     return raw.user?.id ?? null;
   } catch {
     return null;
   }
-  void elevated;
 }
 
 /**

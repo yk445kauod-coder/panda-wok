@@ -11,6 +11,15 @@ const serverSchema = z.object({
   DATA_BACKEND: z.string().optional(),
   /** The live hub (Durable Object) origin the console opens its socket to. */
   OPS_HUB_URL: z.string().optional(),
+  /**
+   * HMAC key for the D1 backend's customer session cookies.
+   *
+   * Optional in the schema but required in practice: `d1-session.ts` refuses to
+   * mint or accept a session when it is missing, rather than signing with a
+   * default an attacker could read from the source and use to forge any account.
+   * The Supabase backend does not read it.
+   */
+  AUTH_SECRET: z.string().min(32).optional(),
   AI_PROVIDER_KIND: z.string().optional(),
   AI_MODEL: z.string().optional(),
   AI_BASE_URL: z.string().optional(),
@@ -69,6 +78,7 @@ const SERVER_ONLY_KEYS = [
   "SUPABASE_SERVICE_ROLE_KEY",
   "DATA_BACKEND",
   "OPS_HUB_URL",
+  "AUTH_SECRET",
   "AI_PROVIDER_KIND",
   "AI_MODEL",
   "AI_BASE_URL",
