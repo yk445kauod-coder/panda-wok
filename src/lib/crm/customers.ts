@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdminSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
+import { isD1Backend } from "@/lib/d1/backend";
 import { memo } from "@/lib/request-scope";
 
 export type CrmCustomer = {
@@ -313,6 +314,32 @@ export async function getFunnel(days = 30): Promise<FunnelCounts> {
       checkoutUsers: 0,
       customers: 0,
     };
+  }
+
+  // On D1 the funnel is one grouped query in SQLite rather than five unbounded
+  // scans of a table that grows with every page view.
+  if (isD1Backend()) {
+    const { data, error } = await admin.rpc("funnel_counts", { p_days: days });
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | {
+          visitors: number;
+          menu_viewers: number;
+          item_viewers: number;
+          cart_users: number;
+          checkout_users: number;
+          customers: number;
+        }
+      | undefined;
+    if (!error && row) {
+      return {
+        visitors: Number(row.visitors ?? 0),
+        menuViewers: Number(row.menu_viewers ?? 0),
+        itemViewers: Number(row.item_viewers ?? 0),
+        cartUsers: Number(row.cart_users ?? 0),
+        checkoutUsers: Number(row.checkout_users ?? 0),
+        customers: Number(row.customers ?? 0),
+      };
+    }
   }
 
   const since = new Date(Date.now() - days * 86400000).toISOString();

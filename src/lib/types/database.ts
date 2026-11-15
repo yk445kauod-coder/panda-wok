@@ -3472,6 +3472,18 @@ export type Database = {
         Returns: number
       }
       store_is_open: { Args: { p_now?: string }; Returns: boolean }
+      // D1-only: the analytics funnel as one grouped query (see src/lib/d1/rpc.ts).
+      funnel_counts: {
+        Args: { p_days?: number }
+        Returns: {
+          visitors: number
+          menu_viewers: number
+          item_viewers: number
+          cart_users: number
+          checkout_users: number
+          customers: number
+        }[]
+      }
     }
     Enums: {
       backup_kind:

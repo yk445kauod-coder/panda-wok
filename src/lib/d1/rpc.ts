@@ -755,6 +755,58 @@ const crmEstimateSegment: Handler = async (params) => {
   return count;
 };
 
+/**
+ * `funnel_counts(p_days)`: distinct-session counts for the analytics funnel.
+ *
+ * D1-only (no Postgres original): the Supabase path ran five unbounded
+ * `analytics_events` scans and deduped sessions in the Worker. `analytics_events`
+ * grows with every page view, so on D1 that moved the whole event log per load.
+ * Grouping in SQLite does the same dedup and returns a handful of rows.
+ */
+const funnelCounts: Handler = async (params) => {
+  const days = Number(params["p_days"] ?? 30) || 30;
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+  const db = getD1Database();
+  const grouped = await db
+    .prepare(
+      `SELECT "event", COUNT(DISTINCT "session_id") AS c
+         FROM "analytics_events"
+        WHERE "created_at" >= ?
+          AND "event" IN ('PAGE_VIEW','MENU_VIEW','ITEM_VIEW','CART_ADD','CHECKOUT_STARTED')
+        GROUP BY "event"`,
+    )
+    .bind(since)
+    .all<{ event: string; c: number }>();
+  const byEvent = new Map((grouped.results ?? []).map((r) => [r.event, Number(r.c)]));
+  // Visitors span two events, so they are a distinct count over the union, not
+  // the sum of the per-event counts (a session with both would be double-counted).
+  const visitorsRow = await db
+    .prepare(
+      `SELECT COUNT(DISTINCT "session_id") AS c
+         FROM "analytics_events"
+        WHERE "created_at" >= ? AND "event" IN ('PAGE_VIEW','MENU_VIEW')`,
+    )
+    .bind(since)
+    .first<{ c: number }>();
+  const orderRow = await db
+    .prepare(
+      `SELECT COUNT(*) AS c FROM "orders"
+        WHERE "created_at" >= ? AND "status" NOT IN ('canceled','rejected','failed')`,
+    )
+    .bind(since)
+    .first<{ c: number }>();
+  return [
+    {
+      visitors: Number(visitorsRow?.c ?? 0),
+      menu_viewers: byEvent.get("MENU_VIEW") ?? 0,
+      item_viewers: byEvent.get("ITEM_VIEW") ?? 0,
+      cart_users: byEvent.get("CART_ADD") ?? 0,
+      checkout_users: byEvent.get("CHECKOUT_STARTED") ?? 0,
+      customers: Number(orderRow?.c ?? 0),
+    },
+  ];
+};
+
 const HANDLERS: Record<string, Handler> = {
   place_order: placeOrder,
   place_order_internal: placeOrderInternal,
@@ -763,6 +815,7 @@ const HANDLERS: Record<string, Handler> = {
   crm_customer_count: crmCustomerCount,
   crm_stats: crmStats,
   crm_estimate_segment: crmEstimateSegment,
+  funnel_counts: funnelCounts,
 };
 
 export async function runRpc<T = unknown>(
