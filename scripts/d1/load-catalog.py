@@ -91,8 +91,30 @@ def main():
             "seo_description", "seo_keywords", "is_archived", "availability_mode", "restaurant_id",
             "external_id",
         }}
+        # `modifier_groups` is an embedded relation in the dump, not a column; it
+        # is written to its own table below. Passing it through would fail with
+        # "no column named modifier_groups" and, worse, silently drop every
+        # modifier the customer has to choose.
         row.setdefault("restaurant_id", restaurant.get("id", "b54b2620-90c5-4295-b617-bc1389db3ee9"))
         out.append(upsert("menu_items", row, ["id"]))
+
+    # Modifier groups and their options. These live on the item rows in the dump
+    # as a nested array; without them a dish that requires a choice cannot be
+    # ordered, so they are not optional.
+    for item in items:
+        for group in item.get("modifier_groups") or []:
+            row = {k: v for k, v in group.items() if k in {
+                "id", "menu_item_id", "name_en", "name_ar", "min_select", "max_select",
+                "is_required", "sort_order",
+            }}
+            if "id" in row:
+                out.append(upsert("modifier_groups", row, ["id"]))
+            for option in group.get("modifier_options") or []:
+                opt = {k: v for k, v in option.items() if k in {
+                    "id", "group_id", "name_en", "name_ar", "price_delta", "is_available", "sort_order",
+                }}
+                if "id" in opt:
+                    out.append(upsert("modifier_options", opt, ["id"]))
 
     # SQLite cannot express the `current_restaurant_id()` default, so rows whose
     # table needs it get the single restaurant explicitly.

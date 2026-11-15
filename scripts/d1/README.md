@@ -36,3 +36,36 @@ Run the file with `d1 execute` instead.
 - R2: the account has R2 disabled (`wrangler r2 bucket list` -> code 10042, and
   the API returns the same). The bindings are declared in `wrangler.jsonc`; the
   buckets start working the moment R2 is enabled in the dashboard.
+
+## The compatibility layer
+
+`src/lib/d1/` is a supabase-js-shaped client over D1. The app makes 323
+`.from()` calls and 48 `.rpc()` calls; keeping the interface means none of them
+change, and `DATA_BACKEND=supabase` still returns the real Supabase client.
+
+- `database.ts` — the D1 handle and request context (user, restaurant, elevated).
+  Structural types, so the same code runs in a Worker, a script and a test.
+- `coerce.ts` — the type translation both ways: booleans are 0/1, jsonb and
+  arrays are JSON text, `2026-11-15 10:30:00` reads back as an ISO string.
+- `sql.ts` — SQL compilation, kept separate so it is testable without a database.
+- `client.ts` — the chainable builder. Implements the subset measured from the
+  call sites: eq/neq/gt/gte/lt/lte/like/ilike/is/in/or/not/contains/match,
+  order/limit/range, single/maybeSingle, select/insert/update/upsert/delete,
+  count/head, and one level of embedded relations.
+- `rpc.ts` — Postgres functions ported to TypeScript. `place_order` and
+  `cancel_order` are done; anything unported fails loudly (PGRST202) rather than
+  returning empty data.
+- `schema-meta.ts` — generated. The boolean and JSON column lists the coercion
+  layer reads.
+
+`tests/d1-compat.test.ts` runs the layer against a real SQLite engine
+(`node:sqlite`) with the real schema and the real catalogue — 14 tests covering
+reads, writes, embeds and `place_order`. No mocks.
+
+## Postgres defaults with no SQLite equivalent
+
+| Postgres | SQLite |
+| --- | --- |
+| `now()` | `CURRENT_TIMESTAMP` |
+| `gen_uuid()` | a `randomblob` expression |
+| `current_restaurant_id()` | filled by the shim — SQLite forbids a subquery in a DEFAULT |
