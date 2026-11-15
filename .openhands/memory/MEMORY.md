@@ -269,3 +269,7 @@
 - `analytics_events.id` is an auto-assigned **INTEGER** (in `AUTO_ID_TABLE`); `orders` NOT NULL needs
   `idempotency_key`, `user_id`, `restaurant_id`, and `status` ∈ the CHECK list (use `finished`, not
   `completed`) when inserting test fixtures.
+
+## Grep trap
+- `src/lib/agent/repo-skills.generated.ts` is a huge generated file (embeds AGENTS.md). A repo-wide
+  `grep -rn` that matches it floods the output. Exclude it: `grep -rn ... --include=*.ts | grep -v generated`.
