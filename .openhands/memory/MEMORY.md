@@ -170,3 +170,29 @@
   via GraphQL needs `--data @file` (inline nested filter → `unexpected EOF`).
 - Most D1 feature tables are empty (58 tables; only `menu_items`=87, `announcements`=2 non-empty).
   `remove_unused_features` migration is Postgres-only and NOT applied to D1.
+
+## Dish photos are NOT lost — Supabase Storage egress quota 402s the whole project (2026-11-15)
+- **Symptom**: every dish photo renders `dish-placeholder.svg`; `curl` on any
+  `https://xjbtsryidznsxqlynmfa.supabase.co/storage/v1/object/public/menu-images/<name>`
+  → **HTTP 402** `{"message":"...exceed_cached_egress_quota..."}`. `x-media-cache: UNAVAILABLE`
+  from the media worker (its 402 branch redirects to the placeholder).
+- **The objects are intact.** Verified via Supabase management API (SQL channel still works even
+  while HTTP is 402'd): `storage.objects` bucket `menu-images` = **100 objects, 83 MB**; all **90**
+  `menu_items.image_url` names match an object (**0 missing**), 0 items without an image. Nothing
+  was deleted; only the *public egress endpoint* is gated on the Free plan.
+- **402 hits EVERY HTTP path** (`/storage/...`, `/rest/v1`, `/auth/v1/health`, `/functions/v1`,
+  HEAD, Range, both anon keys). Auth does not bypass it. `pg_net` inside the DB has internet but
+  cannot reach internal service hostnames, so no server-side copy route exists.
+- **Recovery**: enable R2 (dashboard only — API returns `10042 Please enable R2`), create bucket
+  `panda-wok-media`, uncomment `r2_buckets` in `workers/media-proxy/wrangler.jsonc`, then
+  `node scripts/migrate-media-to-r2.mjs` (copies objects to R2, prints the D1 URL-rewrite SQL).
+  `uploadMenuImageAction` already prefers the R2 `MEDIA_BUCKET` binding. Alternatively the images
+  reappear on their own when the quota resets, or immediately on a plan upgrade.
+- **Media worker**: `workers/media-proxy` (`panda-wok-media.yk445kauod.workers.dev`), serves R2
+  first then Supabase; `x-media-source: r2|…`, `x-media-cache: HIT|MISS|UNAVAILABLE`.
+  Hero image is separate and fine: ImageKit `ik.imagekit.io/fpbwa3np7/…` (200).
+- Offers/discount engine verified end-to-end: `tests/offers-scenarios.test.ts` (18 tests, all pass)
+  drives real `place_order` on SQLite — percent/fixed, threshold, `max_discount` cap, best-offer,
+  tie-break, disabled, per-customer targeting, preview↔stored agreement, tax-after-discount.
+  Note the RPC reads settings `tax.rate`(0.14), `delivery.fee`(30), `delivery.free_over`(250),
+  `ordering.min_order_total`(80) — tests neutralise them in `beforeEach`.
