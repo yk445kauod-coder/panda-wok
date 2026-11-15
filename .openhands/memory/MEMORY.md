@@ -39,14 +39,19 @@
   (`adminShellCacheUrl`, build id inlined from `.pages/BUILD_ID` by `build-pages.mjs`; `s-maxage=300`,
   no SWR). The `/api/admin/*` **data** stays uncacheable — `isCacheableRequest`'s admin exclusion is
   untouched. Live: `/admin` → `cf-cache-status: HIT` (CDN answers, no Worker).
-- **Dead features removed (2026-11-15):** Exports and Backups — 0 rows, and their create paths
-  needed `SUPABASE_SERVICE_ROLE_KEY` (unset on D1) so every action failed. Deleted pages, routes,
-  forms, `lib/export/*`+`lib/backup/*`+`lib/files/download.ts`, service fns, rbac caps/nav, guide
-  topic, and i18n (`ar.ts`+`en.ts` both — this repo has NO generated locale files, unlike lava-agent).
-- **Still empty on D1 (0 rows), left in place as product calls:** `offers`, `faqs`, `page_content`,
-  `feedback`, `delivery_zones`. (Do NOT delete `delivery_zones` or the CRM — owner constraint.)
+- **DO NOT remove Exports / Backups / Offers — they WORK on D1 (owner-confirmed 2026-11-15).**
+  A prior commit removed Exports+Backups as "dead"; that was WRONG and was reverted (`78c877b`).
+  Proof, run against real SQLite via `tests/helpers/sqlite-d1.ts`: `createExportJob` writes and
+  completes a `ready` row; `buildBackup` yields a 567-byte bundle over 5 tables; `offers`
+  insert/update/list all succeed. The 402s that looked like failure come from **Supabase REST being
+  dead**, not from the features — with `DATA_BACKEND=d1` they never touch Supabase.
+- **`DATA_BACKEND=d1` is set in the Pages PRODUCTION env only, not Preview.** So a deploy must use
+  `--branch=feature/panda-wok-platform` (the project's production branch) or it lands as Preview
+  with NO D1 and every admin action 402s. This is the trap that made the features look dead.
 - `/dish-placeholder.svg` is excluded in `_routes.json` (build-pages.mjs) — the media-proxy 302s
   missing dish images there, so each was a Worker invocation serving one static file.
+- **Empty-on-D1 tables are still product calls, NOT deletion candidates:** `faqs`, `page_content`,
+  `feedback`. Never remove `delivery_zones`, the CRM, Offers, Exports or Backups.
 - Middleware: admin requests skip `updateSession` (commit `1e98108`) — the console never reads
   the customer session (gate cookie auths it; `x-pw-path` elevates API reads to service role).
 - Sign-out: `src/components/admin/admin-sign-out.tsx` -> `lockAdminAction` (clears gate cookie +
@@ -56,7 +61,7 @@
 - Two credentials, one field: shared **passcode** = owner; a staff **login_id** = that member's role.
 - `mintStaffSession` gives the browser a real Supabase session for Realtime; `verifyOtp` type MUST
   be `magiclink` (matching `generateLink({type:"magiclink"})`) — `email` fails silently.
-- Capability matrix in `src/lib/auth/rbac.ts` (`ADMIN_NAV` = 22 entries (was 24 before Exports/Backups removal)). `public.staff` is the
+- Capability matrix in `src/lib/auth/rbac.ts` (`ADMIN_NAV` = 24 entries). `public.staff` is the
   team source (`/admin/users`).
 
 ## Analytics recipe (no wrangler needed)
