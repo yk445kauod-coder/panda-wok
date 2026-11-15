@@ -27,6 +27,10 @@ const CAPABILITY_LABEL_KEYS: Record<string, string> = {
   "feedback.manage": "feedbackManage",
   "analytics.view": "analyticsView",
   "ai.manage": "aiManage",
+  "exports.manage": "exportsManage",
+  "backups.view": "backupsView",
+  "backups.create": "backupsCreate",
+  "backups.restore": "backupsRestore",
   "settings.manage": "settingsManage",
   "roles.manage": "rolesManage",
 };

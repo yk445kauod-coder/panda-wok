@@ -9,6 +9,8 @@ import {
   BookOpen,
   Clock3,
   Coffee,
+  Database,
+  Download,
   ExternalLink,
   Gauge,
   LayoutDashboard,
@@ -53,6 +55,8 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/feedback": MessagesSquare,
   "/admin/analytics": Clock3,
   "/admin/users": Users,
+  "/admin/exports": Download,
+  "/admin/backups": Database,
   "/admin/settings": Settings,
   "/admin/guide": BookOpen,
 };

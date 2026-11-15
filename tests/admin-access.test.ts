@@ -67,10 +67,11 @@ describe("admin console access", () => {
     expect(canAny(null, ["crm.view"])).toBe(false);
   });
 
-  it("only owners can assign roles and manage settings", () => {
+  it("only owners can assign roles and restore backups", () => {
     for (const role of ROLES) {
       const expected = role === "owner";
       expect(can(role, "roles.manage")).toBe(expected);
+      expect(can(role, "backups.restore")).toBe(expected);
     }
   });
 

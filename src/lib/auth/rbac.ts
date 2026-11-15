@@ -16,6 +16,10 @@ export type Capability =
   | "users.manage"
   | "feedback.manage"
   | "analytics.view"
+  | "exports.manage"
+  | "backups.view"
+  | "backups.create"
+  | "backups.restore"
   | "settings.manage"
   | "roles.manage";
 
@@ -29,19 +33,21 @@ const CAPABILITIES: Record<StaffRole, readonly Capability[]> = {
     "orders.view", "orders.update", "kitchen.view", "menu.manage",
     "crm.view", "crm.export", "users.manage",
     "feedback.manage",
-    "analytics.view", "settings.manage", "roles.manage",
+    "analytics.view", "exports.manage", "backups.view",
+    "backups.create", "backups.restore", "settings.manage", "roles.manage",
   ],
   admin: [
     "orders.view", "orders.update", "kitchen.view", "menu.manage",
     "crm.view", "crm.export", "users.manage",
     "feedback.manage",
-    "analytics.view", "settings.manage",
+    "analytics.view", "exports.manage", "backups.view",
+    "backups.create", "settings.manage",
   ],
   manager: [
     "orders.view", "orders.update", "kitchen.view", "menu.manage",
     "crm.view", "crm.export", "users.manage",
     "feedback.manage",
-    "analytics.view",
+    "analytics.view", "exports.manage", "backups.view", "backups.create",
   ],
   kitchen: [
     "orders.view", "orders.update", "kitchen.view",
@@ -66,11 +72,11 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
-  owner: "Full access including role assignment and settings.",
-  admin: "Everything except role assignment and owner settings.",
-  manager: "Daily operations: orders, menu, CRM and feedback.",
+  owner: "Full access including role assignment and backup restore.",
+  admin: "Everything except role assignment and backup restore.",
+  manager: "Daily operations: orders, menu, CRM, exports, backups.",
   kitchen: "View and progress orders.",
-  support: "Orders, customer records and feedback.",
+  support: "Orders, customer records and feedback. No exports.",
   marketing: "Segments and analytics. Cannot modify orders.",
 };
 
@@ -137,6 +143,8 @@ export const ADMIN_NAV: readonly {
   { href: "/admin/feedback", label: "Feedback", labelKey: "feedback", capability: "feedback.manage", group: "CRM", groupKey: "crm" },
   { href: "/admin/analytics", label: "Analytics", labelKey: "analytics", capability: "analytics.view", group: "Growth", groupKey: "growth" },
   { href: "/admin/users", label: "Team & users", labelKey: "users", capability: "users.manage", group: "Platform", groupKey: "platform" },
+  { href: "/admin/exports", label: "Exports", labelKey: "exports", capability: "exports.manage", group: "Platform", groupKey: "platform" },
+  { href: "/admin/backups", label: "Backups", labelKey: "backups", capability: "backups.view", group: "Platform", groupKey: "platform" },
   { href: "/admin/settings", label: "Settings", labelKey: "settings", capability: "settings.manage", group: "Platform", groupKey: "platform" },
   // No capability: the guide is a reference every unlocked member should reach,
   // and it is how a member discovers what their own role is allowed to do.
