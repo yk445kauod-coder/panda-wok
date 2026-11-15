@@ -110,3 +110,17 @@
 - Diagnostic recipe: `supabase_query_logs` with
   `sum(toInt64OrZero(log_attributes['response.headers.content_length']))` grouped
   by path/service — that is what exposed the images.
+
+## panda-wok storefront resilience (2026-11-13)
+- Supabase Free org can be **restricted** (`exceed_cached_egress_quota`) → every
+  REST/Storage call 402 until billing reset. Every storefront page reads Supabase,
+  so the whole site 500s. `execute_sql` still works — use it to rebuild seeds.
+- Guard: `src/lib/cache/catalog-backup.ts` keeps a last-known-good copy per
+  public read in `NEXT_INC_CACHE_KV`, plus a **bundled** seed
+  (`src/lib/cache/seed/catalog-backup.ts`, generated, 227 entries) so `next build`
+  succeeds with Supabase down. Net is attached to the fn passed to
+  `unstable_cache`; `undefined` = no backup, `null` = a real answer.
+- Never hand-write `*.supabase.co` image URLs in SEO/JSON-LD — use
+  `dishImageUrl()` (routes through the `panda-wok-media` worker).
+- `pages deploy --branch=feature/panda-wok-platform` deploys to **Production**
+  for this project. Verify by re-fetching after the edge HTML TTL (~600 s).
