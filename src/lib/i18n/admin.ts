@@ -56,9 +56,6 @@ export function feedbackStatusLabel(locale: Locale, status: string) {
   return term(locale, "feedbackStatus", status);
 }
 
-export function exportKindLabel(locale: Locale, kind: string) {
-  return term(locale, "exportKind", kind);
-}
 
 export function humaniseLocalised(locale: Locale, group: string, token: string) {
   return term(locale, group, token);

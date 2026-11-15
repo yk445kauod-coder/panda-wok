@@ -74,11 +74,11 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
         icon: "shield",
         capability: "users.manage",
         steps: [
-          { title: "Owner", body: "Everything, including creating team accounts and restoring backups." },
-          { title: "Admin", body: "Everything except assigning roles and restoring backups." },
-          { title: "Manager", body: "Daily operations: orders, menu, customers, exports and backups." },
+          { title: "Owner", body: "Everything, including creating team accounts and changing settings." },
+          { title: "Admin", body: "Everything except assigning roles and owner-only settings." },
+          { title: "Manager", body: "Daily operations: orders, menu, customers and feedback." },
           { title: "Kitchen staff", body: "See and progress orders. No customer data, no money figures." },
-          { title: "Customer support", body: "Orders, customer records and feedback. Cannot export data." },
+          { title: "Customer support", body: "Orders, customer records and feedback." },
           { title: "Marketing", body: "Segments and analytics. Cannot change orders." },
         ],
         tips: [
@@ -200,7 +200,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
           { title: "Read the profile", body: "Order history, total spend and any feedback they have left." },
           { title: "Block only when you must", body: "Blocking stops a customer ordering; it is logged and reversible." },
         ],
-        tips: ["Customer data is personal — export only what you actually need."],
+        tips: ["Customer data is personal — handle it only as the task requires, and keep it inside the console."],
       },
       {
         id: "segments",
@@ -245,21 +245,6 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
         tips: [
           "Delivery fee, free-delivery threshold and tax rate are read live by checkout, so a change affects the very next order.",
           "Contact numbers shown to customers come from here — keep them current.",
-        ],
-      },
-      {
-        id: "backups",
-        title: "Backups and exports",
-        summary: "Take a backup before a big change, and export data when you need it.",
-        icon: "database",
-        capability: "backups.view",
-        steps: [
-          { title: "Request a backup", body: "A backup is recorded and can be restored by an owner if something goes wrong." },
-          { title: "Export a dataset", body: "Choose orders, customers or another dataset and get a file you can open in a spreadsheet." },
-        ],
-        tips: [
-          "Restoring a backup is owner-only, on purpose — it replaces live data.",
-          "Exports contain personal data. Store them somewhere safe and delete them when done.",
         ],
       },
       {

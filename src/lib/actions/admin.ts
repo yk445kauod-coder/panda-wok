@@ -8,11 +8,6 @@ import { publishOrderChange } from "@/lib/live/ops-notify";
 import { assertCapability } from "@/lib/auth/session";
 import { logAudit } from "@/lib/activity/log";
 import {
-  isExportDataset,
-} from "@/lib/export/build";
-import { createExportJob } from "@/lib/export/create";
-import { buildBackup } from "@/lib/backup/build";
-import {
   actionError,
   actionFail,
   actionOk,
@@ -28,8 +23,6 @@ import {
   settingsUpdateSchema,
   featureFlagUpdateSchema,
   offerSchema,
-  exportRequestSchema,
-  backupRequestSchema,
   staffSchema,
   createStaffSchema,
   feedbackResponseSchema,
@@ -1387,149 +1380,6 @@ export async function deleteCustomerAction(
   return actionOk();
 }
 
-/* ---------------------------------------------------------------- exports */
-
-export async function requestExportAction(
-  formData: FormData,
-): Promise<FormActionResult<{ id: string; rows: number }>> {
-  const session = await assertCapability("exports.manage");
-
-  const parsed = exportRequestSchema.safeParse({
-    dataset: formData.get("dataset"),
-    format: formData.get("format") || "csv",
-  });
-  if (!parsed.success) return toFormError(parsed.error);
-  if (!isExportDataset(parsed.data.dataset)) {
-    return actionFail("VALIDATION", "That dataset cannot be exported.");
-  }
-
-  const admin = tryCreateAdminSupabase();
-  if (!admin) {
-    return actionFail(
-      "UNKNOWN",
-      "Exports need the service-role key configured on the server.",
-    );
-  }
-
-  try {
-    const { id, rows } = await createExportJob({
-      dataset: parsed.data.dataset,
-      format: parsed.data.format,
-      requestedBy: session.actorId,
-    });
-
-    await logAudit(admin, {
-      actorId: session.actorId,
-      actorRole: session.role,
-      action: "export.created",
-      entity: "exports",
-      entityId: id,
-      after: {
-        dataset: parsed.data.dataset,
-        format: parsed.data.format,
-        rows,
-      },
-    });
-
-    revalidatePath("/admin/exports");
-    return actionOk({ id, rows });
-  } catch (error) {
-    return actionFail(
-      "UNKNOWN",
-      error instanceof Error ? error.message : "The export could not be built.",
-    );
-  }
-}
-
-/* ---------------------------------------------------------------- backups */
-
-export async function requestBackupAction(
-  formData: FormData,
-): Promise<FormActionResult<{ id: string; bytes: number }>> {
-  const session = await assertCapability("backups.create");
-
-  const parsed = backupRequestSchema.safeParse({
-    kind: formData.get("kind"),
-    format: formData.get("format") || "json",
-    label: formData.get("label") ?? undefined,
-    confirm: formData.get("confirm") === "on",
-  });
-  if (!parsed.success) return toFormError(parsed.error);
-
-  if (!parsed.data.confirm) {
-    return actionFail("VALIDATION", "Confirm that you want to create a backup.");
-  }
-
-  const admin = tryCreateAdminSupabase();
-  if (!admin) {
-    return actionFail(
-      "UNKNOWN",
-      "Backups need the service-role key configured on the server.",
-    );
-  }
-
-  // Job row first, so a failed build leaves a visible failed record instead of
-  // nothing at all.
-  const { data: job, error: createError } = await admin
-    .from("backup_records")
-    .insert({
-      kind: parsed.data.kind,
-      status: "running",
-      label: parsed.data.label ?? null,
-      format: parsed.data.format,
-      created_by: session.actorId,
-    })
-    .select("id")
-    .single();
-
-  if (createError || !job) {
-    return actionError(createError ?? new Error("Could not queue the backup."));
-  }
-
-  try {
-    const built = await buildBackup({
-      kind: parsed.data.kind,
-      label: parsed.data.label ?? null,
-      format: parsed.data.format,
-    });
-
-    // Local-first: the bytes live in the row, not in object storage.
-    const { error: finishError } = await admin
-      .from("backup_records")
-      .update({
-        status: "ready",
-        bytes: built.bytes,
-        content: built.body,
-        content_encoding: built.encoding,
-        manifest: JSON.parse(JSON.stringify(built.bundle)),
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", job.id);
-    if (finishError) throw new Error(finishError.message);
-
-    await logAudit(admin, {
-      actorId: session.actorId,
-      actorRole: session.role,
-      action: "backup.created",
-      entity: "backup_records",
-      entityId: job.id,
-      after: { kind: parsed.data.kind, bytes: built.bytes, tables: built.tables },
-    });
-
-    revalidatePath("/admin/backups");
-    return actionOk({ id: job.id, bytes: built.bytes });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "The backup could not be built.";
-
-    await admin
-      .from("backup_records")
-      .update({ status: "failed", error: message.slice(0, 500) })
-      .eq("id", job.id);
-
-    return actionFail("UNKNOWN", message);
-  }
-}
 
 /* ------------------------------------------------------------------ utils */
 

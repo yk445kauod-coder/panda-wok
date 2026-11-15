@@ -94,6 +94,10 @@ async function main() {
       "/icon-512.png",
       "/manifest.webmanifest",
       "/panda-logo.svg",
+      // Media-proxy 302s any missing dish image here. Without this exclusion each
+      // broken dish image re-enters the Worker to serve one static byte-identical
+      // file; the CDN can answer it directly.
+      "/dish-placeholder.svg",
       "/google469af7ac01566c8d.html",
     ],
   };

@@ -128,8 +128,6 @@ describe("console live beat is opt-in", () => {
   it("leaves the static pages off the beat", () => {
     for (const page of [
       "src/components/admin/pages/settings.tsx",
-      "src/components/admin/pages/exports.tsx",
-      "src/components/admin/pages/backups.tsx",
       "src/components/admin/pages/content.tsx",
       "src/components/admin/pages/users.tsx",
     ]) {
