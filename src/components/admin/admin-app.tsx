@@ -18,7 +18,7 @@ import type { AppNotification } from "@/lib/services/notifications";
 import type { OrderAlert } from "@/lib/services/admin-orders";
 
 type SessionPayload =
-  | { ok: true; unlocked: false; brand: Brand }
+  | { ok: true; unlocked: false; brand?: Brand }
   | {
       ok: true;
       unlocked: true;

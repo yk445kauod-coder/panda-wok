@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth/session";
+import { gateIdentity } from "@/lib/auth/admin-gate";
 import { capabilitiesFor, can, ROLE_LABELS } from "@/lib/auth/rbac";
 import { getPublicSettings } from "@/lib/services/catalog";
 import { listStaffNotifications, countStaffUnread } from "@/lib/services/notifications";
@@ -16,6 +17,17 @@ import { serverEnv } from "@/lib/config/env";
  * `{ unlocked: false }` and the client shows the passcode field.
  */
 export async function GET() {
+  // The unlock cookie is checked before anything else, because most calls to
+  // this endpoint come from a locked browser (the passcode screen reloads it on
+  // every failure) and the locked answer needs no data at all — the brand falls
+  // back to the bundled default in the client. Reading settings first meant a
+  // locked call still paid a full catalogue read plus a React-free round trip to
+  // Supabase, which on a locked screen is a page load spent for nothing.
+  const gate = await gateIdentity();
+  if (!gate) {
+    return NextResponse.json({ ok: true, unlocked: false });
+  }
+
   const [session, settings] = await Promise.all([
     getAdminSession().catch(() => null),
     getPublicSettings().catch(() => null),
