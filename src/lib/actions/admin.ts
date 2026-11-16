@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { revalidateAllPublicData, revalidatePublicData } from "@/lib/cache/revalidate";
+import { revalidateAllPublicData, revalidatePublicData, revalidatePublicPath } from "@/lib/cache/revalidate";
 import { CACHE_TAGS } from "@/lib/cache/tags";
 import { createServerSupabase, tryCreateAdminSupabase } from "@/lib/supabase/server";
 import { publishOrderChange } from "@/lib/live/ops-notify";
@@ -248,8 +248,8 @@ export async function saveMenuItemAction(
   });
 
   revalidatePath("/admin/menu");
-  revalidatePath("/menu");
-  revalidatePath(`/menu/${parsed.data.slug}`);
+  revalidatePublicPath("/menu");
+  revalidatePublicPath(`/menu/${parsed.data.slug}`);
   revalidatePublicData(CACHE_TAGS.menu);
   return actionOk({ id: result.data.id });
 }
@@ -278,7 +278,7 @@ export async function deleteMenuItemAction(
   });
 
   revalidatePath("/admin/menu");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   revalidatePublicData(CACHE_TAGS.menu);
   return actionOk();
 }
@@ -358,7 +358,7 @@ export async function toggleMenuItemAction(
   });
 
   revalidatePath("/admin/menu");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   revalidatePublicData(CACHE_TAGS.menu);
   return actionOk();
 }
@@ -406,7 +406,7 @@ export async function setMenuItemVisibilityAction(
   });
 
   revalidatePath("/admin/menu");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   revalidatePublicData(CACHE_TAGS.menu);
   return actionOk();
 }
@@ -468,7 +468,7 @@ export async function saveModifierGroupAction(
   });
 
   revalidatePath("/admin/menu");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   return actionOk({ id: result.data.id });
 }
 
@@ -492,7 +492,7 @@ export async function deleteModifierGroupAction(
   });
 
   revalidatePath("/admin/menu");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   revalidatePublicData(CACHE_TAGS.menu);
   return actionOk();
 }
@@ -546,7 +546,7 @@ export async function saveModifierOptionAction(
   });
 
   revalidatePath("/admin/menu");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   return actionOk({ id: result.data.id });
 }
 
@@ -580,7 +580,7 @@ export async function toggleModifierOptionAction(
   });
 
   revalidatePath("/admin/menu");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   revalidatePublicData(CACHE_TAGS.menu);
   return actionOk();
 }
@@ -604,7 +604,7 @@ export async function deleteModifierOptionAction(
   });
 
   revalidatePath("/admin/menu");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   revalidatePublicData(CACHE_TAGS.menu);
   return actionOk();
 }
@@ -673,7 +673,7 @@ export async function saveCategoryAction(
 
   revalidatePath("/admin/categories");
   revalidatePath("/admin/menu");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   return actionOk({ id: result.data.id });
 }
 
@@ -711,7 +711,7 @@ export async function deleteCategoryAction(
   });
 
   revalidatePath("/admin/categories");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   revalidatePublicData(CACHE_TAGS.menu);
   return actionOk();
 }
@@ -740,7 +740,7 @@ export async function reorderCategoryAction(
   });
 
   revalidatePath("/admin/categories");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   revalidatePublicData(CACHE_TAGS.menu);
   return actionOk();
 }
@@ -825,7 +825,7 @@ export async function setFeedbackPublishedAction(
 
   revalidatePath("/admin/feedback");
   // The average is read by the public menu, so the cached menu must drop too.
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   revalidatePath("/");
   revalidatePublicData(CACHE_TAGS.menu);
   return actionOk();
@@ -1691,7 +1691,7 @@ export async function refreshPublicCacheAction(): Promise<FormActionResult<undef
   await assertCapability("settings.manage");
   revalidateAllPublicData();
   revalidatePath("/");
-  revalidatePath("/menu");
+  revalidatePublicPath("/menu");
   return actionOk();
 }
 

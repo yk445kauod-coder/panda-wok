@@ -4,7 +4,6 @@ import {
   getCategoryBySlug,
   getMenuItemsByCategory,
   getMenuItemBySlug,
-  getMenuSlugs,
   getPublicCategories,
   getPublicMenu,
   getRestaurant,
@@ -21,7 +20,6 @@ import {
   localisedName,
   localisedDescription,
 } from "@/lib/i18n/catalog";
-import { LOCALES } from "@/lib/i18n/config";
 
 /**
  * A single segment serves both nested shapes the spec calls for:
@@ -33,17 +31,15 @@ import { LOCALES } from "@/lib/i18n/config";
 type PageProps = { params: Promise<{ lang: string; slug: string }> };
 
 /**
- * Both shapes a menu URL can take are known at build time — every category and
- * every dish — so each one becomes a prerendered page per locale.
+ * Rendered on demand and refreshed on a window, not frozen at build time.
+ *
+ * The menu changes from the admin console, and a prerendered page is a read-only
+ * asset the incremental cache never rewrites — so a new dish or a new photo would
+ * not appear until the next deploy. An ISR window plus the admin action's
+ * `revalidatePublicPath` call makes an edit visible on the next request.
  */
-export async function generateStaticParams() {
-  const { categories, items } = await getMenuSlugs();
-  const slugs = new Set<string>([
-    ...categories.map((c) => c.slug),
-    ...items.map((i) => i.slug),
-  ]);
-  return LOCALES.flatMap((lang) => [...slugs].map((slug) => ({ lang, slug })));
-}
+export const revalidate = 300;
+
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { lang, slug } = await params;

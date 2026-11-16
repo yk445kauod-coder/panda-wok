@@ -1,6 +1,6 @@
 import "server-only";
 
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { ALL_PUBLIC_TAGS, type PublicCacheTag } from "@/lib/cache/tags";
 
 /**
@@ -32,4 +32,25 @@ export function revalidatePublicData(tags: PublicCacheTag | PublicCacheTag[]): v
 /** Invalidates every public cache tag — for changes with broad or unclear reach. */
 export function revalidateAllPublicData(): void {
   revalidatePublicData(ALL_PUBLIC_TAGS);
+}
+
+/**
+ * Invalidates one customer path in **both locales**.
+ *
+ * Customer routes live under `/[lang]/…`, so a bare `revalidatePath("/menu")`
+ * targets a route that does not exist and silently revalidates nothing — the
+ * admin edit then waits for the ISR window instead of appearing at once. Every
+ * admin write that changes a customer page must go through this helper.
+ */
+export function revalidatePublicPath(path: string): void {
+  const clean = path.startsWith("/") ? path : `/${path}`;
+  try {
+    for (const lang of ["en", "ar"]) revalidatePath(`/${lang}${clean === "/" ? "" : clean}`);
+  } catch (error) {
+    console.warn(
+      `[cache] could not revalidate ${clean}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
 }
