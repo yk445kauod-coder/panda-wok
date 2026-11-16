@@ -28,6 +28,23 @@
   `grep -c ZodError .pages/middleware/handler.mjs` → must be 0.
   Remaining 1102 risk is genuinely architectural: dynamic `/api/admin/*` on Free's 10 ms cap.
   Real escalations: Workers Paid ($5 → 5 min CPU), or move the data layer off the Worker.
+- **The console must never poll via a Server Action (commit `581c5aa`, 2026-11-16).** A Next
+  Server Action is a **POST back to the page the tab is on** — and every `/admin/*` route is a
+  static shell, so it 404'd / re-ran the App Router / hit the 10 ms cap. The alert poll did this
+  **4,028×/7d against 48 orders**, from every page × tab × admin: that was the reported "admin is
+  heavy + requests exceed with more than one admin". Now `GET /api/admin/alerts` (gated
+  `adminJson("orders.view")`). **Any console poll must be a `route.ts` GET, never an action.**
+- `wss://…ops-hub…?audience=console` **is live** (`hello`/`live:true`). Cadences:
+  `OPS_POLL_FALLBACK_MS=60000`, `OPS_POLL_LIVE_MS=300000`.
+- Console per-page JS is ~750–870 KB raw / ~240–280 KB brotli. Chart.js and the AR dictionary are
+  **already lazy**; the 73 KB `24n5xcvyqk4g8.js` is the *English dictionary*, not chart.js.
+- `@supabase/ssr`'s dynamic import in `supabase/middleware.ts` **does not shrink** the handler
+  (~862 KB either way — Turbopack inlines it). It only avoids *constructing* the client on D1.
+- **Always deploy with `--branch=feature/panda-wok-platform`.** That is the project's production
+  branch (`production_branch` in the Pages API); `--branch=main` deploys a **Preview** that has no
+  D1 binding and 402s every admin action.
+- Cloudflare GraphQL: `clientRequestHTTPMethod` is **not** a valid dimension — group by
+  `clientRequestPath` + `edgeResponseStatus` and infer the method.
 - **Live invocation data:** `pagesFunctionsInvocationsAdaptiveGroups` on account 708d1cc2… is the
   authoritative metric. Requests 2,272/day (Nov 7) → **peak 23,682/day (Nov 13, 1,198 errors = 1102)**
   → 5,265/day (Nov 15) after the poll + shell fixes. Always pull this before theorising about "heavy".
