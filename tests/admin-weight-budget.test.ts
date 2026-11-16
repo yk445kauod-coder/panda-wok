@@ -143,12 +143,12 @@ describe("console live beat is opt-in", () => {
 /**
  * The shared read must not double the console's invocations.
  *
- * Each tick of the console's one timer is a `listPendingOrderAlertsAction` call,
- * and waking the boards adds a second call to whatever endpoint the open page
- * reads. On the live cadence that doubling is the difference between staying
- * inside the Free plan's 100k/day budget and blowing it, so the decision to wake
- * the boards is pinned: only a real change, a realtime push, or a dropped socket
- * (where the poll is the only signal) may wake them.
+ * Each tick of the console's one timer is a `GET /api/admin/alerts` call, and
+ * waking the boards adds a second call to whatever endpoint the open page reads.
+ * On the live cadence that doubling is the difference between staying inside the
+ * Free plan's 100k/day budget and blowing it, so the decision to wake the boards
+ * is pinned: only a real change, a realtime push, or a dropped socket (where the
+ * poll is the only signal) may wake them.
  */
 describe("shared read does not double the beat", () => {
   it("keeps an idle live tick to the one read", async () => {

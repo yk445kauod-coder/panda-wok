@@ -1,9 +1,9 @@
 // Type-only: `z.ZodError` is used as a parameter type below and its `.issues`
 // is read at runtime — but nothing here *calls* zod. A value import would put
 // the whole validator in the bundle of every module that imports this file,
-// including `listPendingOrderAlertsAction`, which the console polls every 45 s
-// per open tab. That is the Free plan's 10 ms CPU budget spent on a module that
-// only ever reads a property.
+// including the console's alert reader, which runs on every console page. That
+// is the Free plan's 10 ms CPU budget spent on a module that only ever reads a
+// property.
 import type { z } from "zod";
 import {
   appError,

@@ -78,4 +78,22 @@ describe("middleware import graph", () => {
     const session = [...graph].filter((f) => f.endsWith(join("auth", "d1-session.ts")));
     expect(session.length).toBe(1);
   });
+
+  it("only imports @supabase/ssr dynamically", () => {
+    // `@supabase/ssr` drags auth-js and realtime-js into the middleware bundle.
+    // It is imported with `await import(...)` inside `supabase/middleware.ts`,
+    // so on a D1 deployment — the only place this project runs — the client is
+    // never constructed. Measured caveat: Turbopack still inlines the code into
+    // the handler chunk, so this guards against a *static* import reappearing
+    // (which would construct it on the module path) rather than against bundle
+    // size, which the split does not actually change here.
+    const reachableStatic = [...graph];
+    for (const file of reachableStatic) {
+      const source = readFileSync(file, "utf8");
+      expect(
+        /^\s*import\s[^;]*from\s+["']@supabase\/ssr["']/m.test(source),
+        `${file} statically imports @supabase/ssr`,
+      ).toBe(false);
+    }
+  });
 });

@@ -48,9 +48,9 @@ function subscribeLive(onStoreChange: LiveListener): () => void {
  * connection is live.
  *
  * `onChange`, if given, fires on every push. Pass it only where nothing else
- * already re-reads on the push (the alert watcher, whose read is a server
- * action); a page that owns a board should omit it, since the board re-reads and
- * a second fetch would just double the traffic.
+ * already re-reads on the push (the alert watcher); a page that owns a board
+ * should omit it, since the board re-reads and a second fetch would just double
+ * the traffic.
  *
  * The returned flag is true while the socket is open and false if it drops, so a
  * caller may relax its poll on it — the relaxed poll remains the net for a socket

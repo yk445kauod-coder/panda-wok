@@ -99,8 +99,11 @@ describe("console polling is single-source", () => {
     const store = read("src/lib/live/ops-sync.ts");
     expect(store).toMatch(/startVisiblePoll\(/);
     expect(store).toMatch(/getOpsLive\(\)/);
-    // The store is the one place that reads the pending alerts on a schedule.
-    expect(store).toMatch(/listPendingOrderAlertsAction/);
+    // The store is the one place that reads the pending alerts on a schedule,
+    // and it does so over a plain GET rather than a Server Action POST back to
+    // a static shell (the measured cause of the request volume).
+    expect(store).toMatch(/\/api\/admin\/alerts/);
+    expect(store).not.toMatch(/listPendingOrderAlertsAction/);
   });
 
   it("does not let the orders board or the kitchen board poll on their own", () => {
@@ -136,8 +139,22 @@ describe("console polling is single-source", () => {
     const store = read("src/lib/live/ops-sync.ts");
     const fallback = store.match(/OPS_POLL_FALLBACK_MS = (\d+)/)?.[1];
     const live = store.match(/OPS_POLL_LIVE_MS = (\d+)/)?.[1];
-    expect(Number(fallback)).toBeGreaterThanOrEqual(30000);
+    expect(Number(fallback)).toBeGreaterThanOrEqual(60000);
     expect(Number(live)).toBeGreaterThanOrEqual(Number(fallback));
+  });
+
+  it("reads the alerts over a GET route, never a POST to the console shell", () => {
+    // A Server Action posts back to the page the console is on. Every console
+    // route is a static shell, so that POST had no handler (404), re-ran the App
+    // Router to re-emit a static document (200), or exceeded the Free plan's
+    // 10 ms CPU cap (503 / Error 1102). The alert read must stay a GET.
+    const store = read("src/lib/live/ops-sync.ts");
+    expect(store).toMatch(/fetch\("\/api\/admin\/alerts"/);
+    expect(store).not.toMatch(/"use server"/);
+    // And the route that serves it must exist and be gated.
+    const route = read("src/app/api/admin/alerts/route.ts");
+    expect(route).toMatch(/export async function GET/);
+    expect(route).toMatch(/adminJson\(/);
   });
 
   it("closes a half-open socket rather than trusting it", () => {

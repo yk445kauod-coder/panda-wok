@@ -13,7 +13,7 @@
  * This module collapses that into a single poll for the whole tab. It owns:
  *
  *  - one timer, at one interval, paused while the document is hidden;
- *  - one `listPendingOrderAlertsAction` read, whose result every consumer shares;
+ *  - one `GET /api/admin/alerts` read, whose result every consumer shares;
  *  - one `panda-wok:refresh` dispatch on each tick, so pages that fetch their own
  *    JSON (`/api/admin/orders`, …) re-read on the *same* beat instead of a second
  *    timer.
@@ -26,7 +26,6 @@
  */
 
 import { useEffect, useState } from "react";
-import { listPendingOrderAlertsAction } from "@/lib/actions/order-alerts";
 import type { OrderAlert } from "@/lib/services/admin-orders";
 import { pendingSignature } from "@/lib/sound/alert-state";
 import { getOpsLive, subscribeOpsSignal } from "@/lib/live/ops-socket";
@@ -35,19 +34,19 @@ import { startVisiblePoll } from "@/lib/live/visibility";
 /**
  * Cadence when the socket is down — the poll is the only live path.
  *
- * This was 8 s, which assumed the socket rarely connects. It connects, so the
- * 8 s path is only ever reached when it drops. A tick is one
- * `listPendingOrderAlertsAction` invocation plus, if the queue moved, one
- * re-fetch of any `live: true` board; on a dropped socket that is the only way a
- * board learns anything, so the cadence is the worst-case new-order latency for
- * as long as the outage lasts.
+ * This was 8 s, which assumed the socket rarely connects. It connects (verified
+ * live against the hub), so the 8 s path is only ever reached when it drops. A
+ * tick is one read of the alert endpoint plus, if the queue moved, one re-fetch
+ * of any `live: true` board; on a dropped socket that is the only way a board
+ * learns anything, so the cadence is the worst-case new-order latency for as
+ * long as the outage lasts.
  *
- * 45 s is the balance: the socket reconnects on a 1–30 s backoff, so it is
- * normally back before the first tick, and 45 s keeps the outage window short
- * enough to still read as "live" in a kitchen while cutting a dropped socket's
- * worst case to a little over a third of the old 8 s.
+ * 60 s is the balance: the socket reconnects on a 1–30 s backoff, so it is
+ * normally back well before the first tick, and 60 s keeps the outage window
+ * short enough to still read as "live" in a kitchen while cutting a dropped
+ * socket's worst case to a fraction of the old 8 s.
  */
-export const OPS_POLL_FALLBACK_MS = 45000;
+export const OPS_POLL_FALLBACK_MS = 60000;
 /**
  * Safety-net cadence once the broadcast is confirmed live.
  *
@@ -55,11 +54,11 @@ export const OPS_POLL_FALLBACK_MS = 45000;
  * only: a socket that reports open but has silently stopped delivering. A dead
  * socket is caught by `onclose` (the 25 s heartbeat surfaces it within a tick or
  * two) and drops to the fallback cadence, so this net is rarely the thing that
- * matters — which is why it can be long. Two minutes keeps a zombie socket's
+ * matters — which is why it can be long. Five minutes keeps a zombie socket's
  * worst case bounded without paying a Worker invocation a minute for a page that
  * is already being pushed to.
  */
-export const OPS_POLL_LIVE_MS = 120000;
+export const OPS_POLL_LIVE_MS = 300000;
 
 type Store = {
   pending: OrderAlert[];
@@ -102,6 +101,15 @@ export function shouldWakeBoards(state: {
 /**
  * One read of the pending-order list, shared by the poll and the push path.
  *
+ * It is a plain GET to `/api/admin/alerts`, not a Server Action. An action is a
+ * POST back to the page the console is on, and every console route is a static
+ * shell — so the read arrived as a POST that had no handler (404), forced the
+ * App Router to re-emit a static document (200), or blew the Free plan's 10 ms
+ * CPU cap (503, Error 1102). Measured over one week: 4,028 such POSTs against 48
+ * orders in the database. A GET route is one cheap invocation and one indexed
+ * read, and a 401/403 means the gate expired — the same `panda-wok:locked`
+ * hand-off the page reads use.
+ *
  * `forceBoards` is true on a realtime push, where something demonstrably
  * changed. On a poll tick it is false and the opted-in boards re-read only when
  * the pending queue actually moved — or whenever the socket is down, since then
@@ -115,14 +123,28 @@ async function readPending(forceBoards = false): Promise<void> {
   if (inflight) return;
   inflight = true;
   try {
-    const result = await listPendingOrderAlertsAction();
-    if (result.ok && store) {
-      const changed = pendingSignature(store.pending) !== pendingSignature(result.data);
-      store.pending = result.data;
-      store.loaded = true;
-      for (const notify of store.subscribers) notify();
-      if (shouldWakeBoards({ changed, forceBoards, live: getOpsLive() })) dispatchLive();
+    const response = await fetch("/api/admin/alerts", {
+      cache: "no-store",
+      headers: { accept: "application/json" },
+    });
+    if (response.status === 401 || response.status === 403) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("panda-wok:locked"));
+      }
+      return;
     }
+    if (!response.ok) return;
+    const payload = (await response.json()) as { ok: boolean; data?: OrderAlert[] };
+    if (!payload.ok || !store) return;
+    const next = payload.data ?? [];
+    const changed = pendingSignature(store.pending) !== pendingSignature(next);
+    store.pending = next;
+    store.loaded = true;
+    for (const notify of store.subscribers) notify();
+    if (shouldWakeBoards({ changed, forceBoards, live: getOpsLive() })) dispatchLive();
+  } catch {
+    // A dropped read is not a reason to tear the console down: the next tick
+    // (or the socket) retries, and the boards keep whatever they last had.
   } finally {
     inflight = false;
   }

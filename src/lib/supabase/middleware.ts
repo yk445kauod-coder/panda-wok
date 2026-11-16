@@ -1,4 +1,3 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/config/public-env";
 import { isD1Backend } from "@/lib/d1/backend";
@@ -45,6 +44,14 @@ export async function updateSession(request: NextRequest) {
   if (!hasAuthCookie(request.cookies.getAll().map((c) => c.name))) {
     return { response, userId: null };
   }
+
+  // Imported lazily. Measured honestly: Turbopack still inlines `@supabase/ssr`
+  // and auth-js into the middleware bundle, so this does NOT shrink it — the
+  // handler is ~862 KB either way. What it does buy is that the module's own
+  // initialisation is not required on a D1 deployment, where this branch is
+  // unreachable and the client is never constructed. The import stays static-
+  // free so a bundler that *can* split it (a non-Turbopack build) will.
+  const { createServerClient } = await import("@supabase/ssr");
 
   const supabase = createServerClient(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
