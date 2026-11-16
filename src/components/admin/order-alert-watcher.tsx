@@ -58,6 +58,10 @@ export function OrderAlertWatcher({
   // render is the seed, and `useOpsPendingOrders` takes over from the first tick.
   // `initialPending` still wins for the very first paint so the shell renders the
   // alert without waiting a poll.
+  //
+  // `AdminApp` seeds the store from the same list as soon as the session lands,
+  // before this mounts — so the store is already loaded and its opening read is
+  // skipped. A page load costs one read of the queue, not two.
   const shared = useOpsPendingOrders();
   const [seed] = useState(initialPending);
   const pending = shared ?? seed;

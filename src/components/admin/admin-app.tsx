@@ -6,6 +6,7 @@ import { AdminI18n } from "@/components/admin/admin-i18n";
 import { AdminGateForm } from "@/components/admin/admin-gate-form";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminSessionProvider } from "@/components/admin/admin-session";
+import { seedOpsPending } from "@/lib/live/ops-sync";
 import {
   ADMIN_DEFAULT_LOCALE,
   LOCALE_COOKIE,
@@ -76,6 +77,10 @@ export function AdminApp({ children }: { children: React.ReactNode }) {
         if (data.unlocked && data.opsHubUrl) {
           (window as unknown as { __PW_OPS_HUB__?: string }).__PW_OPS_HUB__ = data.opsHubUrl;
         }
+        // The session carries the same pending queue `/api/admin/alerts` returns.
+        // Seeding the shared store here, before the shell mounts, is what keeps a
+        // page load to one read of that queue instead of two.
+        if (data.unlocked) seedOpsPending(data.pendingOrders);
         setPayload(data);
       })
       .catch(() => {

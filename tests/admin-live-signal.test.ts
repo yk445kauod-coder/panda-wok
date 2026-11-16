@@ -167,4 +167,19 @@ describe("console polling is single-source", () => {
     expect(sock).toMatch(/lastFrame/);
     expect(sock).toMatch(/Date\.now\(\) - lastFrame > STALE_MS/);
   });
+
+  it("seeds the shared store from the session payload instead of re-reading it", () => {
+    // `/api/admin/session` and `/api/admin/alerts` return the same pending queue,
+    // and the shell fetches the session on every page load. Without the seed the
+    // store's opening read fetches the identical list again — two Worker
+    // invocations per console page load where one carries the data already.
+    const store = read("src/lib/live/ops-sync.ts");
+    expect(store).toMatch(/export function seedOpsPending/);
+    // The opening read must be conditional on the store not already being seeded,
+    // or the seed saves nothing.
+    expect(store).toMatch(/if \(!store\?\.loaded\) void readPending\(\)/);
+
+    const app = read("src/components/admin/admin-app.tsx");
+    expect(app).toMatch(/seedOpsPending\(data\.pendingOrders\)/);
+  });
 });

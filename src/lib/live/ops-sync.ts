@@ -77,6 +77,28 @@ function ensureStore(): Store {
 }
 
 /**
+ * Seeds the shared store from the queue `/api/admin/session` already returned.
+ *
+ * The session payload and the alert endpoint return the same list, and the shell
+ * fetches the session on every page load. Seeding here means the tab's first read
+ * of the queue is the one it already paid for, and the poll's opening read is
+ * skipped — one Worker invocation per console page load instead of two.
+ *
+ * It overwrites rather than only seeding once: after a lock the shell unmounts
+ * and the poll stops, so on the next unlock the store still holds the list from
+ * before the lock. The fresh session payload is the newer truth, and the watcher
+ * reads `shared ?? seed` — an early return here would keep showing the stale one.
+ * A read that lands afterwards still replaces it, so the seed is never the last
+ * word.
+ */
+export function seedOpsPending(orders: OrderAlert[]): void {
+  const current = ensureStore();
+  current.pending = orders;
+  current.loaded = true;
+  for (const notify of current.subscribers) notify();
+}
+
+/**
  * Whether a read of the pending queue should also wake the opted-in boards
  * (`useAdminData` with `live: true`) on the shared `panda-wok:live` event.
  *
@@ -176,7 +198,11 @@ function tick(): void {
 
 function startPolling(): void {
   if (stopPoll) return;
-  void readPending();
+  // `/api/admin/session` already returned the pending queue in the same page
+  // load, so the store is normally seeded before this runs. Reading again here
+  // would be a second Worker invocation for data the tab is holding — the
+  // page-load cost would be two reads of the same list instead of one.
+  if (!store?.loaded) void readPending();
   stopPoll = startVisiblePoll(tick, () => (getOpsLive() ? OPS_POLL_LIVE_MS : OPS_POLL_FALLBACK_MS));
 }
 
