@@ -68,15 +68,35 @@ describe("console first-load budget", () => {
     }
   });
 
-  it("ships one dictionary per session, not both", () => {
-    // The console picks the active language at runtime; the other dictionary is
-    // a dynamic import so it is not in the shared chunk.
+  it("ships the console slice, one locale, and no storefront copy", () => {
+    // The console picks the active language at runtime and renders only the
+    // console slice of the dictionary. Three weight rules hold at once:
+    //   1. the deferred language must be the *slice*, not the full dictionary;
+    //   2. English must be the static fallback, and the *slice* at that;
+    //   3. nothing in the console may import the full dictionary by value — a
+    //      runtime import would drag the storefront blocks back into first load.
     const adminI18n = read("src/components/admin/admin-i18n.tsx");
-    expect(adminI18n).toMatch(/import\(\s*"@\/lib\/i18n\/dictionaries\/ar"\s*\)/);
-    expect(adminI18n).not.toMatch(/^import \{ ar \} from/m);
-    // English is the static fallback (the default locale), so only Arabic is
-    // allowed to be the deferred one.
-    expect(adminI18n).toMatch(/^import \{ en/m);
+    expect(adminI18n).toMatch(
+      /import\(\s*"@\/lib\/i18n\/dictionaries\/console-ar"\s*\)/,
+    );
+    expect(adminI18n).toMatch(
+      /^import \{ consoleEn \} from "@\/lib\/i18n\/dictionaries\/console-en"/m,
+    );
+    expect(adminI18n).not.toMatch(
+      /^import \{[^}]*\b(en|ar)\b[^}]*\} from/m,
+    );
+
+    for (const file of walk(join(ROOT, "src/components/admin"))) {
+      const source = readFileSync(file, "utf8");
+      const importsFullDict =
+        /^import \{[^}]*\} from "@\/lib\/i18n\/dictionaries\/(en|ar)"/m.test(
+          source,
+        );
+      expect(
+        importsFullDict,
+        `${file} imports the full dictionary; import the console slice`,
+      ).toBe(false);
+    }
   });
 
   it("keeps the fatal boundary free of dictionary imports", () => {

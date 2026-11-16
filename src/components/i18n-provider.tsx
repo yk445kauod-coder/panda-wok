@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { DEFAULT_LOCALE, dirFor, type Locale } from "@/lib/i18n/config";
-import { en, type Dictionary } from "@/lib/i18n/dictionaries/en";
+import type { Dictionary } from "@/lib/i18n/dictionaries/en";
 import { translate } from "@/lib/i18n/translate";
 
 type I18nValue = {
@@ -50,7 +50,7 @@ export function useI18n(): I18nValue {
     return {
       locale: DEFAULT_LOCALE,
       dir: "ltr",
-      dict: en,
+      dict: {} as Dictionary,
       t: (path, vars) => {
         if (!vars) return path;
         return path.replace(/\{(\w+)\}/g, (match, name: string) =>
