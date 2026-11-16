@@ -41,10 +41,24 @@
 - Console weight (brotli): `/admin` 241 KB, `/admin/orders` 239 KB, `/admin/kitchen` 280 KB JS.
   The EN dictionary is 87 KB raw and **its `admin` block alone is 46 KB (53%)** — a separate
   admin dictionary is the next cut if first-load is still judged heavy.
+- **Console dictionary split DONE (commits `5acbbaa` dict slice + `e3be062` session fast-path,
+  2026-11-16).** The console renders only `common`/`errors`/`kds`/`admin`, now in
+  `dictionaries/console-en.ts` / `console-ar.ts`; `en.ts`/`ar.ts` spread them back (`...consoleEn`)
+  so keys keep one source. **Live `/admin` first-load 247,600 -> 238,548 br (-3.7%, -9.0 KB)** —
+  smaller than hoped because the *admin* block itself is ~30 KB br; the win is evicting the **26.7 KB
+  br Arabic** chunk + storefront blocks. `i18n-provider.tsx` no longer imports `en` by value (its
+  outside-provider fallback used `dict: en`, and `useI18n().dict` has **no reader**). Guards:
+  `tests/i18n-console-slice.test.ts`, plus `admin-weight-budget.test.ts` now rejects any
+  `src/components/admin` file importing the full dict by value. Key count unchanged 630+1,174=1,804.
+- `/api/admin/session` now checks the unlock cookie **before** reading settings (a locked browser —
+  the passcode screen, every load + failed attempt — used to pay a full catalogue read for
+  `{unlocked:false}`). Warm TTFB ~0.07s, cold ~0.6s.
 - `wss://…ops-hub…?audience=console` **is live** (`hello`/`live:true`). Cadences:
   `OPS_POLL_FALLBACK_MS=60000`, `OPS_POLL_LIVE_MS=300000`.
 - Console per-page JS is ~750–870 KB raw / ~240–280 KB brotli. Chart.js and the AR dictionary are
-  **already lazy**; the 73 KB `24n5xcvyqk4g8.js` is the *English dictionary*, not chart.js.
+  **already lazy**; the 73 KB `24n5xcvyqk4g8.js` was the *English dictionary* chunk — removed from
+  the console first-load by the `5acbbaa` split (the 26.7 KB br `24n5xcvyqk4g8.js` Arabic block was
+  the one evicted from `/admin`; the English storefront blocks leave too).
 - `@supabase/ssr`'s dynamic import in `supabase/middleware.ts` **does not shrink** the handler
   (~862 KB either way — Turbopack inlines it). It only avoids *constructing* the client on D1.
 - **Always deploy with `--branch=feature/panda-wok-platform`.** That is the project's production
