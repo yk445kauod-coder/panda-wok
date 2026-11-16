@@ -34,6 +34,13 @@
   **4,028×/7d against 48 orders**, from every page × tab × admin: that was the reported "admin is
   heavy + requests exceed with more than one admin". Now `GET /api/admin/alerts` (gated
   `adminJson("orders.view")`). **Any console poll must be a `route.ts` GET, never an action.**
+- **One page load = 2 requests, not 4 (commit `740b7e6`).** `/api/admin/session` already returns
+  `pendingOrders`, so the store must be **seeded** from it (`seedOpsPending`, called in
+  `AdminApp`) and `startPolling()` must read only `if (!store?.loaded)`. The seed **overwrites**
+  (not early-returns) because after a lock the store holds the pre-lock list.
+- Console weight (brotli): `/admin` 241 KB, `/admin/orders` 239 KB, `/admin/kitchen` 280 KB JS.
+  The EN dictionary is 87 KB raw and **its `admin` block alone is 46 KB (53%)** — a separate
+  admin dictionary is the next cut if first-load is still judged heavy.
 - `wss://…ops-hub…?audience=console` **is live** (`hello`/`live:true`). Cadences:
   `OPS_POLL_FALLBACK_MS=60000`, `OPS_POLL_LIVE_MS=300000`.
 - Console per-page JS is ~750–870 KB raw / ~240–280 KB brotli. Chart.js and the AR dictionary are
