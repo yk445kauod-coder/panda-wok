@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils/format";
+import { dishImageSrc, dishImageSrcSet } from "@/lib/images/responsive";
 import type { MenuItem } from "@/lib/services/catalog";
 import type { Locale } from "@/lib/i18n/config";
 
@@ -66,7 +67,9 @@ export function EditorialSections({
             >
               {hero?.image_url ? (
                 <img
-                  src={hero.image_url}
+                  src={dishImageSrc(hero.image_url, 720)}
+                  srcSet={dishImageSrcSet(hero.image_url)}
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   alt={hero.image_alt ?? hero.name_en}
                   width={720}
                   height={560}
@@ -107,7 +110,7 @@ export function EditorialSections({
                       <span className="plate size-16 shrink-0">
                         {item.image_url ? (
                           <img
-                            src={item.image_url}
+                            src={dishImageSrc(item.image_url, 128)}
                             alt=""
                             width={128}
                             height={128}

@@ -54,9 +54,10 @@ describe("brand script marks", () => {
   it("sources every .font-kana script mark from the shared component", () => {
     // The hero plate, the brand banner and the identity band each hardcoded
     // their own copy at some point, so one was fixed and another kept a broken
-    // glyph. They now all render <BrandScriptMarks/>.
+    // glyph. They now all render <BrandScriptMarks/>. The hero lives in the
+    // home page's client component now that the route is a static shell.
     for (const file of [
-      "src/app/[lang]/(site)/page.tsx",
+      "src/components/customer/home-page.tsx",
       "src/components/customer/brand-banner.tsx",
       "src/components/customer/identity-band.tsx",
     ]) {

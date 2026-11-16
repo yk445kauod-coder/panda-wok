@@ -18,7 +18,6 @@ import {
   Menu,
   MessagesSquare,
   Package,
-  Send,
   Settings,
   ShoppingBag,
   Tags,

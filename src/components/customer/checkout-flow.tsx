@@ -106,6 +106,9 @@ export function CheckoutFlow({
         currency: "EGP",
       });
     }
+    // `lines` is read for the count only; the ref guard makes this fire once, so
+    // re-running on a new array identity would be a no-op.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, lines.length, subtotal]);
 
   const totals = useMemo(

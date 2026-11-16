@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { ToastProvider } from "@/components/ui/toast";
 import { AdminI18n } from "@/components/admin/admin-i18n";
 import { AdminGateForm } from "@/components/admin/admin-gate-form";
@@ -46,6 +46,18 @@ function readLocale(): Locale {
 }
 
 /**
+ * Subscribe to the console locale changing.
+ *
+ * The switcher writes the cookie and then fires `panda-wok:locale`, so the
+ * console follows a language change without a reload. `useSyncExternalStore`
+ * re-reads the cookie on that event instead of holding a copy in state.
+ */
+function subscribeLocale(onChange: () => void): () => void {
+  window.addEventListener("panda-wok:locale", onChange);
+  return () => window.removeEventListener("panda-wok:locale", onChange);
+}
+
+/**
  * The console, as a single-page app.
  *
  * `/admin` is a static shell: the Worker serves the same HTML for every route
@@ -56,16 +68,12 @@ function readLocale(): Locale {
  * per open tab.
  */
 export function AdminApp({ children }: { children: React.ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(ADMIN_DEFAULT_LOCALE);
+  // The cookie is read through a subscribable snapshot rather than seeded in an
+  // effect: reading it in an effect to call setState trips the
+  // set-state-in-effect lint, and a primitive snapshot makes the external store
+  // cheap to compare. SSR has no cookie, so the server snapshot is the default.
+  const locale = useSyncExternalStore(subscribeLocale, readLocale, () => ADMIN_DEFAULT_LOCALE);
   const [payload, setPayload] = useState<SessionPayload | null>(null);
-
-  // Resolve the locale from the cookie on mount (SSR has no cookie access here).
-  useEffect(() => {
-    setLocale(readLocale());
-    const onChange = () => setLocale(readLocale());
-    window.addEventListener("panda-wok:locale", onChange);
-    return () => window.removeEventListener("panda-wok:locale", onChange);
-  }, []);
 
   const loadSession = useCallback(() => {
     fetch("/api/admin/session", { cache: "no-store" })

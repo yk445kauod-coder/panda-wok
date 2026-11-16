@@ -3,7 +3,6 @@ import "server-only";
 import { cookies } from "next/headers";
 
 import { createSessionSupabase } from "@/lib/supabase/server";
-import { isD1Backend } from "@/lib/d1/backend";
 
 /**
  * Marks a session the console once minted for itself.

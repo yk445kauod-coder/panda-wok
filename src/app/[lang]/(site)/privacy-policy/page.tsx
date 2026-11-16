@@ -1,20 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { PrivacyPage } from "@/components/customer/privacy-page";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getPublicSettings } from "@/lib/services/catalog";
-import { getPageContent } from "@/lib/services/content";
-import { breadcrumbSchema } from "@/lib/seo/schema";
-import { JsonLdScript } from "@/components/seo/json-ld";
-import { Breadcrumbs } from "@/components/customer/breadcrumbs";
 import { localePath } from "@/lib/i18n/config";
 import { staticLocale, staticT } from "@/lib/i18n/static";
-
-/**
- * When staff publish a privacy policy through the CMS it is rendered here.
- * Until then the page states that honestly rather than presenting a
- * placeholder as a legal document.
- */
-const PRIVACY_PAGE_KEY = "privacy";
 
 type PageProps = { params: Promise<{ lang: string }> };
 
@@ -31,62 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 }
 
-export default async function PrivacyPolicyPage({ params }: PageProps) {
-  const { lang } = await params;
-  const locale = staticLocale(lang);
-  const t = staticT(locale);
-  const sections = await getPageContent(PRIVACY_PAGE_KEY, locale);
-
-  const structured = [
-    breadcrumbSchema([
-      { name: t("common.home"), path: localePath(locale, "/") },
-      { name: t("legal.privacy.title"), path: localePath(locale, "/privacy-policy") },
-    ]),
-  ];
-
-  return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
-      <Breadcrumbs
-        items={[
-          { name: t("common.home"), path: localePath(locale, "/") },
-          { name: t("legal.privacy.title"), path: localePath(locale, "/privacy-policy") },
-        ]}
-      />
-
-      <header className="mt-4">
-        <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">
-          {t("legal.privacy.title")}
-        </h1>
-      </header>
-
-      {sections.length === 0 ? (
-        <section className="washi-panel mt-5 p-4">
-          <p className="text-sm text-ink-700/85">{t("legal.privacy.pending")}</p>
-          <Link
-            href={localePath(locale, "/contact")}
-            className="mt-3 inline-flex h-10 items-center rounded-xl border border-ink-900/15 px-4 text-sm font-medium text-ink-900 hover:bg-rice-200"
-          >
-            {t("legal.privacy.contactLink")}
-          </Link>
-        </section>
-      ) : (
-        <div className="mt-5 space-y-4">
-          {sections.map((section) => (
-            <section key={section.sectionKey} className="washi-panel p-4">
-              {section.heading ? (
-                <h2 className="text-base font-semibold text-ink-900">{section.heading}</h2>
-              ) : null}
-              {section.body ? (
-                <p className="mt-2 whitespace-pre-line text-sm text-ink-700/85">
-                  {section.body}
-                </p>
-              ) : null}
-            </section>
-          ))}
-        </div>
-      )}
-
-      <JsonLdScript data={structured} />
-    </div>
-  );
+/** Static shell; the copy arrives from the client store and content API. */
+export default function Page() {
+  return <PrivacyPage />;
 }

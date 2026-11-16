@@ -186,7 +186,8 @@ export function OrderAlertWatcher({
   // still reports SUBSCRIBED. The broadcast carries no row data and needs no
   // session, so it actually arrives. The store does the read; the signal only
   // marks liveness and lets the store relax its poll to a safety net.
-  const live = useOpsOrderSignal(refreshOpsNow);
+  // Signal only; the store owns the read and the poll cadence.
+  useOpsOrderSignal(refreshOpsNow);
 
   if (unacked.length === 0) return null;
 

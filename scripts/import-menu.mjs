@@ -39,7 +39,7 @@ const DRY = process.argv.includes("--dry-run") || !APPLY;
 
 const SPICY_GLYPH = "\uf336"; // private-use mark in the source meaning "spicy"
 const CHOICE_LABEL_RE = /your\s+choice\s*:/i;
-const CHOICE_OF_RE = /^your choice of\b/i;
+// (removed: unused)
 const PROTEIN_OPTIONS = new Set(["no protein", "chicken", "beef", "shrimp"]);
 
 const readEnv = () => {

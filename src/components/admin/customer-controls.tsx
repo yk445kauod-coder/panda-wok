@@ -26,7 +26,6 @@ export function BlockUserControl({
   isBlocked: boolean;
   name: string;
 }) {
-  const router = useRouter();
   const errorText = useErrorText();
   const t = useT();
   const [pending, setPending] = useState(false);
@@ -419,7 +418,6 @@ export function FeedbackPublishControl({
   feedbackId: string;
   isPublic: boolean;
 }) {
-  const router = useRouter();
   const errorText = useErrorText();
   const t = useT();
   const [pending, setPending] = useState(false);

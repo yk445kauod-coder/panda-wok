@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { startVisiblePoll } from "@/lib/live/visibility";
 import { useT } from "@/components/i18n-provider";
@@ -27,21 +26,33 @@ const POLL_MS = 120000;
 export function OrderStatusRealtime({
   orderId,
   enabled,
+  onRefresh,
 }: {
   orderId: string;
   enabled: boolean;
+  /** Re-read the order. The page passes its client-store `reload`, not a router
+   *  refresh: the route is a static shell now, so `router.refresh()` would
+   *  re-render the same static document and never show the new status. */
+  onRefresh: () => void;
 }) {
   const t = useT();
-  const router = useRouter();
   const [live, setLive] = useState(false);
   const refreshing = useRef(false);
+
+  // The callback is kept in a ref: the page passes an inline arrow, and a
+  // subscription effect that depended on it would tear down the channel on
+  // every render.
+  const onRefreshRef = useRef(onRefresh);
+  useEffect(() => {
+    onRefreshRef.current = onRefresh;
+  });
 
   const refresh = () => {
     if (refreshing.current) return;
     refreshing.current = true;
-    router.refresh();
-    // The server render replaces the tree; clear the guard shortly after so a
-    // slow render cannot block every later poll.
+    onRefreshRef.current();
+    // Clear the guard shortly after so a slow read cannot block every later
+    // poll.
     window.setTimeout(() => {
       refreshing.current = false;
     }, 4000);
@@ -84,7 +95,7 @@ export function OrderStatusRealtime({
   // Always poll while the order is active, but only while the tab is visible.
   // Realtime usually beats this to it; the poll is what guarantees the page
   // cannot silently stall. A backgrounded tab cannot be watched, so polling it
-  // is pure cost — each tick is a full Worker render, and a phone left on the
+  // is pure cost — each tick is a Worker invocation, and a phone left on the
   // tracking page would otherwise spend the request budget the whole project
   // shares. `startVisiblePoll` clears the timer while hidden and catches up once
   // on return.

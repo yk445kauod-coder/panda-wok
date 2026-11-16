@@ -34,15 +34,15 @@ export type AdminDataState<T> = {
  */
 export type AdminDataOptions = { live?: boolean };
 
+type AdminSettled<T> = { key: string; data: T | null; error: string | null };
+
 export function useAdminData<T>(
   path: string,
   query?: Record<string, string | number | undefined>,
   options?: AdminDataOptions,
 ): AdminDataState<T> {
   const live = options?.live ?? false;
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [settled, setSettled] = useState<AdminSettled<T>>({ key: "", data: null, error: null });
   const [nonce, setNonce] = useState(0);
 
   // The query object is rebuilt every render, so depend on its serialised form
@@ -57,6 +57,12 @@ export function useAdminData<T>(
   }
   const qs = search.toString();
   const url = qs ? `${path}?${qs}` : path;
+
+  // A request is in flight until the state settles under the current key. This
+  // is derived rather than stored, so the effect never calls setState
+  // synchronously in its body (which triggers cascading renders).
+  const requestKey = `${url}\u0000${nonce}`;
+  const loading = settled.key !== requestKey;
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
@@ -80,7 +86,6 @@ export function useAdminData<T>(
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
-    setLoading(true);
 
     fetch(url, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
@@ -92,26 +97,31 @@ export function useAdminData<T>(
         return (await response.json()) as { ok: boolean; data?: T };
       })
       .then((payload) => {
-        if (cancelled || !payload) return;
+        if (cancelled) return;
+        if (payload === null) {
+          setSettled({ key: requestKey, data: null, error: null });
+          return;
+        }
         if (!payload.ok) throw new Error("read failed");
-        setData(payload.data ?? null);
-        setError(null);
+        setSettled({ key: requestKey, data: payload.data ?? null, error: null });
       })
       .catch((caught: unknown) => {
         if (cancelled || (caught instanceof DOMException && caught.name === "AbortError")) return;
-        setError(caught instanceof Error ? caught.message : "read failed");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        // Keep whatever data was already shown; the pages gate on `error && !data`.
+        setSettled((prev) => ({
+          key: requestKey,
+          data: prev.data,
+          error: caught instanceof Error ? caught.message : "read failed",
+        }));
       });
 
     return () => {
       cancelled = true;
       controller.abort();
     };
-  }, [url, nonce]);
+  }, [requestKey, url]);
 
-  return { data, loading, error, reload };
+  return { data: settled.data, loading, error: settled.error, reload };
 }
 
 /**

@@ -980,7 +980,7 @@ const addAgentMemory: Handler = async (params, context) => {
 };
 
 /** `match_agent_memory`: nearest owner/customer memories by cosine similarity. */
-const matchAgentMemory: Handler = async (params, context) => {
+const matchAgentMemory: Handler = async (params, _context) => {
   const db = getD1Database();
   const query = parseVector(params.p_query_embedding);
   if (!query) return [];
