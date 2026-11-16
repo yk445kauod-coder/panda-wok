@@ -647,7 +647,7 @@ export class D1Client {
    * treat an empty result as "no legacy download" and the exports/backups screens
    * fall back to the status badge — so returning an empty list keeps those tabs
    * working instead of throwing on an absent method. New exports and backups
-   * store their bytes in the row (`content`), not here; dish photos upload to R2
+   * store their bytes in the row (`content`), not here; dish photos upload to DBByte
    * (`actions/storage.ts`) and never reach this.
    */
   get storage() {

@@ -70,9 +70,9 @@ export function setD1Database(database: D1Database | null): void {
 export type CloudflareBindings = {
   D1_DB?: D1Database;
   /**
-   * R2 bucket for uploaded dish photography (`panda-wok-media` in
-   * `wrangler.jsonc`). Present only once R2 is enabled and the binding is
-   * attached to the deployment; absent, uploads fall back to Supabase Storage.
+   * R2 bucket binding, unused since dish photos moved to DBByte object storage
+   * (`actions/storage.ts`). Kept declared so an old deployment that still binds
+   * it does not fail to resolve; nothing in the app reads it any more.
    */
   MEDIA_BUCKET?: R2BucketLike;
   /** Present only in a Worker-hosted deploy; the Pages build reaches the hub by URL. */
