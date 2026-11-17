@@ -7,6 +7,7 @@ import { Badge, Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader, StatCard } from "@/components/ui/page-header";
 import { PageLoading } from "@/components/admin/page-states";
+import { Pagination } from "@/components/ui/pagination";
 import { useAdminData } from "@/lib/admin/client";
 import { useT } from "@/components/i18n-provider";
 import { formatDate, formatNumber, formatPrice } from "@/lib/utils/format";
@@ -21,28 +22,20 @@ export function CrmHomePage() {
   const params = useSearchParams();
   const q = params.get("q") ?? undefined;
   const sort = params.get("sort") ?? "lifetime_value";
+  const page = Number.parseInt(params.get("page") ?? "1", 10) || 1;
 
-  const { data, loading } = useAdminData<{ customers: CrmCustomer[]; stats: CrmStats }>(
-    "/api/admin/crm",
-    { q },
-  );
+  const { data, loading } = useAdminData<{
+    customers: CrmCustomer[];
+    stats: CrmStats;
+    total: number;
+    page: number;
+    pageSize: number;
+  }>("/api/admin/crm", { q, page, sort });
 
   if (loading && !data) return <PageLoading />;
   const customers = data?.customers ?? [];
   const stats = data?.stats;
-
-  const sorted = [...customers].sort((a, b) => {
-    switch (sort) {
-      case "orders":
-        return b.order_count - a.order_count;
-      case "recent":
-        return (b.last_order_at ?? "").localeCompare(a.last_order_at ?? "");
-      case "at_risk":
-        return (b.days_since_last_order ?? -1) - (a.days_since_last_order ?? -1);
-      default:
-        return b.lifetime_value - a.lifetime_value;
-    }
-  });
+  const total = data?.total ?? customers.length;
 
   return (
     <div className="space-y-5">
@@ -121,14 +114,14 @@ export function CrmHomePage() {
         ) : null}
       </form>
 
-      {sorted.length === 0 ? (
+      {customers.length === 0 ? (
         <EmptyState
           title={q ? t("admin.pages.crm.emptySearch") : t("admin.pages.crm.empty")}
           description={q ? t("admin.pages.crm.emptySearchBody") : t("admin.pages.crm.emptyBody")}
         />
       ) : (
         <ul className="space-y-3">
-          {sorted.map((customer) => {
+          {customers.map((customer) => {
             const lapsed = (customer.days_since_last_order ?? 0) >= 30 && customer.order_count > 0;
             return (
               <li key={customer.user_id} className="washi-panel p-4">
@@ -209,6 +202,14 @@ export function CrmHomePage() {
           })}
         </ul>
       )}
+
+      <Pagination
+        page={data?.page ?? page}
+        pageSize={data?.pageSize ?? 25}
+        total={total}
+        basePath="/admin/crm"
+        searchParams={{ q, sort: params.get("sort") ?? undefined }}
+      />
     </div>
   );
 }

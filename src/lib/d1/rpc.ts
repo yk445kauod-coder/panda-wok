@@ -589,6 +589,9 @@ const crmCustomers: Handler = async (params) => {
   const search = String(params.p_search ?? "").trim().toLowerCase();
   const limit = Math.max(1, Math.min(Number(params.p_limit ?? 50) || 50, 1000));
   const offset = Math.max(0, Number(params.p_offset ?? 0) || 0);
+  // The list is paged, so the order has to be decided here: sorting one page in
+  // the browser would only reorder the rows already on it.
+  const sort = String(params.p_sort ?? "recent");
 
   const all = await crmRows();
   const filtered = search
@@ -599,12 +602,27 @@ const crmCustomers: Handler = async (params) => {
       )
     : all;
 
-  // `order by o.last_order_at desc nulls last, p.created_at desc`.
+  const num = (v: unknown) => Number(v ?? 0);
+  const daysSince = (row: Record<string, unknown>) => {
+    const last = (row.last_order_at as string | null) ?? null;
+    return last === null ? -1 : Math.floor((Date.now() - new Date(last).getTime()) / 86_400_000);
+  };
   filtered.sort((a, b) => {
-    const at = String(a.last_order_at ?? "");
-    const bt = String(b.last_order_at ?? "");
-    if (at !== bt) return bt.localeCompare(at);
-    return String(b.created_at ?? "").localeCompare(String(a.created_at ?? ""));
+    switch (sort) {
+      case "lifetime_value":
+        return num(b.lifetime_value) - num(a.lifetime_value);
+      case "orders":
+        return num(b.order_count) - num(a.order_count);
+      case "at_risk":
+        return daysSince(b) - daysSince(a);
+      default: {
+        // `order by o.last_order_at desc nulls last, p.created_at desc`.
+        const at = String(a.last_order_at ?? "");
+        const bt = String(b.last_order_at ?? "");
+        if (at !== bt) return bt.localeCompare(at);
+        return String(b.created_at ?? "").localeCompare(String(a.created_at ?? ""));
+      }
+    }
   });
 
   return filtered.slice(offset, offset + limit).map((row) => {

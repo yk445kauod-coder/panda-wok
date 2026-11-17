@@ -3165,7 +3165,7 @@ export type Database = {
       }
       crm_customer_count: { Args: { p_search?: string }; Returns: number }
       crm_customers: {
-        Args: { p_limit?: number; p_offset?: number; p_search?: string }
+        Args: { p_limit?: number; p_offset?: number; p_search?: string; p_sort?: string }
         Returns: {
           avg_order_value: number
           created_at: string

@@ -50,13 +50,17 @@ export const SEGMENT_VALUE_LABELS: Partial<Record<SegmentKey, string>> = {
 };
 
 /** Customer 360 list. Runs as the service role after a capability check. */
+export type CrmSort = "recent" | "lifetime_value" | "orders" | "at_risk";
+
 export async function listCrmCustomers(params: {
   search?: string;
   limit?: number;
   offset?: number;
+  sort?: CrmSort;
 }): Promise<CrmCustomer[]> {
-  return memo(`crm-customers:${params.search ?? ""}:${params.limit ?? ""}:${params.offset ?? ""}`, () =>
-    loadCrmCustomers(params),
+  return memo(
+    `crm-customers:${params.search ?? ""}:${params.limit ?? ""}:${params.offset ?? ""}:${params.sort ?? ""}`,
+    () => loadCrmCustomers(params),
   );
 }
 
@@ -64,12 +68,14 @@ async function loadCrmCustomers(params: {
   search?: string;
   limit?: number;
   offset?: number;
+  sort?: CrmSort;
 }): Promise<CrmCustomer[]> {
   const admin = createAdminSupabase();
   const { data, error } = await admin.rpc("crm_customers", {
     ...(params.search ? { p_search: params.search } : {}),
     p_limit: params.limit ?? 50,
     p_offset: params.offset ?? 0,
+    p_sort: params.sort ?? "recent",
   });
 
   if (error) throw new Error(`Failed to load customers: ${error.message}`);

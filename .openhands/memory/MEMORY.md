@@ -511,3 +511,24 @@ the dish HTML page (safe: `place_order` validates modifiers server-side).
 
 State: typecheck clean, lint 0 errors (8 pre-existing `no-img-element` warnings), **504 passed / 18
 skipped**, `next build` green.
+
+## CRM customer list paginated, with server-side sort (2026-11-17)
+The CRM home was the one genuinely unbounded flat admin list (`listCrmCustomers({limit:100})`, no offset).
+It is now paged at `DEFAULT_PAGE_SIZE` (25) like orders/feedback/users, with a `Pagination` control.
+
+**The sort had to move server-side.** The page used to sort the 100 rows in the browser; that is only
+correct while every row is on screen. With 25 rows per page a client-side sort would reorder just those
+25 and read as if the whole book were sorted. So `crm_customers` gained a 4th arg `p_sort`
+(`recent | lifetime_value | orders | at_risk`, unknown → `recent`):
+- Postgres: `supabase/migrations/20261117000100_crm_customers_sort.sql` — re-creates the function with a
+  `case`-based `order by` so no dynamic SQL is built from the argument (an unknown value cannot reach an
+  unindexed ordering). **Not applied to the live project yet** — the D1 path is what runs in production
+  (`DATA_BACKEND=d1`), and the D1 shim carries the same change in `src/lib/d1/rpc.ts` (`crmCustomers`).
+- D1 shim: the in-memory sort now switches on `p_sort` before the `slice(offset, limit)`.
+- `listCrmCustomers` takes `sort?: CrmSort`; the route validates against a whitelist and defaults to
+  `lifetime_value` (the page's previous default); the page dropped its client sort and reads `sort`
+  straight from the URL into the fetch.
+`tests/d1-crm-sort.test.ts` (5) pins each ordering and the unknown-value fallback against real SQLite.
+Note the D1 test schema needs `order_number` + `idempotency_key` on an `orders` insert (both NOT NULL).
+
+State: typecheck clean, lint 0 errors (8 pre-existing warnings), **509 passed / 18 skipped**, build green.
