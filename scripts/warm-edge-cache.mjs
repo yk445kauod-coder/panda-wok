@@ -29,10 +29,42 @@ const LOCALES = ["en", "ar"];
 // to remove. The locale lives in the query string here.
 const API_PATHS = ["/api/public/bootstrap", "/api/public/content"];
 
+// Dish detail pages. `/menu/<slug>` is dynamic, so a deploy starts with none of
+// them cached and every one is a cold render the first time a visitor opens it.
+// The slugs come from the bootstrap payload the warm step already fetches, so
+// this adds no extra origin read — it just walks the pages it already knows
+// exist. Bounded so a runaway catalogue cannot turn the warm step into a
+// traffic storm.
+const DISH_WARM_LIMIT = 400;
+
 const localised = (path, locale) => `/${locale}${path === "/" ? "" : path}`;
 const ATTEMPTS = 4;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Every dish slug in the catalogue, read from the already-warmed bootstrap. */
+async function dishSlugs(locale) {
+  try {
+    const res = await fetch(`${BASE}/api/public/bootstrap?locale=${locale}`, {
+      headers: { "user-agent": "panda-wok-cache-warm" },
+    });
+    if (!res.ok) return [];
+    const payload = await res.json();
+    const menu = payload?.data?.menu ?? {};
+    const slugs = new Set();
+    for (const category of menu.categories ?? []) {
+      for (const item of category.items ?? []) {
+        if (item?.slug) slugs.add(item.slug);
+      }
+    }
+    for (const item of menu.items ?? []) {
+      if (item?.slug) slugs.add(item.slug);
+    }
+    return [...slugs].slice(0, DISH_WARM_LIMIT);
+  } catch {
+    return [];
+  }
+}
 
 const isFailure = (res, body) =>
   res.status !== 200 || /exceeded resource limits|Error 1102/i.test(body);
@@ -81,6 +113,17 @@ for (const locale of LOCALES) {
     const ok = await warm(`${locale} ${path}`, `${path}?locale=${locale}`);
     if (!ok) failures += 1;
     await sleep(600);
+  }
+  // Dish detail pages, now that bootstrap is cached and can name them. A shorter
+  // pause: each render is small and the cache now absorbs repeats.
+  const slugs = await dishSlugs(locale);
+  if (slugs.length > 0) {
+    console.log(`  ${locale}: warming ${slugs.length} dish page(s)`);
+    for (const slug of slugs) {
+      const ok = await warm(`${locale} /menu/${slug}`, localised(`/menu/${slug}`, locale));
+      if (!ok) failures += 1;
+      await sleep(400);
+    }
   }
 }
 

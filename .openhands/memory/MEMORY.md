@@ -532,3 +532,27 @@ correct while every row is on screen. With 25 rows per page a client-side sort w
 Note the D1 test schema needs `order_number` + `idempotency_key` on an `orders` insert (both NOT NULL).
 
 State: typecheck clean, lint 0 errors (8 pre-existing warnings), **509 passed / 18 skipped**, build green.
+
+## Dish pages were the last cold-render 1102 surface (2026-11-17)
+`/[lang]/menu/[slug]` was `force-static` but had **no `generateStaticParams`**, so none of its
+~90 slugs × 2 locales were built. The route is a constant spinner shell (the slug only reaches the
+client via the RSC router params), yet each URL was a **cold on-demand render** the first time anyone
+opened it — and a cold render is exactly what exceeds the Free plan's 10 ms CPU ceiling. Proven with a
+concurrent burst: `error code: 1102` on `new-style-philadelphia-4-pieces` while sibling slugs answered
+200. The slug is embedded in the RSC payload (`[\"\",\"en\",\"menu\",\"meal-1\"]`), so one shared cache
+key per locale would be wrong — the fix is to build the shells, not to alias their keys.
+
+Fix: `generateStaticParams` on the dish page returns every category + item slug × locale, read from
+`getMenuSlugs()` (the bundled last-known-good catalogue, so a restricted DB cannot fail the build; a
+try/catch returns `[]` and the page still renders on demand). `next build` now prerenders **212** slug
+paths and they ship as `cdn-cgi/_next_cache/<build>/<locale>/menu/<slug>.cache` (106 per locale) — the
+static-assets incremental cache, read with no KV and no Worker render.
+
+Also extended `scripts/warm-edge-cache.mjs` to walk dish pages after the fixed set, discovering slugs
+from the already-warmed `/api/public/bootstrap` (no extra origin read). **Warm sequentially with a
+pause** — a tight concurrent warm itself triggers 1102 (`503`/`500` on the same cold slugs). Bounded to
+`DISH_WARM_LIMIT = 400`.
+
+Verified live after deploy: all 174 dish URLs (87 × 2) answered 200 under a single concurrent burst, the
+60-request mixed public burst was 60/200, `/admin` 8/200, and dish HTML is `x-edge-cache: HIT` with
+`s-maxage=600`. `next build` green, typecheck clean, 509 passed / 18 skipped, lint 0 errors.
