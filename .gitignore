@@ -53,3 +53,6 @@ supabase-recovery/
 
 # Supabase recovery archive: contains DB rows and user records — never publish
 supabase-complete-backup.zip
+
+# wrangler local dev vars (secrets)
+.dev.vars

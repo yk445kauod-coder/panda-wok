@@ -33,13 +33,6 @@ describe("text fields state their colour", () => {
     expect(css).toMatch(/input::placeholder,\s*textarea::placeholder\s*\{/s);
   });
 
-  it("the customer assistant input states it in its own class too", () => {
-    const source = readFileSync("src/components/panda/assistant.tsx", "utf8");
-    const classes = source.match(/className="h-11 flex-1[^"]*"/)?.[0];
-    expect(classes, "assistant input class not found").toBeTruthy();
-    expect(classes).toMatch(/text-ink-900/);
-  });
-
   it("the admin gate passcode field states it in its own class too", () => {
     const source = readFileSync("src/components/admin/admin-gate-form.tsx", "utf8");
     expect(source).toMatch(/text-ink-900/);

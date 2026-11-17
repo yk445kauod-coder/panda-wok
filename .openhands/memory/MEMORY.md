@@ -341,3 +341,24 @@
   exclude can't help) and 258×503 `/admin/orders` (Free 10 ms CPU cold starts).
 - The funnel fix (82ee831) removes only ~35k rows/load on the analytics page — a minor part of the
   request count. It was NOT the main cause of the quota crisis.
+
+## Dish-photo store is DBByte **S3** now, not the REST gateway (2026-11-16)
+Both sides speak the standard S3 protocol via **`aws4fetch`** (~1 KB, zero deps, Web
+Crypto — works in a Worker and a Next server action alike; do NOT pull in
+`@aws-sdk/client-s3`, it is only transitive and too heavy for the 10 ms media worker).
+- Upload: `src/lib/actions/storage.ts` → signed `PUT` to `s3.dbbyte.com/panda-wok-media/<name>`.
+- Read: `workers/media-proxy/src/index.ts` → signed `GET` of the same path; header is
+  `x-media-source: dbbyte-s3`. Cache/purge/health/name-validation unchanged.
+- Env: `DBBYTE_ENDPOINT=https://s3.dbbyte.com`, `DBBYTE_ACCESS_KEY_ID` (`dbs_...`, a
+  plain var) and `DBBYTE_SECRET_ACCESS_KEY` (`dbk_...`, a secret). The old
+  `DBBYTE_KEY` is gone. Region `us-east-1`, `forcePathStyle: true`.
+- **The secret key is the 52-character form** (`dbk_…`); a truncated key gives
+  `SignatureDoesNotMatch`.
+- **The bucket is private** (unsigned GET = 403) — the worker's signature is the only
+  public read path. Never make the bucket public to "fix" a 403.
+- Deploy: `deploy-pages.yml` pushes the secret onto **both** the media Worker and the
+  Pages project from the repo secret `DBBYTE_SECRET_ACCESS_KEY` (warns, not fails, when
+  unset). An owner must add that repo secret; `secrets: write` is 403 here.
+- The 90 legacy Supabase-Storage photos are **not** migrated: `responsive.ts` still
+  rewrites their URLs to the worker, which now reads the S3 bucket, so they stay broken
+  until pulled from Supabase and `PutObject`ed under the same names.

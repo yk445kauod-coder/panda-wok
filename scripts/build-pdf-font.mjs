@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build `src/lib/agent/pdf-font.generated.ts` — the font embedded in generated PDFs.
+ * Build `src/lib/office/pdf-font.generated.ts` — the font embedded in generated PDFs.
  *
  * PDF does not shape text and a Worker cannot rasterise, so the PDF writer needs
  * three things as data at runtime: the font file itself, a codepoint -> glyph-id
@@ -8,7 +8,7 @@
  * committed, so the Worker never parses a font and never downloads one.
  *
  * The source font must cover the Arabic block AND the Arabic Presentation Forms-B
- * block, because `src/lib/agent/arabic.ts` pre-shapes letters into those forms
+ * block, because `src/lib/office/arabic.ts` pre-shapes letters into those forms
  * before they reach the PDF. DejaVu Sans covers both, in one file, so a report
  * does not need a second embedded font for its Latin and numeric runs.
  *
@@ -20,7 +20,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = join(ROOT, "src/lib/agent/pdf-font.generated.ts");
+const OUT = join(ROOT, "src/lib/office/pdf-font.generated.ts");
 const TMP = join(ROOT, ".pdf-font-tmp");
 
 const SOURCE_CANDIDATES = [
@@ -96,7 +96,7 @@ missing = [cp for cp in codepoints if cp not in entries]
 # Only the presentation forms matter: the PDF writer pre-shapes Arabic into
 # those, so a gap in the base block (U+0600..) is harmless while a gap in the
 # shaped range renders a letter as a blank box. The check is scoped to
-# FE80..FEFC — the range src/lib/agent/arabic.ts can emit — because FE75,
+# FE80..FEFC — the range src/lib/office/arabic.ts can emit — because FE75,
 # FEFD and FEFE are unassigned codepoints that no font carries.
 forms = [cp for cp in range(0xfe80, 0xfefd) if cp in codepoints]
 missing_forms = [cp for cp in forms if cp not in entries]

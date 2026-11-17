@@ -5,7 +5,6 @@ import { StoreDataProvider } from "@/components/customer/store-data";
 import { PageEnter } from "@/components/layout/page-enter";
 import { SiteChrome } from "@/components/layout/site-chrome";
 import { ViewerProvider } from "@/components/layout/viewer-provider";
-import { AssistantProvider } from "@/components/panda/assistant-context";
 import { I18nProvider } from "@/components/i18n-provider";
 import { DocumentLocale } from "@/components/layout/document-locale";
 import { ToastProvider } from "@/components/ui/toast";
@@ -69,7 +68,6 @@ export default async function LocaleLayout({
         <ConfirmProvider>
           <StoreDataProvider locale={locale}>
             <ViewerProvider>
-              <AssistantProvider>
                 <CartProvider>
                   <div dir={dirFor(locale)} lang={locale} data-locale={locale} className="contents">
                     <div className="flex min-h-dvh flex-col">
@@ -80,7 +78,6 @@ export default async function LocaleLayout({
                     </div>
                   </div>
                 </CartProvider>
-              </AssistantProvider>
             </ViewerProvider>
           </StoreDataProvider>
         </ConfirmProvider>

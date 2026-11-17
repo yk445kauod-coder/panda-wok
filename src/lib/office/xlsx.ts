@@ -1,7 +1,7 @@
 import "server-only";
 
-import { columnName, xmlEscape, xmlText, zip, type ZipEntry } from "@/lib/agent/ooxml";
-import { isRtl } from "@/lib/agent/arabic";
+import { columnName, xmlEscape, xmlText, zip, type ZipEntry } from "@/lib/office/ooxml";
+import { isRtl } from "@/lib/office/arabic";
 
 /**
  * Real `.xlsx` workbooks, written directly.

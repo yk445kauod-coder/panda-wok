@@ -7,12 +7,14 @@
     "enabled": true
   },
   // Secrets (set with `wrangler secret put`, never in this file):
-  //   DBBYTE_KEY   — the `dbk_...` API key for the media bucket.
+  //   DBBYTE_SECRET_ACCESS_KEY — the `dbk_...` secret access key for the bucket.
   "vars": {
-    // DBByte REST gateway. Not a secret; the bucket and key are.
-    "DBBYTE_ENDPOINT": "https://api.dbbyte.com",
+    // DBByte S3 endpoint. Not a secret; the bucket and keys are.
+    "DBBYTE_ENDPOINT": "https://s3.dbbyte.com",
     // The one bucket this worker reads from.
     "DBBYTE_BUCKET": "panda-wok-media",
+    // `dbs_...` access key id. An identifier, not the secret half of the pair.
+    "DBBYTE_ACCESS_KEY_ID": "dbs_f5595e9219c54ff1f9bc473c",
     // The site's own origin, so only the site (and the browser) may use the proxy.
     "SITE_ORIGIN": "https://panda-wok.pages.dev"
   }

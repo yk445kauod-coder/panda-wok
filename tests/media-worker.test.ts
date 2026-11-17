@@ -24,9 +24,10 @@ const STORAGE = `https://xjbtsryidznsxqlynmfa.supabase.co/storage/v1/object/publ
 const WORKER = `https://panda-wok-media.yk445kauod.workers.dev/media/${NAME}`;
 
 const baseEnv = {
-  DBBYTE_ENDPOINT: "https://api.dbbyte.com",
+  DBBYTE_ENDPOINT: "https://s3.dbbyte.com",
   DBBYTE_BUCKET: "panda-wok-media",
-  DBBYTE_KEY: "dbk_test",
+  DBBYTE_ACCESS_KEY_ID: "dbs_test_key_id",
+  DBBYTE_SECRET_ACCESS_KEY: "dbk_test",
   SITE_ORIGIN: "https://panda-wok.pages.dev",
 };
 
@@ -71,8 +72,8 @@ describe("dish photos are served by the media worker, not Supabase", () => {
   });
 });
 
-describe("the media worker reads DBByte", () => {
-  it("fetches the object from DBByte and streams it back", async () => {
+describe("the media worker reads DBByte over S3", () => {
+  it("signs a GET against the S3 endpoint and streams the object back", async () => {
     const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
@@ -82,13 +83,15 @@ describe("the media worker reads DBByte", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("image/png");
-    expect(res.headers.get("x-media-source")).toBe("dbbyte");
+    expect(res.headers.get("x-media-source")).toBe("dbbyte-s3");
     expect(res.headers.get("cache-control")).toContain("max-age=31536000");
-    const [url, init] = fetchSpy.mock.calls[0];
-    expect(String(url)).toBe(`https://api.dbbyte.com/storage/panda-wok-media/download/${NAME}`);
-    expect((init as RequestInit | undefined)?.headers).toMatchObject({
-      authorization: "Bearer dbk_test",
-    });
+    // aws4fetch signs in-process and then calls the global fetch with the signed
+    // request; the URL is the plain S3 object path and the Authorization header
+    // carries the SigV4 signature.
+    const [request] = fetchSpy.mock.calls[0];
+    const signed = request as unknown as Request;
+    expect(signed.url).toBe(`https://s3.dbbyte.com/panda-wok-media/${NAME}`);
+    expect(signed.headers.get("authorization")).toContain("AWS4-HMAC-SHA256");
   });
 
   it("never caches an upstream failure", async () => {
@@ -131,16 +134,17 @@ describe("the media worker reads DBByte", () => {
 });
 
 describe("the media worker is its own deployment, off the site worker", () => {
-  it("has its own wrangler config pinned to the DBByte bucket", () => {
+  it("has its own wrangler config pinned to the DBByte S3 bucket", () => {
     const cfg = read("workers/media-proxy/wrangler.jsonc");
     expect(cfg).toContain('"panda-wok-media"');
     expect(cfg).toContain("DBBYTE_BUCKET");
+    expect(cfg).toContain("s3.dbbyte.com");
     expect(cfg).not.toContain("SUPABASE_ORIGIN");
   });
 
-  it("holds the DBByte key as a secret, never a var", () => {
+  it("holds the DBByte secret key as a secret, never a var", () => {
     const cfg = read("workers/media-proxy/wrangler.jsonc");
-    expect(cfg).not.toMatch(/"DBBYTE_KEY"\s*:/);
+    expect(cfg).not.toMatch(/"DBBYTE_SECRET_ACCESS_KEY"\s*:/);
   });
 
   it("is not imported by the site's Pages worker", () => {

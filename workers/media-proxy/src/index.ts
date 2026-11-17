@@ -10,19 +10,29 @@
  * `fetch` piped straight through. A menu page with 48 photos therefore costs the
  * site worker *nothing* for the images.
  *
- * Reads only, public GET. The DBByte key lives here as a Worker secret, so the
- * browser never sees it and the object store stays private. The object name is
- * checked against a strict pattern, so the worker cannot be used as an open
- * proxy.
+ * Reads only, public GET. The bucket is private: each read is SigV4-signed with
+ * the S3 key held here as a Worker secret, so the browser never sees the key and
+ * the object store stays closed. The object name is checked against a strict
+ * pattern, so the worker cannot be used as an open proxy.
  */
 
+import { AwsClient } from "aws4fetch";
+
 export interface Env {
-  /** DBByte REST gateway. Not a secret; overridable per environment. */
+  /** DBByte S3 endpoint. Not a secret; overridable per environment. */
   DBBYTE_ENDPOINT?: string;
   /** The one bucket this worker reads from. */
   DBBYTE_BUCKET: string;
-  /** `dbk_...` API key. A Worker secret — never shipped to the browser. */
-  DBBYTE_KEY: string;
+  /** `dbs_...` access key id. Not secret by itself, but paired with the key below. */
+  DBBYTE_ACCESS_KEY_ID: string;
+  /** `dbk_...` secret access key. A Worker secret — never shipped to the browser. */
+  DBBYTE_SECRET_ACCESS_KEY: string;
+  /**
+   * Legacy name from the REST-gateway era. It is the same `dbk_...` value, so an
+   * environment that still carries it keeps serving photos across the S3 switch
+   * without a second secret having to be provisioned.
+   */
+  DBBYTE_KEY?: string;
   /** The site's own origin, so only the site (and the browser) may use the proxy. */
   SITE_ORIGIN?: string;
 }
@@ -68,7 +78,7 @@ const worker = {
     // cache entry.
     if (request.method === "POST" && url.pathname === "/purge") {
       const auth = request.headers.get("authorization") ?? "";
-      if (auth !== `Bearer ${env.DBBYTE_KEY}`) {
+      if (auth !== `Bearer ${secretKey(env)}`) {
         return new Response("Forbidden", { status: 403 });
       }
       const name = url.searchParams.get("name") ?? "";
@@ -106,15 +116,22 @@ const worker = {
       if (hit) return withStatus(hit, "HIT");
     }
 
-    // DBByte serves an object by its name at `/storage/<bucket>/download/<name>`.
-    // The key never leaves the server.
-    const origin = `${dbbyteEndpoint(env)}/storage/${encodeURIComponent(
+    // DBByte speaks the S3 protocol: an object is a plain GET of
+    // `<endpoint>/<bucket>/<name>`, SigV4-signed. The bucket is private, so the
+    // signature is what authorises the read; the key never leaves the server.
+    const s3 = new AwsClient({
+      accessKeyId: env.DBBYTE_ACCESS_KEY_ID,
+      secretAccessKey: secretKey(env),
+      service: "s3",
+      region: S3_REGION,
+    });
+    const origin = `${dbbyteEndpoint(env)}/${encodeURIComponent(
       env.DBBYTE_BUCKET,
-    )}/download/${encodeURIComponent(name)}`;
+    )}/${encodeURIComponent(name)}`;
 
     let upstream: Response;
     try {
-      upstream = await fetch(origin, { headers: { authorization: `Bearer ${env.DBBYTE_KEY}` } });
+      upstream = await s3.fetch(origin, { method: "GET" });
     } catch {
       return new Response("Image unavailable", {
         status: 502,
@@ -146,9 +163,21 @@ const worker = {
   },
 };
 
-/** The DBByte REST gateway, default filled in and trailing slashes trimmed. */
+/** The DBByte S3 endpoint, default filled in and trailing slashes trimmed. */
 function dbbyteEndpoint(env: Env): string {
-  return (env.DBBYTE_ENDPOINT ?? "https://api.dbbyte.com").replace(/\/+$/, "");
+  return (env.DBBYTE_ENDPOINT ?? "https://s3.dbbyte.com").replace(/\/+$/, "");
+}
+
+/** DBByte's S3 signature region. Fixed by the provider, not per deployment. */
+const S3_REGION = "us-east-1";
+
+/**
+ * The `dbk_...` secret. `DBBYTE_KEY` is the legacy name carried over from the
+ * REST-gateway era — the same value — so a Worker that has not yet been given
+ * the new secret keeps signing reads instead of 502ing on every photo.
+ */
+function secretKey(env: Env): string {
+  return env.DBBYTE_SECRET_ACCESS_KEY ?? env.DBBYTE_KEY ?? "";
 }
 
 /**
@@ -168,7 +197,7 @@ function cacheStore(): Cache | null {
 
 function withStatus(response: Response, status: string): Response {
   const headers = new Headers(response.headers);
-  headers.set("x-media-source", "dbbyte");
+  headers.set("x-media-source", "dbbyte-s3");
   headers.set("x-media-cache", status);
   return new Response(response.body, { status: response.status, headers });
 }

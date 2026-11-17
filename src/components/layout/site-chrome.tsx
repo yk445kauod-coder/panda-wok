@@ -2,7 +2,6 @@
 
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SiteFooter, SiteHeader } from "@/components/layout/site-shell";
-import { SiteWidgets } from "@/components/layout/site-widgets";
 import { AnalyticsBeacon } from "@/components/customer/analytics-beacon";
 import { MetaPixel } from "@/components/customer/meta-pixel";
 import { StructuredData } from "@/components/customer/structured-data";
@@ -26,9 +25,6 @@ export function SiteChrome({ locale }: { locale: Locale }) {
       <SiteHeader brand={brand} flags={flags} locale={locale} />
       <SiteFooter brand={brand} contact={contact} locale={locale} />
       {flags["nav.bottom"] !== false ? <BottomNav flags={flags} /> : null}
-      {flags.assistant !== false && (settings?.ai.assistantEnabled ?? true) ? (
-        <SiteWidgets brandName={brand.name} disclosure={settings?.ai.disclosure ?? ""} />
-      ) : null}
       <AnalyticsBeacon enabled={flags.analytics !== false} />
       <MetaPixel pixelId={settings?.marketing.metaPixelId ?? null} />
       <StructuredData locale={locale} />

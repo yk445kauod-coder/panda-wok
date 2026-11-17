@@ -16,6 +16,12 @@
 #                             fails; the build step still succeeds.
 # Optional repository variable:
 #   CLOUDFLARE_ACCOUNT_ID
+#   DBBYTE_ACCESS_KEY_ID    — `dbs_...`; defaults to the committed id below.
+# Recommended repository secret:
+#   DBBYTE_SECRET_ACCESS_KEY — `dbk_...`. Pushed onto both the media Worker and
+#                              the Pages project. Without it dish-photo uploads
+#                              report "Photo storage is not configured" and the
+#                              media worker 502s; the deploy still succeeds.
 #
 # NEXT_PUBLIC_SUPABASE_ANON_KEY is NOT a required secret: it is the publishable
 # key, which ships to every browser by design, so it falls back to a literal
@@ -82,7 +88,22 @@ jobs:
       # The dish-photo store. Deployed separately from the site: it is a few
       # kilobytes with no Next bundle, so an image request never touches the
       # site worker's 10 ms CPU budget. `--config` points at its own
-      # wrangler.jsonc; its DBBYTE_KEY secret lives on the Worker, not here.
+      # wrangler.jsonc; its DBBYTE_SECRET_ACCESS_KEY secret lives on the Worker,
+      # not here (the access key id is a plain var in that file).
+      - name: Set the media worker's S3 secret
+        if: steps.target.outputs.branch == 'feature/panda-wok-platform'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          DBBYTE_SECRET_ACCESS_KEY: ${{ secrets.DBBYTE_SECRET_ACCESS_KEY }}
+        run: |
+          if [ -z "$DBBYTE_SECRET_ACCESS_KEY" ]; then
+            echo "::warning::DBBYTE_SECRET_ACCESS_KEY repo secret is unset — the media worker will 502 on every photo."
+            exit 0
+          fi
+          printf '%s' "$DBBYTE_SECRET_ACCESS_KEY" | \
+            npx wrangler secret put DBBYTE_SECRET_ACCESS_KEY --config workers/media-proxy/wrangler.jsonc
+
       - name: Deploy the media worker
         if: steps.target.outputs.branch == 'feature/panda-wok-platform'
         uses: cloudflare/wrangler-action@v3
@@ -90,6 +111,26 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --config workers/media-proxy/wrangler.jsonc
+
+      # The site's upload action reads the same pair off the Pages runtime, so
+      # they are pushed onto the Pages project too — a dish photo cannot be
+      # uploaded without them.
+      - name: Sync dish-photo storage secrets to Pages
+        if: steps.target.outputs.branch == 'feature/panda-wok-platform'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          DBBYTE_ACCESS_KEY_ID: ${{ vars.DBBYTE_ACCESS_KEY_ID }}
+          DBBYTE_SECRET_ACCESS_KEY: ${{ secrets.DBBYTE_SECRET_ACCESS_KEY }}
+        run: |
+          if [ -z "$DBBYTE_SECRET_ACCESS_KEY" ]; then
+            echo "::warning::DBBYTE_SECRET_ACCESS_KEY repo secret is unset — the admin upload button will report 'Photo storage is not configured'."
+            exit 0
+          fi
+          printf '%s' "${DBBYTE_ACCESS_KEY_ID:-dbs_f5595e9219c54ff1f9bc473c}" | \
+            npx wrangler pages secret put DBBYTE_ACCESS_KEY_ID --project-name=panda-wok
+          printf '%s' "$DBBYTE_SECRET_ACCESS_KEY" | \
+            npx wrangler pages secret put DBBYTE_SECRET_ACCESS_KEY --project-name=panda-wok
 
       - name: Warm the edge cache
         if: steps.target.outputs.branch == 'feature/panda-wok-platform'

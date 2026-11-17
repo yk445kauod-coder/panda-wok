@@ -26,7 +26,6 @@ export const ar: Dictionary = {
     reachKitchen: "تواصل مع المطبخ",
     brandHome: "الرئيسية — {brand}",
     askPanda: "اسأل باندا",
-    askPandaAssistant: "مساعد {brand}",
     location: "الموقع",
     faq: "الأسئلة الشائعة",
     privacy: "الخصوصية",
@@ -749,18 +748,6 @@ export const ar: Dictionary = {
     placeholders: {
       phoneEmailNote: "عنصر نائب",
     },
-  },
-  assistant: {
-    title: "اسأل باندا",
-    open: "افتح المساعد",
-    close: "إغلاق المساعد",
-    placeholder: "اسأل عن القائمة أو مسببات الحساسية أو التوصيل…",
-    send: "إرسال",
-    sending: "جارٍ الإرسال…",
-    newConversation: "ابدأ محادثة جديدة",
-    disclosure: "الردود يولّدها مساعد ذكاء اصطناعي.",
-    error: "لم يتمكن المساعد من الرد الآن. يرجى المحاولة مرة أخرى.",
-    emptyState: "اسألنا عن القائمة أو طلبك.",
   },
   status: {
     new: "جديد",

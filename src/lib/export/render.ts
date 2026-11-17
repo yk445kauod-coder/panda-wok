@@ -1,6 +1,6 @@
 import "server-only";
 
-import { buildWorkbook, type Sheet, type SheetCell } from "@/lib/agent/xlsx";
+import { buildWorkbook, type Sheet, type SheetCell } from "@/lib/office/xlsx";
 import type { ExportDataset } from "@/lib/export/build";
 
 /**

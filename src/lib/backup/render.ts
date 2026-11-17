@@ -1,6 +1,6 @@
 import "server-only";
 
-import { buildWorkbook, type Sheet, type SheetRow } from "@/lib/agent/xlsx";
+import { buildWorkbook, type Sheet, type SheetRow } from "@/lib/office/xlsx";
 import { formatNumber } from "@/lib/utils/format";
 
 /**
