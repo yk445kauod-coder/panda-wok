@@ -141,8 +141,10 @@ export function shouldWakeBoards(state: {
  * not changed. The alert watcher is unaffected: the store notifies it on every
  * tick.
  */
-async function readPending(forceBoards = false): Promise<void> {
-  if (inflight) return;
+async function readPending(forceBoards = false): Promise<boolean> {
+  // A read already in flight is neither a success nor a failure: report `true`
+  // so the poll cadence is not backed off for a tick it simply coalesced into.
+  if (inflight) return true;
   inflight = true;
   try {
     const response = await fetch("/api/admin/alerts", {
@@ -153,20 +155,25 @@ async function readPending(forceBoards = false): Promise<void> {
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("panda-wok:locked"));
       }
-      return;
+      // An expired gate is a deliberate stop, not a transient failure, so it
+      // must not back the poll off — the user is being redirected to unlock.
+      return true;
     }
-    if (!response.ok) return;
+    if (!response.ok) return false;
     const payload = (await response.json()) as { ok: boolean; data?: OrderAlert[] };
-    if (!payload.ok || !store) return;
+    if (!payload.ok || !store) return false;
     const next = payload.data ?? [];
     const changed = pendingSignature(store.pending) !== pendingSignature(next);
     store.pending = next;
     store.loaded = true;
     for (const notify of store.subscribers) notify();
     if (shouldWakeBoards({ changed, forceBoards, live: getOpsLive() })) dispatchLive();
+    return true;
   } catch {
-    // A dropped read is not a reason to tear the console down: the next tick
-    // (or the socket) retries, and the boards keep whatever they last had.
+    // A dropped read is not a reason to tear the console down: the poll helper
+    // backs the next tick off, and the socket (or the next tick) retries. The
+    // boards keep whatever they last had.
+    return false;
   } finally {
     inflight = false;
   }
@@ -191,9 +198,11 @@ export function refreshOpsNow(): void {
   }, 300);
 }
 
-function tick(): void {
+function tick(): Promise<boolean> {
   // A tick is a poll, not a push: the boards re-read only if the queue moved.
-  void readPending(false);
+  // The result flows back to `startVisiblePoll`, which backs the cadence off on
+  // a failed read.
+  return readPending(false);
 }
 
 function startPolling(): void {

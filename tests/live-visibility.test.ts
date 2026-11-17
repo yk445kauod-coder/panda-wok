@@ -143,4 +143,71 @@ describe("startVisiblePoll", () => {
     expect(live).toHaveLength(1);
     expect(live[0].ms).toBe(60000);
   });
+
+  it("backs the cadence off while the origin keeps failing, then resets on success", () => {
+    const tick = vi.fn(() => false);
+    const h = harness();
+    // Jitter disabled so the growth is deterministic for the assertion.
+    startVisiblePoll(tick, 8000, h.source, h.host, { jitter: 0 });
+
+    expect(h.intervals[0].ms).toBe(8000);
+    // First failure: the next interval doubles.
+    h.fireLatest();
+    expect(h.intervals.filter((i) => !i.cleared).at(-1)?.ms).toBe(16000);
+    // Second failure: it doubles again.
+    h.fireLatest();
+    expect(h.intervals.filter((i) => !i.cleared).at(-1)?.ms).toBe(32000);
+
+    // A success resets the cadence to the base interval.
+    tick.mockReturnValue(true);
+    h.fireLatest();
+    expect(h.intervals.filter((i) => !i.cleared).at(-1)?.ms).toBe(8000);
+  });
+
+  it("caps the backoff instead of backing off without bound", () => {
+    const tick = vi.fn(() => false);
+    const h = harness();
+    startVisiblePoll(tick, 8000, h.source, h.host, { jitter: 0, maxIntervalMs: 20000 });
+
+    for (let i = 0; i < 6; i += 1) h.fireLatest();
+    const live = h.intervals.filter((i) => !i.cleared);
+    // The cap is the ceiling, so the cadence settles rather than stopping.
+    expect(live.at(-1)?.ms).toBe(20000);
+  });
+
+  it("treats a rejected tick as a failure and a plain void tick as a success", async () => {
+    const failing = vi.fn(() => Promise.reject(new Error("network")));
+    const h = harness();
+    startVisiblePoll(failing, 8000, h.source, h.host, { jitter: 0 });
+    h.fireLatest();
+    // Let the rejection settle before the next re-arm reads `failures`.
+    await Promise.resolve();
+    await Promise.resolve();
+    h.fireLatest();
+    expect(h.intervals.filter((i) => !i.cleared).at(-1)?.ms).toBe(16000);
+
+    // A tick that returns nothing is a success — the pre-backoff contract, so a
+    // plain poller never backs off.
+    const plain = vi.fn();
+    const h2 = harness();
+    startVisiblePoll(plain, 8000, h2.source, h2.host, { jitter: 0 });
+    h2.fireLatest();
+    h2.fireLatest();
+    expect(h2.intervals.filter((i) => !i.cleared).at(-1)?.ms).toBe(8000);
+  });
+
+  it("clears the backoff when the tab returns to the foreground", () => {
+    const tick = vi.fn(() => false);
+    const h = harness();
+    startVisiblePoll(tick, 8000, h.source, h.host, { jitter: 0 });
+
+    h.fireLatest();
+    h.fireLatest();
+    // Two failures have grown the cadence; a return to the foreground is a fresh
+    // signal and must try the base cadence again.
+    h.setVisible(false);
+    tick.mockReturnValue(true);
+    h.setVisible(true);
+    expect(h.intervals.filter((i) => !i.cleared).at(-1)?.ms).toBe(8000);
+  });
 });

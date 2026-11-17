@@ -4,13 +4,17 @@ import {
   ADMIN_SHELL_CACHE_CONTROL,
   EDGE_CACHE_CONTROL,
   adminShellCacheUrl,
+  apiCacheKeys,
   cacheKeysFor,
   isAdminShellPath,
   isAdminShellRequest,
+  isCacheableApiPath,
+  isCacheableApiRequest,
   isCacheablePath,
   isCacheableRequest,
   purgePublicCache,
   shouldPurgeAfter,
+  toApiCacheUrl,
   toCacheUrl,
 } from "../scripts/pages/edge-cache.js";
 
@@ -66,6 +70,13 @@ describe("isCacheableRequest", () => {
   it("never caches a signed-in visitor (any Supabase session cookie)", () => {
     expect(isCacheableRequest({ ...anon, cookieNames: ["sb-xjb-auth-token"] })).toBe(false);
     expect(isCacheableRequest({ ...anon, cookieNames: ["sb-xjb-auth-token.0"] })).toBe(false);
+  });
+
+  it("never caches a signed-in visitor on the D1 session cookie", () => {
+    // The app issues `pw-auth-token`, not the Supabase name. Missing it here
+    // treats a signed-in visitor as anonymous and can store their page publicly.
+    expect(isCacheableRequest({ ...anon, cookieNames: ["pw-auth-token"] })).toBe(false);
+    expect(isCacheableRequest({ ...anon, cookieNames: ["pw-auth-token.0"] })).toBe(false);
   });
 
   it("never caches the admin console", () => {
@@ -222,5 +233,86 @@ describe("ADMIN_SHELL_CACHE_CONTROL", () => {
   it("is edge-cached with a bounded fresh window and no browser caching", () => {
     expect(ADMIN_SHELL_CACHE_CONTROL).toContain("s-maxage=300");
     expect(ADMIN_SHELL_CACHE_CONTROL).toContain("max-age=0");
+  });
+});
+
+/**
+ * The public JSON reads back every static customer shell. Leaving them uncached
+ * puts the whole catalogue cost back on the origin on every page view — the
+ * request shape that exceeds the Free plan's 10 ms CPU cap (Error 1102). These
+ * pin that the safe ones are cacheable and the private ones never are.
+ */
+describe("isCacheableApiPath", () => {
+  it("allows the public storefront reads", () => {
+    expect(isCacheableApiPath("/api/public/bootstrap")).toBe(true);
+    expect(isCacheableApiPath("/api/public/content")).toBe(true);
+    expect(isCacheableApiPath("/api/public/menu/ramen")).toBe(true);
+  });
+
+  it("never allows a per-customer read or a write", () => {
+    expect(isCacheableApiPath("/api/public/me/notifications")).toBe(false);
+    expect(isCacheableApiPath("/api/public/me/checkout")).toBe(false);
+    expect(isCacheableApiPath("/api/public/me/orders")).toBe(false);
+    expect(isCacheableApiPath("/api/analytics")).toBe(false);
+    expect(isCacheableApiPath("/api/admin/session")).toBe(false);
+  });
+
+  it("does not match a lookalike prefix", () => {
+    expect(isCacheableApiPath("/api/public/bootstrapX")).toBe(false);
+    expect(isCacheableApiPath("/api/public/menu")).toBe(false);
+  });
+});
+
+describe("isCacheableApiRequest", () => {
+  const api = {
+    method: "GET",
+    pathname: "/api/public/bootstrap",
+    search: "?locale=en",
+    cookieNames: [],
+  };
+
+  it("caches an anonymous public JSON GET", () => {
+    expect(isCacheableApiRequest(api)).toBe(true);
+  });
+
+  it("never caches a request carrying a session or the admin cookie", () => {
+    expect(isCacheableApiRequest({ ...api, cookieNames: ["pw-auth-token"] })).toBe(false);
+    expect(isCacheableApiRequest({ ...api, cookieNames: ["pw-auth-token.0"] })).toBe(false);
+    expect(isCacheableApiRequest({ ...api, cookieNames: ["panda-wok.admin"] })).toBe(false);
+  });
+
+  it("does not cache non-GET, RSC, prefetch or authorised requests", () => {
+    expect(isCacheableApiRequest({ ...api, method: "POST" })).toBe(false);
+    expect(isCacheableApiRequest({ ...api, hasRscHeader: true })).toBe(false);
+    expect(isCacheableApiRequest({ ...api, hasPrefetchHeader: true })).toBe(false);
+    expect(isCacheableApiRequest({ ...api, hasAuthorization: true })).toBe(false);
+  });
+
+  it("does not cache a private path even when anonymous", () => {
+    expect(isCacheableApiRequest({ ...api, pathname: "/api/public/me/orders" })).toBe(false);
+  });
+});
+
+describe("toApiCacheUrl", () => {
+  it("keys by the query string, so the locales never collide", () => {
+    expect(toApiCacheUrl("/api/public/bootstrap", "?locale=en")).not.toBe(
+      toApiCacheUrl("/api/public/bootstrap", "?locale=ar"),
+    );
+    expect(toApiCacheUrl("/api/public/bootstrap", "?locale=en")).toBe(
+      "https://edge.cache.internal/api/public/bootstrap?locale=en",
+    );
+  });
+});
+
+describe("purge covers the public JSON reads", () => {
+  it("deletes the bootstrap and content keys for both locales", async () => {
+    const deleted: string[] = [];
+    await purgePublicCache({ delete: async (r: Request) => (deleted.push(r.url), true) });
+    for (const key of apiCacheKeys()) {
+      expect(deleted, key).toContain(key);
+    }
+    expect(apiCacheKeys()).toContain(
+      toApiCacheUrl("/api/public/bootstrap", "?locale=ar"),
+    );
   });
 });

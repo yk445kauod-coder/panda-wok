@@ -4,9 +4,11 @@ import {
   EDGE_CACHE_CONTROL,
   adminShellCacheUrl,
   isAdminShellRequest,
+  isCacheableApiRequest,
   isCacheableRequest,
   purgePublicCache,
   shouldPurgeAfter,
+  toApiCacheUrl,
   toCacheUrl,
 } from "./edge-cache.js";
 
@@ -70,6 +72,7 @@ export default {
     const snapshot = {
       method: request.method,
       pathname,
+      search: new URL(request.url).search,
       cookieNames: parseCookieNames(request.headers.get("cookie")),
       accept: request.headers.get("accept"),
       hasRscHeader: request.headers.has("rsc"),
@@ -111,11 +114,37 @@ export default {
       return response;
     }
 
-    // An admin edit can change any cached public page (menu, settings, branding),
-    // and Next's `revalidatePath` only clears Next's own cache. Purge ours on the
-    // way out so the next visitor gets the fresh page instead of the old one.
+    // An admin edit can change any cached public page or public JSON read (menu,
+    // settings, branding), and Next's `revalidatePath` only clears Next's own
+    // cache. Purge ours on the way out so the next visitor gets the fresh data
+    // instead of the old one. Public keys are enumerable (fixed paths, two
+    // locales), so a blanket purge is bounded and cheap.
     const purgeAfter = cacheUsable && shouldPurgeAfter(snapshot);
     if (purgeAfter) ctx.waitUntil(purgePublicCache(caches.default));
+
+    // Public JSON reads (`/api/public/bootstrap`, `…/content`, `…/menu/<slug>`)
+    // back every static customer shell, so an uncached read puts the catalogue
+    // cost straight back on the origin. Same public rules as the pages: no
+    // session, no admin cookie, no RSC/prefetch, GET only. Keyed on the full URL
+    // including the query string, so the locales never collide.
+    if (cacheUsable && isCacheableApiRequest(snapshot)) {
+      const cache = caches.default;
+      const cacheKey = new Request(toApiCacheUrl(snapshot.pathname, snapshot.search), {
+        method: "GET",
+      });
+
+      const hit = await cache.match(cacheKey);
+      if (hit) return withCacheStatus(hit, "HIT");
+
+      const response = await handler(request, env, ctx);
+      if (response.status === 200 && isJson(response)) {
+        const cacheable = new Response(response.body, response);
+        cacheable.headers.set("Cache-Control", EDGE_CACHE_CONTROL);
+        ctx.waitUntil(cache.put(cacheKey, cacheable.clone()));
+        return withCacheStatus(cacheable, "MISS");
+      }
+      return response;
+    }
 
     if (cacheUsable && isCacheableRequest(snapshot)) {
       const cache = caches.default;
@@ -154,6 +183,10 @@ function parseCookieNames(header) {
 
 function isHtml(response) {
   return (response.headers.get("content-type") ?? "").includes("text/html");
+}
+
+function isJson(response) {
+  return (response.headers.get("content-type") ?? "").includes("application/json");
 }
 
 /** Marks a response as served from the edge cache. */

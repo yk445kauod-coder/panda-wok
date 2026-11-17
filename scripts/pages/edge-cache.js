@@ -79,8 +79,23 @@ export const EDGE_STALE_IF_ERROR_SECONDS = 604800;
 /** The Cache-Control a cached public page is stored with. */
 export const EDGE_CACHE_CONTROL = `public, max-age=0, s-maxage=${EDGE_TTL_SECONDS}, stale-while-revalidate=${EDGE_SWR_SECONDS}, stale-if-error=${EDGE_STALE_IF_ERROR_SECONDS}`;
 
-const isSupabaseAuthCookie = (name) =>
-  name.startsWith("sb-") && name.includes("-auth-token");
+/**
+ * True when a cookie name carries a visitor's signed-in session.
+ *
+ * Two shapes must both be recognised: the D1 stateless session
+ * (`pw-auth-token`, what the app issues today) and the legacy Supabase token
+ * (`sb-…-auth-token`, chunked as `.0`, `.1`, …). Recognising only the Supabase
+ * name — as this did — treats a signed-in visitor as anonymous, so their page
+ * could be stored under a public key and served to someone else. This is the
+ * single most dangerous predicate in the file, so it is deliberately broad.
+ */
+const isSessionCookie = (name) =>
+  name === "pw-auth-token" ||
+  name.startsWith("pw-auth-token.") ||
+  (name.startsWith("sb-") && name.includes("-auth-token"));
+
+/** The admin gate cookie, which must never be stored or served from the cache. */
+const isAdminCookie = (name) => name === "panda-wok.admin";
 
 /**
  * True when a locale-prefixed path is one of the public, cacheable pages. A bare
@@ -93,6 +108,41 @@ export function isCacheablePath(pathname) {
   return PUBLIC_PATHS.some(
     (base) => bare === base || bare.startsWith(`${base}/`),
   );
+}
+
+/**
+ * Public JSON reads the storefront shells fetch after paint.
+ *
+ * Every customer page is a static shell whose data arrives from `/api/public/*`,
+ * so a page view is *two* Worker invocations: the document (edge-cached) and the
+ * JSON. The catalogue response is ~120 KB and runs eight D1 reads, so leaving it
+ * uncached puts the cost that was removed from the renderer straight back onto
+ * the origin — the same 10 ms CPU ceiling, Error 1102. These are public,
+ * cookie-independent and locale-scoped, so they are safe to cache at the edge
+ * exactly like the pages.
+ *
+ * Deliberately **not** here: `/api/public/me/*` (per-customer, must never be
+ * shared) or `/api/analytics` (a write).
+ */
+export const CACHEABLE_API_PATHS = [
+  "/api/public/bootstrap",
+  "/api/public/content",
+  "/api/public/menu/",
+];
+
+/**
+ * True when this request may be cached as a public JSON read. The key includes
+ * the query string (the locale lives there for bootstrap/content), so the two
+ * locales can never collide under one key. A prefix match must land on a path
+ * boundary, so `/api/public/bootstrapX` is not treated as bootstrap.
+ */
+export function isCacheableApiPath(pathname) {
+  return CACHEABLE_API_PATHS.some((base) => {
+    if (pathname === base) return true;
+    // `/api/public/menu/` ends in a slash and owns its whole subtree.
+    if (base.endsWith("/")) return pathname.startsWith(base);
+    return pathname.startsWith(`${base}/`);
+  });
 }
 
 /**
@@ -113,8 +163,8 @@ export function isCacheableRequest(request) {
 
   if (method !== "GET") return false;
   if (hasRscHeader || hasPrefetchHeader || hasAuthorization) return false;
-  if (cookieNames.some(isSupabaseAuthCookie)) return false;
-  if (cookieNames.includes("panda-wok.admin")) return false;
+  if (cookieNames.some(isSessionCookie)) return false;
+  if (cookieNames.some(isAdminCookie)) return false;
   if (!isCacheablePath(pathname)) return false;
   // The markdown-for-agents rewrite has its own Content-Type; caching it under
   // the same key as the HTML would serve the wrong representation. `accept` is
@@ -122,6 +172,42 @@ export function isCacheableRequest(request) {
   if (String(accept ?? "").toLowerCase().includes("text/markdown")) return false;
 
   return true;
+}
+
+/**
+ * True when a public JSON read may be served from (and stored in) the edge
+ * cache. Same public rules as `isCacheableRequest`, but the path is the API
+ * allowlist rather than the page list. `request` is the same snapshot, plus
+ * `search` for the locale-scoped query string.
+ */
+export function isCacheableApiRequest(request) {
+  const {
+    method,
+    pathname,
+    cookieNames = [],
+    accept,
+    hasRscHeader,
+    hasPrefetchHeader,
+    hasAuthorization,
+  } = request;
+
+  if (method !== "GET") return false;
+  if (hasRscHeader || hasPrefetchHeader || hasAuthorization) return false;
+  if (cookieNames.some(isSessionCookie)) return false;
+  if (cookieNames.some(isAdminCookie)) return false;
+  if (!isCacheableApiPath(pathname)) return false;
+  if (String(accept ?? "").toLowerCase().includes("text/markdown")) return false;
+
+  return true;
+}
+
+/**
+ * The cache key for a public JSON read. The query string is part of it because
+ * the locale lives there (`?locale=ar`), so the two locales get separate entries
+ * and can never be served to each other.
+ */
+export function toApiCacheUrl(pathname, search = "") {
+  return `${CACHE_ORIGIN}${pathname}${search || ""}`;
 }
 
 /**
@@ -192,6 +278,25 @@ export function cacheKeysFor(barePath) {
 }
 
 /**
+ * Every stored key for the cacheable public JSON reads, both locales.
+ *
+ * Only the two fixed paths can be enumerated, exactly like `PUBLIC_PATHS` for
+ * pages: `/api/public/menu/<slug>` has unbounded keys, so a dish edit clears it
+ * by TTL (`EDGE_TTL_SECONDS`) rather than by purge. That matches the dish HTML
+ * page, which has the same shape, and it is safe because `place_order` validates
+ * modifiers server-side — a stale dish page can at worst reject an add, never
+ * record a bad order.
+ */
+export function apiCacheKeys() {
+  const keys = [];
+  for (const locale of CACHE_LOCALES) {
+    keys.push(toApiCacheUrl("/api/public/bootstrap", `?locale=${locale}`));
+    keys.push(toApiCacheUrl("/api/public/content", `?locale=${locale}`));
+  }
+  return keys;
+}
+
+/**
  * True when the request is an admin mutation, after which the cached public
  * pages may be out of date. Server actions POST back to the page that hosts them,
  * so an edit lands as a non-GET request under `/admin`. Customer traffic never
@@ -202,13 +307,14 @@ export function shouldPurgeAfter(snapshot) {
 }
 
 /**
- * Drops every cached public page. `getPlainText`, settings and branding can
- * change any of them; deleting the whole set is bounded and rare, and it means an
- * edit is visible on the next request instead of at the TTL. Best-effort: a
- * failed delete only means the page refreshes at the TTL.
+ * Drops every cached public page and the public JSON reads. `getPlainText`,
+ * settings and branding can change any of them; deleting the whole set is
+ * bounded and rare, and it means an edit is visible on the next request instead
+ * of at the TTL. Best-effort: a failed delete only means a page refreshes at the
+ * TTL.
  */
 export async function purgePublicCache(cache) {
-  const keys = PUBLIC_PATHS.flatMap(cacheKeysFor);
+  const keys = [...PUBLIC_PATHS.flatMap(cacheKeysFor), ...apiCacheKeys()];
   await Promise.all(
     keys.map((key) => cache.delete(new Request(key)).catch(() => false)),
   );

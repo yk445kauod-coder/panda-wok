@@ -3,6 +3,16 @@
 > (Previous content here described a different project — "LAVA / azura-anime" — and was
 > wrong for this repo. Replaced 2026-11-14 with panda-wok notes.)
 
+## Console read cache — cache only header-free reads (2026-11-16)
+- `src/lib/cache/admin-read.ts` → `cachedAdminRead` + one shared tag `ADMIN_READ_TAG="admin:reads"`
+  (5s). Every admin write (`POST /api/admin/action`) `revalidateTag`s it. Applied to the CRM reads
+  that use the **admin client**; dashboard aggregate shares the tag.
+- **Never cache a read that uses `createServerSupabase()`** — `unstable_cache` runs its callback
+  *outside the request scope*, so the `cookies()`/`headers()` read throws and the route 500s or
+  returns empty (this broke `/api/admin/menu` + the staff roster). Guard: `tests/admin-read-cache.test.ts`.
+- Dish/category detail pages are edge-cached (`s-maxage=60`, `x-edge-cache: HIT`); `isCacheablePath`
+  is an exact match so un-purgeable keys are never stored.
+
 ## Stack & deploy
 - Next.js + **OpenNext SSR on Cloudflare Workers via Pages** (`@opennextjs/cloudflare`),
   **Free plan = 10 ms CPU/request → Error 1102**. Supabase `xjbtsryidznsxqlynmfa` (eu-west-3, PG17).
@@ -221,13 +231,14 @@
 - **402 hits EVERY HTTP path** (`/storage/...`, `/rest/v1`, `/auth/v1/health`, `/functions/v1`,
   HEAD, Range, both anon keys). Auth does not bypass it. `pg_net` inside the DB has internet but
   cannot reach internal service hostnames, so no server-side copy route exists.
-- **Recovery**: enable R2 (dashboard only — API returns `10042 Please enable R2`), create bucket
-  `panda-wok-media`, uncomment `r2_buckets` in `workers/media-proxy/wrangler.jsonc`, then
-  `node scripts/migrate-media-to-r2.mjs` (copies objects to R2, prints the D1 URL-rewrite SQL).
-  `uploadMenuImageAction` already prefers the R2 `MEDIA_BUCKET` binding. Alternatively the images
-  reappear on their own when the quota resets, or immediately on a plan upgrade.
-- **Media worker**: `workers/media-proxy` (`panda-wok-media.yk445kauod.workers.dev`), serves R2
-  first then Supabase; `x-media-source: r2|…`, `x-media-cache: HIT|MISS|UNAVAILABLE`.
+- **Recovery (owner decision 2026-11-16: D1 only, no R2):** there is no R2 path any more —
+  `scripts/migrate-media-to-r2.mjs` and the R2 binding were removed. To restore the trapped photos,
+  unblock Supabase for one billing cycle (or upgrade), pull each `menu-images` object, and
+  `putMediaObject()` it into D1's `media_objects`. The images also reappear on their own only if the
+  Supabase quota resets **and** the URLs are pointed back at Supabase — which this deployment no
+  longer does, so an explicit copy into D1 is the real fix.
+- **Media worker**: `workers/media-proxy` (`panda-wok-media.yk445kauod.workers.dev`), reads **D1 only**
+  (`media_objects`); `x-media-source: d1|missing` (missing = uncached placeholder redirect).
   Hero image is separate and fine: ImageKit `ik.imagekit.io/fpbwa3np7/…` (200).
 - Offers/discount engine verified end-to-end: `tests/offers-scenarios.test.ts` (18 tests, all pass)
   drives real `place_order` on SQLite — percent/fixed, threshold, `max_discount` cap, best-offer,
@@ -247,6 +258,7 @@
   lives **in D1**, so Exports/Backups work with R2 disabled. R2 is paid -> not enabled.
 - Menu photo: admin accepts a pasted URL (`menu_items.image_url`, works without R2) and falls back
   gracefully on upload failure; `menu_images` (storage_path|external_url) exists but is empty.
+  **CORRECTION (2026-11-16): the pasted-URL path was silently broken** — see "Photo URL box" below.
 - SQLite column introspection: `SELECT name FROM pragma_table_info('t')`.
 
 ## Supabase rescue: panda-wok (xjbtsryidznsxqlynmfa) — 2026-11-15
@@ -342,23 +354,160 @@
 - The funnel fix (82ee831) removes only ~35k rows/load on the analytics page — a minor part of the
   request count. It was NOT the main cause of the quota crisis.
 
-## Dish-photo store is DBByte **S3** now, not the REST gateway (2026-11-16)
-Both sides speak the standard S3 protocol via **`aws4fetch`** (~1 KB, zero deps, Web
-Crypto — works in a Worker and a Next server action alike; do NOT pull in
-`@aws-sdk/client-s3`, it is only transitive and too heavy for the 10 ms media worker).
-- Upload: `src/lib/actions/storage.ts` → signed `PUT` to `s3.dbbyte.com/panda-wok-media/<name>`.
-- Read: `workers/media-proxy/src/index.ts` → signed `GET` of the same path; header is
-  `x-media-source: dbbyte-s3`. Cache/purge/health/name-validation unchanged.
-- Env: `DBBYTE_ENDPOINT=https://s3.dbbyte.com`, `DBBYTE_ACCESS_KEY_ID` (`dbs_...`, a
-  plain var) and `DBBYTE_SECRET_ACCESS_KEY` (`dbk_...`, a secret). The old
-  `DBBYTE_KEY` is gone. Region `us-east-1`, `forcePathStyle: true`.
-- **The secret key is the 52-character form** (`dbk_…`); a truncated key gives
-  `SignatureDoesNotMatch`.
-- **The bucket is private** (unsigned GET = 403) — the worker's signature is the only
-  public read path. Never make the bucket public to "fix" a 403.
-- Deploy: `deploy-pages.yml` pushes the secret onto **both** the media Worker and the
-  Pages project from the repo secret `DBBYTE_SECRET_ACCESS_KEY` (warns, not fails, when
-  unset). An owner must add that repo secret; `secrets: write` is 403 here.
-- The 90 legacy Supabase-Storage photos are **not** migrated: `responsive.ts` still
-  rewrites their URLs to the worker, which now reads the S3 bucket, so they stay broken
-  until pulled from Supabase and `PutObject`ed under the same names.
+## Panda Wok — static shells kill Server Actions (2026-11-16)
+- **Root cause of "menu upload broken / errors / slow":** every `/admin/*` page is a
+  **static** shell (that's what keeps the Worker from rendering per page). A Next
+  Server Action is a **POST back to the page it was declared on**; a static page
+  answers only GET → **405 Method Not Allowed**. This silently broke **all ~46**
+  console writes (upload, menu, categories, settings, offers, content), not just
+  the upload. Verified live: `POST /admin/menu -> 405`.
+- **Fix pattern (the house style here):** reads already went to `/api/admin/*`; writes
+  now go to `POST /api/admin/action` via `src/lib/actions/dispatch.ts` (name→fn
+  registry; unknown name = 404) + `src/lib/actions/client.ts` (browser shims that
+  keep the SAME call shape, so a component only swaps its import path). Multipart
+  body (`__name` + form fields, or `__args` JSON) so a File survives. Customer-side
+  notifications + locale switch use `POST /api/session/action`.
+- `x-pw-path` elevation already covers `/api/admin/*` (middleware `isAdminSurface`),
+  so a new `/api/admin/*` route gets service-role reads with no extra wiring.
+- Detail pages with a dynamic segment (`/admin/orders/[orderId]`, `/admin/crm/[userId]`)
+  were the last Worker-rendered pages → converted to static shells `/admin/order?id=`
+  and `/admin/customer?id=` (component reads `useSearchParams`). Now **0 admin pages
+  server-render**; only `[id]/download/route` handlers stay dynamic (fine, they stream).
+- **Guard test:** `tests/admin-action-dispatch.test.ts` asserts every action name the
+  client uses exists in the server registry — keep it green when adding actions.
+- Deploy: `npm run pages:build` then `wrangler pages deploy .pages --project-name=panda-wok
+  --branch=feature/panda-wok-platform` with `CLOUDFLARE_ACCOUNT_ID`/`CLOUDFLARE_API_TOKEN`
+  (the token is NOT in `.env.local`; pass it explicitly). Local wrangler: `node_modules/.bin/wrangler`.
+  **`--branch=main` is WRONG** — it deploys a *preview*, which gets no production env vars and no
+  `D1_DB`, so `DATA_BACKEND=d1` is absent and every admin read 500s. (An earlier version of this
+  very line said `main`; that instruction caused a real outage.) `package.json`'s `pages:deploy`
+  and `.github/workflows/deploy-pages.yml` now both pin the production branch.
+
+## Admin console: root cause of the 2026-11-16 outage + uploads moved to D1 (2026-11-16)
+- **Why the whole console 500'd in production (09:40 deploy `4948643a`):** it was deployed to the
+  **wrong Pages branch** and/or before commit `8398224` (11:02). Production at 09:40 still had the
+  Server-Action era: `POST /api/admin/action` → 500, `POST /admin/menu` → 405, admin reads 403/500.
+  The correct production deploy (`c34091b3`, 11:33, branch `feature/panda-wok-platform`) returned
+  200 on unlock + every `/api/admin/*` read.
+- **`getCloudflareBindings()` must never cache an empty resolution.** OpenNext calls
+  `getCloudflareContext()` per request via AsyncLocalStorage, but a module can also be evaluated
+  outside a request (build/SSG/prerender) where the call throws and yields `{}`. The old code
+  memoised that `{}` for the isolate's lifetime, so `bindD1FromCloudflare()` saw no `D1_DB` on every
+  later request → admin reads `read_failed` while public pages (re-bind per call) kept working.
+  Fix: only remember a **non-empty** resolution.
+- **Dish photos now live in D1, and D1 is the ONLY image store (owner decision, 2026-11-16).**
+  There is no R2 (not enabled) and no Supabase (this deployment no longer depends on it at all),
+  so the R2 and Supabase fallbacks were removed rather than left as dead code.
+  `media_objects` table (`migrations/0005_media_objects.sql`, `src/lib/media/store.ts`).
+  `uploadMenuImageAction` writes D1 and nothing else; a write failure is reported, never
+  re-routed to a store that cannot work. Bytes are a BLOB (bound as `ArrayBuffer`), not base64.
+  The media worker reads D1 only (`x-media-source: d1`) with a year-long Cache-Control; an object
+  **not** in D1 returns an **uncached** `302 /dish-placeholder.svg` (`x-media-source: missing`) —
+  that is what the **90 dish photos still trapped behind Supabase's 402** resolve to, because their
+  legacy `menu_items.image_url` (all 90 rows still carry the `*.supabase.co/storage/v1/...` shape)
+  is rewritten client-side to the worker host by `src/lib/images/responsive.ts`. Verified live:
+  upload → served byte-for-byte, missing → placeholder, admin reads 200.
+  **To actually recover those 90 photos**, the owner must unblock Supabase for one billing cycle,
+  then pull each `menu-images` object and `putMediaObject()` it into D1.
+- **Request volume is NOT the current problem.** Measured via `httpRequestsAdaptiveGroups` (the
+  `clientRequestPath`-based account query works; `pagesFunctionsInvocationsAdaptiveGroups` needs the
+  whole-account filter): account total ~2,388 requests over 15–16 Nov, admin API only ~1,063 over
+  13–16 Nov (was 4,807 on the 14th before the poll fixes). The socket
+  `wss://…ops-hub…?audience=console` is live (`hello`/`live:true`), so each tab polls at the
+  300 s safety cadence, not the 60 s fallback. Console HTML `/admin` = 13,930 B raw / 3,303 B gzip,
+  TTFB ~0.87 s (cold render; static shell is edge-cached after warm).
+- **Admin nav ↔ features:** all 22 `ADMIN_NAV` destinations have a real `route.ts`; every client
+  `/api/admin/*` reference resolves. No dead endpoint. The only disabled flag is `reservations`
+  (intentionally off). Exports/Backups/Offers are in use — do not remove (see the standing warning).
+- Account-wide worker usage (9–16 Nov) is dominated by **other** projects: lava-agent 19,610,
+  lava-gateway 4,461, ignis-agent 2,216; panda-wok-media 1,698, panda-wok-ops-hub 119, panda-wok 71.
+  Don't attribute the shared free tier's limits to panda-wok.
+
+## Cache freshness — admin edits must reach customers (commit 614cd58, 2026-11-16)
+An uploaded dish photo showed in the console but not the customer page. **Four** stale layers,
+all needing fixing; the full write-up is in `2026-11-16.md`. Summary of the invariants:
+- Console writes are `POST /api/admin/action`; **edge purge** keys on that path
+  (`shouldPurgeAfter`), not `/admin`. If writes move again, update it or the purge dies silently.
+- Customer routes live under `/[lang]/…`; always revalidate via **`revalidatePublicPath()`**
+  (`src/lib/cache/revalidate.ts`), never a bare `revalidatePath("/menu/…")`.
+- Prerendered pages (`generateStaticParams`) are **read-only assets** the KV incremental cache
+  never rewrites → `revalidatePath` is a no-op on them. Put `export const revalidate = N` on any
+  page an admin can change. `menu/[slug]` now does exactly this (no `generateStaticParams`).
+- `isCacheablePath` must match **exactly** `PUBLIC_PATHS` (the purge can't enumerate sub-paths),
+  else a cached `/menu/<slug>` is never cleared.
+Quick triage: `x-nextjs-cache: HIT` + `s-maxage` on a URL = served from a stored copy;
+`private, no-cache` = it reached the origin. Inspect
+`.pages/server-functions/default/.next/prerender-manifest.json` to see which routes are frozen.
+
+## Admin console invocations: `<Link>` prefetch is the multiplier (044f785, 2026-11-16)
+Every `/admin/*` page is a **static shell** with client-side data, so a Next `<Link>` prefetch is a
+real Worker invocation, not a client nav. The sidebar is in view at once, so one page load
+prefetched every sibling route; the two "view site" links were `<Link href="/">` and `/`→`/en`, so
+each tab also pulled the **whole customer site** (3 invocations, ~168 KB RSC). Measured `/admin/menu`:
+6 prefetches/load → **42 reqs down to 25, 168 KB to 0** after setting `prefetch={false}` on all 47
+admin `<Link>`s. **Rule: any new console link must set `prefetch={false}`** (test `admin-weight-budget`
+enforces it). Don't reach for `<a href="/">` — `next lint`'s `no-html-link-for-pages` rejects it.
+Prefetch regressions are silent (no console error); grep the tags to audit.
+Also: `feature/panda-wok-platform` **is the Pages Production branch** — `wrangler pages deploy
+--branch=feature/panda-wok-platform` ships straight to `panda-wok.pages.dev`. Redeploy with
+`npm run pages:deploy`. And: the menu-item photo form uploads on *choose* but saves on *Save*; the
+two are coupled by a form-level `uploading` flag in `form-kit.tsx` that blocks submit mid-upload.
+
+## "Admin upload doesn't apply" was the slug (29ae95f, 2026-11-16)
+`SlugField` (in `form-kit.tsx`) derived the slug on the *slug field's own* blur, but that field is
+folded inside "More options" — so creating a dish never filled it and every save failed with
+`fields.slug: "Too small: expected string to have >=2 characters"`. The photo was a red herring; the
+same failure hits a dish with no photo. Editing looked fine because the slug was already stored. Now it
+listens on the source name field's `input`, seeds on mount, stops once edited by hand.
+**Live-test hygiene:** these tests write real D1 rows. `deleteMenuItemAction` is a SOFT delete
+(`is_archived=1`), and uploads leave `media_objects` rows behind — so clean up with `wrangler d1 execute`
+(DELETE), not the admin action, and record the row's previous value before you touch it. The seeded
+catalogue has **no images at all** (`catalog-backup.json` → every `image_url` null), so `with_img` should
+be 0.
+
+## No substitute dish images (a981847, 2026-11-16)
+Editing an existing dish + adding a photo already worked (`?edit=<id>` → `ImageUploadField` → Save →
+D1); the slug bug (29ae95f) was create-only. Removed every stand-in image: deleted
+`public/dish-placeholder.svg` (and its `_routes.json` exclusion in `scripts/build-pages.mjs`); the
+media worker now `404`s a missing object instead of 302-ing to it; no-photo branches in `dish-card`,
+`dish-detail`, `cart-view`, `editorial-sections`, `assistant-menu-cards` render an empty flat
+`bg-rice-200` block instead of the asanoha weave + "Photo coming soon"; `common.photoSoon` dropped from
+`console-en.ts`/`console-ar.ts`. `.asanoha` stays where it is decorative texture (not a photo stand-in).
+
+## 1102 hardening: cache the public JSON, kill the mount-time action, back off the poll (2026-11-17)
+The Free plan's 10 ms CPU cap (Error 1102) was still reachable after the page edge-cache work because
+**three request shapes were outside it**. All three are fixed; nothing was turned off (SEO unaffected).
+
+- **`/api/public/*` was never edge-cached.** `isCacheablePath` only matched locale-prefixed *pages*, so
+  `/api/public/bootstrap` (≈121 KB, ~8 D1 reads) ran on the Worker on every page view — one page view =
+  two invocations. `edge-cache.js` now has `isCacheableApiPath` / `isCacheableApiRequest` /
+  `toApiCacheUrl` + `apiCacheKeys`, caching `/api/public/bootstrap`, `/api/public/content` and
+  `/api/public/menu/<slug>`. **Key includes the query string** (the locale lives there), so locales can't
+  collide. `_worker.js` grew an API branch (JSON-only store, `isJson`). Never cached: `/api/public/me/*`
+  (per-customer), `/api/analytics` (a write), any request with a session or `panda-wok.admin` cookie.
+- **The header bell called a Server Action on mount.** `ViewerProvider` (in `[lang]/layout.tsx`, i.e.
+  every customer page) ran `loadMyNotificationsAction()` in a `useEffect` → a POST back to a *static
+  shell* → the App Router re-emits the document. Replaced by `GET /api/public/me/notifications`
+  (`src/app/api/public/me/notifications/route.ts`, `cache-control: no-store`); the action was deleted.
+  `tests/static-shell-actions.test.ts` fails if any customer-shell client component calls an
+  `@/lib/actions/*` binding inside a `useEffect` (user-initiated form actions are fine and stay).
+- **Polling is now error-adaptive.** `startVisiblePoll` (`src/lib/live/visibility.ts`) takes an optional
+  `PollOptions` and a tick that may return `false` on failure: the interval backs off ×2 (jittered ±25 %,
+  capped at 12×base / 30 min) while the origin fails and resets on success. `readPending` in `ops-sync.ts`
+  now returns a boolean so the console poll backs off; a 401/403 returns `true` (a deliberate lock, not a
+  failure). A `void` tick is treated as success, so the plain pollers keep their exact prior cadence.
+  `tests/live-visibility.test.ts` pins the growth, the cap, the reset and the foreground reset.
+
+**Latent security bug found and fixed while here:** `edge-cache.js` decided "is this a signed-in
+visitor?" with `name.startsWith("sb-") && includes("-auth-token")` — the *Supabase* cookie name. The app
+issues a **D1** session cookie `pw-auth-token`, which that never matched, so a signed-in visitor was
+treated as anonymous and their page could be stored under a public key. Now `isSessionCookie` matches
+both shapes; `isAdminCookie` matches `panda-wok.admin`.
+
+**Also:** `warm-edge-cache.mjs` (`npm run pages:warm`) now warms `/api/public/bootstrap` and
+`/api/public/content` per locale after the documents, so a fresh deploy isn't cold for the JSON either.
+`apiCacheKeys` can only enumerate the two fixed paths — `/api/public/menu/<slug>` clears by TTL, same as
+the dish HTML page (safe: `place_order` validates modifiers server-side).
+
+State: typecheck clean, lint 0 errors (8 pre-existing `no-img-element` warnings), **504 passed / 18
+skipped**, `next build` green.

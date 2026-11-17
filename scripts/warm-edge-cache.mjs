@@ -22,6 +22,13 @@ const BASE = (process.argv[2] ?? process.env.WARM_BASE_URL ?? "https://panda-wok
 const PATHS = ["/", "/menu", "/about", "/contact", "/faq", "/location", "/privacy-policy", "/cart"];
 const LOCALES = ["en", "ar"];
 
+// The public JSON reads the static shells fetch after paint. They are cached by
+// the same edge policy (see `CACHEABLE_API_PATHS`), so they must be warmed too —
+// otherwise the first visitor after a deploy pays for the ~120 KB bootstrap D1
+// read on the origin, which is exactly the cold-start cost the warm step exists
+// to remove. The locale lives in the query string here.
+const API_PATHS = ["/api/public/bootstrap", "/api/public/content"];
+
 const localised = (path, locale) => `/${locale}${path === "/" ? "" : path}`;
 const ATTEMPTS = 4;
 
@@ -30,43 +37,50 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const isFailure = (res, body) =>
   res.status !== 200 || /exceeded resource limits|Error 1102/i.test(body);
 
-async function warm(path, locale) {
+async function warm(label, url) {
   for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
     const started = Date.now();
     let res;
     let body = "";
     try {
-      res = await fetch(`${BASE}${localised(path, locale)}`, {
+      res = await fetch(`${BASE}${url}`, {
         headers: { "user-agent": "panda-wok-cache-warm" },
         redirect: "manual",
       });
       body = await res.text();
     } catch (error) {
-      console.warn(`  ${locale} ${path}: request failed (${error.message}), retrying`);
+      console.warn(`  ${label}: request failed (${error.message}), retrying`);
       await sleep(3000);
       continue;
     }
     const ms = Date.now() - started;
     if (isFailure(res, body)) {
-      console.warn(`  ${locale} ${path}: ${res.status} after ${ms}ms, retry ${attempt}/${ATTEMPTS}`);
+      console.warn(`  ${label}: ${res.status} after ${ms}ms, retry ${attempt}/${ATTEMPTS}`);
       await sleep(3000);
       continue;
     }
-    console.log(`  ${locale} ${path}: ${res.status} in ${ms}ms`);
+    console.log(`  ${label}: ${res.status} in ${ms}ms`);
     return true;
   }
-  console.error(`  ${locale} ${path}: still failing after ${ATTEMPTS} attempts`);
+  console.error(`  ${label}: still failing after ${ATTEMPTS} attempts`);
   return false;
 }
 
 let failures = 0;
 for (const locale of LOCALES) {
   for (const path of PATHS) {
-    const ok = await warm(path, locale);
+    const ok = await warm(`${locale} ${path}`, localised(path, locale));
     if (!ok) failures += 1;
     // A pause keeps each cold render from competing with the next one for the
     // same isolate's CPU budget.
     await sleep(1200);
+  }
+  // The public JSON reads last, once the document renders have settled, so the
+  // warm traffic itself does not compete with them.
+  for (const path of API_PATHS) {
+    const ok = await warm(`${locale} ${path}`, `${path}?locale=${locale}`);
+    if (!ok) failures += 1;
+    await sleep(600);
   }
 }
 
