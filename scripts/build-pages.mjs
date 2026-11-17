@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { isCacheablePath } from "./pages/edge-cache.js";
 
 /**
  * Assembles the Cloudflare Pages deployment directory.
@@ -44,6 +45,20 @@ async function main() {
   await cp(path.join(OPEN_NEXT, "cache"), path.join(OUT, "cdn-cgi", "_next_cache"), {
     recursive: true,
   });
+
+  // Ship each prerendered public shell as a plain `.html` file beside the cache.
+  //
+  // The public pages are constant per locale, but OpenNext serves them by
+  // reading and JSON-parsing a ~500 KB incremental-cache entry (the Arabic dish
+  // entries are the largest, because every Arabic character is two UTF-8 bytes).
+  // On a cold isolate that parse plus the App Router reconstruction exceeds the
+  // Free plan's 10 ms CPU cap — Error 1102, observed live on `ar /menu/<slug>`
+  // while the English ones squeaked through. A static file is streamed
+  // byte-for-byte, so the Worker pays none of it. `_worker.js` offers these to
+  // the `ASSETS` binding before calling Next; a path with no file still renders
+  // on demand and is edge-cached as before.
+  const shells = await writeStaticShells(OUT);
+  console.log(`Wrote ${shells} static shell(s).`);
 
   // Next serves `src/app/icon.svg`, `apple-icon.png` and `favicon.ico` as
   // *routes* (generated from the file convention), not as static assets, so
@@ -125,6 +140,72 @@ async function main() {
   await redactServerEnv(OUT);
 
   console.log("Pages output ready in .pages/");
+}
+
+/**
+ * Extracts the `.html` of every prerendered dish/category page into a real file.
+ *
+ * The incremental-cache entries are `<html, rsc, segmentData>` JSON. Only the
+ * `html` field is needed to serve a document, and reading it out of a ~500 KB
+ * blob at request time is the cost that tripped the CPU cap. This walks the
+ * copied cache tree and writes the document bytes to `<locale>/menu/<slug>.html`
+ * — the layout Pages serves for the clean URL `/ar/menu/beef`.
+ *
+ * Scope is deliberately just `/menu/<slug>`. Those are the pages that exceeded
+ * the 10 ms cap (the App Router reconstruction of a ~540 KB Arabic cache entry),
+ * and they are guaranteed data-free: the route renders `<MenuSlugPage />`, a
+ * client component that reads the dish from `/api/public/menu/<slug>` after
+ * paint, and its metadata is generic. Home, `/menu`, about, faq and the rest
+ * already warm below the cap and keep rendering through Next, so their
+ * middleware (the markdown rewrite, the security headers) is untouched.
+ */
+async function writeStaticShells(outDir) {
+  const cacheRoot = path.join(outDir, "cdn-cgi", "_next_cache");
+  if (!existsSync(cacheRoot)) return 0;
+
+  let written = 0;
+  for (const buildDir of await readdir(cacheRoot)) {
+    const root = path.join(cacheRoot, buildDir);
+    const files = await collectFiles(root);
+    for (const file of files) {
+      if (!file.endsWith(".cache")) continue;
+      // `/…/en/menu/double-box.cache` -> `/en/menu/double-box`
+      const rel = path.relative(root, file).replace(/\.cache$/, "");
+      const urlPath = "/" + rel.split(path.sep).join("/");
+      if (!/^\/(?:en|ar)\/menu\/[^/]+$/.test(urlPath)) continue;
+      if (!isCacheablePath(urlPath)) continue;
+      let entry;
+      try {
+        entry = JSON.parse(await readFile(file, "utf8"));
+      } catch {
+        continue;
+      }
+      const html = typeof entry?.html === "string" ? entry.html : "";
+      if (!html) continue;
+      const target = path.join(outDir, `${rel}.html`);
+      await mkdir(path.dirname(target), { recursive: true });
+      await writeFile(target, html, "utf8");
+      written += 1;
+    }
+  }
+  return written;
+}
+
+/** Every file under `dir`, recursively. */
+async function collectFiles(dir) {
+  const out = [];
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...(await collectFiles(full)));
+    else out.push(full);
+  }
+  return out;
 }
 
 /**

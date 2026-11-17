@@ -82,6 +82,7 @@ export default {
       hasAuthorization: request.headers.has("authorization"),
     };
 
+
     // Edge cache for anonymous public pages. During a rush this is the
     // difference between every hit running the Worker and the CDN answering
     // them: only a miss or a stale hit reaches Next, and a stale page is served
@@ -155,7 +156,7 @@ export default {
       const hit = await cache.match(cacheKey);
       if (hit) return withCacheStatus(hit, "HIT");
 
-      const response = await handler(request, env, ctx);
+      const response = await renderOrigin(request, env, ctx, handler, snapshot);
       if (response.status === 200 && isHtml(response)) {
         const cacheable = new Response(response.body, response);
         cacheable.headers.set("Cache-Control", EDGE_CACHE_CONTROL);
@@ -171,6 +172,87 @@ export default {
     return handler(request, env, ctx);
   },
 };
+
+/**
+ * Produces the origin response for a cacheable public page.
+ *
+ * A prerendered dish/category page ships as a static `.html` file
+ * (`/ar/menu/beef.html`), so on a cache miss it is streamed byte-for-byte from
+ * ASSETS instead of rendered by Next. Reconstructing the ~540 KB Arabic
+ * incremental-cache entry is what exceeded the Free plan's CPU cap (Error
+ * 1102); reading a static file costs a fraction of it. Everything else falls
+ * through to the OpenNext handler unchanged.
+ *
+ * Only an anonymous document navigation is served the shell — a session cookie,
+ * an RSC/prefetch request or a markdown-for-agents accept still reaches Next, so
+ * those variants behave exactly as before.
+ */
+async function renderOrigin(request, env, ctx, handler, snapshot) {
+  const shellable =
+    typeof env?.ASSETS !== "undefined" &&
+    /^\/(?:en|ar)\/menu\/[^/]+$/.test(snapshot.pathname) &&
+    !snapshot.hasRscHeader &&
+    !snapshot.hasPrefetchHeader &&
+    !snapshot.hasAuthorization &&
+    snapshot.cookieNames.length === 0 &&
+    !String(snapshot.accept ?? "").toLowerCase().includes("text/markdown");
+  if (shellable) {
+    try {
+      const asset = await env.ASSETS.fetch(
+        new Request(`https://assets.internal${snapshot.pathname}.html`, {
+          method: "GET",
+          headers: { accept: "text/html" },
+        }),
+      );
+      if (asset.status === 200) {
+        const headers = new Headers(asset.headers);
+        headers.set("content-type", "text/html; charset=utf-8");
+        applyDocumentHeaders(headers);
+        return new Response(asset.body, { status: 200, headers });
+      }
+    } catch {
+      // Fall through to Next rather than fail the request.
+    }
+  }
+  return handler(request, env, ctx);
+}
+
+/**
+ * Document security headers, mirroring `applySecurityHeaders` in
+ * `src/middleware.ts`. A static shell is returned before Next runs, so the
+ * middleware never sets them; without this the CSP, frame protections and the
+ * agent `Link` header would be missing on exactly the pages served this way.
+ * Keep in sync with the middleware.
+ */
+function applyDocumentHeaders(headers) {
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(self), payment=(self)",
+  );
+  headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "img-src 'self' data: blob: *.supabase.co https:",
+      "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
+      "font-src 'self' fonts.gstatic.com data:",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net",
+      "connect-src 'self' https: wss:",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+    ].join("; "),
+  );
+  headers.set("Content-Language", "en, ar");
+  headers.set(
+    "Link",
+    `</llms.txt>; rel="alternate"; type="text/markdown", </sitemap.xml>; rel="sitemap"`,
+  );
+}
 
 /** The cookie names a request carries, for the cache decision. */
 function parseCookieNames(header) {
