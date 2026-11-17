@@ -556,3 +556,38 @@ pause** — a tight concurrent warm itself triggers 1102 (`503`/`500` on the sam
 Verified live after deploy: all 174 dish URLs (87 × 2) answered 200 under a single concurrent burst, the
 60-request mixed public burst was 60/200, `/admin` 8/200, and dish HTML is `x-edge-cache: HIT` with
 `s-maxage=600`. `next build` green, typecheck clean, 509 passed / 18 skipped, lint 0 errors.
+
+## Dish shells served as static files — CI warm is green again (12a69ed, 2026-11-17)
+The **last** Error 1102 surface was `/menu/<slug>`, and the failing variant was **Arabic only**.
+CI warm run `44183125349` failed with 297 failures — **all** `ar /menu/<slug>` (0 en) — 184 × 500,
+113 × 503; Cloudflare analytics showed 120 `exceededResources` in the deploy window. Every other
+public page (`/`, `/menu`, `/about`, `/contact`, `/faq`, `/location`, `/privacy-policy`, `/cart`) and
+every English dish page warmed fine. The page is a static client shell (0 SSR data reads in the body),
+but a **cold edge-cache miss** made OpenNext read + JSON-parse the ~539 KB AR cache entry (vs 435 KB EN;
+Arabic is 2 UTF-8 bytes/char, so the `/_full` RSC segment is 116,977 B vs 91,120 B) and rebuild the App
+Router tree — over the Free plan's 10 ms CPU cap.
+**Fix:** ship each dish/category shell as a real `.html` file and serve it from `ASSETS`, so a cold
+request is one file read, not a Next render.
+- `scripts/build-pages.mjs` `writeStaticShells()` walks the copied incremental cache and writes the
+  `html` field of every `/menu/<slug>` entry to `.pages/<lang>/menu/<slug>.html` (the exact failing
+  surface; also guaranteed data-free). 212 shells.
+- `scripts/pages/_worker.js` `renderOrigin()` offers the `.html` to `ASSETS` **before** calling Next,
+  and `applyDocumentHeaders()` restates the CSP + frame headers (the shell bypasses middleware). Only
+  an anonymous document nav is eligible — a session cookie, RSC, prefetch, Authorization or a
+  markdown-for-agents accept still reaches Next.
+- `scripts/warm-edge-cache.mjs`: **dropped the ~212-URL dish walk.** It was 20+ min of CI time
+  protecting pages that are now static, and one cold start failed the whole step.
+**Verified:** CI run `44190180808` = **success** (warm green for the first time). Live: 174/174 cold
+original dish burst = 200 on a fresh deploy, 87/87 AR on production, 0 `exceededResources`; served
+bytes **byte-identical** to the static file; the page hydrates and renders the dish + its option
+groups (browser-checked); RSC 307 + markdown behaviour unchanged. `tests/static-dish-shells.test.ts`
+(5) pins the wiring. 514 passed / 18 skipped, typecheck clean, lint 0 errors.
+**Rule:** a static shell still costs a *cold Next render* on a cache miss. A route whose shell is
+constant should be written as a real file at build time, not left for OpenNext to reconstruct. When
+only one locale fails, suspect payload size (RTL/Arabic is the bigger one), not the route logic.
+**Polling/pagination audit (already done, no change needed):** every admin list that grows paginates
+(`orders`/`crm`/`users`/`feedback` via `resolvePage` + `DEFAULT_PAGE_SIZE`, `Pagination` in
+`components/ui/pagination.tsx`); CRM commit `44177991115` = success. Polling is one shared timer
+(`lib/live/ops-sync.ts`, 60 s fallback / 300 s when the socket is live, visibility-paused, `live` flag
+opt-in per board) — not per-consumer. Only the menu CMS fetches a fixed 400 (bounded, exhaustive-read
+by design), and `offers`/`crm/activity`/`crm/[userId]` are bounded pickers.
