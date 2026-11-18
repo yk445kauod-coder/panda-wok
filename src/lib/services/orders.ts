@@ -16,10 +16,17 @@ export type OrderWithItems = Order & {
 };
 
 /**
- * Tracking view for a single order. RLS permits this only for the owner or
- * staff, so an unauthenticated guess returns null rather than leaking data.
+ * Tracking view for a single order, scoped to its owner.
+ *
+ * The D1 backend has no row-level security, so the ownership predicate has to
+ * be in the query itself: filtering on the id alone let any signed-in customer
+ * read any order by supplying its id. The viewer id is therefore required, and
+ * a foreign order returns null exactly as the RLS policy used to.
  */
-export async function getOrderForViewer(orderId: string): Promise<OrderWithItems | null> {
+export async function getOrderForViewer(
+  orderId: string,
+  viewerId: string,
+): Promise<OrderWithItems | null> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("orders")
@@ -27,6 +34,7 @@ export async function getOrderForViewer(orderId: string): Promise<OrderWithItems
       "*, order_items (*), order_status_history (id, order_id, from_status, to_status, changed_by, changed_by_role, note, created_at)",
     )
     .eq("id", orderId)
+    .eq("user_id", viewerId)
     .maybeSingle();
 
   if (error) throw new Error(`Failed to load order: ${error.message}`);

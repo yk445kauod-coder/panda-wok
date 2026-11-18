@@ -6,10 +6,10 @@ import { getPublicSettings } from "@/lib/services/catalog";
 /**
  * One order for the tracking page, scoped to the signed-in customer.
  *
- * `getOrderForViewer` reads through RLS, so the owner policy is the boundary —
- * another customer's id returns `null` and the client shows the not-found panel
- * the server page used to render. The tracking page also needs the support phone
- * (for a help link), which comes from the public settings.
+ * The D1 backend has no row-level security, so `getOrderForViewer` takes the
+ * viewer's id and filters by it — another customer's order returns `null` and
+ * the client shows the not-found panel. The tracking page also needs the support
+ * phone (for a help link), which comes from the public settings.
  */
 export async function GET(
   _request: NextRequest,
@@ -25,7 +25,7 @@ export async function GET(
   const { orderId } = await params;
   try {
     const [order, settings] = await Promise.all([
-      getOrderForViewer(orderId),
+      getOrderForViewer(orderId, session.user.id),
       getPublicSettings(),
     ]);
     return NextResponse.json(
