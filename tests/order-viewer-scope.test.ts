@@ -63,6 +63,8 @@ describe("getOrderForViewer ownership", () => {
     const { getOrderForViewer } = await import("@/lib/services/orders");
     const order = await getOrderForViewer(ALICE_ORDER, ALICE);
     expect(order?.id).toBe(ALICE_ORDER);
+    // The owner gets the full record, not a stripped-down one.
+    expect(order?.order_number).toBe("PW-A");
   });
 
   it("returns null when another customer asks for it", async () => {
@@ -74,6 +76,24 @@ describe("getOrderForViewer ownership", () => {
   it("returns null for an unknown order id", async () => {
     const { getOrderForViewer } = await import("@/lib/services/orders");
     const order = await getOrderForViewer("cccccccc-0000-0000-0000-000000000003", ALICE);
+    expect(order).toBeNull();
+  });
+
+  it("does not leak the owner's items or history to another customer", async () => {
+    const admin = new D1Client({ elevated: true, userId: null });
+    await admin.from("order_items").insert([
+      {
+        id: "dddddddd-0000-0000-0000-000000000004",
+        order_id: ALICE_ORDER,
+        name_snapshot: "Sweet & Sour Chicken Box",
+        quantity: 1,
+        unit_price: 100,
+        line_total: 100,
+        restaurant_id: RESTAURANT,
+      },
+    ]);
+    const { getOrderForViewer } = await import("@/lib/services/orders");
+    const order = await getOrderForViewer(ALICE_ORDER, BOB);
     expect(order).toBeNull();
   });
 });

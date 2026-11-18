@@ -591,3 +591,31 @@ only one locale fails, suspect payload size (RTL/Arabic is the bigger one), not 
 (`lib/live/ops-sync.ts`, 60 s fallback / 300 s when the socket is live, visibility-paused, `live` flag
 opt-in per board) — not per-consumer. Only the menu CMS fetches a fixed 400 (bounded, exhaustive-read
 by design), and `offers`/`crm/activity`/`crm/[userId]` are bounded pickers.
+
+## IDOR: the customer tracking read was unscoped (a9acf1b, 2026-11-18)
+`getOrderForViewer(orderId)` in `src/lib/services/orders.ts` filtered on the row id alone. The
+D1 backend has **no row-level security**, so any signed-in customer could read any order — with the
+owner's delivery name, phone and address — by supplying its id. Reached from
+`GET /api/public/me/orders/[orderId]`; the route's comment claiming "RLS is the boundary" was the
+false assumption. Confirmed with a real SQLite test (BOB read ALICE's order), not by reading code.
+Fixed by taking `viewerId` and adding `.eq("user_id", viewerId)`; a foreign order returns null,
+matching the policy it replaces. `tests/order-viewer-scope.test.ts` (4) pins owner-gets-it,
+other-gets-null, unknown-id-null, and no child (items/history) leak.
+
+**The rule to keep: on D1, every read of an owner-scoped table must carry its own ownership filter.**
+The shim resolves `userId` for *writes* only (`stampActor`); SELECTs get no automatic predicate.
+An audit of all customer paths found exactly this one leak — `getMyOrders`, `getMyAddresses`,
+`getMyStats`, `getMyFeedback`, and every address/feedback action already filter by `user_id`
+correctly. Admin reads (`admin-orders.ts`, `admin-catalog.ts`, `actions/admin.ts`) are exempt: they
+run elevated because `x-pw-path` starts with `/admin` or `/api/admin`.
+
+## `changed_by_role` is NULL because the actors are not staff rows (2026-11-18)
+Not a trigger bug. `log_order_status` (migrations/0002_triggers.sql) fills `changed_by_role` from
+`(SELECT role FROM staff WHERE user_id = NEW.updated_by)`, and `updated_by` is stamped by the D1
+shim from the acting identity. Every actor that has changed an order status lives in `auth_users` /
+`profiles` but **not** in `staff` — including the founding owner `yk445kauod@gmail.com`
+(`bae2e99a…`), who drives the console with the shared passcode. So the subquery finds no row and the
+role is NULL. The console renders it conditionally (`order-detail.tsx:328`), so nothing breaks —
+the role label is simply omitted. To populate it, the acting account needs a matching `staff` row;
+the passcode owner path attributes to the first active owner staff row (`resolveActorId` in
+`src/lib/auth/session.ts`), so the staff table's owners must be the accounts actually working.
